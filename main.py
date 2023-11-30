@@ -48,14 +48,17 @@ if result:
 else:
     print("Download failed.")
 
-input_video_path = f"{video_title}_{params.resolution}.mp4"
-output_video_path = f"{video_title}_{params.resolution}_mod.mp4"
-start_time = 20  # seconds
-end_time = None  # Set to None to keep the rest of the video
+input_video_path = f"{params.output_path}/{video_title}_{params.resolution}.mp4"
+output_video_path = f"{params.output_path}/{video_title}_{params.resolution}_mod.mp4"
+start_time = params.trim_start  # seconds
+end_time = params.trim_end  # Set to None to keep the rest of the video
 trim_video(input_video_path, output_video_path, start_time, end_time)
 
-
+os.remove(f"{params.output_path}/{video_title}_{params.resolution}.mp4")
+print("Deleted the untrimmed video")
+os.rename(output_video_path, input_video_path)
 
 model = YOLO(params.model)
 print(f"{video_title}_{params.resolution}")
-model.predict(source = f"{video_title}_{params.resolution}_mod.mp4", save= True, conf= params.confidence, save_txt=False, show=params.render)
+model.predict(source = f"{params.output_path}/{video_title}_{params.resolution}.mp4", save= True, conf= params.confidence, 
+              save_txt=False, show=params.render, line_thickness = params.line_thickness, hide_labels= params.hide_labels, hide_conf = params.hide_conf)
