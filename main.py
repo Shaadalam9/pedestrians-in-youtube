@@ -11,9 +11,6 @@ import params as params
 from pytube import YouTube
 from ultralytics import YOLO
 
-
-from pytube import YouTube
-
 def download_video_with_resolution(youtube_url, resolution="720p", output_path="."):
     try:
         youtube_object = YouTube(youtube_url)    # Create a YouTube object
