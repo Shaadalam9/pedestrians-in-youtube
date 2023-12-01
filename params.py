@@ -2,7 +2,7 @@ y_tube_link = "https://www.youtube.com/watch?v=q21Kj-pxJW4"
 resolution = "144p"
 output_path = "video"
 trim_start = 20 #seconds
-trim_end = 120
+trim_end = None
 
 model = "yolov8x.pt" 
 confidence = 0.4
