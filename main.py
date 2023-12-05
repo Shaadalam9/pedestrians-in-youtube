@@ -61,4 +61,4 @@ os.rename(output_video_path, input_video_path)
 model = YOLO(params.model)
 print(f"{video_title}_{params.resolution}")
 model.predict(source = f"{params.output_path}/{video_title}_{params.resolution}.mp4", save= True, conf= params.confidence, 
-              save_txt=False, show=params.render, line_thickness = params.line_thickness, hide_labels= params.hide_labels, hide_conf = params.hide_conf)
+              save_txt=True, show=params.render, line_thickness = params.line_thickness, hide_labels= params.hide_labels, hide_conf = params.hide_conf)
