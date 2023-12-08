@@ -2,7 +2,7 @@ y_tube_link = "https://www.youtube.com/watch?v=q21Kj-pxJW4"
 resolution = "360p"
 output_path = "video"
 trim_start = 30 #seconds
-trim_end = 40
+trim_end = 35
 
 prediction_mode = False
 tracking_mode = True

@@ -116,6 +116,8 @@ if params.tracking_mode:
                         line_width=params.line_thickness, show_labels=params.show_labels, show_conf=params.show_labels,
                         show=params.render)
 
+            print(results)
+
             # Get the boxes and track IDs
             boxes = results[0].boxes.xywh.cpu()
             track_ids = results[0].boxes.id.int().cpu().tolist()
@@ -128,12 +130,14 @@ if params.tracking_mode:
             frame_filename = os.path.join(frames_output_path, f"frame_{frame_count}.jpg")
             cv2.imwrite(frame_filename, annotated_frame)
 
-            # Save txt file with bounding box information
-            txt_filename = os.path.join(txt_output_path, f"frame_{frame_count}.txt")
-            with open(txt_filename, 'w') as txt_file:
-                for box, track_id in zip(boxes, track_ids):
-                    x, y, w, h = box
-                    txt_file.write(f"{track_id} {x} {y} {w} {h}\n")
+            # Save txt file with bounding box and label information
+            image0_filename = "runs/detect/predict/labels/image0.txt"
+            with open(image0_filename, 'r') as image0_file:
+                data=image0_file.read()
+            new_file_name = f"runs/detect/labels/label_{frame_count}.txt"
+            with open(new_file_name,'w') as new_file:
+                new_file.write(data)
+            os.remove(image0_filename)
 
             # Write frame to the final video
             final_video_writer.write(annotated_frame)
