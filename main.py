@@ -27,6 +27,7 @@ def download_video_with_resolution(youtube_url, resolution="720p", output_path="
         selected_stream = video_streams[0]
 
         video_file_path = f"{output_path}/{youtube_object.title}_{resolution}.mp4"
+        print("Youtube video download in progress...")
         selected_stream.download(output_path, filename=f"{youtube_object.title}_{resolution}.mp4")  #Download command 
 
         print(f"Download of '{youtube_object.title}' in {resolution} completed successfully.")
@@ -73,8 +74,8 @@ print(f"{video_title}_{params.resolution}")
 
 if params.prediction_mode:
     model.predict(source = f"{params.output_path}/{video_title}_{params.resolution}.mp4", save= True, conf= params.confidence, 
-              save_txt=True, show=params.render, line_thickness = params.line_thickness, hide_labels= params.hide_labels, 
-              hide_conf = params.hide_conf)
+              save_txt=True, show=params.render, line_width = params.line_thickness, show_labels= params.show_labels, 
+              show_conf = params.show_conf)
 
 
 if params.tracking_mode:
@@ -83,23 +84,60 @@ if params.tracking_mode:
     # Store the track history
     track_history = defaultdict(lambda: [])
 
+    # Output paths for frames, txt files, and final video
+    frames_output_path = "runs/detect/frames"  
+    txt_output_path = "runs/detect/labels"  
+    final_video_output_path = "runs/detect/final_video.mp4"  
+
+    # Create directories if they don't exist
+    os.makedirs(frames_output_path, exist_ok=True)
+    os.makedirs(txt_output_path, exist_ok=True)
+
+    # Initialize a VideoWriter for the final video
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    final_video_writer = cv2.VideoWriter(final_video_output_path, fourcc, 30.0, (int(cap.get(3)), int(cap.get(4))))
+
+    if params.display_frame_tracking:
+        display_video_output_path = "runs/detect/display_video.mp4"
+        display_video_writer = cv2.VideoWriter(display_video_output_path, fourcc, 30.0, (int(cap.get(3)), int(cap.get(4))))
+
+
     # Loop through the video frames
+    frame_count = 0  # Variable to track the frame number
     while cap.isOpened():
         # Read a frame from the video
         success, frame = cap.read()
 
         if success:
+
+            frame_count += 1  # Increment frame count
             # Run YOLOv8 tracking on the frame, persisting tracks between frames
             results = model.track(frame, tracker='bytetrack.yaml', persist=True, conf=params.confidence, save=True, save_txt=True, 
-                        line_width=params.line_thickness, show_labels=not params.hide_labels, show_conf=not params.confidence,
+                        line_width=params.line_thickness, show_labels=params.show_labels, show_conf=params.show_labels,
                         show=params.render)
 
             # Get the boxes and track IDs
             boxes = results[0].boxes.xywh.cpu()
             track_ids = results[0].boxes.id.int().cpu().tolist()
+            print(track_ids)
 
             # Visualize the results on the frame
             annotated_frame = results[0].plot()
+
+            # Save annotated frame to file
+            frame_filename = os.path.join(frames_output_path, f"frame_{frame_count}.jpg")
+            cv2.imwrite(frame_filename, annotated_frame)
+
+            # Save txt file with bounding box information
+            txt_filename = os.path.join(txt_output_path, f"frame_{frame_count}.txt")
+            with open(txt_filename, 'w') as txt_file:
+                for box, track_id in zip(boxes, track_ids):
+                    x, y, w, h = box
+                    txt_file.write(f"{track_id} {x} {y} {w} {h}\n")
+
+            # Write frame to the final video
+            final_video_writer.write(annotated_frame)
+
 
             # Plot the tracks
             for box, track_id in zip(boxes, track_ids):
@@ -111,11 +149,13 @@ if params.tracking_mode:
 
                 # Draw the tracking lines
                 points = np.hstack(track).astype(np.int32).reshape((-1, 1, 2))
-                cv2.polylines(annotated_frame, [points], isClosed=False, color=(230, 230, 230), thickness=10)
+                cv2.polylines(annotated_frame, [points], isClosed=False, color=(230, 230, 230), thickness=params.line_thickness*5)
 
             # Display the annotated frame
             if params.display_frame_tracking:
+
                 cv2.imshow("YOLOv8 Tracking", annotated_frame)
+                display_video_writer.write(annotated_frame)
 
             # Break the loop if 'q' is pressed
             if cv2.waitKey(1) & 0xFF == ord("q"):
@@ -127,3 +167,4 @@ if params.tracking_mode:
     # Release the video capture object and close the display window
     cap.release()
     cv2.destroyAllWindows()
+    final_video_writer.release()
