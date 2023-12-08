@@ -73,7 +73,8 @@ print(f"{video_title}_{params.resolution}")
 
 if params.prediction_mode:
     model.predict(source = f"{params.output_path}/{video_title}_{params.resolution}.mp4", save= True, conf= params.confidence, 
-              save_txt=True, show=params.render, line_thickness = params.line_thickness, hide_labels= params.hide_labels, hide_conf = params.hide_conf)
+              save_txt=True, show=params.render, line_thickness = params.line_thickness, hide_labels= params.hide_labels, 
+              hide_conf = params.hide_conf)
 
 
 if params.tracking_mode:
@@ -86,12 +87,12 @@ if params.tracking_mode:
     while cap.isOpened():
         # Read a frame from the video
         success, frame = cap.read()
-        # print(success, frame)
 
         if success:
             # Run YOLOv8 tracking on the frame, persisting tracks between frames
-            results = model.track(frame, persist=True, save=True, save_txt=True, line_width = params.line_thickness,
-            show_labels= params.hide_labels, show_conf = params.hide_conf)
+            results = model.track(frame, tracker='bytetrack.yaml', persist=True, conf=params.confidence, save=True, save_txt=True, 
+                        line_width=params.line_thickness, show_labels=not params.hide_labels, show_conf=not params.confidence,
+                        show=params.render)
 
             # Get the boxes and track IDs
             boxes = results[0].boxes.xywh.cpu()
@@ -113,7 +114,8 @@ if params.tracking_mode:
                 cv2.polylines(annotated_frame, [points], isClosed=False, color=(230, 230, 230), thickness=10)
 
             # Display the annotated frame
-            cv2.imshow("YOLOv8 Tracking", annotated_frame)
+            if params.display_frame_tracking:
+                cv2.imshow("YOLOv8 Tracking", annotated_frame)
 
             # Break the loop if 'q' is pressed
             if cv2.waitKey(1) & 0xFF == ord("q"):
