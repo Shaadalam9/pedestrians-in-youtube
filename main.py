@@ -116,12 +116,9 @@ if params.tracking_mode:
                         line_width=params.line_thickness, show_labels=params.show_labels, show_conf=params.show_labels,
                         show=params.render)
 
-            print(results)
-
             # Get the boxes and track IDs
             boxes = results[0].boxes.xywh.cpu()
             track_ids = results[0].boxes.id.int().cpu().tolist()
-            print(track_ids)
 
             # Visualize the results on the frame
             annotated_frame = results[0].plot()
@@ -130,7 +127,7 @@ if params.tracking_mode:
             frame_filename = os.path.join(frames_output_path, f"frame_{frame_count}.jpg")
             cv2.imwrite(frame_filename, annotated_frame)
 
-            # Save txt file with bounding box and label information
+            # Save txt file with bounding box information
             image0_filename = "runs/detect/predict/labels/image0.txt"
             with open(image0_filename, 'r') as image0_file:
                 data=image0_file.read()
