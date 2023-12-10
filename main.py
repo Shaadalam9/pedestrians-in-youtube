@@ -1,9 +1,3 @@
-# compare one or multiple metrics across countries (cross-cultural effects)
-#   1. presence of eye contact/hand gestures
-#   2. amount of time before making the crossing decision
-#   3. speed of crossing
-#   4. hesitation (tbd)
-
 import params as params
 from pytube import YouTube
 from ultralytics import YOLO
@@ -11,7 +5,10 @@ import cv2
 import numpy as np
 from collections import defaultdict
 from moviepy.video.io.VideoFileClip import VideoFileClip
+import shutil
+from PIL import Image 
 import os
+import glob
 
 def download_video_with_resolution(youtube_url, resolution="720p", output_path="."):
     try:
@@ -42,6 +39,43 @@ def trim_video(input_path, output_path, start_time, end_time):
     video_clip = VideoFileClip(input_path).subclip(start_time, end_time)
     video_clip.write_videofile(output_path, codec="libx264", audio_codec="aac")
     video_clip.close()
+
+def create_video_from_images(image_folder, output_video_path, frame_rate=30):
+    images = [img for img in os.listdir(image_folder) if img.endswith(".jpg")]
+
+    if not images:
+        print("No JPG images found in the specified folder.")
+        return
+
+    # Sort images based on their filename (assumes filenames like 'frame_1.jpg', 'frame_2.jpg', ...)
+    images.sort(key=lambda x: int(x.split("frame_")[1].split(".")[0]))
+
+    # Read the first image to get dimensions
+    first_image_path = os.path.join(image_folder, images[0])
+    frame = cv2.imread(first_image_path)
+    height, width, layers = frame.shape
+
+    # Specify the codec for VideoWriter (e.g., MJPG)
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+
+    # Create VideoWriter
+    video = cv2.VideoWriter(output_video_path, fourcc, frame_rate, (width, height))
+
+    # Write images to the video
+    for image in images:
+        img_path = os.path.join(image_folder, image)
+        frame = cv2.imread(img_path)
+
+        # Check if the frame is read successfully
+        if frame is not None:
+            video.write(frame)
+        else:
+            print(f"Failed to read frame: {img_path}")
+
+    # Release the VideoWriter
+    video.release()
+    print(f"Video created successfully at: {output_video_path}")
+
 
 
 result = download_video_with_resolution(params.y_tube_link, resolution=params.resolution, output_path=params.output_path)
@@ -86,12 +120,14 @@ if params.tracking_mode:
 
     # Output paths for frames, txt files, and final video
     frames_output_path = "runs/detect/frames"  
-    txt_output_path = "runs/detect/labels"  
+    annotated_frame_output_path = "runs/detect/annotated_frames" 
+    txt_output_path = "runs/detect/labels"
     final_video_output_path = "runs/detect/final_video.mp4"  
 
     # Create directories if they don't exist
     os.makedirs(frames_output_path, exist_ok=True)
     os.makedirs(txt_output_path, exist_ok=True)
+    os.makedirs(annotated_frame_output_path, exist_ok=True)
 
     # Initialize a VideoWriter for the final video
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
@@ -124,22 +160,24 @@ if params.tracking_mode:
             annotated_frame = results[0].plot()
 
             # Save annotated frame to file
-            frame_filename = os.path.join(frames_output_path, f"frame_{frame_count}.jpg")
-            cv2.imwrite(frame_filename, annotated_frame)
+            if params.save_annoted_img:
+                frame_filename = os.path.join(annotated_frame_output_path, f"frame_{frame_count}.jpg")
+                cv2.imwrite(frame_filename, annotated_frame)
+
 
             # Save txt file with bounding box information
-            image0_filename = "runs/detect/predict/labels/image0.txt"
-            with open(image0_filename, 'r') as image0_file:
-                data=image0_file.read()
-            new_file_name = f"runs/detect/labels/label_{frame_count}.txt"
-            with open(new_file_name,'w') as new_file:
+            text_filename = "runs/detect/predict/labels/image0.txt"
+            with open(text_filename, 'r') as text_file:
+                data=text_file.read()
+            new_txt_file_name = f"runs/detect/labels/label_{frame_count}.txt"
+            with open(new_txt_file_name,'w') as new_file:
                 new_file.write(data)
-            os.remove(image0_filename)
 
-            # Write frame to the final video
-            final_video_writer.write(annotated_frame)
-
-
+            #save the labelled image
+            image_filename = "runs/detect/predict/image0.jpg"
+            new_img_file_name = f"runs/detect/frames/frame_{frame_count}.jpg"
+            shutil.move(image_filename, new_img_file_name)                    
+        
             # Plot the tracks
             for box, track_id in zip(boxes, track_ids):
                 x, y, w, h = box
@@ -162,10 +200,13 @@ if params.tracking_mode:
             if cv2.waitKey(1) & 0xFF == ord("q"):
                 break
         else:
-            # Break the loop if the end of the video is reached
+
             break
+
 
     # Release the video capture object and close the display window
     cap.release()
     cv2.destroyAllWindows()
     final_video_writer.release()
+
+create_video_from_images(frames_output_path,final_video_output_path,30)

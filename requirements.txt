@@ -8,6 +8,7 @@ certifi=2023.11.17=pypi_0
 charset-normalizer=3.3.2=pypi_0
 contourpy=1.2.0=pypi_0
 cycler=0.12.1=pypi_0
+cython=3.0.6=pypi_0
 decorator=4.4.2=pypi_0
 ffmpeg=1.4=pypi_0
 filelock=3.13.1=pypi_0
@@ -19,6 +20,7 @@ imageio-ffmpeg=0.4.9=pypi_0
 importlib-resources=6.1.1=pypi_0
 jinja2=3.1.2=pypi_0
 kiwisolver=1.4.5=pypi_0
+lapx=0.5.5=pypi_0
 ld_impl_linux-64=2.38=h1181459_1
 libffi=3.4.4=h6a678d5_0
 libgcc-ng=11.2.0=h1234567_1
@@ -46,6 +48,7 @@ nvidia-nvtx-cu12=12.1.105=pypi_0
 opencv-python=4.8.1.78=pypi_0
 openssl=3.0.12=h7f8727e_0
 packaging=23.2=pypi_0
+pafy=0.5.5=pypi_0
 pandas=2.1.3=pypi_0
 pillow=10.1.0=pypi_0
 pip=23.3.1=py39h06a4308_0
@@ -79,6 +82,6 @@ ultralytics=8.0.220=pypi_0
 urllib3=2.1.0=pypi_0
 wheel=0.41.2=py39h06a4308_0
 xz=5.4.2=h5eee18b_0
-youtube-dl=2021.12.17=pypi_0
+youtube-dl=2020.12.2=pypi_0
 zipp=3.17.0=pypi_0
 zlib=1.2.13=h5eee18b_0
