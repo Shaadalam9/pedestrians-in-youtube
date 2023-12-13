@@ -9,85 +9,12 @@ import shutil
 from PIL import Image 
 import os
 from datetime import datetime
-from helper import helper
+from helper import youtube_helper
 
-def rename_folder(old_name, new_name):
-    try:
-        os.rename(old_name, new_name)
-    except FileNotFoundError:
-        print(f"Error: Folder '{old_name}' not found.")
-    except FileExistsError:
-        print(f"Error: Folder '{new_name}' already exists.")
-
-def download_video_with_resolution(youtube_url, resolution="720p", output_path="."):
-    try:
-        youtube_object = YouTube(youtube_url)    # Create a YouTube object
-
-        video_streams = youtube_object.streams.filter(res=f"{resolution}").all()
+helper = youtube_helper()
 
 
-        if not video_streams:
-            print(f"No {resolution} resolution available for '{youtube_object.title}'.")
-            return None
-
-        selected_stream = video_streams[0]
-
-        video_file_path = f"{output_path}/{youtube_object.title}_{resolution}.mp4"
-        print("Youtube video download in progress...")
-        selected_stream.download(output_path, filename=f"{youtube_object.title}_{resolution}.mp4")  #Download command 
-
-        print(f"Download of '{youtube_object.title}' in {resolution} completed successfully.")
-        
-        return video_file_path, youtube_object.title
-    except Exception as e:
-        print(f"An error occurred: {e}")
-        return None
-
-#Trimming of video for removing the heading
-def trim_video(input_path, output_path, start_time, end_time):
-    video_clip = VideoFileClip(input_path).subclip(start_time, end_time)
-    video_clip.write_videofile(output_path, codec="libx264", audio_codec="aac")
-    video_clip.close()
-
-def create_video_from_images(image_folder, output_video_path, frame_rate=30):
-    images = [img for img in os.listdir(image_folder) if img.endswith(".jpg")]
-
-    if not images:
-        print("No JPG images found in the specified folder.")
-        return
-
-    # Sort images based on their filename (assumes filenames like 'frame_1.jpg', 'frame_2.jpg', ...)
-    images.sort(key=lambda x: int(x.split("frame_")[1].split(".")[0]))
-
-    # Read the first image to get dimensions
-    first_image_path = os.path.join(image_folder, images[0])
-    frame = cv2.imread(first_image_path)
-    height, width, layers = frame.shape
-
-    # Specify the codec for VideoWriter (e.g., MJPG)
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-
-    # Create VideoWriter
-    video = cv2.VideoWriter(output_video_path, fourcc, frame_rate, (width, height))
-
-    # Write images to the video
-    for image in images:
-        img_path = os.path.join(image_folder, image)
-        frame = cv2.imread(img_path)
-
-        # Check if the frame is read successfully
-        if frame is not None:
-            video.write(frame)
-        else:
-            print(f"Failed to read frame: {img_path}")
-
-    # Release the VideoWriter
-    video.release()
-    print(f"Video created successfully at: {output_video_path}")
-
-
-
-result = download_video_with_resolution(params.y_tube_link, resolution=params.resolution, output_path=params.output_path)
+result = helper.download_video_with_resolution(params.y_tube_link, resolution=params.resolution, output_path=params.output_path)
 
 if result:
     video_file_path, video_title = result
@@ -106,7 +33,7 @@ if start_time == None and end_time == None:
     print("No trimming required")
 else:
     print("Trimming in progress.......")
-    trim_video(input_video_path, output_video_path, start_time, end_time)
+    helper.trim_video(input_video_path, output_video_path, start_time, end_time)
 
 os.remove(f"{params.output_path}/{video_title}_{params.resolution}.mp4")
 print("Deleted the untrimmed video")
@@ -218,9 +145,9 @@ if params.tracking_mode:
     cv2.destroyAllWindows()
     final_video_writer.release()
 
-create_video_from_images(frames_output_path,final_video_output_path,30)
+helper.create_video_from_images(frames_output_path,final_video_output_path,30)
 shutil.rmtree("runs/detect/predict")
-rename_folder("runs/detect", f"runs/{video_title}_{params.resolution}_{params.timestrap}")
+helper.rename_folder("runs/detect", f"runs/{video_title}_{params.resolution}_{params.timestrap}")
 
 #delete the video downloaded
 if params.delete_youtube_video:
