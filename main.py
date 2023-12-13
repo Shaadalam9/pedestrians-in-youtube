@@ -8,7 +8,16 @@ from moviepy.video.io.VideoFileClip import VideoFileClip
 import shutil
 from PIL import Image 
 import os
-import glob
+from datetime import datetime
+from helper import helper
+
+def rename_folder(old_name, new_name):
+    try:
+        os.rename(old_name, new_name)
+    except FileNotFoundError:
+        print(f"Error: Folder '{old_name}' not found.")
+    except FileExistsError:
+        print(f"Error: Folder '{new_name}' already exists.")
 
 def download_video_with_resolution(youtube_url, resolution="720p", output_path="."):
     try:
@@ -210,3 +219,9 @@ if params.tracking_mode:
     final_video_writer.release()
 
 create_video_from_images(frames_output_path,final_video_output_path,30)
+shutil.rmtree("runs/detect/predict")
+rename_folder("runs/detect", f"runs/{video_title}_{params.resolution}_{params.timestrap}")
+
+#delete the video downloaded
+if params.delete_youtube_video:
+    os.remove(f"video/{video_title}_{params.resolution}.mp4")
