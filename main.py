@@ -1,5 +1,4 @@
 import params as params
-from pytube import YouTube
 from ultralytics import YOLO
 import cv2
 import numpy as np
@@ -14,7 +13,8 @@ from helper import youtube_helper
 helper = youtube_helper()
 
 
-result = helper.download_video_with_resolution(params.y_tube_link, resolution=params.resolution, output_path=params.output_path)
+result = helper.download_video_with_resolution(params.y_tube_link, 
+                                               resolution=params.resolution, output_path=params.output_path)
 
 if result:
     video_file_path, video_title = result
