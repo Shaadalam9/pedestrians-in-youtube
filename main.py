@@ -10,6 +10,8 @@ import os
 from datetime import datetime
 from helper import youtube_helper
 
+ffmpeg_path = "/Users/salam/anaconda3/envs/dashcam/bin/ffmpeg"  # Replace this with the actual path
+os.environ["IMAGEIO_FFMPEG_EXE"] = ffmpeg_path
 helper = youtube_helper()
 
 
