@@ -14,20 +14,26 @@ ffmpeg_path = "/Users/salam/anaconda3/envs/dashcam/bin/ffmpeg"  # Replace this w
 os.environ["IMAGEIO_FFMPEG_EXE"] = ffmpeg_path
 helper = youtube_helper()
 
+#Download the highest quality available videos quality value and update it in the csv file
+input_csv_file = "mapping.csv"
+#youtube_helper.process_and_update_csv(input_csv_file)
 
+#Download the youtube video to the local system
 result = helper.download_video_with_resolution(params.y_tube_link, 
-                                               resolution=params.resolution, output_path=params.output_path)
+                                                output_path=params.output_path)
 
 if result:
-    video_file_path, video_title = result
+    video_file_path, video_title, resolution = result
     print(f"Video title: {video_title}")
     print(f"Video saved at: {video_file_path}")
 else:
     print("Download failed.")
 
-input_video_path = f"{params.output_path}/{video_title}_{params.resolution}.mp4"
-output_video_path = f"{params.output_path}/{video_title}_{params.resolution}_mod.mp4"
+print(resolution)
+input_video_path = f"{params.output_path}/{video_title}_{resolution}.mp4"
+output_video_path = f"{params.output_path}/{video_title}_{resolution}_mod.mp4"
 
+#Trimming of video (if required)
 start_time = params.trim_start  # seconds
 end_time = params.trim_end  # Set to None to keep the rest of the video
 
@@ -37,19 +43,21 @@ else:
     print("Trimming in progress.......")
     helper.trim_video(input_video_path, output_video_path, start_time, end_time)
 
-os.remove(f"{params.output_path}/{video_title}_{params.resolution}.mp4")
+os.remove(f"{params.output_path}/{video_title}_{resolution}.mp4")
 print("Deleted the untrimmed video")
 os.rename(output_video_path, input_video_path)
 
+#Load the YOLO model
 model = YOLO(params.model)
-print(f"{video_title}_{params.resolution}")
+print(f"{video_title}_{resolution}")
 
+#Prediction model to detect object in the video
 if params.prediction_mode:
-    model.predict(source = f"{params.output_path}/{video_title}_{params.resolution}.mp4", save= True, conf= params.confidence, 
+    model.predict(source = f"{params.output_path}/{video_title}_{resolution}.mp4", save= True, conf= params.confidence, 
               save_txt=True, show=params.render, line_width = params.line_thickness, show_labels= params.show_labels, 
               show_conf = params.show_conf)
 
-
+#Tracking model to track object in the video
 if params.tracking_mode:
     cap = cv2.VideoCapture(input_video_path)
 
@@ -149,8 +157,8 @@ if params.tracking_mode:
 
 helper.create_video_from_images(frames_output_path,final_video_output_path,30)
 shutil.rmtree("runs/detect/predict")
-helper.rename_folder("runs/detect", f"runs/{video_title}_{params.resolution}_{params.timestrap}")
+helper.rename_folder("runs/detect", f"runs/{video_title}_{resolution}_{params.timestrap}")
 
 #delete the video downloaded
 if params.delete_youtube_video:
-    os.remove(f"video/{video_title}_{params.resolution}.mp4")
+    os.remove(f"video/{video_title}_{resolution}.mp4")

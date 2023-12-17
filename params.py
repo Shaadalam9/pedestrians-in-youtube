@@ -1,10 +1,12 @@
 from datetime import datetime
+from helper import youtube_helper
+import pandas as pd
 
-y_tube_link = "https://www.youtube.com/watch?v=q21Kj-pxJW4"
-resolution = "360p"
+df = pd.read_csv("mapping.csv")
+y_tube_link = "https://www.youtube.com/watch?v=CftLBPI1Ga4"
 output_path = "video"
-trim_start = 30 #seconds
-trim_end = 31
+trim_start = 0 #seconds
+trim_end = 2
 timestrap = datetime.now()
 
 prediction_mode = False
