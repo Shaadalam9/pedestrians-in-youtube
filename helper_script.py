@@ -7,6 +7,7 @@ import params as params
 from collections import defaultdict
 import shutil
 import numpy as np
+import pandas as pd
 
 class youtube_helper:
 
@@ -88,7 +89,24 @@ class youtube_helper:
         video.release()
         print(f"Video created successfully at: {output_video_path}")
 
+    @staticmethod
+    def merge_txt_files(txt_location, output_csv):
+        txt_files = [txt for txt in os.listdir(txt_location) if txt.endswith(".txt")]
+        txt_files.sort(key=lambda x: int(x.split("label_")[1].split(".")[0]))
 
+        df_list = []
+
+        for filename in txt_files:
+            txt_path = os.path.join(txt_location, filename)
+            df = pd.read_csv(txt_path, delimiter=" ")
+            df_list.append(df)
+
+        merged_df = pd.concat(df_list, axis=0)  
+
+        # Save the merged DataFrame to a CSV file
+        merged_df.to_csv(output_csv, index=False, header=["YOLO_id", "X-center", "Y-center", "Width", "Height", "Unique Id"])
+        
+    
     def prediction_mode(self):
         model = YOLO(self.model)
         model.predict(source = f"{params.output_path}/{self.video_title}_{self.resolution}.mp4", save= True, conf= params.confidence, 

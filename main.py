@@ -52,10 +52,10 @@ for link in youtube_links:
     if params.tracking_mode:
         helper.tracking_mode(input_video_path, output_video_path)
         helper.create_video_from_images(params.frames_output_path,params.final_video_output_path,30)
+
+        helper.merge_txt_files(params.txt_output_path, params.output_merged_csv)
+
         shutil.rmtree("runs/detect/predict")
         helper.rename_folder("runs/detect", f"runs/{video_title}_{resolution}_{datetime.now()}")
         counter += 1
 
-    #delete the video downloaded
-    if params.delete_youtube_video:
-        os.remove(f"video/{video_title}_{resolution}.mp4")
