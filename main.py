@@ -59,3 +59,6 @@ for link in youtube_links:
         helper.rename_folder("runs/detect", f"runs/{video_title}_{resolution}_{datetime.now()}")
         counter += 1
 
+    if params.delete_youtube_video:
+        os.remove(f"video/{video_title}_{resolution}.mp4")
+
