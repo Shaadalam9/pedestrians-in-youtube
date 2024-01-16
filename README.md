@@ -8,5 +8,6 @@ Tested with Python 3.9.1. To setup the environment run these two commands in a p
 - `pip install -r requirements.txt` will install required packages.
 
 ##Example
+
 https://github.com/Shaadalam9/youtube-pedestrian/assets/88769183/5303f4a5-52a2-4230-bd05-89a53927a5be
 
