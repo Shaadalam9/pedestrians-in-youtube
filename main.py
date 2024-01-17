@@ -39,10 +39,9 @@ for link in youtube_links:
     else:
         print("Trimming in progress.......")
         helper.trim_video(input_video_path, output_video_path, start_time, end_time)
-
-    os.remove(f"{params.output_path}/{video_title}_{resolution}.mp4")
-    print("Deleted the untrimmed video")
-    os.rename(output_video_path, input_video_path)
+        os.remove(f"{params.output_path}/{video_title}_{resolution}.mp4")
+        print("Deleted the untrimmed video")
+        os.rename(output_video_path, input_video_path)
 
     print(f"{video_title}_{resolution}")
 

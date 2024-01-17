@@ -27,7 +27,7 @@ class youtube_helper:
             print(f"Error: Folder '{new_name}' already exists.")
 
     
-    def download_video_with_resolution(self, youtube_url, resolutions=["2160p", "1440p", "1080p", "720p", "480p"], output_path="."):
+    def download_video_with_resolution(self, youtube_url, resolutions=["2160p", "1440p", "1080p", "720p", "480p", "360p"], output_path="."):
         try:
             youtube_object = YouTube(youtube_url)
             for resolution in resolutions:
@@ -45,7 +45,7 @@ class youtube_helper:
 
             video_file_path = f"{output_path}/{youtube_object.title}_{self.resolution}.mp4"
             print("Youtube video download in progress...")
-            selected_stream.download(output_path, filename=f"{youtube_object.title}_{resolution}.mp4")
+            selected_stream.download(output_path, filename=f"{youtube_object.title}_{self.resolution}.mp4")
 
             print(f"Download of '{youtube_object.title}' in {resolution} completed successfully.")
             self.video_title = youtube_object.title
@@ -98,13 +98,16 @@ class youtube_helper:
 
         for filename in txt_files:
             txt_path = os.path.join(txt_location, filename)
-            df = pd.read_csv(txt_path, delimiter=" ")
+        
+        # Make sure the delimiter is correct, and adjust if necessary
+            df = pd.read_csv(txt_path, delimiter=" ", header=None, names=["YOLO_id", "X-center", "Y-center", "Width", "Height", "Unique Id"])
             df_list.append(df)
 
         merged_df = pd.concat(df_list, axis=0)  
 
-        # Save the merged DataFrame to a CSV file
+    # Save the merged DataFrame to a CSV file with specific header
         merged_df.to_csv(output_csv, index=False, header=["YOLO_id", "X-center", "Y-center", "Width", "Height", "Unique Id"])
+
         
     
     def prediction_mode(self):
@@ -124,7 +127,8 @@ class youtube_helper:
         frames_output_path = "runs/detect/frames"  
         annotated_frame_output_path = "runs/detect/annotated_frames" 
         txt_output_path = "runs/detect/labels"
-        final_video_output_path = "runs/detect/final_video.mp4"  
+        final_video_output_path = "runs/detect/final_video.mp4"
+        text_filename = "runs/detect/predict/labels/image0.txt"  
 
         # Create directories if they don't exist
         os.makedirs(frames_output_path, exist_ok=True)
@@ -156,24 +160,34 @@ class youtube_helper:
 
                 # Get the boxes and track IDs
                 boxes = results[0].boxes.xywh.cpu()
-                track_ids = results[0].boxes.id.int().cpu().tolist()
+                if boxes.size(0) == 0:
+                    with open(text_filename, 'w') as file:
+                        pass
+                
+                try:
+                    track_ids = results[0].boxes.id.int().cpu().tolist()
 
-                # Visualize the results on the frame
-                annotated_frame = results[0].plot()
+                    # Visualize the results on the frame
+                    annotated_frame = results[0].plot()
 
                 # Save annotated frame to file
-                if params.save_annoted_img:
-                    frame_filename = os.path.join(annotated_frame_output_path, f"frame_{frame_count}.jpg")
-                    cv2.imwrite(frame_filename, annotated_frame)
+                    if params.save_annoted_img:
+                        frame_filename = os.path.join(annotated_frame_output_path, f"frame_{frame_count}.jpg")
+                        cv2.imwrite(frame_filename, annotated_frame)
+                
+                except Exception as e:
+                    pass
 
 
                 # Save txt file with bounding box information
-                text_filename = "runs/detect/predict/labels/image0.txt"
+                
                 with open(text_filename, 'r') as text_file:
                     data=text_file.read()
                 new_txt_file_name = f"runs/detect/labels/label_{frame_count}.txt"
                 with open(new_txt_file_name,'w') as new_file:
                     new_file.write(data)
+                    print("done")
+                os.remove(text_filename)
 
                 #save the labelled image
                 image_filename = "runs/detect/predict/image0.jpg"
@@ -181,16 +195,20 @@ class youtube_helper:
                 shutil.move(image_filename, new_img_file_name)                    
         
                 # Plot the tracks
-                for box, track_id in zip(boxes, track_ids):
-                    x, y, w, h = box
-                    track = track_history[track_id]
-                    track.append((float(x), float(y)))  # x, y center point
-                    if len(track) > 30:  # retain 90 tracks for 90 frames
-                        track.pop(0)
+                try : 
+                    for box, track_id in zip(boxes, track_ids):
+                        x, y, w, h = box
+                        track = track_history[track_id]
+                        track.append((float(x), float(y)))  # x, y center point
+                        if len(track) > 30:  # retain 90 tracks for 90 frames
+                            track.pop(0)
 
                     # Draw the tracking lines
-                    points = np.hstack(track).astype(np.int32).reshape((-1, 1, 2))
-                    cv2.polylines(annotated_frame, [points], isClosed=False, color=(230, 230, 230), thickness=params.line_thickness*5)
+                        points = np.hstack(track).astype(np.int32).reshape((-1, 1, 2))
+                        cv2.polylines(annotated_frame, [points], isClosed=False, color=(230, 230, 230), thickness=params.line_thickness*5)
+                
+                except Exception as e:
+                    pass
 
                 # Display the annotated frame
                 if params.display_frame_tracking:
