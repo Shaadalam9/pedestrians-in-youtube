@@ -51,11 +51,15 @@ for link in youtube_links:
 
     if params.tracking_mode:
         helper.tracking_mode(input_video_path, output_video_path)
-        helper.create_video_from_images(params.frames_output_path,params.final_video_output_path,30)
+        if params.need_annotated_video:
+            helper.create_video_from_images(params.frames_output_path,params.final_video_output_path,30)
 
         helper.merge_txt_files(params.txt_output_path, params.output_merged_csv)
 
         shutil.rmtree("runs/detect/predict")
+        if params.delete_frames:
+            shutil.rmtree("runs/detect/frames")
+
         helper.rename_folder("runs/detect", f"runs/{video_title}_{resolution}_{datetime.now()}")
         counter += 1
 

@@ -5,13 +5,15 @@ trim_end = 1
 
 prediction_mode = False
 tracking_mode = True
-display_frame_tracking = True
-save_annoted_img = True
+display_frame_tracking = False
+save_annoted_img = False
+delete_frames = True
 delete_youtube_video = True
+need_annotated_video = False
 
 model = "yolov8x.pt" 
 confidence = 0.4
-render = True
+render = False
 line_thickness = 1
 show_conf = False
 show_labels = False
