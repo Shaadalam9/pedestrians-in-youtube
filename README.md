@@ -8,8 +8,20 @@ The code is open-source and free to use. It is aimed for, but not limited to, ac
 
 ## Getting Started
 Tested with Python 3.9.1. To setup the environment run these two commands in a parent folder of the downloaded repository (replace `/` with `\` and possibly add `--user` if on Windows:
-1. Clone the repository
-`git clone https://github.com/Shaadalam9/youtube-pedestrian.git`
+
+**Step 1:**  
+
+Clone the repository
+```command line
+git clone https://github.com/Shaadalam9/youtube-pedestrian.git
+```
+
+**Step 2:** 
+
+Install Dependencies
+```command line
+pip install -r requirements.txt
+```
 
 ## License
 This project is licensed under the MIT License - see the LICENSE file for details.
