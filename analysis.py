@@ -1,5 +1,5 @@
 import pandas as pd
-import matplotlib.pyplot as pyplot
+import matplotlib.pyplot as plt
 import os
 
 # List of things that YOLO can detect:
@@ -18,6 +18,20 @@ import os
 #     75: 'vase', 76: 'scissors', 77: 'teddy bear', 78: 'hair drier', 79: 'toothbrush'
 # }
 
+def plot_histograms(crossed_id_counts_J, crossed_id_counts_K):
+    fig, ax = plt.subplots()
+
+    # Plot histogram for crossed_id_counts_J
+    ax.hist(crossed_id_counts_J.values(), bins=20, alpha=0.5, label='Jakarta')
+
+    # Plot histogram for crossed_id_counts_K
+    ax.hist(crossed_id_counts_K.values(), bins=20, alpha=0.5, label='Kuala Lumpur')
+
+    ax.set_xlabel('Count')
+    ax.set_ylabel('Frequency')
+    ax.legend()
+
+    plt.show()
 
 data_folder= 'data'
 
@@ -38,35 +52,41 @@ for file in os.listdir(data_folder):
         df_person[filename] = df[dfs[filename]['YOLO_id'] == 0]
         
 
+df = df_person["Jakarta"]
+
+crossed_ids = df[df['X-center'] > 0.5]['Unique Id'].unique()
+previously_less_than_05 = df[(df['X-center'] < 0.5) & (df['Unique Id'].isin(crossed_ids))]['Unique Id'].unique()
+
+if len(crossed_ids) > 0:
+    print("IDs that have crossed x-center = 0.5:")
+    print(previously_less_than_05)
+
+    crossed_id_counts_J = {}
+    for crossed_id in previously_less_than_05:
+        count = df[df['Unique Id'] == crossed_id].shape[0]
+        crossed_id_counts_J[crossed_id] = count
+        
+    print("Total number of times each crossed ID was present:")
+    print(crossed_id_counts_J)
+
+
+
 df = df_person["Kuala_Lumpur"]
-print(df)
-# Find the minimum and maximum x and y coordinates of all bounding boxes
-xmin = df['X-center'].min() - df['Width'].max()/2
-ymin = df['Y-center'].min() - df['Height'].max()/2
-xmax = df['X-center'].max() + df['Width'].max()/2
-ymax = df['Y-center'].max() + df['Height'].max()/2
 
-# Define road boundaries using the extracted minimum and maximum values
-road_polygon = [(xmin, ymin), (xmax, ymin), (xmax, ymax), (xmin, ymax)]
+crossed_ids = df[df['X-center'] > 0.5]['Unique Id'].unique()
+previously_less_than_05 = df[(df['X-center'] < 0.5) & (df['Unique Id'].isin(crossed_ids))]['Unique Id'].unique()
 
-# Initialize a counter for crossed persons
-crossed_count = 0
+if len(crossed_ids) > 0:
+    print("IDs that have crossed x-center = 0.5:")
+    print(previously_less_than_05)
 
-# Loop through each person's bounding box
-for index, row in df.iterrows():
-    # Extract bounding box variables
-    x_centre = row['X-center']
-    y_centre = row['Y-center']
-    height = row['Height']
-    width = row['Width']
-    unique_id = row['Unique Id']
-    
-    # Check if the person's bounding box intersects with the road boundary
-    if (xmin <= x_centre <= xmax) and (ymin <= y_centre <= ymax):
-        print(f"Person with Unique Id {unique_id} is within the road boundaries.")
-    else:
-        print(f"Person with Unique Id {unique_id} has crossed the road.")
-        crossed_count += 1
+    crossed_id_counts_K = {}
+    for crossed_id in previously_less_than_05:
+        count = df[df['Unique Id'] == crossed_id].shape[0]
+        crossed_id_counts_K[crossed_id] = count
+        
+    print("Total number of times each crossed ID was present:")
+    print(crossed_id_counts_K)
 
-# Print total number of persons crossed the road
-print(f"Total number of persons crossed the road: {crossed_count}")
+
+plot_histograms(crossed_id_counts_J, crossed_id_counts_K)
