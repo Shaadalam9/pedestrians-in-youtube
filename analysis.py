@@ -18,6 +18,15 @@ import os
 #     75: 'vase', 76: 'scissors', 77: 'teddy bear', 78: 'hair drier', 79: 'toothbrush'
 # }
 
+
+
+def delete_1_min():
+    
+
+    pass
+
+
+
 def plot_histograms(crossed_id_counts_J, crossed_id_counts_K):
     fig, ax = plt.subplots()
 
