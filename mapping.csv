@@ -1,4 +1,4 @@
-Serial No.,Location,Youtube link,Night,GDP per Capita
+Serial No.,Location,Youtube link,Night,GDP_per_capita
 1,Kuala Lumpur,https://www.youtube.com/watch?v=AxQcSoA9vGQ,0,6575
 2,Jakarta,https://www.youtube.com/watch?v=gmDBzijaIAA,0,9416
 3,Miami,https://www.youtube.com/watch?v=JY-Xyiept88,0,78796
@@ -14,8 +14,8 @@ Serial No.,Location,Youtube link,Night,GDP per Capita
 13,Los Angeles,https://www.youtube.com/watch?v=4uhMg5na888,0,83147
 14,New York,https://www.youtube.com/watch?v=_Wyg213IZDI,0,114293
 15,N'djamena,https://www.youtube.com/watch?v=GmWu7u77v1w,0,685
-16,Damascus,https://www.youtube.com/watch?v=qzimFzMh6lA,0,
-17,Luanda,https://www.youtube.com/watch?v=z3Gx2hp3Vo8,0,
+16,Damascus,https://www.youtube.com/watch?v=qzimFzMh6lA,0,744.67
+17,Luanda,https://www.youtube.com/watch?v=z3Gx2hp3Vo8,0,4197
 18,Moscow,https://www.youtube.com/watch?v=wCKLtcGQnWc,0,29012
 19,Seoul,https://www.youtube.com/watch?v=qOx5CwCrN9k,0,36677
 20,Tokyo,https://www.youtube.com/watch?v=oDejyTLYUTE,0,51124

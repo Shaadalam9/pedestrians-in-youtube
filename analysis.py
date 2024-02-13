@@ -2,6 +2,11 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import os
 import numpy as np
+import plotly.figure_factory as ff
+import plotly.colors
+import plotly.graph_objects as go
+import seaborn as sns
+from scipy.stats import linregress
 
 # List of things that YOLO can detect:
 # YOLO_id = {
@@ -35,22 +40,6 @@ def read_csv_files(folder_path):
             dfs[filename] = df
             dfs[filename] = delete_1_min(dfs[filename])
     return dfs
-
-
-def plot_histograms(crossed_id_counts_J, crossed_id_counts_K):
-    fig, ax = plt.subplots()
-
-    # Plot histogram for crossed_id_counts_J
-    ax.hist(crossed_id_counts_J.values(), bins=20, alpha=0.5, label="Jakarta")
-
-    # Plot histogram for crossed_id_counts_K
-    ax.hist(crossed_id_counts_K.values(), bins=20, alpha=0.5, label="Kuala Lumpur")
-
-    ax.set_xlabel("Count")
-    ax.set_ylabel("Frequency")
-    ax.legend()
-
-    plt.show()
 
 
 def pedestrian_crossing(dataframe, min_x, max_x, person_id):
@@ -99,64 +88,80 @@ def time_to_cross(dataframe, ids):
     return var
 
 
-def plot_line_graph_ped_crossing(DICT):
-    values = []
-    keys = []
-    for key, sub_dict in DICT.items():
-        values.extend(sub_dict.values())
-        keys.extend([key] * len(sub_dict))
+def plot_displot(data):
+    final_data = []
 
-    # Create a color map
-    unique_keys = list(set(keys))
-    colors = plt.cm.tab10(np.linspace(0, 1, len(unique_keys)))
-    color_map = {key: colors[i] for i, key in enumerate(unique_keys)}
+    for key, sub_dict in data.items():
+        values = list(sub_dict.values())  # Simplified way to get values
+        final_data.extend(values)  # Extend instead of append to avoid nested lists
 
-    # Plot line graph
-    plt.figure(figsize=(8, 6))
-    for key in unique_keys:
-        key_values = [value for value, k in zip(values, keys) if k == key]
-        plt.plot(sorted(key_values), label=key, color=color_map[key])
-
-    # Add labels and title
-    plt.xlabel('Index')
-    plt.ylabel('Values')
-    plt.title('Line Graph of Values with Color-coded Keys')
-
-    # Add legend
-    plt.legend(loc='upper right')
-
-    # Show plot
+    # Create a DataFrame with a column for the data and a column for the corresponding key
+    df = pd.DataFrame({'Data': final_data, 'Key': [k for k in data for _ in range(len(data[k]))]})
+    
+    plt.figure(figsize=(10, 6))
+    with sns.plotting_context(rc={"legend.fontsize": 10}):  # Adjust legend font size
+        sns.displot(data=df, x='Data', hue='Key', kind='kde', multiple='stack', legend=True)
+    
+    plt.xlabel('Data')
+    plt.ylabel('Density')
+    plt.title('Distribution Plot of Final Data')
+    plt.legend(title='Key')  # Provide a title for the legend
     plt.show()
 
-def plot_histogram_ped_crossing(DICT):
-    # Flatten the dictionaries
+
+def plot_histogram(data):
     values = []
     keys = []
-    for key, sub_dict in DICT.items():
-        values.extend(sub_dict.values())
-        keys.extend([key] * len(sub_dict))
+    for key, sub_dict in data.items():
+        for val in sub_dict.values():
+            values.append(val)
+            keys.append(key)
 
-    # Create a color map
-    unique_keys = list(set(keys))
-    colors = plt.cm.tab10(np.linspace(0, 1, len(unique_keys)))
-    color_map = {key: colors[i] for i, key in enumerate(unique_keys)}
+    # Create histogram figure
+    fig = go.Figure()
 
-    # Plot histogram
-    plt.figure(figsize=(8, 6))
-    for key in unique_keys:
-        key_values = [value for value, k in zip(values, keys) if k == key]
-        plt.hist(key_values, bins=20, alpha=0.7, color=color_map[key], label=key)
+    # Add histogram traces for each key
+    for key in set(keys):
+        key_values = [val for val, k in zip(values, keys) if k == key]
+        fig.add_trace(go.Histogram(x=key_values, name=key))
 
-    # Add labels and title
-    plt.xlabel('Values')
-    plt.ylabel('Frequency')
-    plt.title('Histogram of Values with Color-coded Keys')
+    # Update layout
+    fig.update_layout(
+        title="Histogram of Values from DICT",
+        xaxis_title="Values",
+        yaxis_title="Frequency",
+        bargap=0.2,  # Gap between bars
+        barmode='overlay'  # Overlay histograms
+    )
+    fig.show()
+    
 
-    # Add legend
-    plt.legend(loc='upper right')
+def plot_GDP_vs_time_to_cross(mapping, data):
+    gdp, mean_time = [], []
+    for key, value in data.items():
+        df = mapping[mapping['Location'] == key]
+        gdp.append(df['GDP_per_capita'].iloc[0])
+        dummy = []
+        for val in value.values():
+            dummy.append(val)
+        mean_time.append(np.mean(dummy))
 
-    # Show plot
+    plt.scatter(mean_time, gdp, label='Data')
+
+    # Fit a line using L1 (Least Absolute Deviations) regression
+    slope, intercept, _, _, _ = linregress(mean_time, gdp)
+    plt.plot(mean_time, slope * np.array(mean_time) + intercept, color='green', label='L1 Regression')
+
+    # Fit a line using least squares regression
+    m, b = np.polyfit(mean_time, gdp, 1)
+    plt.plot(mean_time, m * np.array(mean_time) + b, color='red',linestyle='dotted', label='Least Squares Regression')
+
+    plt.xlabel('Mean Time to Cross')
+    plt.ylabel('GDP per Capita')
+    plt.title('GDP per Capita vs. Mean Time to Cross')
+    plt.legend()
     plt.show()
+
 
 
 data_folder = "data"
@@ -168,6 +173,8 @@ for key, value in dfs.items():
     pedestrian_crossing_count[key] = {"count": count, "ids": ids}
     data[key] = time_to_cross(dfs[key], pedestrian_crossing_count[key]["ids"])
 
-# print(data["Jakarta"])
-plot_histogram_ped_crossing(data)
-plot_line_graph_ped_crossing(data)
+# plot_displot(data)
+# plot_histogram(data)
+
+df_mapping = pd.read_csv("Mapping.csv")
+plot_GDP_vs_time_to_cross(df_mapping,data)
