@@ -23,8 +23,8 @@ from scipy.stats import linregress
 
 
 # delete the first 1 min from the csv files.
-def delete_1_min(dataframe, rows=30 * 60):
-    return dataframe.iloc[120:]
+def delete_1_min(dataframe, rows = 30 * 60):
+    return dataframe.iloc[rows:]
 
 
 def read_csv_files(folder_path):
@@ -134,8 +134,7 @@ def plot_histogram(data):
     )
     fig.show()
     
-def plot_vehicles_vs_GDP():
-    pass
+
 
 def cell_phone_vs_GDP():
     pass
@@ -160,8 +159,8 @@ def plot_GDP_vs_time_to_cross(mapping, data):
         plt.annotate(txt, (mean_time[i], gdp[i]), xytext=(5, 5), textcoords='offset points')
 
     # Fit a line using L1 (Least Absolute Deviations) regression
-    slope, intercept, _, _, _ = linregress(mean_time, gdp)
-    plt.plot(mean_time, slope * np.array(mean_time) + intercept, color='green',  label='L1 Regression')
+    # slope, intercept, _, _, _ = linregress(mean_time, gdp)
+    # plt.plot(mean_time, slope * np.array(mean_time) + intercept, color='green',  label='L1 Regression')
 
     # Fit a line using least squares regression
     # m, b = np.polyfit(mean_time, gdp, 1)
@@ -172,6 +171,323 @@ def plot_GDP_vs_time_to_cross(mapping, data):
     plt.title('GDP per Capita vs. Mean Time to Cross')
     plt.legend()
     plt.show()
+
+def plot_vehicles_vs_GDP(df_mapping, data, car_flag=0, motorcycle_flag=0, pedestrian_flag=0, bicycle_flag=0, bus_flag=0, truck_flag=0):
+    if car_flag:
+        info, gdp = {}, []
+        for key, value in data.items():
+            dataframe = value
+            vehicle_ids = dataframe[dataframe["YOLO_id"] == 2]
+            vehicle_ids = vehicle_ids["Unique Id"].unique()
+            info[key] = len(vehicle_ids)
+
+            df = df_mapping[df_mapping['Location'] == key]
+            gdp.append(df['GDP_per_capita'].iloc[0])
+
+        print("Car information : ", info)
+        plt.scatter(gdp, list(info.values()))
+
+        # Add annotations (keys)
+        for i, (key, _) in enumerate(info.items()):
+            plt.annotate(key, (gdp[i], list(info.values())[i]), xytext=(5, 5), textcoords='offset points')
+
+        plt.xlabel('GDP per capita')
+        plt.ylabel('Cars detected')
+        plt.title('GDP per Capita vs. Cars detected')
+        plt.legend()
+        plt.show()
+
+
+
+
+    
+    if motorcycle_flag:
+        info, gdp = {}, []
+        for key, value in data.items():
+            dataframe = value
+            vehicle_ids = dataframe[(dataframe["YOLO_id"] == 3)]
+            vehicle_ids = vehicle_ids["Unique Id"].unique()
+            info[key] = len(vehicle_ids)
+        
+            df = df_mapping[df_mapping['Location'] == key]
+            gdp.append(df['GDP_per_capita'].iloc[0])
+
+        print("Motorcycle information : ", info)
+        plt.scatter(gdp, list(info.values()))
+
+        # Add annotations (keys)
+        for i, (key, _) in enumerate(info.items()):
+            plt.annotate(key, (gdp[i], list(info.values())[i]), xytext=(5, 5), textcoords='offset points')
+
+        plt.xlabel('GDP per capita')
+        plt.ylabel('Motorcycle detected')
+        plt.title('GDP per Capita vs. Motorcycle detected')
+        plt.legend()
+        plt.show()
+
+
+
+    if pedestrian_flag:
+        info, gdp = {}, []
+        for key, value in data.items():
+            dataframe = value
+            vehicle_ids = dataframe[(dataframe["YOLO_id"] == 0)]
+            vehicle_ids = vehicle_ids["Unique Id"].unique()
+            info[key] = len(vehicle_ids)
+        
+            df = df_mapping[df_mapping['Location'] == key]
+            gdp.append(df['GDP_per_capita'].iloc[0])
+
+        print("Car information : ", info)
+        plt.scatter(gdp, list(info.values()))
+
+        # Add annotations (keys)
+        for i, (key, _) in enumerate(info.items()):
+            plt.annotate(key, (gdp[i], list(info.values())[i]), xytext=(5, 5), textcoords='offset points')
+
+        plt.xlabel('GDP per capita')
+        plt.ylabel('Pedestrian detected')
+        plt.title('GDP per Capita vs. Pedestrian detected')
+        plt.legend()
+        plt.show()
+
+
+
+    if bicycle_flag:
+        info, gdp = {}, []
+        for key, value in data.items():
+            dataframe = value
+            vehicle_ids = dataframe[(dataframe["YOLO_id"] == 1)]
+            vehicle_ids = vehicle_ids["Unique Id"].unique()
+            info[key] = len(vehicle_ids)
+        
+            df = df_mapping[df_mapping['Location'] == key]
+            gdp.append(df['GDP_per_capita'].iloc[0])
+
+        print("Car information : ", info)
+        plt.scatter(gdp, list(info.values()))
+
+        # Add annotations (keys)
+        for i, (key, _) in enumerate(info.items()):
+            plt.annotate(key, (gdp[i], list(info.values())[i]), xytext=(5, 5), textcoords='offset points')
+
+        plt.xlabel('GDP per capita')
+        plt.ylabel('Bicycle detected')
+        plt.title('GDP per Capita vs. Bicycle detected')
+        plt.legend()
+        plt.show()
+    
+
+
+
+    if bus_flag:
+        info, gdp = {}, []
+        for key, value in data.items():
+            dataframe = value
+            vehicle_ids = dataframe[(dataframe["YOLO_id"] == 5)]
+            vehicle_ids = vehicle_ids["Unique Id"].unique()
+            info[key] = len(vehicle_ids)
+        
+            df = df_mapping[df_mapping['Location'] == key]
+            gdp.append(df['GDP_per_capita'].iloc[0])
+
+        print("Car information : ", info)
+        plt.scatter(gdp, list(info.values()))
+
+        # Add annotations (keys)
+        for i, (key, _) in enumerate(info.items()):
+            plt.annotate(key, (gdp[i], list(info.values())[i]), xytext=(5, 5), textcoords='offset points')
+
+        plt.xlabel('GDP per capita')
+        plt.ylabel('Bus detected')
+        plt.title('GDP per Capita vs. Bus detected')
+        plt.legend()
+        plt.show()
+
+
+
+    if truck_flag:
+        info, gdp = {}, []
+        for key, value in data.items():
+            dataframe = value
+            vehicle_ids = dataframe[(dataframe["YOLO_id"] == 7)]
+            vehicle_ids = vehicle_ids["Unique Id"].unique()
+            info[key] = len(vehicle_ids)
+        
+            df = df_mapping[df_mapping['Location'] == key]
+            gdp.append(df['GDP_per_capita'].iloc[0])
+
+        print("Car information : ", info)
+        plt.scatter(gdp, list(info.values()))
+
+        # Add annotations (keys)
+        for i, (key, _) in enumerate(info.items()):
+            plt.annotate(key, (gdp[i], list(info.values())[i]), xytext=(5, 5), textcoords='offset points')
+
+        plt.xlabel('GDP per capita')
+        plt.ylabel('Truck detected')
+        plt.title('GDP per Capita vs. Truck detected')
+        plt.legend()
+        plt.show()
+
+
+def plot_vehicles_vs_death(df_mapping, data, car_flag=0, motorcycle_flag=0, pedestrian_flag=0, bicycle_flag=0, bus_flag=0, truck_flag=0):
+    if car_flag:
+        info, death = {}, []
+        for key, value in data.items():
+            dataframe = value
+            vehicle_ids = dataframe[dataframe["YOLO_id"] == 2]
+            vehicle_ids = vehicle_ids["Unique Id"].unique()
+            info[key] = len(vehicle_ids)
+
+            df = df_mapping[df_mapping['Location'] == key]
+            death.append(df['death(per_100k)'].iloc[0])
+
+        print("Car information : ", info)
+        plt.scatter(death, list(info.values()))
+
+        # Add annotations (keys)
+        for i, (key, _) in enumerate(info.items()):
+            plt.annotate(key, (death[i], list(info.values())[i]), xytext=(5, 5), textcoords='offset points')
+
+        plt.xlabel('death(per_100k) ')
+        plt.ylabel('Cars detected')
+        plt.title('death(per_100k) vs. Cars detected')
+        plt.legend()
+        plt.show()
+
+
+
+
+    
+    if motorcycle_flag:
+        info, death = {}, []
+        for key, value in data.items():
+            dataframe = value
+            vehicle_ids = dataframe[(dataframe["YOLO_id"] == 3)]
+            vehicle_ids = vehicle_ids["Unique Id"].unique()
+            info[key] = len(vehicle_ids)
+        
+            df = df_mapping[df_mapping['Location'] == key]
+            death.append(df['death(per_100k)'].iloc[0])
+
+        print("Motorcycle information : ", info)
+        plt.scatter(death, list(info.values()))
+
+        # Add annotations (keys)
+        for i, (key, _) in enumerate(info.items()):
+            plt.annotate(key, (death[i], list(info.values())[i]), xytext=(5, 5), textcoords='offset points')
+
+        plt.xlabel('death(per_100k)')
+        plt.ylabel('Motorcycle detected')
+        plt.title('death(per_100k) vs. Motorcycle detected')
+        plt.legend()
+        plt.show()
+
+
+
+    if pedestrian_flag:
+        info, death = {}, []
+        for key, value in data.items():
+            dataframe = value
+            vehicle_ids = dataframe[(dataframe["YOLO_id"] == 0)]
+            vehicle_ids = vehicle_ids["Unique Id"].unique()
+            info[key] = len(vehicle_ids)
+        
+            df = df_mapping[df_mapping['Location'] == key]
+            death.append(df['death(per_100k)'].iloc[0])
+
+        print("Car information : ", info)
+        plt.scatter(death, list(info.values()))
+
+        # Add annotations (keys)
+        for i, (key, _) in enumerate(info.items()):
+            plt.annotate(key, (death[i], list(info.values())[i]), xytext=(5, 5), textcoords='offset points')
+
+        plt.xlabel('death(per_100k)')
+        plt.ylabel('Pedestrian detected')
+        plt.title('death(per_100k) vs. Pedestrian detected')
+        plt.legend()
+        plt.show()
+
+
+
+    if bicycle_flag:
+        info, death = {}, []
+        for key, value in data.items():
+            dataframe = value
+            vehicle_ids = dataframe[(dataframe["YOLO_id"] == 1)]
+            vehicle_ids = vehicle_ids["Unique Id"].unique()
+            info[key] = len(vehicle_ids)
+        
+            df = df_mapping[df_mapping['Location'] == key]
+            death.append(df['death(per_100k)'].iloc[0])
+
+        print("Car information : ", info)
+        plt.scatter(death, list(info.values()))
+
+        # Add annotations (keys)
+        for i, (key, _) in enumerate(info.items()):
+            plt.annotate(key, (death[i], list(info.values())[i]), xytext=(5, 5), textcoords='offset points')
+
+        plt.xlabel('death(per_100k)')
+        plt.ylabel('Bicycle detected')
+        plt.title('death(per_100k) vs. Bicycle detected')
+        plt.legend()
+        plt.show()
+    
+
+
+
+    if bus_flag:
+        info, death = {}, []
+        for key, value in data.items():
+            dataframe = value
+            vehicle_ids = dataframe[(dataframe["YOLO_id"] == 5)]
+            vehicle_ids = vehicle_ids["Unique Id"].unique()
+            info[key] = len(vehicle_ids)
+        
+            df = df_mapping[df_mapping['Location'] == key]
+            death.append(df['death(per_100k)'].iloc[0])
+
+        print("Car information : ", info)
+        plt.scatter(death, list(info.values()))
+
+        # Add annotations (keys)
+        for i, (key, _) in enumerate(info.items()):
+            plt.annotate(key, (death[i], list(info.values())[i]), xytext=(5, 5), textcoords='offset points')
+
+        plt.xlabel('death(per_100k)')
+        plt.ylabel('Bus detected')
+        plt.title('death(per_100k) vs. Bus detected')
+        plt.legend()
+        plt.show()
+
+
+
+    if truck_flag:
+        info, death = {}, []
+        for key, value in data.items():
+            dataframe = value
+            vehicle_ids = dataframe[(dataframe["YOLO_id"] == 7)]
+            vehicle_ids = vehicle_ids["Unique Id"].unique()
+            info[key] = len(vehicle_ids)
+        
+            df = df_mapping[df_mapping['Location'] == key]
+            death.append(df['death(per_100k)'].iloc[0])
+
+        print("Car information : ", info)
+        plt.scatter(death, list(info.values()))
+
+        # Add annotations (keys)
+        for i, (key, _) in enumerate(info.items()):
+            plt.annotate(key, (death[i], list(info.values())[i]), xytext=(5, 5), textcoords='offset points')
+
+        plt.xlabel('death(per_100k)')
+        plt.ylabel('Truck detected')
+        plt.title('death(per_100k) vs. Truck detected')
+        plt.legend()
+        plt.show()
 
 
 
@@ -188,4 +504,7 @@ for key, value in dfs.items():
 # plot_histogram(data)
 
 df_mapping = pd.read_csv("Mapping.csv")
-plot_GDP_vs_time_to_cross(df_mapping,data)
+# plot_GDP_vs_time_to_cross(df_mapping,data)
+
+plot_vehicles_vs_GDP(df_mapping, dfs, car_flag = 0, motorcycle_flag = 0, pedestrian_flag = 0, bicycle_flag = 0, bus_flag = 0, truck_flag= 0)
+plot_vehicles_vs_death(df_mapping, dfs, car_flag=1, motorcycle_flag = 1, pedestrian_flag = 1, bicycle_flag = 1, bus_flag = 1, truck_flag = 1)
