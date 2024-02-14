@@ -3,7 +3,6 @@ import matplotlib.pyplot as plt
 import os
 import numpy as np
 import plotly.figure_factory as ff
-import plotly.colors
 import plotly.graph_objects as go
 import seaborn as sns
 from scipy.stats import linregress
@@ -135,6 +134,14 @@ def plot_histogram(data):
     )
     fig.show()
     
+def plot_vehicles_vs_GDP():
+    pass
+
+def cell_phone_vs_GDP():
+    pass
+
+
+
 
 def plot_GDP_vs_time_to_cross(mapping, data):
     gdp, mean_time = [], []
@@ -148,13 +155,17 @@ def plot_GDP_vs_time_to_cross(mapping, data):
 
     plt.scatter(mean_time, gdp, label='Data')
 
+    # Add annotations (keys)
+    for i, txt in enumerate(data.keys()):
+        plt.annotate(txt, (mean_time[i], gdp[i]), xytext=(5, 5), textcoords='offset points')
+
     # Fit a line using L1 (Least Absolute Deviations) regression
     slope, intercept, _, _, _ = linregress(mean_time, gdp)
-    plt.plot(mean_time, slope * np.array(mean_time) + intercept, color='green', label='L1 Regression')
+    plt.plot(mean_time, slope * np.array(mean_time) + intercept, color='green',  label='L1 Regression')
 
     # Fit a line using least squares regression
-    m, b = np.polyfit(mean_time, gdp, 1)
-    plt.plot(mean_time, m * np.array(mean_time) + b, color='red',linestyle='dotted', label='Least Squares Regression')
+    # m, b = np.polyfit(mean_time, gdp, 1)
+    # plt.plot(mean_time, m * np.array(mean_time) + b, color='red',linestyle=':', label='Least Squares Regression')
 
     plt.xlabel('Mean Time to Cross')
     plt.ylabel('GDP per Capita')
