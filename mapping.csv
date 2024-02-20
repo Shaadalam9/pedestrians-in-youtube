@@ -24,7 +24,7 @@ Serial No.,Location,Country,Youtube link,Night,GDP_per_capita,Population_city,Po
 23,Mumbai,India,https://www.youtube.com/watch?v=MAj6y23vNuU,0,10651,26100000,1417173,22.6,Asia
 24,Buenos Aires,Argentina,https://www.youtube.com/watch?v=-TPJot7-HTs,0,14024,16700000,46234.83,14,South America
 25,New Delhi,India,https://www.youtube.com/watch?v=Af0SUwah1bQ,0,8709,31300000,1417173,22.6,Asia
-26,Capetown,South Africa,https://www.youtube.com/watch?v=2-2ZzcWLtS8,0,12869,4375000,59893.9,25.9,Africa
+26,Auckland,New Zealand,https://www.youtube.com/watch?v=HdEMxWMXgPQ,0,55256,1470000,5124,7.8,Australia
 27,Barecelona,Spain,https://www.youtube.com/watch?v=VaSFsM3s5bI,0,35747,5105991,47778.34,4.1,Europe
 28,Vienna,Austria,https://www.youtube.com/watch?v=TC64wRJt3JA,0,49408,3004660,9041.85,5.2,Europe
 29,Madrid,Spain,https://www.youtube.com/watch?v=C911U_Fo-QU,0,39754,6980646,47778.34,4.1,Europe
@@ -53,4 +53,3 @@ Serial No.,Location,Country,Youtube link,Night,GDP_per_capita,Population_city,Po
 52,Algeris,Algeria,https://www.youtube.com/watch?v=v2UmU4knL0c,0,3690.63,4500000,44903,NaN,Africa
 53,Lagos,Nigeria,https://www.youtube.com/watch?v=umBS-HEUImM,0,5075,20100000,218541,21.4,Africa
 54,Nairobi,Kenya,https://www.youtube.com/watch?v=VNLqnwoJqmM,0,2349,6300000,54027,27.8,Africa
-55,Auckland,New Zealand,https://www.youtube.com/watch?v=HdEMxWMXgPQ,0,55256,1470000,5124,7.8,Australia
