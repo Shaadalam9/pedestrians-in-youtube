@@ -132,12 +132,12 @@ def adjust_annotation_positions(annotations):
         # Adjust x and y coordinates to avoid overlap
         for other_ann in adjusted_annotations:
             if (abs(ann['x'] - other_ann['x']) < 2) and (abs(ann['y'] - other_ann['y']) < 1):
-                adjusted_ann['y'] += 0
+                adjusted_ann['y'] += 0.2
         adjusted_annotations.append(adjusted_ann)
     return adjusted_annotations
 
 def plot_cell_phone_vs_death(df_mapping, data):
-    info, death, continents = {}, [], []
+    info, death, continents, gdp = {}, [], [], []
     for key, value in data.items():
         dataframe = value
         mobile_ids = dataframe[dataframe["YOLO_id"] == 67]
@@ -148,14 +148,15 @@ def plot_cell_phone_vs_death(df_mapping, data):
         death_value = df['death(per_100k)'].values
         death.append(death_value[0])
         continents.append(df['Continent'].values[0])
+        gdp.append(df['GDP_per_capita'].values[0])
 
     # Filter out values where info[key] == 0
     filtered_info = {k: v for k, v in info.items() if v != 0}
     filtered_death = [d for i, d in enumerate(death) if info[list(info.keys())[i]] != 0]
     filtered_continents = [c for i, c in enumerate(continents) if info[list(info.keys())[i]] != 0]
-    filtered_gdp 
+    filtered_gdp = [c for i, c in enumerate(gdp) if info[list(info.keys())[i]] != 0] 
 
-    fig = px.scatter(x=filtered_death, y=list(filtered_info.values()), size=filtered_death, color=filtered_continents)
+    fig = px.scatter(x=filtered_death, y=list(filtered_info.values()), size=filtered_gdp, color=filtered_continents)
 
     # Adding labels and title
     fig.update_layout(
@@ -184,7 +185,8 @@ def plot_cell_phone_vs_death(df_mapping, data):
 
     fig.show()
 
-
+def plot_hesitation():
+    pass
 
 def plot_GDP_vs_time_to_cross(mapping, data):
     gdp, mean_time = [], []
@@ -696,18 +698,18 @@ dfs = read_csv_files(data_folder)
 # print(len(dfs))
 pedestrian_crossing_count, data = {}, {}
 
-# for key, value in dfs.items():
-#     count, ids = pedestrian_crossing(dfs[key], 0.45, 0.55, 0)
-#     pedestrian_crossing_count[key] = {"count": count, "ids": ids}
-#     data[key] = time_to_cross(dfs[key], pedestrian_crossing_count[key]["ids"])
+for key, value in dfs.items():
+    count, ids = pedestrian_crossing(dfs[key], 0.45, 0.55, 0)
+    pedestrian_crossing_count[key] = {"count": count, "ids": ids}
+    data[key] = time_to_cross(dfs[key], pedestrian_crossing_count[key]["ids"])
 
 # plot_displot(data)
 # plot_histogram(data)
 
 df_mapping = pd.read_csv("mapping.csv")
-# plot_GDP_vs_time_to_cross(df_mapping,data)
+plot_GDP_vs_time_to_cross(df_mapping,data)
 
-plot_vehicles_vs_GDP(df_mapping, dfs, car_flag = 1, motorcycle_flag = 1, pedestrian_flag = 1, bicycle_flag = 1, bus_flag = 1, truck_flag= 1)
+# plot_vehicles_vs_GDP(df_mapping, dfs, car_flag = 1, motorcycle_flag = 1, pedestrian_flag = 1, bicycle_flag = 1, bus_flag = 1, truck_flag= 1)
 # plot_vehicles_vs_death(df_mapping, dfs, car_flag=1, motorcycle_flag = 1, pedestrian_flag = 1, bicycle_flag = 1, bus_flag = 1, truck_flag = 1)
 # plot_population_vs_traffic(df_mapping, dfs, car_flag=1, motorcycle_flag = 1, pedestrian_flag = 1, bicycle_flag = 1, bus_flag = 1, truck_flag = 1)
 # plot_cell_phone_vs_GDP(df_mapping, dfs)
