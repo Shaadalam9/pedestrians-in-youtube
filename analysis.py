@@ -6,6 +6,7 @@ import plotly.figure_factory as ff
 import plotly.graph_objects as go
 import seaborn as sns
 from scipy.stats import linregress
+import plotly.express as px
 
 # List of things that YOLO can detect:
 # YOLO_id = {
@@ -22,11 +23,6 @@ from scipy.stats import linregress
 # }
 
 
-# delete the first 1 min from the csv files.
-def delete_1_min(dataframe, rows = 30 * 60):
-    return dataframe.iloc[rows:]
-
-
 def read_csv_files(folder_path):
     dfs = {}
     for file in os.listdir(folder_path):
@@ -37,9 +33,7 @@ def read_csv_files(folder_path):
             # Store the DataFrame in the dictionary with the filename as the key
             filename = os.path.splitext(file)[0]  # Get the filename without extension
             dfs[filename] = df
-            dfs[filename] = delete_1_min(dfs[filename])
     return dfs
-
 
 def pedestrian_crossing(dataframe, min_x, max_x, person_id):
 
@@ -50,7 +44,6 @@ def pedestrian_crossing(dataframe, min_x, max_x, person_id):
     )
     crossed_ids = filtered_crossed_ids["Unique Id"].unique()
     return len(crossed_ids), crossed_ids
-
 
 def time_to_cross(dataframe, ids):
     var = {}
@@ -86,7 +79,6 @@ def time_to_cross(dataframe, ids):
 
     return var
 
-
 def plot_displot(data):
     final_data = []
 
@@ -106,7 +98,6 @@ def plot_displot(data):
     plt.title('Distribution Plot of Final Data')
     plt.legend(title='Key')  # Provide a title for the legend
     plt.show()
-
 
 def plot_histogram(data):
     values = []
@@ -134,11 +125,64 @@ def plot_histogram(data):
     )
     fig.show()
     
+def adjust_annotation_positions(annotations):
+    adjusted_annotations = []
+    for i, ann in enumerate(annotations):
+        adjusted_ann = ann.copy()
+        # Adjust x and y coordinates to avoid overlap
+        for other_ann in adjusted_annotations:
+            if (abs(ann['x'] - other_ann['x']) < 2) and (abs(ann['y'] - other_ann['y']) < 1):
+                adjusted_ann['y'] += 0
+        adjusted_annotations.append(adjusted_ann)
+    return adjusted_annotations
 
+def plot_cell_phone_vs_death(df_mapping, data):
+    info, death, continents = {}, [], []
+    for key, value in data.items():
+        dataframe = value
+        mobile_ids = dataframe[dataframe["YOLO_id"] == 67]
+        mobile_ids = mobile_ids["Unique Id"].unique()
+        info[key] = len(mobile_ids)
 
-def cell_phone_vs_GDP():
-    pass
+        df = df_mapping[df_mapping['Location'] == key]
+        death_value = df['death(per_100k)'].values
+        death.append(death_value[0])
+        continents.append(df['Continent'].values[0])
 
+    # Filter out values where info[key] == 0
+    filtered_info = {k: v for k, v in info.items() if v != 0}
+    filtered_death = [d for i, d in enumerate(death) if info[list(info.keys())[i]] != 0]
+    filtered_continents = [c for i, c in enumerate(continents) if info[list(info.keys())[i]] != 0]
+    filtered_gdp 
+
+    fig = px.scatter(x=filtered_death, y=list(filtered_info.values()), size=filtered_death, color=filtered_continents)
+
+    # Adding labels and title
+    fig.update_layout(
+        xaxis_title="Death per 100k",
+        yaxis_title="Number of Mobile",
+        title="Cell Phone Usage vs Death Rate",
+        showlegend=True  # Show legend for continent colors
+    )
+
+    # Adding annotations for keys
+    annotations = []
+    for i, key in enumerate(filtered_info.keys()):
+        annotations.append(
+            dict(
+                x=filtered_death[i],
+                y=list(filtered_info.values())[i],
+                text=key,
+                showarrow=False
+            )
+        )
+
+    # Adjust annotation positions to avoid overlap
+    adjusted_annotations = adjust_annotation_positions(annotations)
+
+    fig.update_layout(annotations=adjusted_annotations)
+
+    fig.show()
 
 
 
@@ -330,7 +374,6 @@ def plot_vehicles_vs_GDP(df_mapping, data, car_flag=0, motorcycle_flag=0, pedest
         plt.legend()
         plt.show()
 
-
 def plot_vehicles_vs_death(df_mapping, data, car_flag=0, motorcycle_flag=0, pedestrian_flag=0, bicycle_flag=0, bus_flag=0, truck_flag=0):
     if car_flag:
         info, death = {}, []
@@ -489,22 +532,184 @@ def plot_vehicles_vs_death(df_mapping, data, car_flag=0, motorcycle_flag=0, pede
         plt.legend()
         plt.show()
 
+def plot_population_vs_traffic(df_mapping, data, car_flag=0, motorcycle_flag=0, pedestrian_flag=0, bicycle_flag=0, bus_flag=0, truck_flag=0):
+    if car_flag:
+        info, population = {}, []
+        for key, value in data.items():
+            dataframe = value
+            vehicle_ids = dataframe[dataframe["YOLO_id"] == 2]
+            vehicle_ids = vehicle_ids["Unique Id"].unique()
+            info[key] = len(vehicle_ids)
+
+            df = df_mapping[df_mapping['Location'] == key]
+            population.append(df['Population_city'].iloc[0])
+
+        print("Car information : ", info)
+        plt.scatter(population, list(info.values()))
+
+        # Add annotations (keys)
+        for i, (key, _) in enumerate(info.items()):
+            plt.annotate(key, (population[i], list(info.values())[i]), xytext=(5, 5), textcoords='offset points')
+
+        plt.xlabel('Population')
+        plt.ylabel('Cars detected')
+        plt.title('Population vs. Cars detected')
+        plt.legend()
+        plt.show()
+
+
+
+
+    
+    if motorcycle_flag:
+        info, population = {}, []
+        for key, value in data.items():
+            dataframe = value
+            vehicle_ids = dataframe[(dataframe["YOLO_id"] == 3)]
+            vehicle_ids = vehicle_ids["Unique Id"].unique()
+            info[key] = len(vehicle_ids)
+        
+            df = df_mapping[df_mapping['Location'] == key]
+            population.append(df['Population_city'].iloc[0])
+
+        print("Motorcycle information : ", info)
+        plt.scatter(population, list(info.values()))
+
+        # Add annotations (keys)
+        for i, (key, _) in enumerate(info.items()):
+            plt.annotate(key, (population[i], list(info.values())[i]), xytext=(5, 5), textcoords='offset points')
+
+        plt.xlabel('Population')
+        plt.ylabel('Motorcycle detected')
+        plt.title('Population vs. Motorcycle detected')
+        plt.legend()
+        plt.show()
+
+
+
+    if pedestrian_flag:
+        info, population = {}, []
+        for key, value in data.items():
+            dataframe = value
+            vehicle_ids = dataframe[(dataframe["YOLO_id"] == 0)]
+            vehicle_ids = vehicle_ids["Unique Id"].unique()
+            info[key] = len(vehicle_ids)
+        
+            df = df_mapping[df_mapping['Location'] == key]
+            population.append(df['Population_city'].iloc[0])
+
+        print("Car information : ", info)
+        plt.scatter(population, list(info.values()))
+
+        # Add annotations (keys)
+        for i, (key, _) in enumerate(info.items()):
+            plt.annotate(key, (population[i], list(info.values())[i]), xytext=(5, 5), textcoords='offset points')
+
+        plt.xlabel('Population')
+        plt.ylabel('Pedestrian detected')
+        plt.title('Population vs. Pedestrian detected')
+        plt.legend()
+        plt.show()
+
+
+
+    if bicycle_flag:
+        info, population = {}, []
+        for key, value in data.items():
+            dataframe = value
+            vehicle_ids = dataframe[(dataframe["YOLO_id"] == 1)]
+            vehicle_ids = vehicle_ids["Unique Id"].unique()
+            info[key] = len(vehicle_ids)
+        
+            df = df_mapping[df_mapping['Location'] == key]
+            population.append(df['Population_city'].iloc[0])
+
+        print("Car information : ", info)
+        plt.scatter(population, list(info.values()))
+
+        # Add annotations (keys)
+        for i, (key, _) in enumerate(info.items()):
+            plt.annotate(key, (population[i], list(info.values())[i]), xytext=(5, 5), textcoords='offset points')
+
+        plt.xlabel('Population')
+        plt.ylabel('Bicycle detected')
+        plt.title('Population vs. Bicycle detected')
+        plt.legend()
+        plt.show()
+    
+
+
+
+    if bus_flag:
+        info, population = {}, []
+        for key, value in data.items():
+            dataframe = value
+            vehicle_ids = dataframe[(dataframe["YOLO_id"] == 5)]
+            vehicle_ids = vehicle_ids["Unique Id"].unique()
+            info[key] = len(vehicle_ids)
+        
+            df = df_mapping[df_mapping['Location'] == key]
+            population.append(df['Population_city'].iloc[0])
+
+        print("Car information : ", info)
+        plt.scatter(population, list(info.values()))
+
+        # Add annotations (keys)
+        for i, (key, _) in enumerate(info.items()):
+            plt.annotate(key, (population[i], list(info.values())[i]), xytext=(5, 5), textcoords='offset points')
+
+        plt.xlabel('Population')
+        plt.ylabel('Bus detected')
+        plt.title('Population vs. Bus detected')
+        plt.legend()
+        plt.show()
+
+
+
+    if truck_flag:
+        info, population = {}, []
+        for key, value in data.items():
+            dataframe = value
+            vehicle_ids = dataframe[(dataframe["YOLO_id"] == 7)]
+            vehicle_ids = vehicle_ids["Unique Id"].unique()
+            info[key] = len(vehicle_ids)
+        
+            df = df_mapping[df_mapping['Location'] == key]
+            population.append(df['Population_city'].iloc[0])
+
+        print("Car information : ", info)
+        plt.scatter(population, list(info.values()))
+
+        # Add annotations (keys)
+        for i, (key, _) in enumerate(info.items()):
+            plt.annotate(key, (population[i], list(info.values())[i]), xytext=(5, 5), textcoords='offset points')
+
+        plt.xlabel('Population')
+        plt.ylabel('Truck detected')
+        plt.title('Population vs. Truck detected')
+        plt.legend()
+        plt.show()
 
 
 data_folder = "data"
 dfs = read_csv_files(data_folder)
+# print(len(dfs))
 pedestrian_crossing_count, data = {}, {}
 
-for key, value in dfs.items():
-    count, ids = pedestrian_crossing(dfs[key], 0.45, 0.55, 0)
-    pedestrian_crossing_count[key] = {"count": count, "ids": ids}
-    data[key] = time_to_cross(dfs[key], pedestrian_crossing_count[key]["ids"])
+# for key, value in dfs.items():
+#     count, ids = pedestrian_crossing(dfs[key], 0.45, 0.55, 0)
+#     pedestrian_crossing_count[key] = {"count": count, "ids": ids}
+#     data[key] = time_to_cross(dfs[key], pedestrian_crossing_count[key]["ids"])
 
 # plot_displot(data)
 # plot_histogram(data)
 
-df_mapping = pd.read_csv("Mapping.csv")
+df_mapping = pd.read_csv("mapping.csv")
 # plot_GDP_vs_time_to_cross(df_mapping,data)
 
-plot_vehicles_vs_GDP(df_mapping, dfs, car_flag = 0, motorcycle_flag = 0, pedestrian_flag = 0, bicycle_flag = 0, bus_flag = 0, truck_flag= 0)
-plot_vehicles_vs_death(df_mapping, dfs, car_flag=1, motorcycle_flag = 1, pedestrian_flag = 1, bicycle_flag = 1, bus_flag = 1, truck_flag = 1)
+plot_vehicles_vs_GDP(df_mapping, dfs, car_flag = 1, motorcycle_flag = 1, pedestrian_flag = 1, bicycle_flag = 1, bus_flag = 1, truck_flag= 1)
+# plot_vehicles_vs_death(df_mapping, dfs, car_flag=1, motorcycle_flag = 1, pedestrian_flag = 1, bicycle_flag = 1, bus_flag = 1, truck_flag = 1)
+# plot_population_vs_traffic(df_mapping, dfs, car_flag=1, motorcycle_flag = 1, pedestrian_flag = 1, bicycle_flag = 1, bus_flag = 1, truck_flag = 1)
+# plot_cell_phone_vs_GDP(df_mapping, dfs)
+
+plot_cell_phone_vs_death(df_mapping, dfs)

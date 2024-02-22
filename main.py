@@ -17,9 +17,7 @@ youtube_links = df["Youtube link"]
 
 for link in youtube_links:
     # Download the youtube video to the local system
-    result = helper.download_video_with_resolution(
-        youtube_url=link, output_path=params.output_path
-    )
+    result = helper.download_video_with_resolution(youtube_url=link, output_path=params.output_path)
 
     if result:
         video_file_path, video_title, resolution = result
