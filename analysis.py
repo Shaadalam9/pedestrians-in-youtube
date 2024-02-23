@@ -8,33 +8,41 @@ import seaborn as sns
 from scipy.stats import linregress
 import plotly.express as px
 from statistics import mean
+import common
+from custom_logger import CustomLogger
+
+
+logger = CustomLogger(__name__)  # use custom logger
 
 # List of things that YOLO can detect:
 # YOLO_id = {
-#     0: 'person', 1: 'bicycle', 2: 'car', 3: 'motorcycle', 4: 'airplane', 5: 'bus', 6: 'train', 7: 'truck', 8: 'boat',
-#     9: 'traffic light', 10: 'fire hydrant', 11: 'stop sign', 12: 'parking meter', 13: 'bench', 14: 'bird', 15: 'cat',
-#     16: 'dog', 17: 'horse', 18: 'sheep', 19: 'cow', 20: 'elephant', 21: 'bear', 22: 'zebra', 23: 'giraffe', 24: 'backpack',
-#     25: 'umbrella', 26: 'handbag', 27: 'tie', 28: 'suitcase', 29: 'frisbee', 30: 'skis', 31: 'snowboard', 32: 'sports ball',
-#     33: 'kite', 34: 'baseball bat', 35: 'baseball glove', 36: 'skateboard', 37: 'surfboard', 38: 'tennis racket', 39: 'bottle',
-#     40: 'wine glass', 41: 'cup', 42: 'fork', 43: 'knife', 44: 'spoon', 45: 'bowl', 46: 'banana', 47: 'apple', 48: 'sandwich',
-#     49: 'orange', 50: 'broccoli', 51: 'carrot', 52: 'hot dog',53: 'pizza', 54: 'donut', 55: 'cake', 56: 'chair',57: 'couch',
-#     58: 'potted plant', 59: 'bed',60: 'dining table', 61: 'toilet', 62: 'tv', 63: 'laptop', 64: 'mouse', 65: 'remote',
-#     66: 'keyboard',67: 'cell phone', 68: 'microwave', 69: 'oven', 70: 'toaster', 71: 'sink', 72: 'refrigerator', 73: 'book',
-#     74: 'clock',75: 'vase', 76: 'scissors', 77: 'teddy bear', 78: 'hair drier', 79: 'toothbrush'
+#     0: 'person', 1: 'bicycle', 2: 'car', 3: 'motorcycle', 4: 'airplane', 5: 'bus', 6: 'train', 7: 'truck', 8: 'boat',  # noqa: E501
+#     9: 'traffic light', 10: 'fire hydrant', 11: 'stop sign', 12: 'parking meter', 13: 'bench', 14: 'bird', 15: 'cat',  # noqa: E501
+#     16: 'dog', 17: 'horse', 18: 'sheep', 19: 'cow', 20: 'elephant', 21: 'bear', 22: 'zebra', 23: 'giraffe', 24: 'backpack',  # noqa: E501
+#     25: 'umbrella', 26: 'handbag', 27: 'tie', 28: 'suitcase', 29: 'frisbee', 30: 'skis', 31: 'snowboard', 32: 'sports ball',  # noqa: E501
+#     33: 'kite', 34: 'baseball bat', 35: 'baseball glove', 36: 'skateboard', 37: 'surfboard', 38: 'tennis racket', 39: 'bottle',  # noqa: E501
+#     40: 'wine glass', 41: 'cup', 42: 'fork', 43: 'knife', 44: 'spoon', 45: 'bowl', 46: 'banana', 47: 'apple', 48: 'sandwich',  # noqa: E501
+#     49: 'orange', 50: 'broccoli', 51: 'carrot', 52: 'hot dog',53: 'pizza', 54: 'donut', 55: 'cake', 56: 'chair',57: 'couch',  # noqa: E501
+#     58: 'potted plant', 59: 'bed',60: 'dining table', 61: 'toilet', 62: 'tv', 63: 'laptop', 64: 'mouse', 65: 'remote',  # noqa: E501
+#     66: 'keyboard',67: 'cell phone', 68: 'microwave', 69: 'oven', 70: 'toaster', 71: 'sink', 72: 'refrigerator', 73: 'book',  # noqa: E501
+#     74: 'clock',75: 'vase', 76: 'scissors', 77: 'teddy bear', 78: 'hair drier', 79: 'toothbrush'  # noqa: E501
 # }
 
 
 def read_csv_files(folder_path):
     dfs = {}
-    for file in os.listdir(folder_path):
+    for file in os.listdir(common.get_configs('data')):
         if file.endswith(".csv"):
             # Read the CSV file into a DataFrame
             file_path = os.path.join(folder_path, file)
             df = pd.read_csv(file_path)
-            # Store the DataFrame in the dictionary with the filename as the key
-            filename = os.path.splitext(file)[0]  # Get the filename without extension
+            # Store the DataFrame in the dictionary with the filename as the
+            # key
+            # Get the filename without extension
+            filename = os.path.splitext(file)[0]
             dfs[filename] = df
     return dfs
+
 
 def pedestrian_crossing(dataframe, min_x, max_x, person_id):
 
@@ -47,11 +55,12 @@ def pedestrian_crossing(dataframe, min_x, max_x, person_id):
 
     # Filter the unique ID based on passing the pixel value (ranging in x direction from 0 to 1) 
     filtered_crossed_ids = crossed_ids_grouped.filter(
-        lambda x: (x["X-center"] <= min_x).any() and (x["X-center"] >= max_x).any()
+        lambda x: (x["X-center"] <= min_x).any() and (x["X-center"] >= max_x).any()  # noqa: E501
     )
     
     crossed_ids = filtered_crossed_ids["Unique Id"].unique()
     return len(crossed_ids), crossed_ids
+
 
 def time_to_cross(dataframe, ids):
     var = {}
@@ -87,7 +96,6 @@ def time_to_cross(dataframe, ids):
 
     return var
 
-
     values = []
     keys = []
     for key, sub_dict in data.items():
@@ -112,18 +120,18 @@ def time_to_cross(dataframe, ids):
         barmode='overlay'  # Overlay histograms
     )
     fig.show()
-    
+
+
 def adjust_annotation_positions(annotations):
     adjusted_annotations = []
     for i, ann in enumerate(annotations):
         adjusted_ann = ann.copy()
         # Adjust x and y coordinates to avoid overlap
         for other_ann in adjusted_annotations:
-            if (abs(ann['x'] - other_ann['x']) < 2) and (abs(ann['y'] - other_ann['y']) < 1):
+            if (abs(ann['x'] - other_ann['x']) < 2) and (abs(ann['y'] - other_ann['y']) < 1):  # noqa: E501
                 adjusted_ann['y'] += 0.2
         adjusted_annotations.append(adjusted_ann)
     return adjusted_annotations
-
 
 
 # Plotting Functions 
@@ -145,11 +153,14 @@ def plot_cell_phone_vs_death(df_mapping, data):
 
     # Filter out values where info[key] == 0
     filtered_info = {k: v for k, v in info.items() if v != 0}
-    filtered_death = [d for i, d in enumerate(death) if info[list(info.keys())[i]] != 0]
-    filtered_continents = [c for i, c in enumerate(continents) if info[list(info.keys())[i]] != 0]
-    filtered_gdp = [c for i, c in enumerate(gdp) if info[list(info.keys())[i]] != 0] 
+    filtered_death = [d for i, d in enumerate(death) if info[list(info.keys())[i]] != 0]  # noqa: E501
+    filtered_continents = [c for i, c in enumerate(continents) if info[list(info.keys())[i]] != 0]  # noqa: E501
+    filtered_gdp = [c for i, c in enumerate(gdp) if info[list(info.keys())[i]] != 0]   # noqa: E501
 
-    fig = px.scatter(x=filtered_death, y=list(filtered_info.values()), size=filtered_gdp, color=filtered_continents)
+    fig = px.scatter(x=filtered_death,
+                     y=list(filtered_info.values()),
+                     size=filtered_gdp,
+                     color=filtered_continents)
 
     # Adding labels and title
     fig.update_layout(
@@ -170,22 +181,19 @@ def plot_cell_phone_vs_death(df_mapping, data):
                 showarrow=False
             )
         )
-
     # Adjust annotation positions to avoid overlap
     adjusted_annotations = adjust_annotation_positions(annotations)
-
     fig.update_layout(annotations=adjusted_annotations)
-
     fig.show()
 
 def plot_vehicle_vs_cross_time(df_mapping, dfs, data):
     info, time_dict, time_avg, continents, gdp = {}, {}, [], [], []
     for key, value in dfs.items():
         dataframe = value
-        vehicle_ids = dataframe[(dataframe["YOLO_id"] == 2) | (dataframe["YOLO_id"] == 3) | (dataframe["YOLO_id"] == 5) | (dataframe["YOLO_id"] == 7)]
+        vehicle_ids = dataframe[(dataframe["YOLO_id"] == 2) | (dataframe["YOLO_id"] == 3) | (dataframe["YOLO_id"] == 5) | (dataframe["YOLO_id"] == 7)]  # noqa: E501
         vehicle_ids = vehicle_ids["Unique Id"].unique()
-        info[key] = len(vehicle_ids) # contains {location : no of vehicle detected}
-        
+        # contains {location : no of vehicle detected}
+        info[key] = len(vehicle_ids)
 
         time_dict = data[key]
         time = []
@@ -198,8 +206,10 @@ def plot_vehicle_vs_cross_time(df_mapping, dfs, data):
         continents.append(df['Continent'].values[0])
         gdp.append(df['GDP_per_capita'].values[0])
     
-    
-    fig = px.scatter(x=time_avg, y=list(info.values()), size=gdp, color=continents)
+    fig = px.scatter(x=time_avg,
+                     y=list(info.values()),
+                     size=gdp,
+                     color=continents)
 
     # Adding labels and title
     fig.update_layout(
