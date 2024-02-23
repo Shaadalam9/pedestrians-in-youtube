@@ -1,7 +1,18 @@
 runs
 video
-__pyache__
 data
 yolov8x.pt
 check.py
 _outputs
+
+# macOS
+**/.DS_Store
+
+# sublime text project files
+*.sublime-project
+*.sublime-workspace
+
+# Python files
+*/__pycache__
+*.pyc
+*.egg-info/
