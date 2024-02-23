@@ -7,6 +7,7 @@ import plotly.graph_objects as go
 import seaborn as sns
 from scipy.stats import linregress
 import plotly.express as px
+from statistics import mean
 
 # List of things that YOLO can detect:
 # YOLO_id = {
@@ -187,6 +188,14 @@ def plot_cell_phone_vs_death(df_mapping, data):
 
 def plot_hesitation():
     pass
+
+def plot_cross_time(df_mapping,dfs):
+    pedestrian_crossing_count, data = {}, {}
+    for key, value in dfs.items():
+        count, ids = pedestrian_crossing(dfs[key], 0.45, 0.55, 0)
+        pedestrian_crossing_count[key] = {"count": count, "ids": ids}
+        data[key] = time_to_cross(dfs[key], pedestrian_crossing_count[key]["ids"])
+    
 
 def plot_GDP_vs_time_to_cross(mapping, data):
     gdp, mean_time = [], []
@@ -693,25 +702,75 @@ def plot_population_vs_traffic(df_mapping, data, car_flag=0, motorcycle_flag=0, 
         plt.show()
 
 
+def plot_vehicle_vs_cross_time(df_mapping, dfs, data):
+    info, time_dict, time_avg, continents, gdp = {}, {}, [], [], []
+    for key, value in dfs.items():
+        dataframe = value
+        vehicle_ids = dataframe[(dataframe["YOLO_id"] == 2) | (dataframe["YOLO_id"] == 3) | (dataframe["YOLO_id"] == 5) | (dataframe["YOLO_id"] == 7)]
+        vehicle_ids = vehicle_ids["Unique Id"].unique()
+        info[key] = len(vehicle_ids) # contains {location : no of vehicle detected}
+        
+
+        time_dict = data[key]
+        time = []
+        for key_, value in time_dict.items():
+            time.append(value)
+        time_avg.append(mean(time))
+
+        df = df_mapping[df_mapping['Location'] == key]
+        
+        continents.append(df['Continent'].values[0])
+        gdp.append(df['GDP_per_capita'].values[0])
+    
+    
+    fig = px.scatter(x=time_avg, y=list(info.values()), size=gdp, color=continents)
+
+    # Adding labels and title
+    fig.update_layout(
+        xaxis_title="Avg. time to cross",
+        yaxis_title="Number of vehicle detected",
+        title="Time to cross vs vehicles",
+        showlegend=True  # Show legend for continent colors
+    )
+
+    # Adding annotations for keys
+    annotations = []
+    for i, key in enumerate(info.keys()):
+        annotations.append(
+            dict(
+                x=time_avg[i],
+                y=list(info.values())[i],
+                text=key,
+                showarrow=False
+            )
+        )
+    # Adjust annotation positions to avoid overlap
+    adjusted_annotations = adjust_annotation_positions(annotations)
+
+    fig.update_layout(annotations=adjusted_annotations)
+
+    fig.show()
+
+
+
+
 data_folder = "data"
 dfs = read_csv_files(data_folder)
-# print(len(dfs))
+# print(dfs)
 pedestrian_crossing_count, data = {}, {}
 
 for key, value in dfs.items():
     count, ids = pedestrian_crossing(dfs[key], 0.45, 0.55, 0)
     pedestrian_crossing_count[key] = {"count": count, "ids": ids}
     data[key] = time_to_cross(dfs[key], pedestrian_crossing_count[key]["ids"])
+# print(data)
 
 # plot_displot(data)
 # plot_histogram(data)
 
 df_mapping = pd.read_csv("mapping.csv")
-plot_GDP_vs_time_to_cross(df_mapping,data)
+# plot_GDP_vs_time_to_cross(df_mapping,data)
 
-# plot_vehicles_vs_GDP(df_mapping, dfs, car_flag = 1, motorcycle_flag = 1, pedestrian_flag = 1, bicycle_flag = 1, bus_flag = 1, truck_flag= 1)
-# plot_vehicles_vs_death(df_mapping, dfs, car_flag=1, motorcycle_flag = 1, pedestrian_flag = 1, bicycle_flag = 1, bus_flag = 1, truck_flag = 1)
-# plot_population_vs_traffic(df_mapping, dfs, car_flag=1, motorcycle_flag = 1, pedestrian_flag = 1, bicycle_flag = 1, bus_flag = 1, truck_flag = 1)
-# plot_cell_phone_vs_GDP(df_mapping, dfs)
-
-plot_cell_phone_vs_death(df_mapping, dfs)
+# plot_cross_time(df_mapping,dfs)
+# plot_cell_phone_vs_death(df_mapping, dfs)
+plot_vehicle_vs_cross_time(df_mapping,dfs,data)
