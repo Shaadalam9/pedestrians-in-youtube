@@ -38,11 +38,18 @@ def read_csv_files(folder_path):
 
 def pedestrian_crossing(dataframe, min_x, max_x, person_id):
 
-    crossed_ids = dataframe[(dataframe["YOLO_id"] == person_id)]
-    crossed_ids_grouped = crossed_ids.groupby("Unique Id")
+    crossed_ids = dataframe[(dataframe["YOLO_id"] == person_id)]  # sort only person in the dataframe
+    crossed_ids_grouped = crossed_ids.groupby("Unique Id")  # Makes group based on Unique ID 
+    # for group_name, group_data in crossed_ids_grouped:   
+    #     print(f"Group Name: {group_name}")
+    #     print(group_data)
+    #     print("\n")
+
+    # Filter the unique ID based on passing the pixel value (ranging in x direction from 0 to 1) 
     filtered_crossed_ids = crossed_ids_grouped.filter(
         lambda x: (x["X-center"] <= min_x).any() and (x["X-center"] >= max_x).any()
     )
+    
     crossed_ids = filtered_crossed_ids["Unique Id"].unique()
     return len(crossed_ids), crossed_ids
 
@@ -120,6 +127,8 @@ def adjust_annotation_positions(annotations):
 
 
 # Plotting Functions 
+
+
 def plot_cell_phone_vs_death(df_mapping, data):
     info, death, continents, gdp = {}, [], [], []
     for key, value in data.items():
@@ -168,15 +177,6 @@ def plot_cell_phone_vs_death(df_mapping, data):
     fig.update_layout(annotations=adjusted_annotations)
 
     fig.show()
-
-def plot_hesitation():
-
-    pass
-
-def plot_death_vs_crossing_event_wt_traffic():
-
-    pass
-
 
 def plot_vehicle_vs_cross_time(df_mapping, dfs, data):
     info, time_dict, time_avg, continents, gdp = {}, {}, [], [], []
@@ -227,7 +227,31 @@ def plot_vehicle_vs_cross_time(df_mapping, dfs, data):
 
     fig.show()
 
+def plot_hesitation():
 
+    pass
+
+def plot_death_vs_crossing_event_wt_traffic(df_mapping, dfs, data, ids):
+    info, death, continents, gdp = {}, [], [], []
+    for key, value in data.items():
+        dataframe = value
+        mobile_ids = dataframe[dataframe["YOLO_id"] == 67]
+        mobile_ids = mobile_ids["Unique Id"].unique()
+        info[key] = len(mobile_ids)
+
+        df = df_mapping[df_mapping['Location'] == key]
+        death_value = df['death(per_100k)'].values
+        death.append(death_value[0])
+        continents.append(df['Continent'].values[0])
+        gdp.append(df['GDP_per_capita'].values[0])
+
+
+        # For a specefic id of a person search for the first and last occurance of that id and see if the traffic light was present between it or not.
+
+        
+def plot_traffic_safety_vs_death():
+
+    pass
 
 
 data_folder = "data"
@@ -239,12 +263,12 @@ for key, value in dfs.items():
     count, ids = pedestrian_crossing(dfs[key], 0.45, 0.55, 0)
     pedestrian_crossing_count[key] = {"count": count, "ids": ids}
     data[key] = time_to_cross(dfs[key], pedestrian_crossing_count[key]["ids"])
-# print(data)
 
+# Data is dictionary in the form {City : Values}. Values itself is another dictionary which is {Unique Id of person : Avg time to cross the road}
 
 df_mapping = pd.read_csv("mapping.csv")
 
 plot_cell_phone_vs_death(df_mapping, dfs)
 plot_vehicle_vs_cross_time(df_mapping,dfs,data)
-plot_hesitation()
-plot_death_vs_crossing_event_wt_traffic()
+# plot_hesitation()
+# plot_death_vs_crossing_event_wt_traffic(df_mapping, dfs, data, ids)
