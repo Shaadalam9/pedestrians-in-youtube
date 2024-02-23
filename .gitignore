@@ -5,3 +5,5 @@ data
 yolov8x.pt
 check.py
 _outputs
+params.py
+.DS_Store
