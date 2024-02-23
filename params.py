@@ -1,6 +1,6 @@
 input_csv_file = "mapping.csv"
 output_path = "video"
-trim_start = None #seconds
+trim_start = None  # seconds
 trim_end = None
 
 prediction_mode = False

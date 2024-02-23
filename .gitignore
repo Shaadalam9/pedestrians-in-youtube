@@ -16,3 +16,7 @@ _outputs
 */__pycache__
 *.pyc
 *.egg-info/
+
+# Instance specific files
+config
+secret
