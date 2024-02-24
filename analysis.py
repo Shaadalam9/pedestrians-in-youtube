@@ -1,11 +1,6 @@
 import pandas as pd
-import matplotlib.pyplot as plt
 import os
-import numpy as np
-import plotly.figure_factory as ff
 import plotly.graph_objects as go
-import seaborn as sns
-from scipy.stats import linregress
 import plotly.express as px
 from statistics import mean
 import common
@@ -31,7 +26,7 @@ logger = CustomLogger(__name__)  # use custom logger
 
 def read_csv_files(folder_path):
     dfs = {}
-    for file in os.listdir(common.get_configs('data')):
+    for file in os.listdir(folder_path):
         if file.endswith(".csv"):
             # Read the CSV file into a DataFrame
             file_path = os.path.join(folder_path, file)
@@ -45,15 +40,17 @@ def read_csv_files(folder_path):
 
 
 def pedestrian_crossing(dataframe, min_x, max_x, person_id):
-
-    crossed_ids = dataframe[(dataframe["YOLO_id"] == person_id)]  # sort only person in the dataframe
-    crossed_ids_grouped = crossed_ids.groupby("Unique Id")  # Makes group based on Unique ID 
+    # sort only person in the dataframe
+    crossed_ids = dataframe[(dataframe["YOLO_id"] == person_id)]
+    # Makes group based on Unique ID 
+    crossed_ids_grouped = crossed_ids.groupby("Unique Id")
     # for group_name, group_data in crossed_ids_grouped:   
     #     print(f"Group Name: {group_name}")
     #     print(group_data)
     #     print("\n")
 
-    # Filter the unique ID based on passing the pixel value (ranging in x direction from 0 to 1) 
+    # Filter the unique ID based on passing the pixel value (ranging in x
+    # direction from 0 to 1) 
     filtered_crossed_ids = crossed_ids_grouped.filter(
         lambda x: (x["X-center"] <= min_x).any() and (x["X-center"] >= max_x).any()  # noqa: E501
     )
@@ -186,6 +183,7 @@ def plot_cell_phone_vs_death(df_mapping, data):
     fig.update_layout(annotations=adjusted_annotations)
     fig.show()
 
+
 def plot_vehicle_vs_cross_time(df_mapping, dfs, data):
     info, time_dict, time_avg, continents, gdp = {}, {}, [], [], []
     for key, value in dfs.items():
@@ -237,9 +235,10 @@ def plot_vehicle_vs_cross_time(df_mapping, dfs, data):
 
     fig.show()
 
-def plot_hesitation():
 
+def plot_hesitation():
     pass
+
 
 def plot_death_vs_crossing_event_wt_traffic(df_mapping, dfs, data, ids):
     info, death, continents, gdp = {}, [], [], []
@@ -255,17 +254,17 @@ def plot_death_vs_crossing_event_wt_traffic(df_mapping, dfs, data, ids):
         continents.append(df['Continent'].values[0])
         gdp.append(df['GDP_per_capita'].values[0])
 
-
-        # For a specefic id of a person search for the first and last occurance of that id and see if the traffic light was present between it or not.
+        # For a specific id of a person search for the first and last
+        # occurrence of that id and see if the traffic light was present
+        # between it or not.
 
         
 def plot_traffic_safety_vs_death():
-
     pass
 
 
-data_folder = "data"
-dfs = read_csv_files(data_folder)
+# Execute analysis
+dfs = read_csv_files(common.get_configs('data'))
 # print(dfs)
 pedestrian_crossing_count, data = {}, {}
 
@@ -274,11 +273,12 @@ for key, value in dfs.items():
     pedestrian_crossing_count[key] = {"count": count, "ids": ids}
     data[key] = time_to_cross(dfs[key], pedestrian_crossing_count[key]["ids"])
 
-# Data is dictionary in the form {City : Values}. Values itself is another dictionary which is {Unique Id of person : Avg time to cross the road}
+# Data is dictionary in the form {City : Values}. Values itself is another
+# dictionary which is {Unique Id of person : Avg time to cross the road}
 
 df_mapping = pd.read_csv("mapping.csv")
 
 plot_cell_phone_vs_death(df_mapping, dfs)
-plot_vehicle_vs_cross_time(df_mapping,dfs,data)
+plot_vehicle_vs_cross_time(df_mapping, dfs, data)
 # plot_hesitation()
 # plot_death_vs_crossing_event_wt_traffic(df_mapping, dfs, data, ids)
