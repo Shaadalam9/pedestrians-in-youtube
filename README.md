@@ -39,7 +39,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Example
 
-https://github.com/Shaadalam9/youtube-pedestrian/assets/88769183/5303f4a5-52a2-4230-bd05-89a53927a5be
+
 
 ## Contact
 If you have any questions or suggestions, feel free to reach out to md_shadab_alam@outlook.com
