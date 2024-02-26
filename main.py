@@ -4,14 +4,10 @@ import os
 from datetime import datetime
 from helper_script import youtube_helper
 import pandas as pd
-import common
 from custom_logger import CustomLogger
 
 
 logger = CustomLogger(__name__)  # use custom logger
-
-# Replace this with the actual path
-os.environ["IMAGEIO_FFMPEG_EXE"] = common.get_configs('ffmpeg_path')
 helper = youtube_helper()
 counter = 0
 

@@ -4,6 +4,7 @@ data
 yolov8x.pt
 check.py
 _outputs
+settings.json
 
 # macOS
 **/.DS_Store
