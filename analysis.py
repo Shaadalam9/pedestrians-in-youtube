@@ -315,7 +315,9 @@ logger.info("Analysis started.")
 dfs = read_csv_files(common.get_configs('data'))
 pedestrian_crossing_count, data = {}, {}
 
+# Loop over rows of data
 for key, value in dfs.items():
+    logger.info("Analysing data from {}")
     count, ids = pedestrian_crossing(dfs[key], 0.45, 0.55, 0)
     pedestrian_crossing_count[key] = {"count": count, "ids": ids}
     data[key] = time_to_cross(dfs[key], pedestrian_crossing_count[key]["ids"])
