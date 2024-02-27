@@ -3,12 +3,12 @@ import os
 import plotly.express as px
 from statistics import mean
 import common
-# from custom_logger import CustomLogger
-# from logmod import logs
+from custom_logger import CustomLogger
+from logmod import logs
 
 
-# logs(show_level='info', show_color=True)
-# logger = CustomLogger(__name__)  # use custom logger
+logs(show_level='info', show_color=True)
+logger = CustomLogger(__name__)  # use custom logger
 
 # List of things that YOLO can detect:
 # YOLO_id = {
@@ -311,9 +311,8 @@ def plot_traffic_safety_vs_death():
 
 
 # Execute analysis
-# logger.info("Analysis started.")
-dfs = read_csv_files("data")
-# print(dfs)
+logger.info("Analysis started.")
+dfs = read_csv_files(common.get_configs('data'))
 pedestrian_crossing_count, data = {}, {}
 
 for key, value in dfs.items():
