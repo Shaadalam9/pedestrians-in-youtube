@@ -1,6 +1,5 @@
 import pandas as pd
 import os
-import plotly.graph_objects as go
 import plotly.express as px
 from statistics import mean
 import common
@@ -42,19 +41,17 @@ def read_csv_files(folder_path):
 def pedestrian_crossing(dataframe, min_x, max_x, person_id):
     # sort only person in the dataframe
     crossed_ids = dataframe[(dataframe["YOLO_id"] == person_id)]
-    # Makes group based on Unique ID 
+    # Makes group based on Unique ID
     crossed_ids_grouped = crossed_ids.groupby("Unique Id")
-    # for group_name, group_data in crossed_ids_grouped:   
+    # for group_name, group_data in crossed_ids_grouped:
     #     print(f"Group Name: {group_name}")
     #     print(group_data)
     #     print("\n")
 
     # Filter the unique ID based on passing the pixel value (ranging in x
-    # direction from 0 to 1) 
+    # direction from 0 to 1)
     filtered_crossed_ids = crossed_ids_grouped.filter(
-        lambda x: (x["X-center"] <= min_x).any() and (x["X-center"] >= max_x).any()  # noqa: E501
-    )
-    
+        lambda x: (x["X-center"] <= min_x).any() and (x["X-center"] >= max_x).any())  # noqa: E501
     crossed_ids = filtered_crossed_ids["Unique Id"].unique()
     return len(crossed_ids), crossed_ids
 
@@ -80,7 +77,7 @@ def time_to_cross(dataframe, ids):
                     if value == x_max:
                         var[id] = count/30
                         break
-        
+
         else:
             for value in sorted_grp['X-center']:
                 if value == x_max:
@@ -90,33 +87,7 @@ def time_to_cross(dataframe, ids):
                     if value == x_min:
                         var[id] = count/30
                         break
-
     return var
-
-    values = []
-    keys = []
-    for key, sub_dict in data.items():
-        for val in sub_dict.values():
-            values.append(val)
-            keys.append(key)
-
-    # Create histogram figure
-    fig = go.Figure()
-
-    # Add histogram traces for each key
-    for key in set(keys):
-        key_values = [val for val, k in zip(values, keys) if k == key]
-        fig.add_trace(go.Histogram(x=key_values, name=key))
-
-    # Update layout
-    fig.update_layout(
-        title="Histogram of Values from DICT",
-        xaxis_title="Values",
-        yaxis_title="Frequency",
-        bargap=0.2,  # Gap between bars
-        barmode='overlay'  # Overlay histograms
-    )
-    fig.show()
 
 
 def adjust_annotation_positions(annotations):
@@ -200,10 +171,10 @@ def plot_vehicle_vs_cross_time(df_mapping, dfs, data):
         time_avg.append(mean(time))
 
         df = df_mapping[df_mapping['Location'] == key]
-        
+
         continents.append(df['Continent'].values[0])
         gdp.append(df['GDP_per_capita'].values[0])
-    
+
     fig = px.scatter(x=time_avg,
                      y=list(info.values()),
                      size=gdp,
@@ -241,31 +212,36 @@ def plot_hesitation():
 
 
 def plot_death_vs_crossing_event_wt_traffic(df_mapping, dfs, data, ids):
-    info, death, continents, gdp = {}, [], [], []
-    for key, value in data.items():
-        dataframe = value
-        mobile_ids = dataframe[dataframe["YOLO_id"] == 67]
-        mobile_ids = mobile_ids["Unique Id"].unique()
-        info[key] = len(mobile_ids)
+    # info, death, continents, gdp = {}, [], [], []
+    counter = 0
 
-        df = df_mapping[df_mapping['Location'] == key]
-        death_value = df['death(per_100k)'].values
-        death.append(death_value[0])
-        continents.append(df['Continent'].values[0])
-        gdp.append(df['GDP_per_capita'].values[0])
+    for city, unique_ids in data.items():
+        city_data = dfs.get(city)
+        print(city_data)
+        if city_data:
+            for unique_id, _ in unique_ids.items():
+                yolo_ids = [data_point['YOLO_id'] for data_point in city_data if data_point['Unique_Id'] == unique_id]  # noqa: E501
+                if 9 in yolo_ids and yolo_ids[0] == 9 and yolo_ids[-1] == 9:
+                    counter += 1
 
-        # For a specific id of a person search for the first and last
-        # occurrence of that id and see if the traffic light was present
-        # between it or not.
+    print("Counter:", counter)
 
-        
+    # df = df_mapping[df_mapping['Location'] == city]
+    # death_value = df['death(per_100k)'].values
+    # death.append(death_value[0])
+    # continents.append(df['Continent'].values[0])
+    # gdp.append(df['GDP_per_capita'].values[0])
+
+    # For a specific id of a person search for the first and last occurrence of that id and see if the traffic light was present between it or not.  # noqa: E501
+
+
 def plot_traffic_safety_vs_death():
     pass
 
 
 # Execute analysis
-dfs = read_csv_files(common.get_configs('data'))
-# print(dfs)
+dfs = read_csv_files("data")
+df_mapping = pd.read_csv("mapping.csv")
 pedestrian_crossing_count, data = {}, {}
 
 for key, value in dfs.items():
@@ -273,12 +249,11 @@ for key, value in dfs.items():
     pedestrian_crossing_count[key] = {"count": count, "ids": ids}
     data[key] = time_to_cross(dfs[key], pedestrian_crossing_count[key]["ids"])
 
+
 # Data is dictionary in the form {City : Values}. Values itself is another
 # dictionary which is {Unique Id of person : Avg time to cross the road}
 
-df_mapping = pd.read_csv("mapping.csv")
-
-plot_cell_phone_vs_death(df_mapping, dfs)
-plot_vehicle_vs_cross_time(df_mapping, dfs, data)
+# plot_cell_phone_vs_death(df_mapping, dfs)
+# plot_vehicle_vs_cross_time(df_mapping, dfs, data)
 # plot_hesitation()
-# plot_death_vs_crossing_event_wt_traffic(df_mapping, dfs, data, ids)
+plot_death_vs_crossing_event_wt_traffic(df_mapping, dfs, data, ids)

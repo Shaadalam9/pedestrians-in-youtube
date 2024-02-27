@@ -62,18 +62,19 @@ Serial No.,Location,Country,Youtube link,Night,GDP_per_capita,Population_city,Po
 61,Kyiv,Ukraine,https://www.youtube.com/watch?v=KPns9K6wJPw,0,7914,3475000,36744,13.7,Europe
 62,Warsaw,Poland,https://www.youtube.com/watch?v=unU8hTgfHNc,0,50497,2350000,37750,9.7,Europe
 63,Oslo,Norway,https://www.youtube.com/watch?v=qxKol0SMEQs,0,61945,1190000,5408,2.7,Europe
-63,Mexico City,Mexico,https://www.youtube.com/watch?v=oxZBX-e84O8,1,13798,24700000,333287,12.4,North America
-65,New Delhi,India,https://www.youtube.com/watch?v=g-c3K8plBxo,1,8709,31300000,1417173,22.6,Asia
-66,Toronto,Canada,https://www.youtube.com/watch?v=mtz_eM73GS0,1,69110,6547381,38929.9,5.8,North America
-67,Sao Paulo,Brazil,https://www.youtube.com/watch?v=WcjGyIjHLDA,1,11577,22600000,215313,19.7,South America
-68,Capetown,South Africa,https://www.youtube.com/watch?v=5bdCk5AQ9Kw,1,
-69,Cairo,Egypt,https://www.youtube.com/watch?v=86pZTI5gJQM,1,8685,21500000,110990,9.7,Africa
-70,Singapore,Singapore,https://www.youtube.com/watch?v=c-gPO5CIvS4,1,91102,5659000,5659,2.8,Asia
-71,Taipei,Taiwan,https://www.youtube.com/watch?v=N-P79qS3EIY,1,44926,9078000,23570,12.7,Asia
-72,Hongkong,China,https://www.youtube.com/watch?v=XaR6qEt-BIY&list=PLvEhUAlWIdM23Rx9-EEKCkJlOdjzITKL-&index=3&pp=iAQB,1,29570,7346000,7346,18.2,Asia
-73,Dubai,United Arab Emirates,https://www.youtube.com/watch?v=y6Bi15Jditk,1,47557,4264316,9441,18.1,Asia
-74,London,United Kingdom,https://www.youtube.com/watch?v=Ujyu8foke60,1,66108,14800000,66971,3.1,Europe
-75,Rio de Janeiro,Brazil,https://www.youtube.com/watch?v=fG_idt30MZA,1,10084,17463349,215313,19.7,South America
-76,Seoul,South Korea,https://www.youtube.com/watch?v=eMv6SCniTPg,1,36677,24800000,51628.11,9.8,Asia
-77,Tokyo,Japan,https://www.youtube.com/watch?v=lSgTVt60M6U,1,51124,40700000,125125,4.1,Asia
+64,Can Tho,Vietnam,https://www.youtube.com/watch?v=tjha2msVEXI,0,,,,,Asia
+65,Mexico City,Mexico,https://www.youtube.com/watch?v=oxZBX-e84O8,1,13798,24700000,333287,12.4,North America
+66,New Delhi,India,https://www.youtube.com/watch?v=g-c3K8plBxo,1,8709,31300000,1417173,22.6,Asia
+67,Toronto,Canada,https://www.youtube.com/watch?v=mtz_eM73GS0,1,69110,6547381,38929.9,5.8,North America
+68,Sao Paulo,Brazil,https://www.youtube.com/watch?v=WcjGyIjHLDA,1,11577,22600000,215313,19.7,South America
+69,Capetown,South Africa,https://www.youtube.com/watch?v=5bdCk5AQ9Kw,1,
+70,Cairo,Egypt,https://www.youtube.com/watch?v=86pZTI5gJQM,1,8685,21500000,110990,9.7,Africa
+71,Singapore,Singapore,https://www.youtube.com/watch?v=c-gPO5CIvS4,1,91102,5659000,5659,2.8,Asia
+72,Taipei,Taiwan,https://www.youtube.com/watch?v=N-P79qS3EIY,1,44926,9078000,23570,12.7,Asia
+73,Hongkong,China,https://www.youtube.com/watch?v=XaR6qEt-BIY&list=PLvEhUAlWIdM23Rx9-EEKCkJlOdjzITKL-&index=3&pp=iAQB,1,29570,7346000,7346,18.2,Asia
+74,Dubai,United Arab Emirates,https://www.youtube.com/watch?v=y6Bi15Jditk,1,47557,4264316,9441,18.1,Asia
+75,London,United Kingdom,https://www.youtube.com/watch?v=Ujyu8foke60,1,66108,14800000,66971,3.1,Europe
+76,Rio de Janeiro,Brazil,https://www.youtube.com/watch?v=fG_idt30MZA,1,10084,17463349,215313,19.7,South America
+77,Seoul,South Korea,https://www.youtube.com/watch?v=eMv6SCniTPg,1,36677,24800000,51628.11,9.8,Asia
+78,Tokyo,Japan,https://www.youtube.com/watch?v=lSgTVt60M6U,1,51124,40700000,125125,4.1,Asia
 79,Paris,France,https://www.youtube.com/watch?v=BfJM89EZRuk&list=PLvEhUAlWIdM3N2_CLWFP3KPd2etDhzJet&index=8&pp=iAQB,1,63119,14800000,67971,5.5,Europe

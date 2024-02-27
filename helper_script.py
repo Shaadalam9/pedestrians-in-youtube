@@ -26,10 +26,7 @@ class youtube_helper:
         except FileExistsError:
             print(f"Error: Folder '{new_name}' already exists.")
 
-    def download_video_with_resolution(self, youtube_url,
-                                       resolutions=["2160p", "1440p", "1080p",
-                                                    "720p", "480p", "360p"], 
-                                                    output_path="."):
+    def download_video_with_resolution(self, youtube_url, resolutions=["2160p", "1440p", "1080p", "720p", "480p", "360p"], output_path="."):  # noqa: E501
 
         try:
             youtube_object = YouTube(youtube_url)
@@ -143,7 +140,7 @@ class youtube_helper:
     def prediction_mode(self):
         model = YOLO(self.model)
         model.predict(
-            source=f"{params.output_path}/{self.video_title}_{self.resolution}.mp4",
+            source=f"{params.output_path}/{self.video_title}_{self.resolution}.mp4",  # noqa: E501
             save=True,
             conf=params.confidence,
             save_txt=True,
