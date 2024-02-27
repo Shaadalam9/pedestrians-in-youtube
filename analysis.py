@@ -10,6 +10,9 @@ from logmod import logs
 logs(show_level='info', show_color=True)
 logger = CustomLogger(__name__)  # use custom logger
 
+# set template for plotly output
+template = common.get_configs('plotly_template')
+
 # List of things that YOLO can detect:
 # YOLO_id = {
 #     0: 'person', 1: 'bicycle', 2: 'car', 3: 'motorcycle', 4: 'airplane', 5: 'bus', 6: 'train', 7: 'truck', 8: 'boat',  # noqa: E501
@@ -154,6 +157,8 @@ def plot_cell_phone_vs_death(df_mapping, data):
     # Adjust annotation positions to avoid overlap
     adjusted_annotations = adjust_annotation_positions(annotations)
     fig.update_layout(annotations=adjusted_annotations)
+    # set template
+    fig.update_layout(template=template)
     fig.show()
 
 
@@ -204,8 +209,9 @@ def plot_vehicle_vs_cross_time(df_mapping, dfs, data):
     # Adjust annotation positions to avoid overlap
     adjusted_annotations = adjust_annotation_positions(annotations)
 
-    fig.update_layout(annotations=adjusted_annotations)
-
+    fig.update_layout(template=template, annotations=adjusted_annotations)
+    # set template
+    fig.update_layout(template=template)
     fig.show()
 
 
@@ -269,7 +275,8 @@ def plot_death_vs_crossing_event_wt_traffic(df_mapping, dfs, data, ids):
     adjusted_annotations = adjust_annotation_positions(annotations)
 
     fig.update_layout(annotations=adjusted_annotations)
-
+    # set template
+    fig.update_layout(template=template)
     fig.show()
 
     # Percentage of people crossed without traffic light
@@ -302,7 +309,8 @@ def plot_death_vs_crossing_event_wt_traffic(df_mapping, dfs, data, ids):
     adjusted_annotations = adjust_annotation_positions(annotations)
 
     fig.update_layout(annotations=adjusted_annotations)
-
+    # set template
+    fig.update_layout(template=template)
     fig.show()
 
 
@@ -317,7 +325,7 @@ pedestrian_crossing_count, data = {}, {}
 
 # Loop over rows of data
 for key, value in dfs.items():
-    logger.info("Analysing data from {}")
+    logger.info("Analysing data from {}.", key)
     count, ids = pedestrian_crossing(dfs[key], 0.45, 0.55, 0)
     pedestrian_crossing_count[key] = {"count": count, "ids": ids}
     data[key] = time_to_cross(dfs[key], pedestrian_crossing_count[key]["ids"])
