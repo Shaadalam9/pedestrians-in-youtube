@@ -3,10 +3,12 @@ import os
 import plotly.express as px
 from statistics import mean
 import common
-from custom_logger import CustomLogger
+# from custom_logger import CustomLogger
+# from logmod import logs
 
 
-logger = CustomLogger(__name__)  # use custom logger
+# logs(show_level='info', show_color=True)
+# logger = CustomLogger(__name__)  # use custom logger
 
 # List of things that YOLO can detect:
 # YOLO_id = {
@@ -102,7 +104,7 @@ def adjust_annotation_positions(annotations):
     return adjusted_annotations
 
 
-# Plotting Functions 
+# Plotting Functions
 
 
 def plot_cell_phone_vs_death(df_mapping, data):
@@ -211,28 +213,97 @@ def plot_hesitation():
     pass
 
 
+# For a specific id of a person search for the first and last occurrence of that id and see if the traffic light was present between it or not.  # noqa: E501
 def plot_death_vs_crossing_event_wt_traffic(df_mapping, dfs, data, ids):
-    # info, death, continents, gdp = {}, [], [], []
-    counter = 0
+    var_exist, var_nt_exist, total_per, ratio = {}, {}, {}, {}
+    continents, gdp, death = [], [], []
+    for city, df in data.items():
+        counter_exists, counter_nt_exists = 0, 0
+        df_ = df_mapping[df_mapping['Location'] == city]
+        continents.append(df_['Continent'].values[0])
+        gdp.append(df_['GDP_per_capita'].values[0])
+        death.append(df_['death(per_100k)'].values[0])
+        value = dfs.get(city)
+        for id, time in df.items():
+            unique_id_indices = value.index[value['Unique Id'] == id]
+            first_occurrence = unique_id_indices[0]
+            last_occurrence = unique_id_indices[-1]
+            # Check if YOLO_id = 9 exists within the specified index range
+            yolo_id_9_exists = any(value.loc[first_occurrence:last_occurrence, 'YOLO_id'] == 9)
+            yolo_id_9_not_exists = not any(
+                value.loc[first_occurrence:last_occurrence, 'YOLO_id'] == 9)
+            if yolo_id_9_exists:
+                counter_exists += 1
+            if yolo_id_9_not_exists:
+                counter_nt_exists += 1
+        var_exist[city] = counter_exists
+        var_nt_exist[city] = counter_nt_exists
+        total_per[city] = counter_exists+counter_nt_exists
+        ratio[city] = (var_nt_exist[city] * 100) / total_per[city]
 
-    for city, unique_ids in data.items():
-        city_data = dfs.get(city)
-        print(city_data)
-        if city_data:
-            for unique_id, _ in unique_ids.items():
-                yolo_ids = [data_point['YOLO_id'] for data_point in city_data if data_point['Unique_Id'] == unique_id]  # noqa: E501
-                if 9 in yolo_ids and yolo_ids[0] == 9 and yolo_ids[-1] == 9:
-                    counter += 1
+    fig = px.scatter(x=list(var_nt_exist.values()),
+                     y=death,
+                     size=gdp,
+                     color=continents)
 
-    print("Counter:", counter)
+    # Adding labels and title
+    fig.update_layout(
+        xaxis_title="No of Crossing Event",
+        yaxis_title="Death rate (per 100k)",
+        title="Crossing of pedestrain without traffic light",
+        showlegend=True  # Show legend for continent colors
+    )
 
-    # df = df_mapping[df_mapping['Location'] == city]
-    # death_value = df['death(per_100k)'].values
-    # death.append(death_value[0])
-    # continents.append(df['Continent'].values[0])
-    # gdp.append(df['GDP_per_capita'].values[0])
+    # Adding annotations for keys
+    annotations = []
+    for i, key in enumerate(var_nt_exist.keys()):
+        annotations.append(
+            dict(
+                x=list(var_nt_exist.values())[i],
+                y=death[i],
+                text=key,
+                showarrow=False
+            )
+        )
+    # Adjust annotation positions to avoid overlap
+    adjusted_annotations = adjust_annotation_positions(annotations)
 
-    # For a specific id of a person search for the first and last occurrence of that id and see if the traffic light was present between it or not.  # noqa: E501
+    fig.update_layout(annotations=adjusted_annotations)
+
+    fig.show()
+
+    # Percentage of people crossed without traffic light
+
+    fig = px.scatter(x=list(ratio.values()),
+                     y=death,
+                     size=gdp,
+                     color=continents)
+
+    # Adding labels and title
+    fig.update_layout(
+        xaxis_title="Percentage of people crossing without traffic light",
+        yaxis_title="Death rate (per 100k)",
+        title="Crossing of pedestrain without traffic light",
+        showlegend=True  # Show legend for continent colors
+    )
+
+    # Adding annotations for keys
+    annotations = []
+    for i, key in enumerate(ratio.keys()):
+        annotations.append(
+            dict(
+                x=list(ratio.values())[i],
+                y=death[i],
+                text=key,
+                showarrow=False
+            )
+        )
+    # Adjust annotation positions to avoid overlap
+    adjusted_annotations = adjust_annotation_positions(annotations)
+
+    fig.update_layout(annotations=adjusted_annotations)
+
+    fig.show()
 
 
 def plot_traffic_safety_vs_death():
@@ -240,8 +311,9 @@ def plot_traffic_safety_vs_death():
 
 
 # Execute analysis
+# logger.info("Analysis started.")
 dfs = read_csv_files("data")
-df_mapping = pd.read_csv("mapping.csv")
+# print(dfs)
 pedestrian_crossing_count, data = {}, {}
 
 for key, value in dfs.items():
@@ -252,6 +324,8 @@ for key, value in dfs.items():
 
 # Data is dictionary in the form {City : Values}. Values itself is another
 # dictionary which is {Unique Id of person : Avg time to cross the road}
+
+df_mapping = pd.read_csv("mapping.csv")
 
 # plot_cell_phone_vs_death(df_mapping, dfs)
 # plot_vehicle_vs_cross_time(df_mapping, dfs, data)

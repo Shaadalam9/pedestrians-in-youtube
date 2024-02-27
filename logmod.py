@@ -4,7 +4,6 @@ import sys
 import os
 import datetime as dt
 from typing import Union, Optional
-
 import trust as tr
 
 
