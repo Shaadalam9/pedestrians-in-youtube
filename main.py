@@ -5,7 +5,7 @@ from datetime import datetime
 from helper_script import youtube_helper
 import pandas as pd
 from custom_logger import CustomLogger
-from logmod import logs  # noqa E402
+from logmod import logs
 
 
 logs(show_level='info', show_color=True)

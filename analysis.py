@@ -5,7 +5,7 @@ import plotly.express as px
 from statistics import mean
 import common
 from custom_logger import CustomLogger
-from logmod import logs  # noqa E402
+from logmod import logs
 
 
 logs(show_level='info', show_color=True)
