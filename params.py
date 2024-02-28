@@ -1,15 +1,15 @@
 input_csv_file = "mapping.csv"
 output_path = "video"
-trim_start = None  # seconds
-trim_end = None
+trim_start = 0  # seconds
+trim_end = 120
 
 prediction_mode = False
 tracking_mode = True
-display_frame_tracking = True
+display_frame_tracking = False
 save_annoted_img = False
 delete_frames = True
 delete_youtube_video = True
-need_annotated_video = True
+need_annotated_video = False
 
 model = "yolov8x.pt"
 confidence = 0.4

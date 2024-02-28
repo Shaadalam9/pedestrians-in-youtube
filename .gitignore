@@ -5,6 +5,7 @@ yolov8x.pt
 check.py
 _outputs
 .vscode/
+params.py
 
 # macOS
 **/.DS_Store

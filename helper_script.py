@@ -26,37 +26,28 @@ class youtube_helper:
         except FileExistsError:
             print(f"Error: Folder '{new_name}' already exists.")
 
-    def download_video_with_resolution(self, youtube_url, resolutions=["2160p", "1440p", "1080p", "720p", "480p", "360p"], output_path="."):  # noqa: E501
-
+    def download_video_with_resolution(self, youtube_url, resolutions=["720p", "480p", "360p"], output_path="."):   # noqa: E501
         try:
             youtube_object = YouTube(youtube_url)
             for resolution in resolutions:
-                video_streams = (
-                    youtube_object.streams.filter(res=f"{resolution}").all())
+                video_streams = youtube_object.streams.filter(res=f"{resolution}").all()   # noqa: E501
                 if video_streams:
                     self.resolution = resolution
                     print(f"Got the video in {resolution}")
                     break
 
             if not video_streams:
-                print(f"No {resolution} resolution available for "
-                      f"'{youtube_object.title}'.")
-
+                print(f"No {resolution} resolution available for '{youtube_object.title}'.")   # noqa: E501
                 return None
 
             selected_stream = video_streams[0]
 
-            video_file_path = (
-                f"{output_path}/{youtube_object.title}_{self.resolution}.mp4")
-
+            video_file_path = f"{output_path}/{youtube_object.title}_{self.resolution}.mp4"   # noqa: E501
             print("Youtube video download in progress...")
-            selected_stream.download(
-                output_path,
-                filename=f"{youtube_object.title}_{self.resolution}.mp4")
+            # Comment the below line to automatically download with video in "video" folder   # noqa: E501
+            selected_stream.download(output_path, filename=f"{youtube_object.title}_{self.resolution}.mp4")   # noqa: E501
 
-            print(f"Download of '{youtube_object.title}' "
-                  f"in {resolution} completed successfully.")
-
+            print(f"Download of '{youtube_object.title}' in {resolution} completed successfully.")   # noqa: E501
             self.video_title = youtube_object.title
             return video_file_path, youtube_object.title, resolution
         except Exception as e:
@@ -66,16 +57,12 @@ class youtube_helper:
     @staticmethod
     def trim_video(input_path, output_path, start_time, end_time):
         video_clip = VideoFileClip(input_path).subclip(start_time, end_time)
-        video_clip.write_videofile(output_path, codec="libx264",
-                                   audio_codec="aac")
+        video_clip.write_videofile(output_path, codec="libx264", audio_codec="aac")   # noqa: E501
         video_clip.close()
 
     @staticmethod
-    def create_video_from_images(image_folder, output_video_path,
-                                 frame_rate=30):
-
-        images = [img for img in os.listdir(image_folder) if
-                  img.endswith(".jpg")]
+    def create_video_from_images(image_folder, output_video_path, frame_rate=30):   # noqa: E501
+        images = [img for img in os.listdir(image_folder) if img.endswith(".jpg")]   # noqa: E501
 
         if not images:
             print("No JPG images found in the specified folder.")
@@ -88,8 +75,7 @@ class youtube_helper:
         height, width, layers = frame.shape
 
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        video = cv2.VideoWriter(output_video_path, fourcc, frame_rate,
-                                (width, height))
+        video = cv2.VideoWriter(output_video_path, fourcc, frame_rate, (width, height))  # noqa: E501
 
         for image in images:
             img_path = os.path.join(image_folder, image)
@@ -105,50 +91,29 @@ class youtube_helper:
 
     @staticmethod
     def merge_txt_files(txt_location, output_csv):
-        txt_files = [
-            txt for txt in os.listdir(txt_location) if txt.endswith(".txt")
-        ]
-        txt_files.sort(
-            key=lambda x: int(x.split("label_")[1].split(".")[0])
-        )
+        txt_files = [txt for txt in os.listdir(txt_location) if txt.endswith(".txt")]   # noqa: E501
+        txt_files.sort(key=lambda x: int(x.split("label_")[1].split(".")[0]))   # noqa: E501
 
         df_list = []
 
         for filename in txt_files:
             txt_path = os.path.join(txt_location, filename)
-        
-            # Make sure the delimiter is correct, and adjust if necessary
-            df = pd.read_csv(
-                txt_path,
-                delimiter=" ",
-                header=None,
-                names=["YOLO_id", "X-center", "Y-center", "Width", "Height",
-                       "Unique Id"]
-            )
+
+        # Make sure the delimiter is correct, and adjust if necessary
+            df = pd.read_csv(txt_path, delimiter=" ", header=None, names=["YOLO_id", "X-center", "Y-center", "Width", "Height", "Unique Id"])   # noqa: E501
             df_list.append(df)
 
-        merged_df = pd.concat(df_list, axis=0)
+        merged_df = pd.concat(df_list, axis=0)  
 
-        # Save the merged DataFrame to a CSV file with specific header
-        merged_df.to_csv(
-            output_csv,
-            index=False,
-            header=["YOLO_id", "X-center", "Y-center", "Width", "Height",
-                    "Unique Id"]
-        )
+    # Save the merged DataFrame to a CSV file with specific header
+        merged_df.to_csv(output_csv, index=False, header=["YOLO_id", "X-center", "Y-center", "Width", "Height", "Unique Id"])   # noqa: E501
 
     def prediction_mode(self):
         model = YOLO(self.model)
-        model.predict(
-            source=f"{params.output_path}/{self.video_title}_{self.resolution}.mp4",  # noqa: E501
-            save=True,
-            conf=params.confidence,
-            save_txt=True,
-            show=params.render,
-            line_width=params.line_thickness,
-            show_labels=params.show_labels,
-            show_conf=params.show_conf
-        )
+        model.predict(source=f"{params.output_path}/{self.video_title}_{self.resolution}.mp4",   # noqa: E501
+                      save=True, conf=params.confidence, save_txt=True,
+                      show=params.render, line_width=params.line_thickness,
+                      show_labels=params.show_labels, show_conf=params.show_conf)   # noqa: E501
 
     def tracking_mode(self, input_video_path, output_video_path):
         model = YOLO(self.model)
@@ -158,11 +123,11 @@ class youtube_helper:
         track_history = defaultdict(lambda: [])
 
     # Output paths for frames, txt files, and final video
-        frames_output_path = "runs/detect/frames"  
-        annotated_frame_output_path = "runs/detect/annotated_frames" 
+        frames_output_path = "runs/detect/frames"
+        annotated_frame_output_path = "runs/detect/annotated_frames"
         txt_output_path = "runs/detect/labels"
         final_video_output_path = "runs/detect/final_video.mp4"
-        text_filename = "runs/detect/predict/labels/image0.txt"  
+        text_filename = "runs/detect/predict/labels/image0.txt"
 
         # Create directories if they don't exist
         os.makedirs(frames_output_path, exist_ok=True)
@@ -171,15 +136,11 @@ class youtube_helper:
 
     # Initialize a VideoWriter for the final video
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        final_video_writer = cv2.VideoWriter(
-            final_video_output_path, fourcc, 30.0,
-            (int(cap.get(3)), int(cap.get(4))))
+        final_video_writer = cv2.VideoWriter(final_video_output_path, fourcc, 30.0, (int(cap.get(3)), int(cap.get(4))))   # noqa: E501
 
         if params.display_frame_tracking:
             display_video_output_path = "runs/detect/display_video.mp4"
-            display_video_writer = cv2.VideoWriter(
-                display_video_output_path, fourcc, 30.0,
-                (int(cap.get(3)), int(cap.get(4))))
+            display_video_writer = cv2.VideoWriter(display_video_output_path, fourcc, 30.0, (int(cap.get(3)), int(cap.get(4))))   # noqa: E501
 
         # Loop through the video frames
         frame_count = 0  # Variable to track the frame number
@@ -190,22 +151,24 @@ class youtube_helper:
             if success:
 
                 frame_count += 1  # Increment frame count
-    # Run YOLOv8 tracking on the frame, persisting tracks between frames
-                results = model.track(
-                            frame,
-                            tracker='bytetrack.yaml',
-                            persist=True,
-                            conf=params.confidence,
-                            save=True,
-                            save_txt=True,
-                            line_width=params.line_thickness,
-                            show_labels=params.show_labels,
-                            show_conf=params.show_labels,
-                            show=params.render)
+                # Run YOLOv8 tracking on the frame, persisting tracks between frames   # noqa: E501
+                results = model.track(frame,
+                                      tracker='bytetrack.yaml',
+                                      persist=True,
+                                      conf=params.confidence,
+                                      save=True,
+                                      save_txt=True,
+                                      line_width=params.line_thickness,
+                                      show_labels=params.show_labels,
+                                      show_conf=params.show_labels,
+                                      show=params.render)
 
                 # Get the boxes and track IDs
                 boxes = results[0].boxes.xywh.cpu()
-
+                if boxes.size(0) == 0:
+                    with open(text_filename, 'w') as file:   # noqa: E501
+                        pass
+                
                 try:
                     track_ids = results[0].boxes.id.int().cpu().tolist()
 
@@ -214,9 +177,7 @@ class youtube_helper:
 
                 # Save annotated frame to file
                     if params.save_annoted_img:
-                        frame_filename = os.path.join(
-                            annotated_frame_output_path,
-                            f"frame_{frame_count}.jpg")
+                        frame_filename = os.path.join(annotated_frame_output_path, f"frame_{frame_count}.jpg")   # noqa: E501
                         cv2.imwrite(frame_filename, annotated_frame)
 
                 except Exception:
@@ -225,18 +186,16 @@ class youtube_helper:
                 # Save txt file with bounding box information
                 with open(text_filename, 'r') as text_file:
                     data = text_file.read()
-                new_txt_file_name = (
-                    f"runs/detect/labels/label_{frame_count}.txt")
+                new_txt_file_name = f"runs/detect/labels/label_{frame_count}.txt"   # noqa: E501
                 with open(new_txt_file_name, 'w') as new_file:
                     new_file.write(data)
                     print("done")
                 os.remove(text_filename)
 
-                # Save the labelled image
+                # save the labelled image
                 image_filename = "runs/detect/predict/image0.jpg"
-                new_img_file_name = (
-                    f"runs/detect/frames/frame_{frame_count}.jpg")
-                shutil.move(image_filename, new_img_file_name)              
+                new_img_file_name = f"runs/detect/frames/frame_{frame_count}.jpg"   # noqa: E501
+                shutil.move(image_filename, new_img_file_name)
 
                 # Plot the tracks
                 try:
@@ -248,11 +207,8 @@ class youtube_helper:
                             track.pop(0)
 
                     # Draw the tracking lines
-                        points = np.hstack(track).astype(
-                            np.int32).reshape((-1, 1, 2))
-                        cv2.polylines(annotated_frame, [points],
-                                      isClosed=False, color=(230, 230, 230),
-                                      thickness=params.line_thickness*5)
+                        points = np.hstack(track).astype(np.int32).reshape((-1, 1, 2))   # noqa: E501
+                        cv2.polylines(annotated_frame, [points], isClosed=False, color=(230, 230, 230), thickness=params.line_thickness*5)   # noqa: E501
 
                 except Exception:
                     pass
