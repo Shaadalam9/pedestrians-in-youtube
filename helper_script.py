@@ -103,7 +103,7 @@ class youtube_helper:
             df = pd.read_csv(txt_path, delimiter=" ", header=None, names=["YOLO_id", "X-center", "Y-center", "Width", "Height", "Unique Id"])   # noqa: E501
             df_list.append(df)
 
-        merged_df = pd.concat(df_list, axis=0)  
+        merged_df = pd.concat(df_list, axis=0)
 
     # Save the merged DataFrame to a CSV file with specific header
         merged_df.to_csv(output_csv, index=False, header=["YOLO_id", "X-center", "Y-center", "Width", "Height", "Unique Id"])   # noqa: E501
@@ -166,9 +166,9 @@ class youtube_helper:
                 # Get the boxes and track IDs
                 boxes = results[0].boxes.xywh.cpu()
                 if boxes.size(0) == 0:
-                    with open(text_filename, 'w') as file:   # noqa: E501
+                    with open(text_filename, 'w') as file:   # noqa: F841
                         pass
-                
+
                 try:
                     track_ids = results[0].boxes.id.int().cpu().tolist()
 
