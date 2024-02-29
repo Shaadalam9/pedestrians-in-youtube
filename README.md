@@ -38,9 +38,11 @@ python3 main.py
 This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## Example
-https://github.com/Shaadalam9/youtube-pedestrian/assets/88769183/5303f4a5-52a2-4230-bd05-8
+
+https://github.com/Shaadalam9/youtube-pedestrian/assets/88769183/5303f4a5-52a2-4230-bd05-89a53927a5be
+
 ![MapChart_Map](https://github.com/Shaadalam9/youtube-pedestrian/assets/88769183/07d263a5-e9d6-45cf-896b-1aa94ecbff6e)
-9a53927a5be
+
 ![Figure_1](https://github.com/Shaadalam9/youtube-pedestrian/assets/88769183/dbc21485-48c7-45d2-a678-42a48ea436c8)
 
 ![newplot](https://github.com/Shaadalam9/youtube-pedestrian/assets/88769183/516a81ae-f673-45ba-a7dc-7fb95f1983cd)
