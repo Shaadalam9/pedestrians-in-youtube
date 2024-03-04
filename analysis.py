@@ -100,19 +100,23 @@ def adjust_annotation_positions(annotations):
 
 # Plotting Functions
 def plot_cell_phone_vs_death(df_mapping, data):
-    info, death, continents, gdp, conditions = {}, [], [], [], []
+    info = {}
+    time_, death, continents, gdp, conditions = [], [], [], [], []
     for key, value in data.items():
         location, condition = key.split('_')
         dataframe = value
-        mobile_ids = dataframe[dataframe["YOLO_id"] == 67]
-        mobile_ids = mobile_ids["Unique Id"].unique()
-        # Saving the number of unique mobile discovered in the video
-        info[f"{location}_{condition}"] = len(mobile_ids)
-        conditions.append(int(condition))
 
         df = df_mapping[(df_mapping['Location'] == location) & (df_mapping['Condition'] == int(condition))]  # noqa: E501
-        death_value = df['death(per_100k)'].values
-        death.append(death_value[0])
+
+        mobile_ids = dataframe[dataframe["YOLO_id"] == 67]
+        mobile_ids = mobile_ids["Unique Id"].unique()
+        time_.append(df['Duration'].values[0])
+
+        # Saving the number of unique mobile discovered in the video
+        info[f"{location}_{condition}"] = ((len(mobile_ids) * 60) / time_[-1])  # noqa: E501
+        conditions.append(int(condition))
+
+        death.append(df['death(per_100k)'].values[0])
         continents.append(df['Continent'].values[0])
         gdp.append(df['GDP_per_capita'].values[0])
 
@@ -140,9 +144,9 @@ def plot_cell_phone_vs_death(df_mapping, data):
 
     # Adding labels and title
     fig.update_layout(
-        xaxis_title="Death per 100k",
-        yaxis_title="Number of Mobile detected",
-        title="Cell Phone detected vs Death Rate"
+        xaxis_title="Death rate due to traffic accidents (per 100k)",
+        yaxis_title="Number of Mobile detected in the video (normalised)",
+        title="Cell Phone detected in the video vs Death Rate due to traffic accidents"  # noqa: E501
     )
 
     for continent, color in continent_colors.items():
@@ -182,14 +186,13 @@ def plot_cell_phone_vs_death(df_mapping, data):
 def plot_vehicle_vs_cross_time(df_mapping, dfs, data):
     info, time_dict, time_avg, continents, gdp = {}, {}, [], [], []
     for key, value in dfs.items():
+        time = []
         dataframe = value
         vehicle_ids = dataframe[(dataframe["YOLO_id"] == 2) | (dataframe["YOLO_id"] == 3) | (dataframe["YOLO_id"] == 5) | (dataframe["YOLO_id"] == 7)]  # noqa: E501
         vehicle_ids = vehicle_ids["Unique Id"].unique()
         # contains {location : no of vehicle detected}
         info[key] = len(vehicle_ids)
-
         time_dict = data[key]
-        time = []
         for key_, value in time_dict.items():
             time.append(value)
         time_avg.append(mean(time))
@@ -283,12 +286,13 @@ def plot_hesitation(df_mapping, dfs, data, person_id=0):
 # For a specific id of a person search for the first and last occurrence of that id and see if the traffic light was present between it or not.  # noqa: E501
 def plot_death_vs_crossing_event_wt_traffic(df_mapping, dfs, data):
     var_exist, var_nt_exist, total_per, ratio = {}, {}, {}, {}
-    continents, gdp, death, conditions = [], [], [], []
+    continents, gdp, death, conditions, time_ = [], [], [], [], []
 
     for city, df in data.items():
         location, condition = city.split('_')
         counter_exists, counter_nt_exists = 0, 0
         df_ = df_mapping[df_mapping['Location'] == location]
+        time_.append(df_['Duration'].values[0])
         value = dfs.get(f"{location}_{condition}")
 
         for id, time in df.items():
@@ -305,15 +309,17 @@ def plot_death_vs_crossing_event_wt_traffic(df_mapping, dfs, data):
             if yolo_id_9_not_exists:
                 counter_nt_exists += 1
 
-        var_exist[f"{location}_{condition}"] = counter_exists
-        var_nt_exist[f"{location}_{condition}"] = counter_nt_exists
+        # Normalising the counters
+        var_exist[f"{location}_{condition}"] = ((counter_exists * 60) / time_[-1])   # noqa:E501
+        var_nt_exist[f"{location}_{condition}"] = ((counter_nt_exists * 60) / time_[-1])  # noqa:E501
 
         if (counter_exists + counter_nt_exists) == 0:
             var_exist.popitem()
             var_nt_exist.popitem()
             continue
         else:
-            total_per[f"{location}_{condition}"] = counter_exists + counter_nt_exists  # noqa:E501
+            total_per[f"{location}_{condition}"] = var_exist[f"{location}_{condition}"] + var_nt_exist[f"{location}_{condition}"]  # noqa:E501
+            # Percentage of people crossing the road without traffic light
             ratio[f"{location}_{condition}"] = (var_nt_exist[f"{location}_{condition}"] * 100) / total_per[f"{location}_{condition}"]  # noqa:E501
 
         continents.append(df_['Continent'].values[0])
@@ -331,16 +337,16 @@ def plot_death_vs_crossing_event_wt_traffic(df_mapping, dfs, data):
                      symbol=conditions,
                      labels={"color": "Continent"},
                      color_discrete_map=continent_colors)
-    
+
     # Hide legend for all traces generated by Plotly Express
     for trace in fig.data:
         trace.showlegend = False
 
     # Adding labels and title
     fig.update_layout(
-        xaxis_title="No of Crossing Event",
-        yaxis_title="Death rate (per 100k)",
-        title="Crossing of pedestrain without traffic light"
+        xaxis_title="Percentage of Crossing Event without traffic light (normalised)",  # noqa: E501
+        yaxis_title="Death rate due to traffic accidents (per 100k)",
+        title="Crossing of pedestrain without traffic light vs. death rate"
     )
 
     for continent, color in continent_colors.items():
