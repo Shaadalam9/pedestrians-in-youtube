@@ -48,10 +48,10 @@ https://github.com/Shaadalam9/youtube-pedestrian/assets/88769183/5303f4a5-52a2-4
 
 ![Countries where the study has been conducted](https://github.com/Shaadalam9/youtube-pedestrian/assets/88769183/07d263a5-e9d6-45cf-896b-1aa94ecbff6e)
 
-[![Cell phone detected vs. death](_outputs/cell_phone_vs_death.png)](https://github.com/Shaadalam9/youtube-pedestrian/tree/main/_outputscell_phone_vs_death.html)  
+[![Cell phone detected vs. death](_outputs/cell_phone_vs_death.png)](https://github.com/Shaadalam9/youtube-pedestrian/tree/main/_outputs/cell_phone_vs_death.html)  
 Average keypresses for all videos.
 
-[![keypresses for individual videos](figures/kp_videos.png)](https://htmlpreview.github.io/?https://github.com/bazilinskyy/crossing-crowdsourcing/blob/main/figures/kp_videos.html)  
+[![keypresses for individual videos](_outputs/death_vs_crossing_event_wt_traffic_light.png)](https://github.com/Shaadalam9/youtube-pedestrian/tree/main/_outputs/death_vs_crossing_event_wt_traffic_light.html)  
 Individual keypresses for all videos.
 
 [![keypresses for one video](figures/kp_video_0.png)](https://htmlpreview.github.io/?https://github.com/bazilinskyy/crossing-crowdsourcing/blob/main/figures/kp_video_0.html)  
