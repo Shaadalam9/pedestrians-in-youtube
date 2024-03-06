@@ -51,20 +51,9 @@ https://github.com/Shaadalam9/youtube-pedestrian/assets/88769183/5303f4a5-52a2-4
 [![Cell phone detected vs. death](_outputs/cell_phone_vs_death.png)](https://github.com/Shaadalam9/youtube-pedestrian/tree/main/_outputs/cell_phone_vs_death.html)  
 Average keypresses for all videos.
 
-[![keypresses for individual videos](_outputs/death_vs_crossing_event_wt_traffic_light.png)](https://github.com/Shaadalam9/youtube-pedestrian/tree/main/_outputs/death_vs_crossing_event_wt_traffic_light.html)  
-Individual keypresses for all videos.
+[![Crossing event without traffic light](_outputs/death_vs_crossing_event_wt_traffic_light.png)](https://github.com/Shaadalam9/youtube-pedestrian/tree/main/_outputs/death_vs_crossing_event_wt_traffic_light.html)  
 
-[![keypresses for one video](figures/kp_video_0.png)](https://htmlpreview.github.io/?https://github.com/bazilinskyy/crossing-crowdsourcing/blob/main/figures/kp_video_0.html)  
-Keypresses for a selected video (video_0).
 
-[![keypresses for traffic rules](figures/kp_and_traffic_rules.png)](https://htmlpreview.github.io/?https://github.com/bazilinskyy/crossing-crowdsourcing/blob/main/figures/kp_and_traffic_rules.html)  
-Keypresses in relation to traffic rules.
-
-[![keypresses for traffic signs](figures/kp_or_cross_look.png)](https://htmlpreview.github.io/?https://github.com/bazilinskyy/crossing-crowdsourcing/blob/main/figures/kp_or_cross_look.html)  
-Keypresses in relation to the traffic signs.
-
-[![relationship between mean keypresses of participants and mean surface area of objects](figures/scatter_avg_obj_surface-avg_kp.png)](https://htmlpreview.github.io/?https://github.com/bazilinskyy/crossing-crowdsourcing/blob/main/figures/scatter_avg_obj_surface-avg_kp.html)  
-Relationship between mean keypresses of participants and mean surface area of objects.
 
 
 ## Contact
