@@ -106,7 +106,7 @@ def adjust_annotation_positions(annotations):
     return adjusted_annotations
 
 
-def save_plotly_figure(fig, filename_html, filename_png):
+def save_plotly_figure(fig, filename_html, filename_png, width=1600, height=900, scale=3):  # noqa: E501
     # Create directory if it doesn't exist
     output_folder = "_outputs"
     os.makedirs(output_folder, exist_ok=True)
@@ -115,7 +115,8 @@ def save_plotly_figure(fig, filename_html, filename_png):
     fig.write_html(os.path.join(output_folder, filename_html))
 
     # Save as PNG
-    fig.write_image(os.path.join(output_folder, filename_png))
+    fig.write_image(os.path.join(output_folder, filename_png),
+                    width=width, height=height, scale=scale)
 
 
 # Plotting Functions
@@ -744,11 +745,11 @@ for key, value in dfs.items():
 
 df_mapping = pd.read_csv("mapping.csv")
 
-# plot_cell_phone_vs_death(df_mapping, dfs)
-plot_vehicle_vs_cross_time(df_mapping, dfs, data, motorcycle=0, car=0, bus=0, truck=1)  # noqa: E501
-# plot_death_vs_crossing_event_wt_traffic_light(df_mapping, dfs, data)
-# plot_hesitation_vs_death(df_mapping, dfs)
-# plot_hesitation_vs_literacy(df_mapping, dfs)
+plot_cell_phone_vs_death(df_mapping, dfs)
+plot_vehicle_vs_cross_time(df_mapping, dfs, data, motorcycle=0, car=1, bus=0, truck=0)  # noqa: E501
+plot_death_vs_crossing_event_wt_traffic_light(df_mapping, dfs, data)
+plot_hesitation_vs_death(df_mapping, dfs)
+plot_hesitation_vs_literacy(df_mapping, dfs)
 
-# plot_speed_of_crossing_vs_death(df_mapping, dfs, data)
-# plot_speed_of_crossing_vs_literacy(df_mapping, dfs, data)
+plot_speed_of_crossing_vs_death(df_mapping, dfs, data)
+plot_speed_of_crossing_vs_literacy(df_mapping, dfs, data)
