@@ -106,7 +106,7 @@ def adjust_annotation_positions(annotations):
     return adjusted_annotations
 
 
-def save_plotly_figure(fig, filename_html, filename_png, width=1600, height=900, scale=3):  # noqa: E501
+def save_plotly_figure(fig, filename_html, filename_png, filename_svg, width=1600, height=900, scale=3):  # noqa: E501
     # Create directory if it doesn't exist
     output_folder = "_outputs"
     os.makedirs(output_folder, exist_ok=True)
@@ -117,6 +117,10 @@ def save_plotly_figure(fig, filename_html, filename_png, width=1600, height=900,
     # Save as PNG
     fig.write_image(os.path.join(output_folder, filename_png),
                     width=width, height=height, scale=scale)
+
+    # Save as SVG
+    fig.write_image(os.path.join(output_folder, filename_svg),
+                    format="svg")
 
 
 # Plotting Functions
@@ -193,9 +197,11 @@ def plot_cell_phone_vs_death(df_mapping, dfs):
                 showarrow=False
             )
         )
+
     # Adjust annotation positions to avoid overlap
     adjusted_annotations = adjust_annotation_positions(annotations)
     fig.update_layout(annotations=adjusted_annotations)
+
     # set template
     fig.update_layout(template=template)
 
@@ -203,7 +209,7 @@ def plot_cell_phone_vs_death(df_mapping, dfs):
     fig.update_layout(legend_title_text='')
 
     fig.show()
-    save_plotly_figure(fig, "cell_phone_vs_death.html", "cell_phone_vs_death.png")  # noqa: E501
+    save_plotly_figure(fig, "cell_phone_vs_death.html", "cell_phone_vs_death.png", "cell_phone_vs_death.svg")  # noqa: E501
 
 
 def plot_vehicle_vs_cross_time(df_mapping, dfs, data, motorcycle=0, car=0, bus=0, truck=0):    # noqa: E501
@@ -222,30 +228,35 @@ def plot_vehicle_vs_cross_time(df_mapping, dfs, data, motorcycle=0, car=0, bus=0
             title = "Number of motorcycle, car, bus and trucks detected vs avg crossing time"  # noqa: E501
             html_file = "all_vehicle_vs_cross_time.html"
             png_file = "all_vehicle_vs_cross_time.png"
+            svg_file = "all_vehicle_vs_cross_time.svg"
 
         elif motorcycle == 1:
             vehicle_ids = dataframe[(dataframe["YOLO_id"] == 2)]
             title = "Number of motorcycles detected vs avg crossing time"
             html_file = "motorcycle_vs_cross_time.html"
             png_file = "motorcycle_vs_cross_time.png"
+            svg_file = "motorcycle_vs_cross_time.svg"
 
         elif car == 1:
             vehicle_ids = dataframe[(dataframe["YOLO_id"] == 3)]
             title = "Number of cars detected vs avg crossing time"
             html_file = "car_vs_cross_time.html"
             png_file = "car_vs_cross_time.png"
+            svg_file = "car_vs_cross_time.svg"
 
         elif bus == 1:
             vehicle_ids = dataframe[(dataframe["YOLO_id"] == 5)]
             title = "Number of buses and detected vs avg crossing time"
             html_file = "bus_vs_cross_time.html"
             png_file = "bus_vs_cross_time.png"
+            svg_file = "bus_vs_cross_time.svg"
 
         elif truck == 1:
             vehicle_ids = dataframe[(dataframe["YOLO_id"] == 7)]
             title = "Number of trucks detected vs avg crossing time"
             html_file = "truck_vs_cross_time.html"
             png_file = "truck_vs_cross_time.png"
+            svg_file = "truck_vs_cross_time.svg"
 
         else:
             print("No plot generated")
@@ -326,7 +337,7 @@ def plot_vehicle_vs_cross_time(df_mapping, dfs, data, motorcycle=0, car=0, bus=0
 
     fig.show()
 
-    save_plotly_figure(fig, html_file, png_file)  # noqa: E501
+    save_plotly_figure(fig, html_file, png_file, svg_file)
 
 
 def plot_hesitation_vs_death(df_mapping, dfs, person_id=0):
@@ -433,7 +444,7 @@ def plot_hesitation_vs_death(df_mapping, dfs, person_id=0):
     fig.update_layout(template=template)
     fig.update_layout(legend_title_text=" ")
     fig.show()
-    save_plotly_figure(fig, "hesitation_vs_death.html", "hesitation_vs_death.png")  # noqa: E501
+    save_plotly_figure(fig, "hesitation_vs_death.html", "hesitation_vs_death.png", "hesitation_vs_death.svg")  # noqa: E501
 
 
 def plot_hesitation_vs_literacy(df_mapping, dfs, person_id=0):
@@ -537,7 +548,9 @@ def plot_death_vs_crossing_event_wt_traffic_light(df_mapping, dfs, data):
     fig.update_layout(template=template)
     fig.update_layout(legend_title_text=" ")
     fig.show()
-    save_plotly_figure(fig, "death_vs_crossing_event_wt_traffic_light.html", "death_vs_crossing_event_wt_traffic_light.png")  # noqa: E501
+    save_plotly_figure(fig, "death_vs_crossing_event_wt_traffic_light.html",
+                       "death_vs_crossing_event_wt_traffic_light.png",
+                       "death_vs_crossing_event_wt_traffic_light.svg")
 
 
 def plot_speed_of_crossing_vs_death(df_mapping, dfs, data):
@@ -630,7 +643,9 @@ def plot_speed_of_crossing_vs_death(df_mapping, dfs, data):
     fig.update_layout(legend_title_text='')
 
     fig.show()
-    save_plotly_figure(fig, "speed_of_crossing_vs_death.html", "speed_of_crossing_vs_death.png")  # noqa: E501
+    save_plotly_figure(fig, "speed_of_crossing_vs_death.html",
+                       "speed_of_crossing_vs_death.png",
+                       "speed_of_crossing_vs_death.svg")
 
 
 def plot_speed_of_crossing_vs_literacy(df_mapping, dfs, data):
@@ -722,7 +737,7 @@ def plot_speed_of_crossing_vs_literacy(df_mapping, dfs, data):
     fig.update_layout(legend_title_text='')
 
     fig.show()
-    save_plotly_figure(fig, "speed_of_crossing_vs_literacy.html", "speed_of_crossing_vs_literacy.png")  # noqa: E501
+    save_plotly_figure(fig, "speed_of_crossing_vs_literacy.html", "speed_of_crossing_vs_literacy.png", "speed_of_crossing_vs_literacy.svg")  # noqa: E501
 
 
 def plot_traffic_safety_vs_death(df_mapping, dfs):
@@ -807,7 +822,7 @@ def plot_traffic_safety_vs_death(df_mapping, dfs):
     save_plotly_figure(fig, "traffic_safety_vs_death.html", "traffic_safety_vs_death.png")  # noqa: E501
 
 
-def plot_traffic_safety_vs_literacy(sf_mapping, dfs):
+def plot_traffic_safety_vs_literacy(df_mapping, dfs):
     # find the correlation between traffic safety instrument and death
     info = {}
     literacy, continents, gdp, conditions, time_ = [], [], [], [], []
@@ -886,33 +901,34 @@ def plot_traffic_safety_vs_literacy(sf_mapping, dfs):
 
     fig.show()
 
-    save_plotly_figure(fig, "traffic_safety_vs_literacy.html", "traffic_safety_vs_literacy.png")  # noqa: E501
+    save_plotly_figure(fig, "traffic_safety_vs_literacy.html", "traffic_safety_vs_literacy.png", "traffic_safety_vs_literacy.svg")  # noqa: E501
 
 
 # Execute analysis
-logger.info("Analysis started.")
-dfs = read_csv_files(common.get_configs('data'))
-pedestrian_crossing_count, data = {}, {}
+if __name__ == "__main__":
+    logger.info("Analysis started.")
+    dfs = read_csv_files(common.get_configs('data'))
+    pedestrian_crossing_count, data = {}, {}
 
-# Loop over rows of data
-for key, value in dfs.items():
-    logger.info("Analysing data from {}.", key)
-    count, ids = pedestrian_crossing(dfs[key], 0.45, 0.55, 0)
-    pedestrian_crossing_count[key] = {"count": count, "ids": ids}
-    data[key] = time_to_cross(dfs[key], pedestrian_crossing_count[key]["ids"])
-# Data is dictionary in the form {City : Values}. Values itself is another
-# dictionary which is {Unique Id of person : Avg time to cross the road}
+    # Loop over rows of data
+    for key, value in dfs.items():
+        logger.info("Analysing data from {}.", key)
+        count, ids = pedestrian_crossing(dfs[key], 0.45, 0.55, 0)
+        pedestrian_crossing_count[key] = {"count": count, "ids": ids}
+        data[key] = time_to_cross(dfs[key], pedestrian_crossing_count[key]["ids"])  # noqa: E501
+    # Data is dictionary in the form {City : Values}. Values itself is another
+    # dictionary which is {Unique Id of person : Avg time to cross the road}
 
-df_mapping = pd.read_csv("mapping.csv")
+    df_mapping = pd.read_csv("mapping.csv")
 
-# plot_cell_phone_vs_death(df_mapping, dfs)
-# plot_vehicle_vs_cross_time(df_mapping, dfs, data, motorcycle=0, car=1, bus=0, truck=0)  # noqa: E501
-# plot_death_vs_crossing_event_wt_traffic_light(df_mapping, dfs, data)
-# plot_hesitation_vs_death(df_mapping, dfs)
-# plot_hesitation_vs_literacy(df_mapping, dfs)
+    # plot_cell_phone_vs_death(df_mapping, dfs)
+    # plot_vehicle_vs_cross_time(df_mapping, dfs, data, motorcycle=0, car=1, bus=0, truck=0)  # noqa: E501
+    # plot_death_vs_crossing_event_wt_traffic_light(df_mapping, dfs, data)
+    # plot_hesitation_vs_death(df_mapping, dfs)
+    # plot_hesitation_vs_literacy(df_mapping, dfs)
 
-# plot_speed_of_crossing_vs_death(df_mapping, dfs, data)
-# plot_speed_of_crossing_vs_literacy(df_mapping, dfs, data)
+    # plot_speed_of_crossing_vs_death(df_mapping, dfs, data)
+    # plot_speed_of_crossing_vs_literacy(df_mapping, dfs, data)
 
-# plot_traffic_safety_vs_death(df_mapping, dfs)
-plot_traffic_safety_vs_literacy(df_mapping, dfs)
+    # plot_traffic_safety_vs_death(df_mapping, dfs)
+    # plot_traffic_safety_vs_literacy(df_mapping, dfs)
