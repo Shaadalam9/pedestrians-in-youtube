@@ -212,6 +212,7 @@ def plot_cell_phone_vs_death(df_mapping, dfs):
     save_plotly_figure(fig, "cell_phone_vs_death.html", "cell_phone_vs_death.png", "cell_phone_vs_death.svg")  # noqa: E501
 
 
+# TODO: check if there is a csv with avg vehicle ownership/usage on the city/country level   # noqa: E501
 def plot_vehicle_vs_cross_time(df_mapping, dfs, data, motorcycle=0, car=0, bus=0, truck=0):    # noqa: E501
     info, time_dict = {}, {}
     time_avg, continents, gdp, conditions, time_ = [], [], [], [], []
@@ -223,37 +224,44 @@ def plot_vehicle_vs_cross_time(df_mapping, dfs, data, motorcycle=0, car=0, bus=0
         time_cross = []
         dataframe = value
 
+        # TODO: output vector images as EPS. overleaf makes svg as rastor (?)
+        # TODO: remove titles
+        # TODO: correct En in axis
+        # TODO: legend inside (id does not overlay datapoints)
+        # location of legend inside of figure
+        # fig.update_layout(
+        #     legend=dict(
+        #         x=0.887,
+        #         y=0.986,
+        #         traceorder="normal",
+        #     )
+        # )
         if motorcycle == 1 & car == 1 & bus == 1 & truck == 1:
             vehicle_ids = dataframe[(dataframe["YOLO_id"] == 2) | (dataframe["YOLO_id"] == 3) | (dataframe["YOLO_id"] == 5) | (dataframe["YOLO_id"] == 7)]  # noqa: E501
-            title = "Number of motorcycle, car, bus and trucks detected vs avg crossing time"  # noqa: E501
             html_file = "all_vehicle_vs_cross_time.html"
             png_file = "all_vehicle_vs_cross_time.png"
             svg_file = "all_vehicle_vs_cross_time.svg"
 
         elif motorcycle == 1:
             vehicle_ids = dataframe[(dataframe["YOLO_id"] == 2)]
-            title = "Number of motorcycles detected vs avg crossing time"
             html_file = "motorcycle_vs_cross_time.html"
             png_file = "motorcycle_vs_cross_time.png"
             svg_file = "motorcycle_vs_cross_time.svg"
 
         elif car == 1:
             vehicle_ids = dataframe[(dataframe["YOLO_id"] == 3)]
-            title = "Number of cars detected vs avg crossing time"
             html_file = "car_vs_cross_time.html"
             png_file = "car_vs_cross_time.png"
             svg_file = "car_vs_cross_time.svg"
 
         elif bus == 1:
             vehicle_ids = dataframe[(dataframe["YOLO_id"] == 5)]
-            title = "Number of buses and detected vs avg crossing time"
             html_file = "bus_vs_cross_time.html"
             png_file = "bus_vs_cross_time.png"
             svg_file = "bus_vs_cross_time.svg"
 
         elif truck == 1:
             vehicle_ids = dataframe[(dataframe["YOLO_id"] == 7)]
-            title = "Number of trucks detected vs avg crossing time"
             html_file = "truck_vs_cross_time.html"
             png_file = "truck_vs_cross_time.png"
             svg_file = "truck_vs_cross_time.svg"
@@ -301,7 +309,6 @@ def plot_vehicle_vs_cross_time(df_mapping, dfs, data, motorcycle=0, car=0, bus=0
     fig.update_layout(
         xaxis_title="Average crossing time",
         yaxis_title="Number of vehicle detected (normalised)",
-        title=title
     )
 
     for continent, color in continent_colors.items():
@@ -553,6 +560,7 @@ def plot_death_vs_crossing_event_wt_traffic_light(df_mapping, dfs, data):
                        "death_vs_crossing_event_wt_traffic_light.svg")
 
 
+# TODO: markers disappear when sub selection is done
 def plot_speed_of_crossing_vs_death(df_mapping, dfs, data):
     avg_speed = {}
     continents, gdp, death, conditions, time_ = [], [], [], [], []
