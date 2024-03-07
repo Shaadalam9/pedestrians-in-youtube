@@ -50,10 +50,10 @@ https://github.com/Shaadalam9/youtube-pedestrian/assets/88769183/5303f4a5-52a2-4
 
 ![Countries where the study has been conducted](https://github.com/Shaadalam9/youtube-pedestrian/assets/88769183/07d263a5-e9d6-45cf-896b-1aa94ecbff6e)
 
-[![Cell phone detected vs. death](figures/cell_phone_vs_death.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/tree/main/figures/cell_phone_vs_death.html)  
+[![Cell phone detected vs. death](figures/cell_phone_vs_death.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/cell_phone_vs_death.html)  
 Cell phone detected vs. death
 
-[![Crossing event without traffic light](figures/death_vs_crossing_event_wt_traffic_light.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/tree/main/figures/death_vs_crossing_event_wt_traffic_light.html)  
+[![Crossing event without traffic light](figures/death_vs_crossing_event_wt_traffic_light.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/death_vs_crossing_event_wt_traffic_light.html)  
 Crossing event without traffic light
 
 
