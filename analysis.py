@@ -124,7 +124,7 @@ def save_plotly_figure(fig, filename_html, filename_png, filename_svg, width=160
 
 
 # Plotting Functions
-def plot_cell_phone_vs_death(df_mapping, dfs):
+def plot_cell_phone_vs_traffic_mortality(df_mapping, dfs):
     info = {}
     time_, death, continents, gdp, conditions = [], [], [], [], []
     for key, value in dfs.items():
@@ -170,9 +170,8 @@ def plot_cell_phone_vs_death(df_mapping, dfs):
 
     # Adding labels and title
     fig.update_layout(
-        xaxis_title="Death rate due to traffic accidents (per 100k)",
-        yaxis_title="Number of Mobile detected in the video (normalised)",
-        title="Cell Phone detected in the video vs Death Rate due to traffic accidents"  # noqa: E501
+        xaxis_title="Traffic mortality rate per 100k person",  # noqa: E501
+        yaxis_title="Number of Mobile detected in the video (normalised)"
     )
 
     for continent, color in continent_colors.items():
@@ -208,8 +207,16 @@ def plot_cell_phone_vs_death(df_mapping, dfs):
     # Remove legend title
     fig.update_layout(legend_title_text='')
 
+    fig.update_layout(
+            legend=dict(
+                x=0.887,
+                y=0.986,
+                traceorder="normal",
+            )
+        )
+
     fig.show()
-    save_plotly_figure(fig, "cell_phone_vs_death.html", "cell_phone_vs_death.png", "cell_phone_vs_death.svg")  # noqa: E501
+    save_plotly_figure(fig, "cell_phone_vs_traffic_mortality.html", "cell_phone_vs_traffic_mortality.png", "cell_phone_vs_traffic mortality.svg")  # noqa: E501
 
 
 # TODO: check if there is a csv with avg vehicle ownership/usage on the city/country level   # noqa: E501
@@ -225,17 +232,7 @@ def plot_vehicle_vs_cross_time(df_mapping, dfs, data, motorcycle=0, car=0, bus=0
         dataframe = value
 
         # TODO: output vector images as EPS. overleaf makes svg as rastor (?)
-        # TODO: remove titles
-        # TODO: correct En in axis
-        # TODO: legend inside (id does not overlay datapoints)
-        # location of legend inside of figure
-        # fig.update_layout(
-        #     legend=dict(
-        #         x=0.887,
-        #         y=0.986,
-        #         traceorder="normal",
-        #     )
-        # )
+
         if motorcycle == 1 & car == 1 & bus == 1 & truck == 1:
             vehicle_ids = dataframe[(dataframe["YOLO_id"] == 2) | (dataframe["YOLO_id"] == 3) | (dataframe["YOLO_id"] == 5) | (dataframe["YOLO_id"] == 7)]  # noqa: E501
             html_file = "all_vehicle_vs_cross_time.html"
@@ -342,12 +339,20 @@ def plot_vehicle_vs_cross_time(df_mapping, dfs, data, motorcycle=0, car=0, bus=0
     # Remove legend title
     fig.update_layout(legend_title_text='')
 
+    fig.update_layout(
+            legend=dict(
+                x=0.887,
+                y=0.986,
+                traceorder="normal",
+            )
+        )
+
     fig.show()
 
     save_plotly_figure(fig, html_file, png_file, svg_file)
 
 
-def plot_hesitation_vs_death(df_mapping, dfs, person_id=0):
+def plot_hesitation_vs_traffic_mortality(df_mapping, dfs, person_id=0):
     count_dict = {}
     time_, death, continents, gdp, conditions = [], [], [], [], []
     for location, df in dfs.items():
@@ -418,8 +423,7 @@ def plot_hesitation_vs_death(df_mapping, dfs, person_id=0):
     # Adding labels and title
     fig.update_layout(
         xaxis_title="No. of hesitation encountered before crossing the road (normalised)",  # noqa: E501
-        yaxis_title="Death rate due to traffic accidents (per 100k)",
-        title="No. of hesitation vs. death rate"
+        yaxis_title="Traffic mortality rate per 100k person",  # noqa: E501
     )
 
     for continent, color in continent_colors.items():
@@ -450,15 +454,22 @@ def plot_hesitation_vs_death(df_mapping, dfs, person_id=0):
     # set template
     fig.update_layout(template=template)
     fig.update_layout(legend_title_text=" ")
+    fig.update_layout(
+            legend=dict(
+                x=0.887,
+                y=0.986,
+                traceorder="normal",
+            )
+        )
     fig.show()
-    save_plotly_figure(fig, "hesitation_vs_death.html", "hesitation_vs_death.png", "hesitation_vs_death.svg")  # noqa: E501
+    save_plotly_figure(fig, "hesitation_vs_traffic_mortality.html", "hesitation_vs_traffic_mortality.png", "hesitation_vs_traffic_mortality.svg")  # noqa: E501
 
 
 def plot_hesitation_vs_literacy(df_mapping, dfs, person_id=0):
     pass
 
 
-def plot_death_vs_crossing_event_wt_traffic_light(df_mapping, dfs, data):
+def plot_traffic_mortality_vs_crossing_event_wt_traffic_light(df_mapping, dfs, data):   # noqa: E501
     var_exist, var_nt_exist, total_per, ratio = {}, {}, {}, {}
     continents, gdp, death, conditions, time_ = [], [], [], [], []
 
@@ -523,7 +534,6 @@ def plot_death_vs_crossing_event_wt_traffic_light(df_mapping, dfs, data):
     fig.update_layout(
         xaxis_title="Percentage of Crossing Event without traffic light (normalised)",  # noqa: E501
         yaxis_title="Death rate due to traffic accidents (per 100k)",
-        title="Crossing of pedestrain without traffic light vs. death rate"
     )
 
     for continent, color in continent_colors.items():
@@ -554,6 +564,13 @@ def plot_death_vs_crossing_event_wt_traffic_light(df_mapping, dfs, data):
     # set template
     fig.update_layout(template=template)
     fig.update_layout(legend_title_text=" ")
+    fig.update_layout(
+            legend=dict(
+                x=0.887,
+                y=0.986,
+                traceorder="normal",
+            )
+        )
     fig.show()
     save_plotly_figure(fig, "death_vs_crossing_event_wt_traffic_light.html",
                        "death_vs_crossing_event_wt_traffic_light.png",
@@ -615,8 +632,7 @@ def plot_speed_of_crossing_vs_death(df_mapping, dfs, data):
     # Adding labels and title
     fig.update_layout(
         xaxis_title="Average speed of the pedestrian to cross the road",  # noqa: E501
-        yaxis_title="Death rate due to traffic accidents (per 100k)",
-        title="Average speed of the pedestrian to cross the road vs Death Rate due to traffic accidents"  # noqa: E501
+        yaxis_title="Death rate due to traffic accidents (per 100k)"
     )
 
     for continent, color in continent_colors.items():
@@ -650,10 +666,18 @@ def plot_speed_of_crossing_vs_death(df_mapping, dfs, data):
     # Remove legend title
     fig.update_layout(legend_title_text='')
 
+    fig.update_layout(
+            legend=dict(
+                x=0.887,
+                y=0.986,
+                traceorder="normal",
+            )
+        )
+
     fig.show()
-    save_plotly_figure(fig, "speed_of_crossing_vs_death.html",
-                       "speed_of_crossing_vs_death.png",
-                       "speed_of_crossing_vs_death.svg")
+    save_plotly_figure(fig, "speed_of_crossing_vs_traffic_mortality.html",
+                       "speed_of_crossing_vs_traffic_mortality.png",
+                       "speed_of_crossing_vs_traffic_mortality.svg")
 
 
 def plot_speed_of_crossing_vs_literacy(df_mapping, dfs, data):
@@ -709,8 +733,7 @@ def plot_speed_of_crossing_vs_literacy(df_mapping, dfs, data):
     # Adding labels and title
     fig.update_layout(
         xaxis_title="Average speed of the pedestrian to cross the road",  # noqa: E501
-        yaxis_title="Literacy rate in the country",
-        title="Average speed of the pedestrian to cross the road vs Death Rate due to traffic accidents"  # noqa: E501
+        yaxis_title="Literacy rate in the country"
     )
 
     for continent, color in continent_colors.items():
@@ -744,11 +767,19 @@ def plot_speed_of_crossing_vs_literacy(df_mapping, dfs, data):
     # Remove legend title
     fig.update_layout(legend_title_text='')
 
+    fig.update_layout(
+            legend=dict(
+                x=0.887,
+                y=0.986,
+                traceorder="normal",
+            )
+        )
+
     fig.show()
     save_plotly_figure(fig, "speed_of_crossing_vs_literacy.html", "speed_of_crossing_vs_literacy.png", "speed_of_crossing_vs_literacy.svg")  # noqa: E501
 
 
-def plot_traffic_safety_vs_death(df_mapping, dfs):
+def plot_traffic_safety_vs_traffic_mortality(df_mapping, dfs):
     # find the correlation between traffic safety instrument and death
     info = {}
     death, continents, gdp, conditions, time_ = [], [], [], [], []
@@ -790,8 +821,7 @@ def plot_traffic_safety_vs_death(df_mapping, dfs):
     # Adding labels and title
     fig.update_layout(
         xaxis_title="Number of traffic instruments detected (normalised)",
-        yaxis_title="Death of people due to traffic (100k)",
-        title="Number of instruments detected vs death"
+        yaxis_title="Traffic mortality rate per 100k person"
     )
 
     for continent, color in continent_colors.items():
@@ -825,9 +855,17 @@ def plot_traffic_safety_vs_death(df_mapping, dfs):
     # Remove legend title
     fig.update_layout(legend_title_text='')
 
+    fig.update_layout(
+            legend=dict(
+                x=0.887,
+                y=0.986,
+                traceorder="normal",
+            )
+        )
+
     fig.show()
 
-    save_plotly_figure(fig, "traffic_safety_vs_death.html", "traffic_safety_vs_death.png")  # noqa: E501
+    save_plotly_figure(fig, "traffic_safety_vs_traffic_mortality.html", "traffic_safety_vs_traffic_mortality.png", "traffic_safety_vs_traffic_mortality.svg")  # noqa: E501
 
 
 def plot_traffic_safety_vs_literacy(df_mapping, dfs):
@@ -872,8 +910,7 @@ def plot_traffic_safety_vs_literacy(df_mapping, dfs):
     # Adding labels and title
     fig.update_layout(
         xaxis_title="Number of traffic instruments detected (normalised)",
-        yaxis_title="Literacy rate (in percentage)",
-        title="Number of instruments detected vs literacy rate"
+        yaxis_title="Literacy rate (in percentage)"
     )
 
     for continent, color in continent_colors.items():
@@ -907,6 +944,13 @@ def plot_traffic_safety_vs_literacy(df_mapping, dfs):
     # Remove legend title
     fig.update_layout(legend_title_text='')
 
+    fig.update_layout(
+            legend=dict(
+                x=0.887,
+                y=0.986,
+                traceorder="normal",
+            )
+        )
     fig.show()
 
     save_plotly_figure(fig, "traffic_safety_vs_literacy.html", "traffic_safety_vs_literacy.png", "traffic_safety_vs_literacy.svg")  # noqa: E501
@@ -929,14 +973,14 @@ if __name__ == "__main__":
 
     df_mapping = pd.read_csv("mapping.csv")
 
-    # plot_cell_phone_vs_death(df_mapping, dfs)
-    # plot_vehicle_vs_cross_time(df_mapping, dfs, data, motorcycle=0, car=1, bus=0, truck=0)  # noqa: E501
-    # plot_death_vs_crossing_event_wt_traffic_light(df_mapping, dfs, data)
-    # plot_hesitation_vs_death(df_mapping, dfs)
-    # plot_hesitation_vs_literacy(df_mapping, dfs)
+    plot_cell_phone_vs_traffic_mortality(df_mapping, dfs)
+    plot_vehicle_vs_cross_time(df_mapping, dfs, data, motorcycle=0, car=1, bus=0, truck=0)  # noqa: E501
+    plot_traffic_mortality_vs_crossing_event_wt_traffic_light(df_mapping, dfs, data)  # noqa: E501
+    plot_hesitation_vs_traffic_mortality(df_mapping, dfs)
+    plot_hesitation_vs_literacy(df_mapping, dfs)
 
-    # plot_speed_of_crossing_vs_death(df_mapping, dfs, data)
-    # plot_speed_of_crossing_vs_literacy(df_mapping, dfs, data)
+    plot_speed_of_crossing_vs_death(df_mapping, dfs, data)
+    plot_speed_of_crossing_vs_literacy(df_mapping, dfs, data)
 
-    # plot_traffic_safety_vs_death(df_mapping, dfs)
-    # plot_traffic_safety_vs_literacy(df_mapping, dfs)
+    plot_traffic_safety_vs_traffic_mortality(df_mapping, dfs)
+    plot_traffic_safety_vs_literacy(df_mapping, dfs)
