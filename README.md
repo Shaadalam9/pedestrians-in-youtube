@@ -62,6 +62,8 @@ Speed of crossing the road vs. Literacy rate of the country
 Number of traffic safety equipment detected vs. Literacy rate  of the country
 [![Number of traffic safety equipment detected vs. Literacy rate  of the country](figures/traffic_safety_vs_literacy.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/traffic_safety_vs_literacy.html)  
 
+Number of motor Vehicles detected vs. Average crossing time
+[![Number of Motor Vehicles detected vs. Average crossing time](figures/all_vehicle_vs_cross_time.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/all_vehicle_vs_cross_time.html)  
 
 ## Contact
 If you have any questions or suggestions, feel free to reach out to md_shadab_alam@outlook.com
