@@ -108,7 +108,7 @@ def adjust_annotation_positions(annotations):
 
 def save_plotly_figure(fig, filename_html, filename_png, filename_svg, width=1600, height=900, scale=3):  # noqa: E501
     # Create directory if it doesn't exist
-    output_folder = "figures"
+    output_folder = "_outputs"
     os.makedirs(output_folder, exist_ok=True)
 
     # Save as HTML
