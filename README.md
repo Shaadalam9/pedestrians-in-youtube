@@ -50,13 +50,20 @@ https://github.com/Shaadalam9/youtube-pedestrian/assets/88769183/5303f4a5-52a2-4
 
 ![Countries where the study has been conducted](https://github.com/Shaadalam9/youtube-pedestrian/assets/88769183/07d263a5-e9d6-45cf-896b-1aa94ecbff6e)
 
-[![Cell phone detected vs. death](figures/cell_phone_vs_death.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/cell_phone_vs_death.html)  
-Cell phone detected vs. death
+Number of traffic safety equipment detected vs. traffic mortality rate
+[![Number of traffic safety equipment detected vs. traffic mortality rate](figures/traffic_safety_vs_traffic_mortality.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/traffic_safety_vs_traffic_mortality.html)  
 
-[![Crossing event without traffic light](figures/death_vs_crossing_event_wt_traffic_light.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/death_vs_crossing_event_wt_traffic_light.html)  
-Crossing event without traffic light
+Number of people hesitated vs. Traffic mortality rate
+[![Number of people hesitated vs. Traffic mortality rate](figures/hesitation_vs_traffic_mortality.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/hesitation_vs_traffic_mortality.html)  
 
+Speed of crossing the road vs. Literacy rate of the country
+[![Speed of crossing the road vs. Literacy rate of the country](figures/speed_of_crossing_vs_literacy.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/speed_of_crossing_vs_literacy.html)
 
+Number of traffic safety equipment detected vs. Literacy rate  of the country
+[![Number of traffic safety equipment detected vs. Literacy rate  of the country](figures/traffic_safety_vs_literacy.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/traffic_safety_vs_literacy.html)  
+
+Number of motor Vehicles detected vs. Average crossing time
+[![Number of Motor Vehicles detected vs. Average crossing time](figures/all_vehicle_vs_cross_time.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/all_vehicle_vs_cross_time.html)  
 
 ## Contact
 If you have any questions or suggestions, feel free to reach out to md_shadab_alam@outlook.com
