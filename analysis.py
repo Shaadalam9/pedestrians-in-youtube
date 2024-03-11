@@ -422,7 +422,7 @@ def plot_hesitation_vs_traffic_mortality(df_mapping, dfs, person_id=0):
 
     # Adding labels and title
     fig.update_layout(
-        xaxis_title="No. of hesitation encountered before crossing the road (normalised)",  # noqa: E501
+        xaxis_title="Number of people who hesitated while crossing the road (normalised)",  # noqa: E501
         yaxis_title="Traffic mortality rate per 100k person",  # noqa: E501
     )
 
@@ -457,7 +457,7 @@ def plot_hesitation_vs_traffic_mortality(df_mapping, dfs, person_id=0):
     fig.update_layout(
             legend=dict(
                 x=0.887,
-                y=0.986,
+                y=0.05,
                 traceorder="normal",
             )
         )
@@ -857,7 +857,7 @@ def plot_traffic_safety_vs_traffic_mortality(df_mapping, dfs):
     fig.update_layout(
             legend=dict(
                 x=0.887,
-                y=0.986,
+                y=0.05,
                 traceorder="normal",
             )
         )
@@ -945,7 +945,7 @@ def plot_traffic_safety_vs_literacy(df_mapping, dfs):
     fig.update_layout(
             legend=dict(
                 x=0.887,
-                y=0.986,
+                y=0.05,
                 traceorder="normal",
             )
         )
@@ -972,7 +972,7 @@ if __name__ == "__main__":
     df_mapping = pd.read_csv("mapping.csv")
 
     plot_cell_phone_vs_traffic_mortality(df_mapping, dfs)
-    plot_vehicle_vs_cross_time(df_mapping, dfs, data, motorcycle=0, car=1, bus=0, truck=0)  # noqa: E501
+    plot_vehicle_vs_cross_time(df_mapping, dfs, data, motorcycle=1, car=1, bus=1, truck=1)  # noqa: E501
     plot_traffic_mortality_vs_crossing_event_wt_traffic_light(df_mapping, dfs, data)  # noqa: E501
     plot_hesitation_vs_traffic_mortality(df_mapping, dfs)
     plot_hesitation_vs_literacy(df_mapping, dfs)
