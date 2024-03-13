@@ -6,6 +6,7 @@ check.py
 _outputs
 .vscode/
 params.py
+source_videos
 
 # macOS
 **/.DS_Store
