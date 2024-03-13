@@ -6,6 +6,7 @@ from statistics import mean
 import common
 from custom_logger import CustomLogger
 from logmod import logs
+import statistics
 
 
 logs(show_level='info', show_color=True)
@@ -353,7 +354,7 @@ def plot_vehicle_vs_cross_time(df_mapping, dfs, data, motorcycle=0, car=0, bus=0
 
 
 # On an average how many times a person who is crossing a road will hesitate to do it.   # noqa: E501
-def plot_time_to_start_crossing(df_mapping, dfs, person_id=0):
+def plot_time_to_start_crossing(dfs, person_id=0):
     time_dict = {}
     for location, df in dfs.items():
         data = {}
@@ -396,8 +397,9 @@ def plot_time_to_start_crossing(df_mapping, dfs, person_id=0):
 
         if len(data) == 0:
             continue
-
-        time_dict[location] = (sum(data.values()) / len(data)) / 30
+        values = list(data.values())
+        sd = statistics.stdev(values)
+        time_dict = {'location': (((sum(data.values()) / len(data)) / 30), sd)}
 
     day_values = {}
     night_values = {}
@@ -405,14 +407,14 @@ def plot_time_to_start_crossing(df_mapping, dfs, person_id=0):
         city, condition = key.split('_')
         if city in day_values:
             if condition == '0':
-                day_values[city] += value
+                day_values[city] += value[0]
             else:
-                night_values[city] = value
+                night_values[city] = value[0]
         else:
             if condition == '0':
-                day_values[city] = value
+                day_values[city] = value[0]
             else:
-                night_values[city] = value
+                night_values[city] = value[0]
 
     # Fill missing values with 0
     for city in day_values.keys() | night_values.keys():
@@ -725,9 +727,157 @@ def plot_hesitation_vs_traffic_mortality(df_mapping, dfs, person_id=0):
     save_plotly_figure(fig, "hesitation_vs_traffic_mortality.html", "hesitation_vs_traffic_mortality.png", "hesitation_vs_traffic_mortality.svg")  # noqa: E501
 
 
-# TODO: Complete this
-def plot_hesitation_vs_literacy(df_mapping, dfs, person_id=0):
-    pass
+def plot_speed_of_crossing_vs_crossing_decision_time(df_mapping, dfs, data, person_id=0):  # noqa: E501
+    avg_speed, time_dict = {}, {}
+    continents, gdp, conditions, time_ = [], [], [], []
+
+    for city, df in data.items():
+        if df == {}:
+            continue
+        location, condition = city.split('_')
+        value = dfs.get(f"{location}_{condition}")
+
+        df_ = df_mapping[(df_mapping['Location'] == location) & (df_mapping['Condition'] == int(condition))]  # noqa: E501
+        length = df_['avg_height(cm)'].values[0]
+        time_.append(df_['Duration'].values[0])
+
+        grouped = value.groupby('Unique Id')
+        speed = []
+        for id, time in df.items():
+            grouped_with_id = grouped.get_group(id)
+            mean_height = grouped_with_id['Height'].mean()
+            min_x_center = grouped_with_id['X-center'].min()
+            max_x_center = grouped_with_id['X-center'].max()
+
+            ppm = mean_height / length
+            distance = (max_x_center - min_x_center) / ppm
+
+            speed_ = (distance / time) / 100
+            if speed_ > 2.5:
+                continue
+
+            speed.append(speed_)
+
+        avg_speed[city] = sum(speed) / len(speed)
+
+    for location, df in dfs.items():
+        data = {}
+        city, condition = location.split('_')
+        crossed_ids = df[(df["YOLO_id"] == person_id)]
+
+        # Makes group based on Unique ID
+        crossed_ids_grouped = crossed_ids.groupby("Unique Id")
+
+        for unique_id, group_data in crossed_ids_grouped:
+            x_values = group_data["X-center"].values
+            initial_x = x_values[0]  # Initial x-value
+            mean_height = group_data['Height'].mean()
+            flag = 0
+            margin = 0.1 * mean_height
+            consecutive_frame = 0
+
+            for i in range(0, len(x_values)-1):
+                if initial_x < 0.5:
+                    if (x_values[i] - margin <= x_values[i+1] <= x_values[i] + margin):   # noqa: E501
+                        consecutive_frame += 1
+                        if consecutive_frame == 3:
+                            flag = 1
+                    elif flag == 1:
+                        data[unique_id] = consecutive_frame
+                        break
+                    else:
+                        consecutive_frame = 0
+
+                else:
+                    if (x_values[i] - margin >= x_values[i+1] >= x_values[i] + margin):   # noqa: E501
+                        consecutive_frame += 1
+                        if consecutive_frame == 3:
+                            flag = 1
+                    elif flag == 1:
+                        data[unique_id] = consecutive_frame
+                        break
+                    else:
+                        consecutive_frame = 0
+
+        if len(data) == 0:
+            continue
+
+        time_dict[location] = (sum(data.values()) / len(data)) / 30
+
+    ordered_values = []
+    for key in time_dict:
+        city, condition = key.split('_')
+
+        df_ = df_mapping[(df_mapping['Location'] == city) & (df_mapping['Condition'] == int(condition))]
+        conditions.append(int(condition))
+        continents.append(df_['Continent'].values[0])
+        gdp.append(df_['GDP_per_capita'].values[0])
+
+        ordered_values.append((time_dict[key], avg_speed[key]))
+
+    continent_colors = {'Asia': 'blue', 'Europe': 'green', 'Africa': 'red', 'North America': 'orange', 'South America': 'purple', 'Australia': 'brown'}  # noqa: E501
+
+    fig = px.scatter(x=[value[0] for value in ordered_values],
+                     y=[value[1] for value in ordered_values],
+                     size=gdp,
+                     color=continents,
+                     symbol=conditions,  # Use conditions for symbols
+                     labels={"color": "Continent"},  # Rename color legend
+                     color_discrete_map=continent_colors)
+
+    # Hide legend for all traces generated by Plotly Express
+    for trace in fig.data:
+        trace.showlegend = False
+
+    # Adding labels and title
+    fig.update_layout(
+        xaxis_title="Average time pedestrian takes for crossing decision (in s)",  # noqa: E501
+        yaxis_title="Average speed of pedestrian while crossing the road (in m/s)"   # noqa: E501
+    )
+
+    for continent, color in continent_colors.items():
+        if continent in continents:
+            fig.add_trace(go.Scatter(x=[None], y=[None], mode='markers', marker=dict(color=color), name=continent))  # noqa: E501
+
+    # Adding manual legend for symbols
+    symbols_legend = {'triangle-up': 'Night', 'circle': 'Day'}
+    for symbol, description in symbols_legend.items():
+        fig.add_trace(go.Scatter(x=[None], y=[None], mode='markers',
+                                 marker=dict(symbol=symbol, color='rgba(0,0,0,0)', line=dict(color='black', width=2)), name=description))  # noqa: E501
+
+    # Adding annotations for locations
+    annotations = []
+    for i, key in enumerate(time_dict.keys()):
+        location_name = key.split('_')[0]  # Extracting location name
+        annotations.append(
+            dict(
+                x=[value[0] for value in ordered_values][i],
+                y=[value[1] for value in ordered_values][i],
+                text=location_name,  # Using location name instead of full key
+                showarrow=False
+            )
+        )
+    # Adjust annotation positions to avoid overlap
+    adjusted_annotations = adjust_annotation_positions(annotations)
+    fig.update_layout(annotations=adjusted_annotations)
+    # set template
+    fig.update_layout(template=template)
+
+    # Remove legend title
+    fig.update_layout(legend_title_text='')
+
+    fig.update_layout(
+            legend=dict(
+                x=0.935,
+                y=0.986,
+                traceorder="normal",
+            )
+        )
+
+    fig.show()
+    save_plotly_figure(fig, "speed_of_crossing_vs_crossing_decision_time.html",
+                       "speed_of_crossing_vs_crossing_decision_time.png",
+                       "speed_of_crossing_vs_crossing_decision_time.svg")
 
 
 def plot_traffic_mortality_vs_crossing_event_wt_traffic_light(df_mapping, dfs, data):   # noqa: E501
@@ -1245,5 +1395,6 @@ if __name__ == "__main__":
     # plot_traffic_safety_vs_traffic_mortality(df_mapping, dfs)
     # plot_traffic_safety_vs_literacy(df_mapping, dfs)
 
-    # plot_time_to_start_crossing(df_mapping, dfs)
-    plot_no_of_pedestrian_stop(dfs)
+    plot_time_to_start_crossing(dfs)
+    # plot_no_of_pedestrian_stop(dfs)
+    # plot_speed_of_crossing_vs_crossing_decision_time(df_mapping, dfs, data)
