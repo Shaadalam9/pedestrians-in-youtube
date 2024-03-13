@@ -352,12 +352,269 @@ def plot_vehicle_vs_cross_time(df_mapping, dfs, data, motorcycle=0, car=0, bus=0
     save_plotly_figure(fig, html_file, png_file, svg_file)
 
 
+# On an average how many times a person who is crossing a road will hesitate to do it.   # noqa: E501
+def plot_time_to_start_crossing(df_mapping, dfs, person_id=0):
+    time_dict = {}
+    for location, df in dfs.items():
+        data = {}
+        city, condition = location.split('_')
+        crossed_ids = df[(df["YOLO_id"] == person_id)]
+
+        # Makes group based on Unique ID
+        crossed_ids_grouped = crossed_ids.groupby("Unique Id")
+
+        for unique_id, group_data in crossed_ids_grouped:
+            x_values = group_data["X-center"].values
+            initial_x = x_values[0]  # Initial x-value
+            mean_height = group_data['Height'].mean()
+            flag = 0
+            margin = 0.1 * mean_height
+            consecutive_frame = 0
+
+            for i in range(0, len(x_values)-1):
+                if initial_x < 0.5:
+                    if (x_values[i] - margin <= x_values[i+1] <= x_values[i] + margin):   # noqa: E501
+                        consecutive_frame += 1
+                        if consecutive_frame == 3:
+                            flag = 1
+                    elif flag == 1:
+                        data[unique_id] = consecutive_frame
+                        break
+                    else:
+                        consecutive_frame = 0
+
+                else:
+                    if (x_values[i] - margin >= x_values[i+1] >= x_values[i] + margin):   # noqa: E501
+                        consecutive_frame += 1
+                        if consecutive_frame == 3:
+                            flag = 1
+                    elif flag == 1:
+                        data[unique_id] = consecutive_frame
+                        break
+                    else:
+                        consecutive_frame = 0
+
+        if len(data) == 0:
+            continue
+
+        time_dict[location] = (sum(data.values()) / len(data)) / 30
+
+    day_values = {}
+    night_values = {}
+    for key, value in time_dict.items():
+        city, condition = key.split('_')
+        if city in day_values:
+            if condition == '0':
+                day_values[city] += value
+            else:
+                night_values[city] = value
+        else:
+            if condition == '0':
+                day_values[city] = value
+            else:
+                night_values[city] = value
+
+    # Fill missing values with 0
+    for city in day_values.keys() | night_values.keys():
+        day_values.setdefault(city, 0)
+        night_values.setdefault(city, 0)
+
+    # Sort data based on values for condition 0
+    sorted_day_values = dict(sorted(day_values.items(), key=lambda item: item[1]))   # noqa: E501
+    sorted_cities = list(sorted_day_values.keys())
+
+    text_x = [0] * len(sorted_cities)
+
+    # Create traces for condition 0
+    trace_pos = go.Bar(
+        x=list(sorted_day_values.values()),
+        y=sorted_cities,
+        orientation='h',
+        name='Day',
+        marker=dict(color='rgba(50, 171, 96, 0.6)')
+    )
+
+    # Create traces for condition 1
+    trace_neg = go.Bar(
+        x=[-night_values[city] for city in sorted_cities],
+        y=sorted_cities,
+        orientation='h',
+        name='Night',
+        marker=dict(color='rgba(219, 64, 82, 0.6)')
+    )
+
+    # Create figure
+    fig = go.Figure(data=[trace_pos, trace_neg])
+
+    # Update layout to include text labels
+    max_value = int(max(max(day_values.values()), max(night_values.values())))
+    fig.update_layout(
+        # title='Double-Sided Bar Plot',
+        barmode='relative',
+        bargap=0.1,
+        yaxis=dict(
+            tickvals=[],
+        ),
+        xaxis=dict(
+            title="Average time taken by the pedestrian to start crossing the road (in seconds)",   # noqa: E501
+            tickvals=[-val for val in range(1, max_value + 1)] + [val for val in range(1, max_value + 1)],   # noqa: E501
+            ticktext=[abs(val) for val in range(1, max_value + 1)] + [val for val in range(1, max_value + 1)]   # noqa: E501
+        )
+    )
+
+    # Add text labels in the middle of each bar
+    for i, city in enumerate(sorted_cities):
+        fig.add_annotation(
+            x=text_x[i],  # Set the x-coordinate of the text label
+            y=city,  # Set the y-coordinate of the text label
+            text=city,  # Set the text of the label to the city name
+            font=dict(color='black'),  # Set text color to black
+            showarrow=False,  # Do not show an arrow
+            xanchor='center',  # Center the text horizontally
+            yanchor='middle'  # Center the text vertically
+        )
+
+    # Plot the figure
+    fig.show()
+
+    save_plotly_figure(fig, "time_to_start_cross.html", "time_to_start_cross.png", "time_to_start_cross.svg")  # noqa: E501
+
+
+def plot_no_of_pedestrian_stop(dfs, person_id=0):
+    count_dict = {}
+    for location, df in dfs.items():
+        data = {}
+        count = 0
+        city, condition = location.split('_')
+        crossed_ids = df[(df["YOLO_id"] == person_id)]
+
+        # Makes group based on Unique ID
+        crossed_ids_grouped = crossed_ids.groupby("Unique Id")
+
+        for unique_id, group_data in crossed_ids_grouped:
+            x_values = group_data["X-center"].values
+            initial_x = x_values[0]  # Initial x-value
+            mean_height = group_data['Height'].mean()
+            flag = 0
+            margin = 0.1 * mean_height
+            consecutive_frame = 0
+
+            for i in range(0, len(x_values)-1):
+                if initial_x < 0.5:
+                    if (x_values[i] - margin <= x_values[i+1] <= x_values[i] + margin):   # noqa: E501
+                        consecutive_frame += 1
+                        if consecutive_frame == 3:
+                            count += 1
+                            flag = 1
+                    elif flag == 1:
+                        data[unique_id] = consecutive_frame
+                        break
+                    else:
+                        consecutive_frame = 0
+
+                else:
+                    if (x_values[i] - margin >= x_values[i+1] >= x_values[i] + margin):   # noqa: E501
+                        consecutive_frame += 1
+                        if consecutive_frame == 3:
+                            count += 1
+                            flag = 1
+                    elif flag == 1:
+                        data[unique_id] = consecutive_frame
+                        break
+                    else:
+                        consecutive_frame = 0
+
+        if len(data) == 0:
+            continue
+        count_dict[location] = count/1000
+
+    day_values = {}
+    night_values = {}
+    for key, value in count_dict.items():
+        city, condition = key.split('_')
+        if city in day_values:
+            if condition == '0':
+                day_values[city] += value
+            else:
+                night_values[city] = value
+        else:
+            if condition == '0':
+                day_values[city] = value
+            else:
+                night_values[city] = value
+
+    # Fill missing values with 0
+    for city in day_values.keys() | night_values.keys():
+        day_values.setdefault(city, 0)
+        night_values.setdefault(city, 0)
+
+    # Sort data based on values for condition 0
+    sorted_day_values = dict(sorted(day_values.items(), key=lambda item: item[1]))   # noqa: E501
+    sorted_cities = list(sorted_day_values.keys())
+
+    text_x = [0] * len(sorted_cities)
+
+    # Create traces for condition 0
+    trace_pos = go.Bar(
+        x=list(sorted_day_values.values()),
+        y=sorted_cities,
+        orientation='h',
+        name='Day',
+        marker=dict(color='rgba(50, 171, 96, 0.6)')
+    )
+
+    # Create traces for condition 1
+    trace_neg = go.Bar(
+        x=[-night_values[city] for city in sorted_cities],
+        y=sorted_cities,
+        orientation='h',
+        name='Night',
+        marker=dict(color='rgba(219, 64, 82, 0.6)')
+    )
+
+    # Create figure
+    fig = go.Figure(data=[trace_pos, trace_neg])
+
+    # Update layout to include text labels
+    max_value = int(max(max(day_values.values()), max(night_values.values())))
+    fig.update_layout(
+        # title='Double-Sided Bar Plot',
+        barmode='relative',
+        bargap=0.1,
+        yaxis=dict(
+            tickvals=[],
+        ),
+        xaxis=dict(
+            title="No of pedestrian in the study (in thousands)",   # noqa: E501
+            tickvals=[-val for val in range(1, max_value + 1)] + [val for val in range(1, max_value + 1)],   # noqa: E501
+            ticktext=[abs(val) for val in range(1, max_value + 1)] + [val for val in range(1, max_value + 1)]   # noqa: E501
+        )
+    )
+
+    # Add text labels in the middle of each bar
+    for i, city in enumerate(sorted_cities):
+        fig.add_annotation(
+            x=text_x[i],  # Set the x-coordinate of the text label
+            y=city,  # Set the y-coordinate of the text label
+            text=city,  # Set the text of the label to the city name
+            font=dict(color='black'),  # Set text color to black
+            showarrow=False,  # Do not show an arrow
+            xanchor='center',  # Center the text horizontally
+            yanchor='middle'  # Center the text vertically
+        )
+
+    # Plot the figure
+    fig.show()
+
+    save_plotly_figure(fig, "no_of_cases_for_cross.html", "no_of_cases_for_cross.png", "no_of_cases_for_cross.svg")  # noqa: E501
+
+
 def plot_hesitation_vs_traffic_mortality(df_mapping, dfs, person_id=0):
     count_dict = {}
     time_, traffic_mortality, continents, gdp, conditions = [], [], [], [], []
     for location, df in dfs.items():
         city, condition = location.split('_')
-        count = 0
+        count, pedestrian_count = 0, 0
         crossed_ids = df[(df["YOLO_id"] == person_id)]
 
         # Makes group based on Unique ID
@@ -376,35 +633,38 @@ def plot_hesitation_vs_traffic_mortality(df_mapping, dfs, person_id=0):
                     if (x_values[i + 10] > x_values[i]):
                         consecutive_frames += 1
                         if consecutive_frames >= 3:
+                            pedestrian_count += 1
                             # Check if there's any instance where X-center [i + 1] <= X-center [i]   # noqa:E501
                             for j in range(i+1, len(x_values) - 10):
                                 if x_values[j] <= x_values[j - 10]:
                                     count += 1
                                     break
-                            break
+                                break
             else:
                 for i in range(0, len(x_values) - 10, 10):
                     # Check if x-value increases after every 10 frames
                     if (x_values[i + 10] < x_values[i]):
                         consecutive_frames += 1
                         if consecutive_frames >= 3:
+                            pedestrian_count += 1
                             # Check if there's any instance where X-center [i + 1] >= X-center [i]   # noqa: E501
                             for j in range(i+1, len(x_values) - 10):
                                 if x_values[j] >= x_values[j - 10]:
                                     count += 1
                                     break
-                            break
+                                break
 
         df_ = df_mapping[(df_mapping['Location'] == city) & (df_mapping['Condition'] == int(condition))]   # noqa: E501
 
-        num_person = count_object(df, 0)
+        # num_person = count_object(df, 0)
+        if pedestrian_count == 0:
+            continue
         time_.append(df_['Duration'].values[0])
         continents.append(df_['Continent'].values[0])
         gdp.append(df_['GDP_per_capita'].values[0])
         traffic_mortality.append(df_['traffic_mortality'].values[0])
         conditions.append(int(condition))
-
-        count_dict[f"{city}_{condition}"] = ((((count * 60) * 100) / num_person) / time_[-1])  # noqa: E501
+        count_dict[f"{city}_{condition}"] = ((((count * 60) * 100) / pedestrian_count) / time_[-1])  # noqa: E501
 
     continent_colors = {'Asia': 'blue', 'Europe': 'green', 'Africa': 'red', 'North America': 'orange', 'South America': 'purple', 'Australia': 'brown'}  # noqa: E501
 
@@ -422,7 +682,7 @@ def plot_hesitation_vs_traffic_mortality(df_mapping, dfs, person_id=0):
 
     # Adding labels and title
     fig.update_layout(
-        xaxis_title="Number of people who hesitated while crossing the road (normalised)",  # noqa: E501
+        xaxis_title="Percentage of people who hesitated while crossing the road (normalised)",  # noqa: E501
         yaxis_title="Traffic mortality rate per 100k person",  # noqa: E501
     )
 
@@ -457,7 +717,7 @@ def plot_hesitation_vs_traffic_mortality(df_mapping, dfs, person_id=0):
     fig.update_layout(
             legend=dict(
                 x=0.887,
-                y=0.05,
+                y=0.986,
                 traceorder="normal",
             )
         )
@@ -465,6 +725,7 @@ def plot_hesitation_vs_traffic_mortality(df_mapping, dfs, person_id=0):
     save_plotly_figure(fig, "hesitation_vs_traffic_mortality.html", "hesitation_vs_traffic_mortality.png", "hesitation_vs_traffic_mortality.svg")  # noqa: E501
 
 
+# TODO: Complete this
 def plot_hesitation_vs_literacy(df_mapping, dfs, person_id=0):
     pass
 
@@ -966,19 +1227,23 @@ if __name__ == "__main__":
         count, ids = pedestrian_crossing(dfs[key], 0.45, 0.55, 0)
         pedestrian_crossing_count[key] = {"count": count, "ids": ids}
         data[key] = time_to_cross(dfs[key], pedestrian_crossing_count[key]["ids"])  # noqa: E501
-    # Data is dictionary in the form {City : Values}. Values itself is another
-    # dictionary which is {Unique Id of person : Avg time to cross the road}
+    # Data is dictionary in the form {City_condition : Values}. Values itself is another dictionary which is {Unique Id of person : Avg time to cross the road} # noqa: E501
+    # dfs is a dictionary in the form {City_condition : CSV file}
+    # df_mapping is the csv file
 
     df_mapping = pd.read_csv("mapping.csv")
 
-    plot_cell_phone_vs_traffic_mortality(df_mapping, dfs)
-    plot_vehicle_vs_cross_time(df_mapping, dfs, data, motorcycle=1, car=1, bus=1, truck=1)  # noqa: E501
-    plot_traffic_mortality_vs_crossing_event_wt_traffic_light(df_mapping, dfs, data)  # noqa: E501
-    plot_hesitation_vs_traffic_mortality(df_mapping, dfs)
-    plot_hesitation_vs_literacy(df_mapping, dfs)
+    # plot_cell_phone_vs_traffic_mortality(df_mapping, dfs)
+    # plot_vehicle_vs_cross_time(df_mapping, dfs, data, motorcycle=1, car=1, bus=1, truck=1)  # noqa: E501
+    # plot_traffic_mortality_vs_crossing_event_wt_traffic_light(df_mapping, dfs, data)  # noqa: E501
+    # plot_hesitation_vs_traffic_mortality(df_mapping, dfs)
+    # plot_hesitation_vs_literacy(df_mapping, dfs)
 
-    plot_speed_of_crossing_vs_traffic_mortality(df_mapping, dfs, data)
-    plot_speed_of_crossing_vs_literacy(df_mapping, dfs, data)
+    # plot_speed_of_crossing_vs_traffic_mortality(df_mapping, dfs, data)
+    # plot_speed_of_crossing_vs_literacy(df_mapping, dfs, data)
 
-    plot_traffic_safety_vs_traffic_mortality(df_mapping, dfs)
-    plot_traffic_safety_vs_literacy(df_mapping, dfs)
+    # plot_traffic_safety_vs_traffic_mortality(df_mapping, dfs)
+    # plot_traffic_safety_vs_literacy(df_mapping, dfs)
+
+    # plot_time_to_start_crossing(df_mapping, dfs)
+    plot_no_of_pedestrian_stop(dfs)
