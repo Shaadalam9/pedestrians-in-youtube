@@ -37,8 +37,8 @@ def download_video_with_resolution(youtube_url, city, condition, resolutions=["2
 if __name__ == "__main__":
     df_mapping = pd.read_csv("mapping.csv")
 
-    new_directory = "source_videos"
-    if not os.path.exists(common.get_configs('data')):
+    new_directory = common.get_configs('data')
+    if not os.path.exists(new_directory):
         # If it doesn't exist, create it
         os.makedirs(new_directory)
         print("Directory '{}' created successfully.".format(new_directory))
