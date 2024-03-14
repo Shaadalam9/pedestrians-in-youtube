@@ -1,4 +1,4 @@
-id,city,country,videos,time_of_day,gdp_per_capita,ppulation,population_country,traffic_mortality,duration,continent,literacy_rate,avg_height
+id,city,country,videos,time_of_day,gdp_per_capita,population,population_country,traffic_mortality,duration,continent,literacy_rate,avg_height
 1,Kuala Lumpur,Malaysia,[AxQcSoA9vGQ],0,6575,8900000,33938.22,23.6,50,Asia,83,163.1
 2,Jakarta,Indonesia,[gmDBzijaIAA],0,9416,34307988,275501.34,12.2,47,Asia,96,160.3
 3,Manila,Philippines,[JY-Xyiept88],0,6148,26400000,118446,12.3,79,Asia,96,159.6
