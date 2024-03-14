@@ -1,6 +1,13 @@
 import os
 from pytube import YouTube
 import pandas as pd
+import common
+from custom_logger import CustomLogger
+from logmod import logs
+
+
+logs(show_level='info', show_color=True)
+logger = CustomLogger(__name__)  # use custom logger
 
 
 def download_video_with_resolution(youtube_url, city, condition, resolutions=["2160p", "1440p", "1080p", "720p", "480p", "360p"], output_path="."):  # noqa: E501
@@ -31,7 +38,7 @@ if __name__ == "__main__":
     df_mapping = pd.read_csv("mapping.csv")
 
     new_directory = "source_videos"
-    if not os.path.exists(new_directory):
+    if not os.path.exists(common.get_configs('data')):
         # If it doesn't exist, create it
         os.makedirs(new_directory)
         print("Directory '{}' created successfully.".format(new_directory))
@@ -42,4 +49,4 @@ if __name__ == "__main__":
         video_link = row['Youtube link']
         my_city = row['Location']
         my_condition = row['Condition']
-        download_video_with_resolution(video_link, city=my_city, condition=my_condition, output_path=new_directory) # noqa: E501
+        download_video_with_resolution(video_link, city=my_city, condition=my_condition, output_path=new_directory)  # noqa: E501
