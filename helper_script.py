@@ -8,6 +8,10 @@ from collections import defaultdict
 import shutil
 import numpy as np
 import pandas as pd
+from custom_logger import CustomLogger
+
+
+logger = CustomLogger(__name__)  # use custom logger
 
 
 class youtube_helper:
@@ -26,8 +30,10 @@ class youtube_helper:
         except FileExistsError:
             print(f"Error: Folder '{new_name}' already exists.")
 
-    def download_video_with_resolution(self, youtube_url, resolutions=["720p", "480p", "360p"], output_path="."):   # noqa: E501
+    def download_video_with_resolution(self, video_id, resolutions=["720p", "480p", "360p"], output_path="."):   # noqa: E501
         try:
+            youtube_url = f'https://www.youtube.com/watch?v={video_id}'
+            print(youtube_url)
             youtube_object = YouTube(youtube_url)
             for resolution in resolutions:
                 video_streams = youtube_object.streams.filter(res=f"{resolution}").all()   # noqa: E501
@@ -42,14 +48,15 @@ class youtube_helper:
 
             selected_stream = video_streams[0]
 
-            video_file_path = f"{output_path}/{youtube_object.title}_{self.resolution}.mp4"   # noqa: E501
+            video_file_path = f"{output_path}/{video_id}.mp4"   # noqa: E501
             print("Youtube video download in progress...")
             # Comment the below line to automatically download with video in "video" folder   # noqa: E501
-            selected_stream.download(output_path, filename=f"{youtube_object.title}_{self.resolution}.mp4")   # noqa: E501
+            selected_stream.download(output_path, filename=f"{video_id}.mp4")   # noqa: E501
 
             print(f"Download of '{youtube_object.title}' in {resolution} completed successfully.")   # noqa: E501
             self.video_title = youtube_object.title
-            return video_file_path, youtube_object.title, resolution
+            return video_file_path, video_id, resolution
+
         except Exception as e:
             print(f"An error occurred: {e}")
             return None
