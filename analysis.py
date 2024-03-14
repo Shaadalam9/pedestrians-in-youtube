@@ -355,7 +355,7 @@ def plot_vehicle_vs_cross_time(df_mapping, dfs, data, motorcycle=0, car=0, bus=0
 
 # On an average how many times a person who is crossing a road will hesitate to do it.   # noqa: E501
 def plot_time_to_start_crossing(dfs, person_id=0):
-    time_dict = {}
+    time_dict, sd_dict = {}, {}
     for location, df in dfs.items():
         data = {}
         city, condition = location.split('_')
@@ -397,9 +397,12 @@ def plot_time_to_start_crossing(dfs, person_id=0):
 
         if len(data) == 0:
             continue
-        values = list(data.values())
+
+        values = [value / 30 for value in data.values()]
         sd = statistics.stdev(values)
-        time_dict = {'location': (((sum(data.values()) / len(data)) / 30), sd)}
+
+        time_dict[location] = ((sum(data.values()) / len(data)) / 30)
+        sd_dict[location] = sd
 
     day_values = {}
     night_values = {}
@@ -407,14 +410,14 @@ def plot_time_to_start_crossing(dfs, person_id=0):
         city, condition = key.split('_')
         if city in day_values:
             if condition == '0':
-                day_values[city] += value[0]
+                day_values[city] += value
             else:
-                night_values[city] = value[0]
+                night_values[city] = value
         else:
             if condition == '0':
-                day_values[city] = value[0]
+                day_values[city] = value
             else:
-                night_values[city] = value[0]
+                night_values[city] = value
 
     # Fill missing values with 0
     for city in day_values.keys() | night_values.keys():
@@ -423,6 +426,7 @@ def plot_time_to_start_crossing(dfs, person_id=0):
 
     # Sort data based on values for condition 0
     sorted_day_values = dict(sorted(day_values.items(), key=lambda item: item[1]))   # noqa: E501
+    sorted_night_values = dict(sorted(night_values.items(), key=lambda item: item[1]))   # noqa: E501
     sorted_cities = list(sorted_day_values.keys())
 
     text_x = [0] * len(sorted_cities)
@@ -474,6 +478,39 @@ def plot_time_to_start_crossing(dfs, person_id=0):
             showarrow=False,  # Do not show an arrow
             xanchor='center',  # Center the text horizontally
             yanchor='middle'  # Center the text vertically
+        )
+
+    for city in sorted_cities:
+        if f"{city}_0" not in sd_dict:
+            continue
+        sd_value = "{:.3f}".format(sd_dict[f"{city}_0"])
+        print(sd_value)
+        bar_value = sorted_day_values[city]
+        x_coordinate = bar_value  # Set x-coordinate to the value of the bar
+        fig.add_annotation(
+            x=x_coordinate/2,
+            y=city,
+            text=f"SD : {sd_value}",
+            font=dict(color='black'),
+            showarrow=False,
+            xanchor='center',
+            yanchor='middle'
+        )
+
+    for city in sorted_cities:
+        if f"{city}_1" not in sd_dict:
+            continue
+        sd_value = "{:.3f}".format(sd_dict[f"{city}_1"])
+        bar_value = sorted_night_values[city]
+        x_coordinate = bar_value  # Set x-coordinate to the value of the bar
+        fig.add_annotation(
+            x=-x_coordinate/2,
+            y=city,
+            text=f"SD : {sd_value}",
+            font=dict(color='black'),
+            showarrow=False,
+            xanchor='center',
+            yanchor='middle'
         )
 
     # Plot the figure
@@ -1377,6 +1414,7 @@ if __name__ == "__main__":
         count, ids = pedestrian_crossing(dfs[key], 0.45, 0.55, 0)
         pedestrian_crossing_count[key] = {"count": count, "ids": ids}
         data[key] = time_to_cross(dfs[key], pedestrian_crossing_count[key]["ids"])  # noqa: E501
+
     # Data is dictionary in the form {City_condition : Values}. Values itself is another dictionary which is {Unique Id of person : Avg time to cross the road} # noqa: E501
     # dfs is a dictionary in the form {City_condition : CSV file}
     # df_mapping is the csv file
