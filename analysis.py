@@ -124,44 +124,15 @@ def save_plotly_figure(fig, filename_html, filename_png, filename_svg, width=160
                     format="svg")
 
 
-# Plotting Functions
-def plot_cell_phone_vs_traffic_mortality(df_mapping, dfs):
-    info = {}
-    time_, traffic_mortality, continents, gdp, conditions = [], [], [], [], []
-    for key, value in dfs.items():
-        location, condition = key.split('_')
-        dataframe = value
-
-        df = df_mapping[(df_mapping['Location'] == location) & (df_mapping['Condition'] == int(condition))]  # noqa: E501
-
-        mobile_ids = dataframe[dataframe["YOLO_id"] == 67]
-        mobile_ids = mobile_ids["Unique Id"].unique()
-        time_.append(df['Duration'].values[0])
-        num_person = count_object(value, 0)
-
-        # Saving the number of unique mobile discovered in the video
-        info[f"{location}_{condition}"] = (((len(mobile_ids) * 60) / time_[-1]) / num_person)  # noqa: E501
-        conditions.append(int(condition))
-
-        traffic_mortality.append(df['traffic_mortality'].values[0])
-        continents.append(df['Continent'].values[0])
-        gdp.append(df['GDP_per_capita'].values[0])
-
-    # Filter out values where info[key] == 0
-    filtered_info = {k: v for k, v in info.items() if v != 0}
-    filtered_traffic_mortality = [d for i, d in enumerate(traffic_mortality) if info[list(info.keys())[i]] != 0]  # noqa: E501
-    filtered_continents = [c for i, c in enumerate(continents) if info[list(info.keys())[i]] != 0]  # noqa: E501
-    filtered_gdp = [c for i, c in enumerate(gdp) if info[list(info.keys())[i]] != 0]   # noqa: E501
-    filtered_conditions = [c for i, c in enumerate(conditions) if info[list(info.keys())[i]] != 0]   # noqa: E501
-
+def plot_scatter_diag(x, y, size, color, symbol, city, plot_name, x_label, y_label, legend_x=0.887, legend_y=0.986):  # noqa: E501
     # Hard coded colors for continents
     continent_colors = {'Asia': 'blue', 'Europe': 'green', 'Africa': 'red', 'North America': 'orange', 'South America': 'purple', 'Australia': 'brown'}  # noqa: E501
 
-    fig = px.scatter(x=filtered_traffic_mortality,
-                     y=list(filtered_info.values()),
-                     size=filtered_gdp,
-                     color=filtered_continents,
-                     symbol=filtered_conditions,  # Use conditions for symbols
+    fig = px.scatter(x=x,
+                     y=list(y.values()),
+                     size=size,
+                     color=color,
+                     symbol=symbol,  # Use conditions for symbols
                      labels={"color": "Continent"},  # Rename color legend
                      color_discrete_map=continent_colors)
 
@@ -171,13 +142,13 @@ def plot_cell_phone_vs_traffic_mortality(df_mapping, dfs):
 
     # Adding labels and title
     fig.update_layout(
-        xaxis_title="Traffic mortality rate per 100k person",  # noqa: E501
-        yaxis_title="Number of Mobile detected in the video (normalised)"
+        xaxis_title=x_label,  # noqa: E501
+        yaxis_title=y_label
     )
 
-    for continent, color in continent_colors.items():
-        if continent in filtered_continents:
-            fig.add_trace(go.Scatter(x=[None], y=[None], mode='markers', marker=dict(color=color), name=continent))  # noqa: E501
+    for continent, color_ in continent_colors.items():
+        if continent in color:
+            fig.add_trace(go.Scatter(x=[None], y=[None], mode='markers', marker=dict(color=color_), name=continent))  # noqa: E501
 
     # Adding manual legend for symbols
     symbols_legend = {'triangle-up': 'Night', 'circle': 'Day'}
@@ -187,13 +158,12 @@ def plot_cell_phone_vs_traffic_mortality(df_mapping, dfs):
 
     # Adding annotations for locations
     annotations = []
-    for i, key in enumerate(filtered_info.keys()):
-        location_name = key.split('_')[0]  # Extracting location name
+    for i, key in enumerate(y.keys()):
         annotations.append(
             dict(
-                x=filtered_traffic_mortality[i],
-                y=list(filtered_info.values())[i],
-                text=location_name,  # Using location name instead of full key
+                x=x[i],
+                y=list(y.values())[i],
+                text=city[i],
                 showarrow=False
             )
         )
@@ -210,14 +180,80 @@ def plot_cell_phone_vs_traffic_mortality(df_mapping, dfs):
 
     fig.update_layout(
             legend=dict(
-                x=0.887,
-                y=0.986,
+                x=legend_x,
+                y=legend_y,
                 traceorder="normal",
             )
         )
 
     fig.show()
-    save_plotly_figure(fig, "cell_phone_vs_traffic_mortality.html", "cell_phone_vs_traffic_mortality.png", "cell_phone_vs_traffic mortality.svg")  # noqa: E501
+    save_plotly_figure(fig, f"{plot_name}.html", f"{plot_name}.png", f"{plot_name}.svg")  # noqa: E501
+
+
+def get_duration_for_key(video_column, duration_column, key):
+    for video, duration in zip(video_column, duration_column):
+        if key in video:
+            video_list = video.strip('[]').split(',')
+            key_index = video_list.index(key)
+            duration_list = duration.strip('[]').split(',')
+            return int(duration_list[key_index])
+
+
+def get_single_value_for_key(video_column, value_column, key):
+    for video, duration in zip(video_column, value_column):
+        if key in video:
+            value = duration  # Convert duration to integer
+            return value
+
+
+# Plotting Functions
+def plot_cell_phone_vs_traffic_mortality(df_mapping, dfs):
+    info = {}
+    time_, traffic_mortality, continents, gdp, conditions, check = [], [], [], [], [], []  # noqa: E501
+    for key, value in dfs.items():
+
+        mobile_ids = count_object(value, 67)
+
+        duration = get_duration_for_key(df_mapping['videos'], df_mapping['duration'], key)  # noqa: E501
+        time_.append(duration)
+
+        num_person = count_object(value, 0)
+
+        city = get_single_value_for_key(df_mapping['videos'], df_mapping['city'], key)  # noqa: E501
+        condition = int(get_single_value_for_key(df_mapping['videos'], df_mapping['time_of_day'], key))  # noqa: E501
+
+        # Saving the number of unique mobile discovered in the video
+        avg_cell_phone = (((mobile_ids * 60) / time_[-1]) / num_person)
+
+        if f"{city}_{condition}" in info:
+            previous_value = info[key]
+            info[key] = (previous_value + avg_cell_phone) / 2
+
+        else:
+            info[key] = avg_cell_phone * 1000
+
+        traffic_mortality.append(float(get_single_value_for_key(df_mapping['videos'], df_mapping['traffic_mortality'], key)))  # noqa: E501
+        continents.append(get_single_value_for_key(df_mapping['videos'], df_mapping['continent'], key))  # noqa: E501
+        gdp.append(int(get_single_value_for_key(df_mapping['videos'], df_mapping['gdp_per_capita'], key)))  # noqa: E501
+        check.append(get_single_value_for_key(df_mapping['videos'], df_mapping['city'], key))  # noqa: E501
+        conditions.append(condition)
+
+    # Filter out values where info[key] == 0
+    filtered_info = {k: v for k, v in info.items() if v != 0}
+    filtered_traffic_mortality = [d for i, d in enumerate(traffic_mortality) if info[list(info.keys())[i]] != 0]  # noqa: E501
+    filtered_continents = [c for i, c in enumerate(continents) if info[list(info.keys())[i]] != 0]  # noqa: E501
+    filtered_gdp = [c for i, c in enumerate(gdp) if info[list(info.keys())[i]] != 0]   # noqa: E501
+    filtered_conditions = [c for i, c in enumerate(conditions) if info[list(info.keys())[i]] != 0]   # noqa: E501
+    filtered_city = [c for i, c in enumerate(check) if info[list(info.keys())[i]] != 0]   # noqa: E501
+
+    plot_scatter_diag(x=filtered_traffic_mortality,
+                      y=(filtered_info), size=filtered_gdp,
+                      color=filtered_continents, symbol=filtered_conditions,
+                      city=filtered_city,
+                      plot_name="cell_phone_vs_traffic_mortality",
+                      x_label="Traffic mortality rate per 100k person",
+                      y_label="Number of Mobile detected in the video (normalised)",  # noqa: E501
+                      legend_x=0, legend_y=0.986)
 
 
 # TODO: check if there is a csv with avg vehicle ownership/usage on the city/country level   # noqa: E501
@@ -484,7 +520,6 @@ def plot_time_to_start_crossing(dfs, person_id=0):
         if f"{city}_0" not in sd_dict:
             continue
         sd_value = "{:.3f}".format(sd_dict[f"{city}_0"])
-        print(sd_value)
         bar_value = sorted_day_values[city]
         x_coordinate = bar_value  # Set x-coordinate to the value of the bar
         fig.add_annotation(
@@ -1405,6 +1440,7 @@ def plot_traffic_safety_vs_literacy(df_mapping, dfs):
 # Execute analysis
 if __name__ == "__main__":
     logger.info("Analysis started.")
+    df_mapping = pd.read_csv("mapping.csv")
     dfs = read_csv_files(common.get_configs('data'))
     pedestrian_crossing_count, data = {}, {}
 
@@ -1419,9 +1455,7 @@ if __name__ == "__main__":
     # dfs is a dictionary in the form {City_condition : CSV file}
     # df_mapping is the csv file
 
-    df_mapping = pd.read_csv("mapping.csv")
-
-    # plot_cell_phone_vs_traffic_mortality(df_mapping, dfs)
+    plot_cell_phone_vs_traffic_mortality(df_mapping, dfs)
     # plot_vehicle_vs_cross_time(df_mapping, dfs, data, motorcycle=1, car=1, bus=1, truck=1)  # noqa: E501
     # plot_traffic_mortality_vs_crossing_event_wt_traffic_light(df_mapping, dfs, data)  # noqa: E501
     # plot_hesitation_vs_traffic_mortality(df_mapping, dfs)
@@ -1433,6 +1467,6 @@ if __name__ == "__main__":
     # plot_traffic_safety_vs_traffic_mortality(df_mapping, dfs)
     # plot_traffic_safety_vs_literacy(df_mapping, dfs)
 
-    plot_time_to_start_crossing(dfs)
+    # plot_time_to_start_crossing(dfs)
     # plot_no_of_pedestrian_stop(dfs)
     # plot_speed_of_crossing_vs_crossing_decision_time(df_mapping, dfs, data)
