@@ -63,6 +63,8 @@ for link in youtube_links:
                     params.frames_output_path,
                     params.final_video_output_path, 30)
 
+            data_folder = "data"
+            os.makedirs(data_folder, exist_ok=True)
             helper.merge_txt_files(params.txt_output_path,
                                    f"data/{video_title}.csv")
 
