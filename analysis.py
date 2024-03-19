@@ -209,7 +209,7 @@ def get_single_value_for_key(video_column, value_column, key):
 # Plotting Functions
 def plot_cell_phone_vs_traffic_mortality(df_mapping, dfs):
     info = {}
-    time_, traffic_mortality, continents, gdp, conditions, check = [], [], [], [], [], []  # noqa: E501
+    time_, traffic_mortality, continents, gdp, conditions, city_ = [], [], [], [], [], []  # noqa: E501
     for key, value in dfs.items():
 
         mobile_ids = count_object(value, 67)
@@ -235,7 +235,7 @@ def plot_cell_phone_vs_traffic_mortality(df_mapping, dfs):
         traffic_mortality.append(float(get_single_value_for_key(df_mapping['videos'], df_mapping['traffic_mortality'], key)))  # noqa: E501
         continents.append(get_single_value_for_key(df_mapping['videos'], df_mapping['continent'], key))  # noqa: E501
         gdp.append(int(get_single_value_for_key(df_mapping['videos'], df_mapping['gdp_per_capita'], key)))  # noqa: E501
-        check.append(get_single_value_for_key(df_mapping['videos'], df_mapping['city'], key))  # noqa: E501
+        city_.append(get_single_value_for_key(df_mapping['videos'], df_mapping['city'], key))  # noqa: E501
         conditions.append(condition)
 
     # Filter out values where info[key] == 0
@@ -244,7 +244,7 @@ def plot_cell_phone_vs_traffic_mortality(df_mapping, dfs):
     filtered_continents = [c for i, c in enumerate(continents) if info[list(info.keys())[i]] != 0]  # noqa: E501
     filtered_gdp = [c for i, c in enumerate(gdp) if info[list(info.keys())[i]] != 0]   # noqa: E501
     filtered_conditions = [c for i, c in enumerate(conditions) if info[list(info.keys())[i]] != 0]   # noqa: E501
-    filtered_city = [c for i, c in enumerate(check) if info[list(info.keys())[i]] != 0]   # noqa: E501
+    filtered_city = [c for i, c in enumerate(city_) if info[list(info.keys())[i]] != 0]   # noqa: E501
 
     plot_scatter_diag(x=filtered_traffic_mortality,
                       y=(filtered_info), size=filtered_gdp,
@@ -259,12 +259,11 @@ def plot_cell_phone_vs_traffic_mortality(df_mapping, dfs):
 # TODO: check if there is a csv with avg vehicle ownership/usage on the city/country level   # noqa: E501
 def plot_vehicle_vs_cross_time(df_mapping, dfs, data, motorcycle=0, car=0, bus=0, truck=0):    # noqa: E501
     info, time_dict = {}, {}
-    time_avg, continents, gdp, conditions, time_ = [], [], [], [], []
+    time_avg, continents, gdp, conditions, time_, city_ = [], [], [], [], [], []  # noqa: E501
 
     for key, value in dfs.items():
-        location, condition = key.split('_')
-        df_ = df_mapping[(df_mapping['Location'] == location) & (df_mapping['Condition'] == int(condition))]  # noqa: E501
-        time_.append(df_['Duration'].values[0])
+        duration = get_duration_for_key(df_mapping['videos'], df_mapping['duration'], key)  # noqa: E501
+        time_.append(duration)
         time_cross = []
         dataframe = value
 
@@ -272,33 +271,23 @@ def plot_vehicle_vs_cross_time(df_mapping, dfs, data, motorcycle=0, car=0, bus=0
 
         if motorcycle == 1 & car == 1 & bus == 1 & truck == 1:
             vehicle_ids = dataframe[(dataframe["YOLO_id"] == 2) | (dataframe["YOLO_id"] == 3) | (dataframe["YOLO_id"] == 5) | (dataframe["YOLO_id"] == 7)]  # noqa: E501
-            html_file = "all_vehicle_vs_cross_time.html"
-            png_file = "all_vehicle_vs_cross_time.png"
-            svg_file = "all_vehicle_vs_cross_time.svg"
+            save_as = "all_vehicle_vs_cross_time"
 
         elif motorcycle == 1:
             vehicle_ids = dataframe[(dataframe["YOLO_id"] == 2)]
-            html_file = "motorcycle_vs_cross_time.html"
-            png_file = "motorcycle_vs_cross_time.png"
-            svg_file = "motorcycle_vs_cross_time.svg"
+            save_as = "motorcycle_vs_cross_time"
 
         elif car == 1:
             vehicle_ids = dataframe[(dataframe["YOLO_id"] == 3)]
-            html_file = "car_vs_cross_time.html"
-            png_file = "car_vs_cross_time.png"
-            svg_file = "car_vs_cross_time.svg"
+            save_as = "car_vs_cross_time"
 
         elif bus == 1:
             vehicle_ids = dataframe[(dataframe["YOLO_id"] == 5)]
-            html_file = "bus_vs_cross_time.html"
-            png_file = "bus_vs_cross_time.png"
-            svg_file = "bus_vs_cross_time.svg"
+            save_as = "bus_vs_cross_time"
 
         elif truck == 1:
             vehicle_ids = dataframe[(dataframe["YOLO_id"] == 7)]
-            html_file = "truck_vs_cross_time.html"
-            png_file = "truck_vs_cross_time.png"
-            svg_file = "truck_vs_cross_time.svg"
+            save_as = "truck_vs_cross_time"
 
         else:
             print("No plot generated")
@@ -320,73 +309,17 @@ def plot_vehicle_vs_cross_time(df_mapping, dfs, data, motorcycle=0, car=0, bus=0
 
         time_avg.append(mean(time_cross))
 
-        continents.append(df_['Continent'].values[0])
-        gdp.append(df_['GDP_per_capita'].values[0])
-        conditions.append(int(condition))
+        continents.append(get_single_value_for_key(df_mapping['videos'], df_mapping['continent'], key))  # noqa: E501
+        gdp.append(int(get_single_value_for_key(df_mapping['videos'], df_mapping['gdp_per_capita'], key)))  # noqa: E501
+        city_.append(get_single_value_for_key(df_mapping['videos'], df_mapping['city'], key))  # noqa: E501
+        conditions.append(int(get_single_value_for_key(df_mapping['videos'], df_mapping['time_of_day'], key)))  # noqa: E501
 
-    # Hard coded colors for continents
-    continent_colors = {'Asia': 'blue', 'Europe': 'green', 'Africa': 'red', 'North America': 'orange', 'South America': 'purple', 'Australia': 'brown'}  # noqa: E501
-
-    fig = px.scatter(x=time_avg,
-                     y=list(info.values()),
-                     size=gdp,
-                     color=continents,
-                     symbol=conditions,  # Use conditions for symbols
-                     labels={"color": "Continent"},  # Rename color legend
-                     color_discrete_map=continent_colors)
-
-    # Hide legend for all traces generated by Plotly Express
-    for trace in fig.data:
-        trace.showlegend = False
-
-    # Adding labels and title
-    fig.update_layout(
-        xaxis_title="Average crossing time (in seconds)",
-        yaxis_title="Number of vehicle detected (normalised)",
-    )
-
-    for continent, color in continent_colors.items():
-        if continent in continents:
-            fig.add_trace(go.Scatter(x=[None], y=[None], mode='markers', marker=dict(color=color), name=continent))  # noqa: E501
-
-    # Adding manual legend for symbols
-    symbols_legend = {'triangle-up': 'Night', 'circle': 'Day'}
-    for symbol, description in symbols_legend.items():
-        fig.add_trace(go.Scatter(x=[None], y=[None], mode='markers',
-                                 marker=dict(symbol=symbol, color='rgba(0,0,0,0)', line=dict(color='black', width=2)), name=description))  # noqa: E501
-
-    # Adding annotations for locations
-    annotations = []
-    for i, key in enumerate(info.keys()):
-        location_name = key.split('_')[0]  # Extracting location name
-        annotations.append(
-            dict(
-                x=time_avg[i],
-                y=list(info.values())[i],
-                text=location_name,  # Using location name instead of full key
-                showarrow=False
-            )
-        )
-    # Adjust annotation positions to avoid overlap
-    adjusted_annotations = adjust_annotation_positions(annotations)
-    fig.update_layout(annotations=adjusted_annotations)
-    # set template
-    fig.update_layout(template=template)
-
-    # Remove legend title
-    fig.update_layout(legend_title_text='')
-
-    fig.update_layout(
-            legend=dict(
-                x=0.887,
-                y=0.986,
-                traceorder="normal",
-            )
-        )
-
-    fig.show()
-
-    save_plotly_figure(fig, html_file, png_file, svg_file)
+    plot_scatter_diag(x=time_avg, y=info, size=gdp, color=continents, symbol=conditions,
+                      city=city_,
+                      plot_name=save_as,
+                      x_label="Average crossing time (in seconds)",
+                      y_label="Number of vehicle detected (normalised)",  # noqa: E501
+                      legend_x=0.887, legend_y=0.986)
 
 
 # On an average how many times a person who is crossing a road will hesitate to do it.   # noqa: E501
@@ -394,11 +327,16 @@ def plot_time_to_start_crossing(dfs, person_id=0):
     time_dict, sd_dict = {}, {}
     for location, df in dfs.items():
         data = {}
-        city, condition = location.split('_')
         crossed_ids = df[(df["YOLO_id"] == person_id)]
 
         # Makes group based on Unique ID
         crossed_ids_grouped = crossed_ids.groupby("Unique Id")
+        condition = int(get_single_value_for_key(df_mapping['videos'], df_mapping['time_of_day'], location))   # noqa: E501
+        city = get_single_value_for_key(df_mapping['videos'], df_mapping['city'], location)  # noqa: E501
+
+        # Initialize dictionaries to track sum and sum of squares for each city_condition combination   # noqa: E501
+        sum_values = {}
+        sum_squares = {}
 
         for unique_id, group_data in crossed_ids_grouped:
             x_values = group_data["X-center"].values
@@ -437,8 +375,31 @@ def plot_time_to_start_crossing(dfs, person_id=0):
         values = [value / 30 for value in data.values()]
         sd = statistics.stdev(values)
 
-        time_dict[location] = ((sum(data.values()) / len(data)) / 30)
-        sd_dict[location] = sd
+        city_condition_key = f'{city}_{condition}'
+
+        # Update sum and sum of squares for the city_condition combination
+        sum_values[city_condition_key] = sum(data.values())
+        sum_squares[city_condition_key] = sum(value**2 for value in data.values())   # noqa: E501
+
+        # Check if the city_condition combination already exists in time_dict
+        if city_condition_key in time_dict:
+            # Adjust the mean and standard deviation
+            old_mean = time_dict[city_condition_key]
+            old_sd = sd_dict[city_condition_key]
+            n_old = len(data) - 1  # Number of previous data points
+            n_new = 1  # Number of new data points
+            new_sum = sum_values[city_condition_key]
+            new_sum_squares = sum_squares[city_condition_key]
+
+            new_mean = (old_mean * n_old + new_sum) / (n_old + n_new)
+            new_sd = ((old_sd ** 2 * n_old + new_sum_squares) / (n_old + n_new) - new_mean ** 2) ** 0.5   # noqa: E501
+
+            time_dict[city_condition_key] = new_mean
+            sd_dict[city_condition_key] = new_sd
+        else:
+            # Add new entry to time_dict and sd_dict
+            time_dict[city_condition_key] = sum(data.values()) / len(data) / 30
+            sd_dict[city_condition_key] = sd
 
     day_values = {}
     night_values = {}
@@ -522,10 +483,11 @@ def plot_time_to_start_crossing(dfs, person_id=0):
         sd_value = "{:.3f}".format(sd_dict[f"{city}_0"])
         bar_value = sorted_day_values[city]
         x_coordinate = bar_value  # Set x-coordinate to the value of the bar
+        mean_ = "{:.3f}".format(bar_value)
         fig.add_annotation(
-            x=x_coordinate/2,
+            x=(x_coordinate/2) + 0.25,
             y=city,
-            text=f"SD : {sd_value}",
+            text=f"Mean:{mean_}; SD:{sd_value}",
             font=dict(color='black'),
             showarrow=False,
             xanchor='center',
@@ -538,10 +500,11 @@ def plot_time_to_start_crossing(dfs, person_id=0):
         sd_value = "{:.3f}".format(sd_dict[f"{city}_1"])
         bar_value = sorted_night_values[city]
         x_coordinate = bar_value  # Set x-coordinate to the value of the bar
+        mean_ = "{:.3f}".format(bar_value)
         fig.add_annotation(
-            x=-x_coordinate/2,
+            x=(-x_coordinate/2) - 0.25,
             y=city,
-            text=f"SD : {sd_value}",
+            text=f"Mean:{mean_}; SD:{sd_value}",
             font=dict(color='black'),
             showarrow=False,
             xanchor='center',
@@ -1455,7 +1418,7 @@ if __name__ == "__main__":
     # dfs is a dictionary in the form {City_condition : CSV file}
     # df_mapping is the csv file
 
-    plot_cell_phone_vs_traffic_mortality(df_mapping, dfs)
+    # plot_cell_phone_vs_traffic_mortality(df_mapping, dfs)
     # plot_vehicle_vs_cross_time(df_mapping, dfs, data, motorcycle=1, car=1, bus=1, truck=1)  # noqa: E501
     # plot_traffic_mortality_vs_crossing_event_wt_traffic_light(df_mapping, dfs, data)  # noqa: E501
     # plot_hesitation_vs_traffic_mortality(df_mapping, dfs)
@@ -1467,6 +1430,6 @@ if __name__ == "__main__":
     # plot_traffic_safety_vs_traffic_mortality(df_mapping, dfs)
     # plot_traffic_safety_vs_literacy(df_mapping, dfs)
 
-    # plot_time_to_start_crossing(dfs)
+    plot_time_to_start_crossing(dfs)
     # plot_no_of_pedestrian_stop(dfs)
     # plot_speed_of_crossing_vs_crossing_decision_time(df_mapping, dfs, data)
