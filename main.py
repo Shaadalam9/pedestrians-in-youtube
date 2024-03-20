@@ -23,7 +23,6 @@ for link in youtube_links:
     # Download the youtube video to the local system
     video_ids = [id.strip() for id in link.strip("[]").split(',')]
     for vid in video_ids:
-        print(vid)
         result = helper.download_video_with_resolution(video_id=vid, output_path=params.output_path)  # noqa: E501
 
         if result:
