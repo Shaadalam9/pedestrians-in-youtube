@@ -779,11 +779,10 @@ def plot_hesitation_vs_traffic_mortality(df_mapping, dfs, person_id=0):
 
 
 def plot_speed_of_crossing_vs_crossing_decision_time(df_mapping, dfs, data, person_id=0):  # noqa: E501
-    avg_speed, time_dict = {}, {}
+    avg_speed, time_dict, no_people = {}, {}, {}
     continents, gdp, conditions, time_ = [], [], [], []
 
     for key, df in data.items():
-        no_people = {}
         if df == {}:
             continue
         value = dfs.get(key)
@@ -1010,20 +1009,17 @@ def plot_traffic_mortality_vs_crossing_event_wt_traffic_light(df_mapping, dfs, d
 
 
 def plot_speed_of_crossing_vs_traffic_mortality(df_mapping, dfs, data):
-    avg_speed = {}
-    continents, gdp, traffic_mortality, conditions, time_, city_ = [], [], [], [], [], []
+    avg_speed, no_people = {}, {}
+    continents, gdp, traffic_mortality, conditions, time_, city_ = [], [], [], [], [], []  # noqa: E501
     for key, df in data.items():
         if df == {}:
             continue
         value = dfs.get(key)
 
         length = get_single_value_for_key(df_mapping['videos'], df_mapping['avg_height'], key)  # noqa: E501
-        time_.append(get_duration_for_key(df_mapping['videos'], df_mapping['duration'], key))  # noqa: E501
-        conditions.append(int(get_single_value_for_key(df_mapping['videos'], df_mapping['time_of_day'], key)))  # noqa: E501
-        traffic_mortality.append(float(get_single_value_for_key(df_mapping['videos'], df_mapping['traffic_mortality'], key)))  # noqa: E501
-        continents.append(get_single_value_for_key(df_mapping['videos'], df_mapping['continent'], key))  # noqa: E501
-        gdp.append(int(get_single_value_for_key(df_mapping['videos'], df_mapping['gdp_per_capita'], key)))  # noqa: E501
-        city_.append(get_single_value_for_key(df_mapping['videos'], df_mapping['city'], key))  # noqa: E501
+        duration = int(get_duration_for_key(df_mapping['videos'], df_mapping['duration'], key))  # noqa: E501
+        condition = int(get_single_value_for_key(df_mapping['videos'], df_mapping['time_of_day'], key))  # noqa: E501
+        city = get_single_value_for_key(df_mapping['videos'], df_mapping['city'], key)  # noqa: E501
 
         grouped = value.groupby('Unique Id')
         speed = []
@@ -1042,7 +1038,22 @@ def plot_speed_of_crossing_vs_traffic_mortality(df_mapping, dfs, data):
 
             speed.append(speed_)
 
-        avg_speed[key] = sum(speed) / len(speed)
+        no_people[f'{city}_{condition}'] = len(speed)
+
+        if f'{city}_{condition}' in avg_speed:
+            old_count = avg_speed[f'{city}_{condition}']
+            new_count = old_count * no_people[f'{city}_{condition}'] + sum(speed)  # noqa: E501
+            avg_speed[f'{city}_{condition}'] = new_count / (no_people[f'{city}_{condition}'] + len(speed))  # noqa: E501
+            continue
+        else:
+            avg_speed[f'{city}_{condition}'] = sum(speed) / len(speed)
+
+        time_.append(duration)
+        conditions.append(condition)
+        traffic_mortality.append(float(get_single_value_for_key(df_mapping['videos'], df_mapping['traffic_mortality'], key)))  # noqa: E501
+        continents.append(get_single_value_for_key(df_mapping['videos'], df_mapping['continent'], key))  # noqa: E501
+        gdp.append(int(get_single_value_for_key(df_mapping['videos'], df_mapping['gdp_per_capita'], key)))  # noqa: E501
+        city_.append(city)
 
     plot_scatter_diag(x=traffic_mortality,
                       y=avg_speed, size=gdp,
@@ -1055,20 +1066,17 @@ def plot_speed_of_crossing_vs_traffic_mortality(df_mapping, dfs, data):
 
 
 def plot_speed_of_crossing_vs_literacy(df_mapping, dfs, data):
-    avg_speed = {}
-    continents, gdp, literacy, conditions, time_, city_ = [], [], [], [], [], []
+    avg_speed, no_people = {}, {}
+    continents, gdp, literacy, conditions, time_, city_ = [], [], [], [], [], []  # noqa: E501
     for key, df in data.items():
         if df == {}:
             continue
         value = dfs.get(key)
 
         length = get_single_value_for_key(df_mapping['videos'], df_mapping['avg_height'], key)  # noqa: E501
-        time_.append(get_duration_for_key(df_mapping['videos'], df_mapping['duration'], key))  # noqa: E501
-        conditions.append(int(get_single_value_for_key(df_mapping['videos'], df_mapping['time_of_day'], key)))  # noqa: E501
-        continents.append(get_single_value_for_key(df_mapping['videos'], df_mapping['continent'], key))  # noqa: E501
-        gdp.append(int(get_single_value_for_key(df_mapping['videos'], df_mapping['gdp_per_capita'], key)))  # noqa: E501
-        city_.append(get_single_value_for_key(df_mapping['videos'], df_mapping['city'], key))  # noqa: E501
-        literacy.append(get_single_value_for_key(df_mapping['videos'], df_mapping['literacy_rate'], key))  # noqa: E501
+        duration = int(get_duration_for_key(df_mapping['videos'], df_mapping['duration'], key))  # noqa: E501
+        condition = int(get_single_value_for_key(df_mapping['videos'], df_mapping['time_of_day'], key))  # noqa: E501
+        city = get_single_value_for_key(df_mapping['videos'], df_mapping['city'], key)  # noqa: E501
 
         grouped = value.groupby('Unique Id')
         speed = []
@@ -1086,7 +1094,22 @@ def plot_speed_of_crossing_vs_literacy(df_mapping, dfs, data):
 
             speed.append(speed_)
 
-        avg_speed[key] = sum(speed) / len(speed)
+        no_people[f'{city}_{condition}'] = len(speed)
+
+        if f'{city}_{condition}' in avg_speed:
+            old_count = avg_speed[f'{city}_{condition}']
+            new_count = old_count * no_people[f'{city}_{condition}'] + sum(speed)  # noqa: E501
+            avg_speed[f'{city}_{condition}'] = new_count / (no_people[f'{city}_{condition}'] + len(speed))  # noqa: E501
+            continue
+        else:
+            avg_speed[f'{city}_{condition}'] = sum(speed) / len(speed)
+
+        time_.append(duration)
+        conditions.append(condition)
+        literacy.append(get_single_value_for_key(df_mapping['videos'], df_mapping['literacy_rate'], key))  # noqa: E501
+        continents.append(get_single_value_for_key(df_mapping['videos'], df_mapping['continent'], key))  # noqa: E501
+        gdp.append(int(get_single_value_for_key(df_mapping['videos'], df_mapping['gdp_per_capita'], key)))  # noqa: E501
+        city_.append(city)
 
     plot_scatter_diag(x=literacy,
                       y=avg_speed, size=gdp,
@@ -1099,12 +1122,13 @@ def plot_speed_of_crossing_vs_literacy(df_mapping, dfs, data):
 
 
 def plot_traffic_safety_vs_traffic_mortality(df_mapping, dfs):
-    info = {}
-    traffic_mortality, continents, gdp, conditions, time_, city_ = [], [], [], [], [], []
+    info, duration_ = {}, {}
+    traffic_mortality, continents, gdp, conditions, time_, city_ = [], [], [], [], [], []  # noqa: E501
     for key, value in dfs.items():
         dataframe = value
-        duration = get_duration_for_key(df_mapping['videos'], df_mapping['duration'], key)  # noqa: E501
-        time_.append(duration)
+        duration = int(get_duration_for_key(df_mapping['videos'], df_mapping['duration'], key))  # noqa: E501
+        city = get_single_value_for_key(df_mapping['videos'], df_mapping['city'], key)  # noqa: E501
+        condition = int(get_single_value_for_key(df_mapping['videos'], df_mapping['time_of_day'], key))  # noqa: E501
 
         instrument = dataframe[(dataframe["YOLO_id"] == 9) | (dataframe["YOLO_id"] == 11)]  # noqa: E501
 
@@ -1113,13 +1137,26 @@ def plot_traffic_safety_vs_traffic_mortality(df_mapping, dfs):
         if instrument_ids is None:
             continue
 
-        info[key] = ((len(instrument_ids)/time_[-1]) * 60)
+        count_ = ((len(instrument_ids)/duration) * 60)
+
+        if f'{city}_{condition}' in info:
+            old_count = info[f'{city}_{condition}']
+            new_count = (old_count * duration_.get(f'{city}_{condition}', 0)) + count_  # noqa: E501
+            if f'{city}_{condition}' in duration_:
+                duration_[f'{city}_{condition}'] = duration_.get(f'{city}_{condition}', 0) + count  # noqa: E501
+            else:
+                duration_[f'{city}_{condition}'] = count
+            info[f'{city}_{condition}'] = new_count / duration_.get(f'{city}_{condition}', 0)  # noqa: E501
+            continue
+        else:
+            info[f'{city}_{condition}'] = count_
 
         traffic_mortality.append(float(get_single_value_for_key(df_mapping['videos'], df_mapping['traffic_mortality'], key)))  # noqa: E501
         continents.append(get_single_value_for_key(df_mapping['videos'], df_mapping['continent'], key))  # noqa: E501
         gdp.append(int(get_single_value_for_key(df_mapping['videos'], df_mapping['gdp_per_capita'], key)))  # noqa: E501
-        city_.append(get_single_value_for_key(df_mapping['videos'], df_mapping['city'], key))  # noqa: E501
-        conditions.append(int(get_single_value_for_key(df_mapping['videos'], df_mapping['time_of_day'], key)))  # noqa: E501
+        city_.append(city)  # noqa: E501
+        conditions.append(condition)  # noqa: E501
+        time_.append(duration)
 
     plot_scatter_diag(x=traffic_mortality,
                       y=info, size=gdp,
@@ -1132,13 +1169,13 @@ def plot_traffic_safety_vs_traffic_mortality(df_mapping, dfs):
 
 
 def plot_traffic_safety_vs_literacy(df_mapping, dfs):
-    info = {}
-    literacy, continents, gdp, conditions, time_, city_ = [], [], [], [], [], []
+    info, duration_ = {}, {}
+    literacy, continents, gdp, conditions, time_, city_ = [], [], [], [], [], []  # noqa: E501
     for key, value in dfs.items():
         dataframe = value
-
-        duration = get_duration_for_key(df_mapping['videos'], df_mapping['duration'], key)  # noqa: E501
-        time_.append(duration)
+        duration = int(get_duration_for_key(df_mapping['videos'], df_mapping['duration'], key))  # noqa: E501
+        city = get_single_value_for_key(df_mapping['videos'], df_mapping['city'], key)  # noqa: E501
+        condition = int(get_single_value_for_key(df_mapping['videos'], df_mapping['time_of_day'], key))  # noqa: E501
 
         instrument = dataframe[(dataframe["YOLO_id"] == 9) | (dataframe["YOLO_id"] == 11)]  # noqa: E501
 
@@ -1147,12 +1184,25 @@ def plot_traffic_safety_vs_literacy(df_mapping, dfs):
         if instrument_ids is None:
             continue
 
-        info[key] = ((len(instrument_ids)/time_[-1]) * 60)
+        count_ = ((len(instrument_ids)/duration) * 60)
+
+        if f'{city}_{condition}' in info:
+            old_count = info[f'{city}_{condition}']
+            new_count = (old_count * duration_.get(f'{city}_{condition}', 0)) + count_  # noqa: E501
+            if f'{city}_{condition}' in duration_:
+                duration_[f'{city}_{condition}'] = duration_.get(f'{city}_{condition}', 0) + count  # noqa: E501
+            else:
+                duration_[f'{city}_{condition}'] = count
+            info[f'{city}_{condition}'] = new_count / duration_.get(f'{city}_{condition}', 0)  # noqa: E501
+            continue
+        else:
+            info[f'{city}_{condition}'] = count_
 
         continents.append(get_single_value_for_key(df_mapping['videos'], df_mapping['continent'], key))  # noqa: E501
         gdp.append(int(get_single_value_for_key(df_mapping['videos'], df_mapping['gdp_per_capita'], key)))  # noqa: E501
-        city_.append(get_single_value_for_key(df_mapping['videos'], df_mapping['city'], key))  # noqa: E501
-        conditions.append(int(get_single_value_for_key(df_mapping['videos'], df_mapping['time_of_day'], key)))  # noqa: E501
+        city_.append(city)  # noqa: E501
+        conditions.append(condition)  # noqa: E501
+        time_.append(duration)
         literacy.append(get_single_value_for_key(df_mapping['videos'], df_mapping['literacy_rate'], key))  # noqa: E501
 
     plot_scatter_diag(x=literacy,
@@ -1183,17 +1233,17 @@ if __name__ == "__main__":
     # dfs is a dictionary in the form {Unique_id : CSV file}
     # df_mapping is the csv file
 
-    # plot_cell_phone_vs_traffic_mortality(df_mapping, dfs)
-    # plot_vehicle_vs_cross_time(df_mapping, dfs, data, motorcycle=1, car=1, bus=1, truck=1)  # noqa: E501
+    plot_cell_phone_vs_traffic_mortality(df_mapping, dfs)
+    plot_vehicle_vs_cross_time(df_mapping, dfs, data, motorcycle=1, car=1, bus=1, truck=1)  # noqa: E501
     plot_traffic_mortality_vs_crossing_event_wt_traffic_light(df_mapping, dfs, data)  # noqa: E501
-    # plot_hesitation_vs_traffic_mortality(df_mapping, dfs)
+    plot_hesitation_vs_traffic_mortality(df_mapping, dfs)
 
-    # plot_speed_of_crossing_vs_traffic_mortality(df_mapping, dfs, data)
-    # plot_speed_of_crossing_vs_literacy(df_mapping, dfs, data)
+    plot_speed_of_crossing_vs_traffic_mortality(df_mapping, dfs, data)
+    plot_speed_of_crossing_vs_literacy(df_mapping, dfs, data)
 
-    # plot_traffic_safety_vs_traffic_mortality(df_mapping, dfs)
-    # plot_traffic_safety_vs_literacy(df_mapping, dfs)
+    plot_traffic_safety_vs_traffic_mortality(df_mapping, dfs)
+    plot_traffic_safety_vs_literacy(df_mapping, dfs)
 
-    # plot_time_to_start_crossing(dfs)
-    # plot_no_of_pedestrian_stop(dfs)
-    # plot_speed_of_crossing_vs_crossing_decision_time(df_mapping, dfs, data)
+    plot_time_to_start_crossing(dfs)
+    plot_no_of_pedestrian_stop(dfs)
+    plot_speed_of_crossing_vs_crossing_decision_time(df_mapping, dfs, data)
