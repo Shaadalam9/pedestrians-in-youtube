@@ -108,6 +108,7 @@ def adjust_annotation_positions(annotations):
     return adjusted_annotations
 
 
+# makes scatter plots
 def save_plotly_figure(fig, filename_html, filename_png, filename_svg, width=1600, height=900, scale=3):  # noqa: E501
     # Create directory if it doesn't exist
     output_folder = "_outputs"
@@ -224,6 +225,8 @@ def plot_cell_phone_vs_traffic_mortality(df_mapping, dfs):
         condition = int(get_single_value_for_key(df_mapping['videos'], df_mapping['time_of_day'], key))  # noqa: E501
 
         # Saving the number of unique mobile discovered in the video
+        if num_person == 0:
+            continue
         avg_cell_phone = (((mobile_ids * 60) / time_[-1]) / num_person) * 1000
 
         if f"{city}_{condition}" in info:
@@ -333,6 +336,8 @@ def plot_vehicle_vs_cross_time(df_mapping, dfs, data, motorcycle=0, car=0, bus=0
                       legend_x=0.887, legend_y=0.986)
 
 
+# TODO : Add the flag
+# TODO : Check the calculation of mean and SD
 # On an average how many times a person who is crossing a road will hesitate to do it.   # noqa: E501
 def plot_time_to_start_crossing(dfs, person_id=0):
     time_dict, sd_dict = {}, {}
@@ -499,7 +504,7 @@ def plot_time_to_start_crossing(dfs, person_id=0):
         fig.add_annotation(
             x=(x_coordinate/2) + 0.25,
             y=city,
-            text=f"Mean:{mean_}; SD:{sd_value}",
+            text=f"M={mean_}; SD={sd_value}",
             font=dict(color='black'),
             showarrow=False,
             xanchor='center',
@@ -753,14 +758,7 @@ def plot_hesitation_vs_traffic_mortality(df_mapping, dfs, person_id=0):
         if pedestrian_count == 0:
             continue
 
-        time_.append(duration)
-        continents.append(get_single_value_for_key(df_mapping['videos'], df_mapping['continent'], key))  # noqa: E501
-        gdp.append(int(get_single_value_for_key(df_mapping['videos'], df_mapping['gdp_per_capita'], key)))  # noqa: E501
-        traffic_mortality.append(get_single_value_for_key(df_mapping['videos'], df_mapping['traffic_mortality'], key))  # noqa: E501
-        city_.append(city)
-        conditions.append(condition)
-
-        count_ = ((((count * 60) * 100) / pedestrian_count) / time_[-1])  # noqa: E501
+        count_ = ((((count * 60) * 100) / pedestrian_count) / duration)  # noqa: E501
 
         if f'{city}_{condition}' in count_dict:
             old_count = count_dict[f'{city}_{condition}']
@@ -769,6 +767,13 @@ def plot_hesitation_vs_traffic_mortality(df_mapping, dfs, person_id=0):
             continue
         else:
             count_dict[f'{city}_{condition}'] = count_
+
+        time_.append(duration)
+        continents.append(get_single_value_for_key(df_mapping['videos'], df_mapping['continent'], key))  # noqa: E501
+        gdp.append(int(get_single_value_for_key(df_mapping['videos'], df_mapping['gdp_per_capita'], key)))  # noqa: E501
+        traffic_mortality.append(get_single_value_for_key(df_mapping['videos'], df_mapping['traffic_mortality'], key))  # noqa: E501
+        city_.append(city)
+        conditions.append(condition)
 
     plot_scatter_diag(x=traffic_mortality, y=count_dict, size=gdp,
                       color=continents, symbol=conditions, city=city_,
