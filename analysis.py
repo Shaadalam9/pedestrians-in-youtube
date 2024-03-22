@@ -264,7 +264,9 @@ def plot_vehicle_vs_cross_time(df_mapping, dfs, data, motorcycle=0, car=0, bus=0
     time_avg, continents, gdp, conditions, time_, city_ = [], [], [], [], [], []  # noqa: E501
 
     for key, value in dfs.items():
-        duration = get_duration_for_key(df_mapping['videos'], df_mapping['duration'], key)  # noqa: E501
+        duration = get_duration_for_key(df_mapping['videos'],
+                                        df_mapping['duration'],
+                                        key)
         time_.append(duration)
         time_cross = []
         dataframe = value
