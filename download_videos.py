@@ -38,7 +38,7 @@ def download_video_with_resolution(video_ids, resolutions=["2160p", "1440p", "10
             logger.info("Started download of video {} entitled \"{}\" in resolution {}.", vid, youtube_object.title,
                         resolution)
     except Exception as e:
-        logger.error("n error occurred {}.", e)
+        logger.error("Error occurred {}.", e)
         return None
 
 
