@@ -23,7 +23,7 @@ for link in youtube_links:
     # Download the youtube video to the local system
     video_ids = [id.strip() for id in link.strip("[]").split(',')]
     for vid in video_ids:
-        result = helper.download_video_with_resolution(video_id=vid, output_path=params.output_path)  # noqa: E501
+        result = helper.download_video_with_resolution(video_id=vid, output_path=params.output_path)
 
         if result:
             video_file_path, video_title, resolution = result
@@ -34,7 +34,7 @@ for link in youtube_links:
             logger.error("Download failed.")
 
         input_video_path = f"{params.output_path}/{video_title}.mp4"
-        output_video_path = f"{params.output_path}/{video_title}_mod.mp4"  # noqa: E501
+        output_video_path = f"{params.output_path}/{video_title}_mod.mp4"
 
         # Trimming of video (if required)
         start_time = params.trim_start
@@ -72,7 +72,7 @@ for link in youtube_links:
                 shutil.rmtree("runs/detect/frames")
 
             helper.rename_folder(
-                "runs/detect", f"runs/{video_title}_{resolution}_{datetime.now()}"  # noqa: E501
+                "runs/detect", f"runs/{video_title}_{resolution}_{datetime.now()}"
             )
             counter += 1
 

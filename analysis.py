@@ -23,16 +23,18 @@ template = common.get_configs('plotly_template')
 
 # List of things that YOLO can detect:
 # YOLO_id = {
-#     0: 'person', 1: 'bicycle', 2: 'car', 3: 'motorcycle', 4: 'airplane', 5: 'bus', 6: 'train', 7: 'truck', 8: 'boat',  # noqa: E501
-#     9: 'traffic light', 10: 'fire hydrant', 11: 'stop sign', 12: 'parking meter', 13: 'bench', 14: 'bird', 15: 'cat',  # noqa: E501
-#     16: 'dog', 17: 'horse', 18: 'sheep', 19: 'cow', 20: 'elephant', 21: 'bear', 22: 'zebra', 23: 'giraffe', 24: 'backpack',  # noqa: E501
-#     25: 'umbrella', 26: 'handbag', 27: 'tie', 28: 'suitcase', 29: 'frisbee', 30: 'skis', 31: 'snowboard', 32: 'sports ball',  # noqa: E501
-#     33: 'kite', 34: 'baseball bat', 35: 'baseball glove', 36: 'skateboard', 37: 'surfboard', 38: 'tennis racket', 39: 'bottle',  # noqa: E501
-#     40: 'wine glass', 41: 'cup', 42: 'fork', 43: 'knife', 44: 'spoon', 45: 'bowl', 46: 'banana', 47: 'apple', 48: 'sandwich',  # noqa: E501
-#     49: 'orange', 50: 'broccoli', 51: 'carrot', 52: 'hot dog',53: 'pizza', 54: 'donut', 55: 'cake', 56: 'chair',57: 'couch',  # noqa: E501
-#     58: 'potted plant', 59: 'bed',60: 'dining table', 61: 'toilet', 62: 'tv', 63: 'laptop', 64: 'mouse', 65: 'remote',  # noqa: E501
-#     66: 'keyboard',67: 'cell phone', 68: 'microwave', 69: 'oven', 70: 'toaster', 71: 'sink', 72: 'refrigerator', 73: 'book',  # noqa: E501
-#     74: 'clock',75: 'vase', 76: 'scissors', 77: 'teddy bear', 78: 'hair drier', 79: 'toothbrush'  # noqa: E501
+#     0: 'person', 1: 'bicycle', 2: 'car', 3: 'motorcycle', 4: 'airplane', 5: 'bus', 6: 'train', 7: 'truck', 8: 'boat',
+#     9: 'traffic light', 10: 'fire hydrant', 11: 'stop sign', 12: 'parking meter', 13: 'bench', 14: 'bird', 15: 'cat',
+#     16: 'dog', 17: 'horse', 18: 'sheep', 19: 'cow', 20: 'elephant', 21: 'bear', 22: 'zebra', 23: 'giraffe', 
+#     24: 'backpack', 25: 'umbrella', 26: 'handbag', 27: 'tie', 28: 'suitcase', 29: 'frisbee',
+#     30: 'skis', 31: 'snowboard', 32: 'sports ball', 33: 'kite', 34: 'baseball bat', 35: 'baseball glove',
+#     36: 'skateboard', 37: 'surfboard', 38: 'tennis racket', 39: 'bottle', 40: 'wine glass', 41: 'cup', 42: 'fork',
+#     43: 'knife', 44: 'spoon', 45: 'bowl', 46: 'banana', 47: 'apple', 48: 'sandwich', 49: 'orange', 50: 'broccoli',
+#     51: 'carrot', 52: 'hot dog',53: 'pizza', 54: 'donut', 55: 'cake', 56: 'chair',57: 'couch',
+#     58: 'potted plant', 59: 'bed',60: 'dining table', 61: 'toilet', 62: 'tv', 63: 'laptop', 64: 'mouse',
+#     65: 'remote', 66: 'keyboard',67: 'cell phone', 68: 'microwave', 69: 'oven', 70: 'toaster', 71: 'sink',
+#     72: 'refrigerator', 73: 'book', 74: 'clock',75: 'vase', 76: 'scissors', 77: 'teddy bear', 78: 'hair drier',
+#     79: 'toothbrush'
 # }
 
 
@@ -74,7 +76,7 @@ def pedestrian_crossing(dataframe, min_x, max_x, person_id):
     # Makes group based on Unique ID
     crossed_ids_grouped = crossed_ids.groupby("Unique Id")
     filtered_crossed_ids = crossed_ids_grouped.filter(
-        lambda x: (x["X-center"] <= min_x).any() and (x["X-center"] >= max_x).any())  # noqa: E501
+        lambda x: (x["X-center"] <= min_x).any() and (x["X-center"] >= max_x).any())
     crossed_ids = filtered_crossed_ids["Unique Id"].unique()
     return len(crossed_ids), crossed_ids
 
@@ -153,7 +155,7 @@ def adjust_annotation_positions(annotations):
         adjusted_ann = ann.copy()
         # Adjust x and y coordinates to avoid overlap
         for other_ann in adjusted_annotations:
-            if (abs(ann['x'] - other_ann['x']) < 0) and (abs(ann['y'] - other_ann['y']) < 0):  # noqa: E501
+            if (abs(ann['x'] - other_ann['x']) < 0) and (abs(ann['y'] - other_ann['y']) < 0):
                 adjusted_ann['y'] += 0
         adjusted_annotations.append(adjusted_ann)
     return adjusted_annotations
@@ -355,7 +357,8 @@ def plot_cell_phone_vs_traffic_mortality(df_mapping, dfs):
         if f"{city}_{condition}" in info:
             previous_value = info[f"{city}_{condition}"]
             info[f"{city}_{condition}"] = (previous_value + avg_cell_phone) / 2
-            continue  # Don't need to add variables like traffic mortality, continents and son on again for same city and condition  # noqa: E501
+            # No need to add variables like traffic mortality, continents and son on again for same city and condition
+            continue  
 
         else:
             info[f"{city}_{condition}"] = avg_cell_phone
@@ -392,14 +395,12 @@ def plot_cell_phone_vs_traffic_mortality(df_mapping, dfs):
                       city=filtered_city,
                       plot_name="cell_phone_vs_traffic_mortality",
                       x_label="Traffic mortality rate per 100k person",
-                      y_label="Number of Mobile detected in the video (normalised)",  # noqa: E501
+                      y_label="Number of Mobile detected in the video (normalised)",
                       legend_x=0, legend_y=0.986)
 
 
-# TODO: check if there is a csv with avg vehicle ownership/usage on the city/country level   # noqa: E501
-# TODO: Remove the un-necessary #noqa
-def plot_vehicle_vs_cross_time(df_mapping, dfs, data,
-                               motorcycle=0, car=0, bus=0, truck=0):
+# TODO: check if there is a csv with avg vehicle ownership/usage on the city/country level 
+def plot_vehicle_vs_cross_time(df_mapping, dfs, data, motorcycle=0, car=0, bus=0, truck=0):
     """Summary
     
     Args:
@@ -430,7 +431,8 @@ def plot_vehicle_vs_cross_time(df_mapping, dfs, data,
             df_mapping['videos'], df_mapping['time_of_day'], key))
 
         if motorcycle == 1 & car == 1 & bus == 1 & truck == 1:
-            vehicle_ids = dataframe[(dataframe["YOLO_id"] == 2) | (dataframe["YOLO_id"] == 3) | (dataframe["YOLO_id"] == 5) | (dataframe["YOLO_id"] == 7)]  # noqa: E501
+            vehicle_ids = dataframe[(dataframe["YOLO_id"] == 2) | (dataframe["YOLO_id"] == 3) | 
+                                    (dataframe["YOLO_id"] == 5) | (dataframe["YOLO_id"] == 7)]
             save_as = "all_vehicle_vs_cross_time"
 
         elif motorcycle == 1:
@@ -497,7 +499,7 @@ def plot_vehicle_vs_cross_time(df_mapping, dfs, data,
 
 # TODO : Add the flag
 # TODO : Check the calculation of mean and SD
-# On an average how many times a person who is crossing a road will hesitate to do it.   # noqa: E501
+# On an average how many times a person who is crossing a road will hesitate to do it. 
 def plot_time_to_start_crossing(dfs, person_id=0):
     """Summary
     
@@ -517,7 +519,7 @@ def plot_time_to_start_crossing(dfs, person_id=0):
         city = get_single_value_for_key(
             df_mapping['videos'], df_mapping['city'], location)
 
-        # Initialize dictionaries to track sum and sum of squares for each city_condition combination   # noqa: E501
+        # Initialize dictionaries to track sum and sum of squares for each city_condition combination 
         sum_values = {}
         sum_squares = {}
 
@@ -531,7 +533,7 @@ def plot_time_to_start_crossing(dfs, person_id=0):
 
             for i in range(0, len(x_values)-1):
                 if initial_x < 0.5:
-                    if (x_values[i] - margin <= x_values[i+1] <= x_values[i] + margin):   # noqa: E501
+                    if (x_values[i] - margin <= x_values[i+1] <= x_values[i] + margin): 
                         consecutive_frame += 1
                         if consecutive_frame == 3:
                             flag = 1
@@ -542,7 +544,7 @@ def plot_time_to_start_crossing(dfs, person_id=0):
                         consecutive_frame = 0
 
                 else:
-                    if (x_values[i] - margin >= x_values[i+1] >= x_values[i] + margin):   # noqa: E501
+                    if (x_values[i] - margin >= x_values[i+1] >= x_values[i] + margin): 
                         consecutive_frame += 1
                         if consecutive_frame == 3:
                             flag = 1
@@ -562,7 +564,7 @@ def plot_time_to_start_crossing(dfs, person_id=0):
 
         # Update sum and sum of squares for the city_condition combination
         sum_values[city_condition_key] = sum(data.values())
-        sum_squares[city_condition_key] = sum(value**2 for value in data.values())   # noqa: E501
+        sum_squares[city_condition_key] = sum(value**2 for value in data.values()) 
 
         # Check if the city_condition combination already exists in time_dict
         if city_condition_key in time_dict:
@@ -575,7 +577,7 @@ def plot_time_to_start_crossing(dfs, person_id=0):
             new_sum_squares = sum_squares[city_condition_key]
 
             new_mean = (old_mean * n_old + new_sum) / (n_old + n_new)
-            new_sd = ((old_sd ** 2 * n_old + new_sum_squares) / (n_old + n_new) - new_mean ** 2) ** 0.5   # noqa: E501
+            new_sd = ((old_sd ** 2 * n_old + new_sum_squares) / (n_old + n_new) - new_mean ** 2) ** 0.5 
 
             time_dict[city_condition_key] = new_mean
             sd_dict[city_condition_key] = new_sd
@@ -647,9 +649,9 @@ def plot_time_to_start_crossing(dfs, person_id=0):
             tickvals=[],
         ),
         xaxis=dict(
-            title="Average time taken by the pedestrian to start crossing the road (in seconds)",   # noqa: E501
-            tickvals=[-val for val in range(1, max_value + 1)] + [val for val in range(1, max_value + 1)],   # noqa: E501
-            ticktext=[abs(val) for val in range(1, max_value + 1)] + [val for val in range(1, max_value + 1)]   # noqa: E501
+            title="Average time taken by the pedestrian to start crossing the road (in seconds)", 
+            tickvals=[-val for val in range(1, max_value + 1)] + [val for val in range(1, max_value + 1)], 
+            ticktext=[abs(val) for val in range(1, max_value + 1)] + [val for val in range(1, max_value + 1)] 
         )
     )
 
@@ -702,10 +704,10 @@ def plot_time_to_start_crossing(dfs, person_id=0):
     # Plot the figure
     fig.show()
 
-    save_plotly_figure(fig, "time_to_start_cross")  # noqa: E501
+    save_plotly_figure(fig, "time_to_start_cross")
 
 
-# TODO : Find the difference between a person as a pedestrian and as motorcyclist  # noqa: E501
+# TODO : Find the difference between a person as a pedestrian and as motorcyclist
 def plot_no_of_pedestrian_stop(dfs, person_id=0):
     """Summary
     
@@ -739,7 +741,7 @@ def plot_no_of_pedestrian_stop(dfs, person_id=0):
 
             for i in range(0, len(x_values)-1):
                 if initial_x < 0.5:
-                    if (x_values[i] - margin <= x_values[i+1] <= x_values[i] + margin):   # noqa: E501
+                    if (x_values[i] - margin <= x_values[i+1] <= x_values[i] + margin): 
                         consecutive_frame += 1
                         if consecutive_frame == 3:
                             count += 1
@@ -751,7 +753,7 @@ def plot_no_of_pedestrian_stop(dfs, person_id=0):
                         consecutive_frame = 0
 
                 else:
-                    if (x_values[i] - margin >= x_values[i+1] >= x_values[i] + margin):   # noqa: E501
+                    if (x_values[i] - margin >= x_values[i+1] >= x_values[i] + margin): 
                         consecutive_frame += 1
                         if consecutive_frame == 3:
                             count += 1
@@ -833,9 +835,9 @@ def plot_no_of_pedestrian_stop(dfs, person_id=0):
             tickvals=[],
         ),
         xaxis=dict(
-            title="No of pedestrian in the study (in thousands)",   # noqa: E501
-            tickvals=[-val for val in range(1, max_value + 1)] + [val for val in range(1, max_value + 1)],   # noqa: E501
-            ticktext=[abs(val) for val in range(1, max_value + 1)] + [val for val in range(1, max_value + 1)]   # noqa: E501
+            title="No of pedestrian in the study (in thousands)", 
+            tickvals=[-val for val in range(1, max_value + 1)] + [val for val in range(1, max_value + 1)], 
+            ticktext=[abs(val) for val in range(1, max_value + 1)] + [val for val in range(1, max_value + 1)] 
         )
     )
 
@@ -888,7 +890,7 @@ def plot_no_of_pedestrian_stop(dfs, person_id=0):
     # Plot the figure
     fig.show()
 
-    save_plotly_figure(fig, "no_of_cases_for_cross")  # noqa: E501
+    save_plotly_figure(fig, "no_of_cases_for_cross")
 
 
 def plot_hesitation_vs_traffic_mortality(df_mapping, dfs, person_id=0):
@@ -900,12 +902,12 @@ def plot_hesitation_vs_traffic_mortality(df_mapping, dfs, person_id=0):
         person_id (int, optional): Description
     """
     count_dict = {}
-    time_, traffic_mortality, continents, gdp, conditions, city_ = [], [], [], [], [], []   # noqa: E501
+    time_, traffic_mortality, continents, gdp, conditions, city_ = [], [], [], [], [], [] 
     for key, df in dfs.items():
         count, pedestrian_count = 0, 0
         crossed_ids = df[(df["YOLO_id"] == person_id)]
-        city = get_single_value_for_key(df_mapping['videos'], df_mapping['city'], key)   # noqa: E501
-        condition = int(get_single_value_for_key(df_mapping['videos'], df_mapping['time_of_day'], key))   # noqa: E501
+        city = get_single_value_for_key(df_mapping['videos'], df_mapping['city'], key) 
+        condition = int(get_single_value_for_key(df_mapping['videos'], df_mapping['time_of_day'], key)) 
 
         # Makes group based on Unique ID
         crossed_ids_grouped = crossed_ids.groupby("Unique Id")
@@ -924,7 +926,7 @@ def plot_hesitation_vs_traffic_mortality(df_mapping, dfs, person_id=0):
                         consecutive_frames += 1
                         if consecutive_frames >= 3:
                             pedestrian_count += 1
-                            # Check if there's any instance where X-center [i + 1] <= X-center [i]   # noqa:E501
+                            # Check if there's any instance where X-center [i + 1] <= X-center [i]
                             for j in range(i+1, len(x_values) - 10):
                                 if x_values[j] <= x_values[j - 10]:
                                     count += 1
@@ -937,20 +939,20 @@ def plot_hesitation_vs_traffic_mortality(df_mapping, dfs, person_id=0):
                         consecutive_frames += 1
                         if consecutive_frames >= 3:
                             pedestrian_count += 1
-                            # Check if there's any instance where X-center [i + 1] >= X-center [i]   # noqa: E501
+                            # Check if there's any instance where X-center [i + 1] >= X-center [i] 
                             for j in range(i+1, len(x_values) - 10):
                                 if x_values[j] >= x_values[j - 10]:
                                     count += 1
                                     break
                                 break
 
-        duration = get_duration_for_key(df_mapping['videos'], df_mapping['duration'], key)  # noqa: E501
+        duration = get_duration_for_key(df_mapping['videos'], df_mapping['duration'], key)
 
         # num_person = count_object(df, 0)
         if pedestrian_count == 0:
             continue
 
-        count_ = ((((count * 60) * 100) / pedestrian_count) / duration)  # noqa: E501
+        count_ = ((((count * 60) * 100) / pedestrian_count) / duration)
 
         if f'{city}_{condition}' in count_dict:
             old_count = count_dict[f'{city}_{condition}']
@@ -961,9 +963,9 @@ def plot_hesitation_vs_traffic_mortality(df_mapping, dfs, person_id=0):
             count_dict[f'{city}_{condition}'] = count_
 
         time_.append(duration)
-        continents.append(get_single_value_for_key(df_mapping['videos'], df_mapping['continent'], key))  # noqa: E501
-        gdp.append(int(get_single_value_for_key(df_mapping['videos'], df_mapping['gdp_per_capita'], key)))  # noqa: E501
-        traffic_mortality.append(get_single_value_for_key(df_mapping['videos'], df_mapping['traffic_mortality'], key))  # noqa: E501
+        continents.append(get_single_value_for_key(df_mapping['videos'], df_mapping['continent'], key))
+        gdp.append(int(get_single_value_for_key(df_mapping['videos'], df_mapping['gdp_per_capita'], key)))
+        traffic_mortality.append(get_single_value_for_key(df_mapping['videos'], df_mapping['traffic_mortality'], key))
         city_.append(city)
         conditions.append(condition)
 
@@ -971,11 +973,11 @@ def plot_hesitation_vs_traffic_mortality(df_mapping, dfs, person_id=0):
                       color=continents, symbol=conditions, city=city_,
                       plot_name="hesitation_vs_traffic_mortality",
                       x_label="Traffic mortality rate per 100k person",
-                      y_label="Percentage of people who hesitated while crossing the road (normalised)",  # noqa: E501
+                      y_label="Percentage of people who hesitated while crossing the road (normalised)",
                       legend_x=0.887, legend_y=0.986)
 
 
-def plot_speed_of_crossing_vs_crossing_decision_time(df_mapping, dfs, data, person_id=0):  # noqa: E501
+def plot_speed_of_crossing_vs_crossing_decision_time(df_mapping, dfs, data, person_id=0):
     """Summary
     
     Args:
@@ -1027,8 +1029,8 @@ def plot_speed_of_crossing_vs_crossing_decision_time(df_mapping, dfs, data, pers
 
         if f'{city}_{condition}' in avg_speed:
             old_count = avg_speed[f'{city}_{condition}']
-            new_count = old_count * no_people[f'{city}_{condition}'] + sum(speed)  # noqa: E501
-            avg_speed[f'{city}_{condition}'] = new_count / (no_people[f'{city}_{condition}'] + len(speed))  # noqa: E501
+            new_count = old_count * no_people[f'{city}_{condition}'] + sum(speed)
+            avg_speed[f'{city}_{condition}'] = new_count / (no_people[f'{city}_{condition}'] + len(speed))
         else:
             avg_speed[f'{city}_{condition}'] = sum(speed) / len(speed)
 
@@ -1053,7 +1055,7 @@ def plot_speed_of_crossing_vs_crossing_decision_time(df_mapping, dfs, data, pers
 
             for i in range(0, len(x_values)-1):
                 if initial_x < 0.5:
-                    if (x_values[i] - margin <= x_values[i+1] <= x_values[i] + margin):   # noqa: E501
+                    if (x_values[i] - margin <= x_values[i+1] <= x_values[i] + margin): 
                         consecutive_frame += 1
                         if consecutive_frame == 3:
                             flag = 1
@@ -1064,7 +1066,7 @@ def plot_speed_of_crossing_vs_crossing_decision_time(df_mapping, dfs, data, pers
                         consecutive_frame = 0
 
                 else:
-                    if (x_values[i] - margin >= x_values[i+1] >= x_values[i] + margin):   # noqa: E501
+                    if (x_values[i] - margin >= x_values[i+1] >= x_values[i] + margin): 
                         consecutive_frame += 1
                         if consecutive_frame == 3:
                             flag = 1
@@ -1081,22 +1083,23 @@ def plot_speed_of_crossing_vs_crossing_decision_time(df_mapping, dfs, data, pers
 
         if f'{city}_{condition}' in time_dict:
             old_count = time_dict[f'{city}_{condition}']
-            new_count = old_count * no_people[f'{city}_{condition}'] + (sum(data.values()) / 30)  # noqa: E501
-            time_dict[f'{city}_{condition}'] = new_count / (no_people[f'{city}_{condition}'] + len(data))  # noqa: E501
+            new_count = old_count * no_people[f'{city}_{condition}'] + (sum(data.values()) / 30)
+            time_dict[f'{city}_{condition}'] = new_count / (no_people[f'{city}_{condition}'] + len(data))
         else:
-            time_dict[f'{city}_{condition}'] = ((sum(data.values()) / 30) / len(data))  # noqa: E501
+            time_dict[f'{city}_{condition}'] = ((sum(data.values()) / 30) / len(data))
 
     ordered_values = []
     for key in time_dict:
         city, condition = key.split('_')
-        df_ = df_mapping[(df_mapping['city'] == city) & (df_mapping['time_of_day'] == int(condition))]  # noqa: E501
+        df_ = df_mapping[(df_mapping['city'] == city) & (df_mapping['time_of_day'] == int(condition))]
         conditions.append(int(condition))
         continents.append(df_['continent'].values[0])
         gdp.append(df_['gdp_per_capita'].values[0])
 
         ordered_values.append((time_dict[key], avg_speed[key]))
 
-    continent_colors = {'Asia': 'blue', 'Europe': 'green', 'Africa': 'red', 'North America': 'orange', 'South America': 'purple', 'Australia': 'brown'}  # noqa: E501
+    continent_colors = {'Asia': 'blue', 'Europe': 'green', 'Africa': 'red', 'North America': 'orange',
+                        'South America': 'purple', 'Australia': 'brown'}
 
     fig = px.scatter(x=[value[0] for value in ordered_values],
                      y=[value[1] for value in ordered_values],
@@ -1112,8 +1115,8 @@ def plot_speed_of_crossing_vs_crossing_decision_time(df_mapping, dfs, data, pers
 
     # Adding labels and title
     fig.update_layout(
-        xaxis_title="Average time pedestrian takes for crossing decision (in s)",  # noqa: E501
-        yaxis_title="Average speed of pedestrian while crossing the road (in m/s)"   # noqa: E501
+        xaxis_title="Average time pedestrian takes for crossing decision (in s)",
+        yaxis_title="Average speed of pedestrian while crossing the road (in m/s)" 
     )
 
     for continent, color in continent_colors.items():
@@ -1167,7 +1170,7 @@ def plot_speed_of_crossing_vs_crossing_decision_time(df_mapping, dfs, data, pers
     save_plotly_figure(fig, "speed_of_crossing_vs_crossing_decision_time")
 
 
-def plot_traffic_mortality_vs_crossing_event_wt_traffic_light(df_mapping, dfs, data):   # noqa: E501
+def plot_traffic_mortality_vs_crossing_event_wt_traffic_light(df_mapping, dfs, data): 
     """Summary
     
     Args:
@@ -1179,8 +1182,8 @@ def plot_traffic_mortality_vs_crossing_event_wt_traffic_light(df_mapping, dfs, d
     continents, gdp, traffic_mortality = [], [], []
     conditions, time_, city_ = [], [], []
 
-    # For a specific id of a person search for the first and last occurrence of that id and see if the traffic light was present between it or not.  # noqa: E501
-    # Only getting those unique_id of the person who crosses the road
+    # For a specific id of a person search for the first and last occurrence of that id and see if the traffic light
+    # was present between it or not. Only getting those unique_id of the person who crosses the road.
 
     for key, df in data.items():
         counter_1, counter_2 = {}, {}
@@ -1216,19 +1219,21 @@ def plot_traffic_mortality_vs_crossing_event_wt_traffic_light(df_mapping, dfs, d
         var_exist[key] = ((counter_exists * 60) / time_[-1])
         var_nt_exist[key] = ((counter_nt_exists * 60) / time_[-1])
 
-        counter_1[f'{city}_{condition}'] = counter_1.get(f'{city}_{condition}', 0) + var_exist[key]  # noqa:E501
-        counter_2[f'{city}_{condition}'] = counter_2.get(f'{city}_{condition}', 0) + var_nt_exist[key]  # noqa:E501
+        counter_1[f'{city}_{condition}'] = counter_1.get(f'{city}_{condition}', 0) + var_exist[key]
+        counter_2[f'{city}_{condition}'] = counter_2.get(f'{city}_{condition}', 0) + var_nt_exist[key]
 
-        if (counter_1[f'{city}_{condition}'] + counter_2[f'{city}_{condition}']) == 0:  # noqa:E501
+        if (counter_1[f'{city}_{condition}'] + counter_2[f'{city}_{condition}']) == 0:
             # Gives an error of division by 0
             continue
         else:
             if f'{city}_{condition}' in ratio:
-                ratio[f'{city}_{condition}'] = (counter_2[f'{city}_{condition}'] * 100) / (counter_1[f'{city}_{condition}'] + counter_2[f'{city}_{condition}'])  # noqa:E501
+                ratio[f'{city}_{condition}'] = ((counter_2[f'{city}_{condition}'] * 100) /
+                                                (counter_1[f'{city}_{condition}'] + counter_2[f'{city}_{condition}']))
                 continue
-            # If already present, the array below will be filled multiple times  # noqa:E501
+            # If already present, the array below will be filled multiple times
             else:
-                ratio[f'{city}_{condition}'] = (counter_2[f'{city}_{condition}'] * 100) / (counter_1[f'{city}_{condition}'] + counter_2[f'{city}_{condition}'])  # noqa:E501
+                ratio[f'{city}_{condition}'] = ((counter_2[f'{city}_{condition}'] * 100) / 
+                                                (counter_1[f'{city}_{condition}'] + counter_2[f'{city}_{condition}']))
 
         traffic_mortality.append(float(
             get_single_value_for_key(df_mapping['videos'],
@@ -1242,16 +1247,16 @@ def plot_traffic_mortality_vs_crossing_event_wt_traffic_light(df_mapping, dfs, d
             get_single_value_for_key(df_mapping['videos'],
                                      df_mapping['gdp_per_capita'], key)))
 
-        city_.append(city)  # noqa: E501
-        conditions.append(condition)  # noqa: E501
+        city_.append(city)
+        conditions.append(condition)
 
     plot_scatter_diag(x=traffic_mortality,
                       y=ratio, size=gdp,
                       color=continents, symbol=conditions,
                       city=city_,
-                      plot_name="traffic_mortality_vs_crossing_event_wt_traffic_light",  # noqa: E501
-                      x_label="Traffic mortality rate (per 100k)",  # noqa: E501
-                      y_label="Percentage of Crossing Event without traffic light (normalised)",  # noqa: E501
+                      plot_name="traffic_mortality_vs_crossing_event_wt_traffic_light",
+                      x_label="Traffic mortality rate (per 100k)",
+                      y_label="Percentage of Crossing Event without traffic light (normalised)",
                       legend_x=0, legend_y=0.986)
 
 
@@ -1304,8 +1309,8 @@ def plot_speed_of_crossing_vs_traffic_mortality(df_mapping, dfs, data):
 
         if f'{city}_{condition}' in avg_speed:
             old_count = avg_speed[f'{city}_{condition}']
-            new_count = old_count * no_people[f'{city}_{condition}'] + sum(speed)  # noqa: E501
-            avg_speed[f'{city}_{condition}'] = new_count / (no_people[f'{city}_{condition}'] + len(speed))  # noqa: E501
+            new_count = old_count * no_people[f'{city}_{condition}'] + sum(speed)
+            avg_speed[f'{city}_{condition}'] = new_count / (no_people[f'{city}_{condition}'] + len(speed))
             continue
         else:
             avg_speed[f'{city}_{condition}'] = sum(speed) / len(speed)
@@ -1330,7 +1335,7 @@ def plot_speed_of_crossing_vs_traffic_mortality(df_mapping, dfs, data):
                       city=city_,
                       plot_name="speed_of_crossing_vs_traffic_mortality",
                       x_label="Traffic mortality rate (per 100k)",
-                      y_label="Average speed of the pedestrian to cross the road (in m/s)",  # noqa: E501
+                      y_label="Average speed of the pedestrian to cross the road (in m/s)",
                       legend_x=0, legend_y=0.986)
 
 
@@ -1382,8 +1387,8 @@ def plot_speed_of_crossing_vs_literacy(df_mapping, dfs, data):
 
         if f'{city}_{condition}' in avg_speed:
             old_count = avg_speed[f'{city}_{condition}']
-            new_count = old_count * no_people[f'{city}_{condition}'] + sum(speed)  # noqa: E501
-            avg_speed[f'{city}_{condition}'] = new_count / (no_people[f'{city}_{condition}'] + len(speed))  # noqa: E501
+            new_count = old_count * no_people[f'{city}_{condition}'] + sum(speed)
+            avg_speed[f'{city}_{condition}'] = new_count / (no_people[f'{city}_{condition}'] + len(speed))
             continue
         else:
             avg_speed[f'{city}_{condition}'] = sum(speed) / len(speed)
@@ -1409,7 +1414,7 @@ def plot_speed_of_crossing_vs_literacy(df_mapping, dfs, data):
                       city=city_,
                       plot_name="speed_of_crossing_vs_literacy",
                       x_label="Literacy rate in the country (in percentage)",
-                      y_label="Average speed of the pedestrian to cross the road (in m/s)",  # noqa: E501
+                      y_label="Average speed of the pedestrian to cross the road (in m/s)",
                       legend_x=0, legend_y=1)
 
 
@@ -1436,7 +1441,7 @@ def plot_traffic_safety_vs_traffic_mortality(df_mapping, dfs):
         condition = int(get_single_value_for_key(
             df_mapping['videos'], df_mapping['time_of_day'], key))
 
-        instrument = dataframe[(dataframe["YOLO_id"] == 9) | (dataframe["YOLO_id"] == 11)]  # noqa: E501
+        instrument = dataframe[(dataframe["YOLO_id"] == 9) | (dataframe["YOLO_id"] == 11)]
 
         instrument_ids = instrument["Unique Id"].unique()
 
@@ -1447,12 +1452,12 @@ def plot_traffic_safety_vs_traffic_mortality(df_mapping, dfs):
 
         if f'{city}_{condition}' in info:
             old_count = info[f'{city}_{condition}']
-            new_count = (old_count * duration_.get(f'{city}_{condition}', 0)) + count_  # noqa: E501
+            new_count = (old_count * duration_.get(f'{city}_{condition}', 0)) + count_
             if f'{city}_{condition}' in duration_:
-                duration_[f'{city}_{condition}'] = duration_.get(f'{city}_{condition}', 0) + count  # noqa: E501
+                duration_[f'{city}_{condition}'] = duration_.get(f'{city}_{condition}', 0) + count
             else:
                 duration_[f'{city}_{condition}'] = count
-            info[f'{city}_{condition}'] = new_count / duration_.get(f'{city}_{condition}', 0)  # noqa: E501
+            info[f'{city}_{condition}'] = new_count / duration_.get(f'{city}_{condition}', 0)
             continue
         else:
             info[f'{city}_{condition}'] = count_
@@ -1476,7 +1481,7 @@ def plot_traffic_safety_vs_traffic_mortality(df_mapping, dfs):
                       city=city_,
                       plot_name="traffic_safety_vs_traffic_mortality",
                       x_label="Traffic mortality rate per 100k person",
-                      y_label="Number of traffic instruments detected (normalised)",  # noqa: E501
+                      y_label="Number of traffic instruments detected (normalised)",
                       legend_x=0.887, legend_y=0.96)
 
 
@@ -1502,7 +1507,7 @@ def plot_traffic_safety_vs_literacy(df_mapping, dfs):
         condition = int(get_single_value_for_key(
             df_mapping['videos'], df_mapping['time_of_day'], key))
 
-        instrument = dataframe[(dataframe["YOLO_id"] == 9) | (dataframe["YOLO_id"] == 11)]  # noqa: E501
+        instrument = dataframe[(dataframe["YOLO_id"] == 9) | (dataframe["YOLO_id"] == 11)]
 
         instrument_ids = instrument["Unique Id"].unique()
 
@@ -1513,12 +1518,12 @@ def plot_traffic_safety_vs_literacy(df_mapping, dfs):
 
         if f'{city}_{condition}' in info:
             old_count = info[f'{city}_{condition}']
-            new_count = (old_count * duration_.get(f'{city}_{condition}', 0)) + count_  # noqa: E501
+            new_count = (old_count * duration_.get(f'{city}_{condition}', 0)) + count_
             if f'{city}_{condition}' in duration_:
-                duration_[f'{city}_{condition}'] = duration_.get(f'{city}_{condition}', 0) + count  # noqa: E501
+                duration_[f'{city}_{condition}'] = duration_.get(f'{city}_{condition}', 0) + count
             else:
                 duration_[f'{city}_{condition}'] = count
-            info[f'{city}_{condition}'] = new_count / duration_.get(f'{city}_{condition}', 0)  # noqa: E501
+            info[f'{city}_{condition}'] = new_count / duration_.get(f'{city}_{condition}', 0)
             continue
         else:
             info[f'{city}_{condition}'] = count_
@@ -1541,7 +1546,7 @@ def plot_traffic_safety_vs_literacy(df_mapping, dfs):
                       city=city_,
                       plot_name="traffic_safety_vs_literacy",
                       x_label="Literacy rate in the country (in percentage)",
-                      y_label="Number of traffic instruments detected (normalised)",  # noqa: E501
+                      y_label="Number of traffic instruments detected (normalised)",
                       legend_x=0.07, legend_y=0.96)
 
 

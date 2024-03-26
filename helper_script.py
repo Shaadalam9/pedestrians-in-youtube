@@ -30,30 +30,30 @@ class youtube_helper:
         except FileExistsError:
             print(f"Error: Folder '{new_name}' already exists.")
 
-    def download_video_with_resolution(self, video_id, resolutions=["720p", "480p", "360p"], output_path="."):   # noqa: E501
+    def download_video_with_resolution(self, video_id, resolutions=["720p", "480p", "360p"], output_path="."):
         try:
             youtube_url = f'https://www.youtube.com/watch?v={video_id}'
             print(youtube_url)
             youtube_object = YouTube(youtube_url)
             for resolution in resolutions:
-                video_streams = youtube_object.streams.filter(res=f"{resolution}").all()   # noqa: E501
+                video_streams = youtube_object.streams.filter(res=f"{resolution}").all()
                 if video_streams:
                     self.resolution = resolution
                     print(f"Got the video in {resolution}")
                     break
 
             if not video_streams:
-                print(f"No {resolution} resolution available for '{youtube_object.title}'.")   # noqa: E501
+                print(f"No {resolution} resolution available for '{youtube_object.title}'.")
                 return None
 
             selected_stream = video_streams[0]
 
-            video_file_path = f"{output_path}/{video_id}.mp4"   # noqa: E501
+            video_file_path = f"{output_path}/{video_id}.mp4"
             print("Youtube video download in progress...")
-            # Comment the below line to automatically download with video in "video" folder   # noqa: E501
-            selected_stream.download(output_path, filename=f"{video_id}.mp4")   # noqa: E501
+            # Comment the below line to automatically download with video in "video" folder
+            selected_stream.download(output_path, filename=f"{video_id}.mp4")
 
-            print(f"Download of '{youtube_object.title}' in {resolution} completed successfully.")   # noqa: E501
+            print(f"Download of '{youtube_object.title}' in {resolution} completed successfully.")
             self.video_title = youtube_object.title
             return video_file_path, video_id, resolution
 
@@ -64,12 +64,12 @@ class youtube_helper:
     @staticmethod
     def trim_video(input_path, output_path, start_time, end_time):
         video_clip = VideoFileClip(input_path).subclip(start_time, end_time)
-        video_clip.write_videofile(output_path, codec="libx264", audio_codec="aac")   # noqa: E501
+        video_clip.write_videofile(output_path, codec="libx264", audio_codec="aac")
         video_clip.close()
 
     @staticmethod
-    def create_video_from_images(image_folder, output_video_path, frame_rate=30):   # noqa: E501
-        images = [img for img in os.listdir(image_folder) if img.endswith(".jpg")]   # noqa: E501
+    def create_video_from_images(image_folder, output_video_path, frame_rate=30):
+        images = [img for img in os.listdir(image_folder) if img.endswith(".jpg")]
 
         if not images:
             print("No JPG images found in the specified folder.")
@@ -98,8 +98,8 @@ class youtube_helper:
 
     @staticmethod
     def merge_txt_files(txt_location, output_csv):
-        txt_files = [txt for txt in os.listdir(txt_location) if txt.endswith(".txt")]   # noqa: E501
-        txt_files.sort(key=lambda x: int(x.split("label_")[1].split(".")[0]))   # noqa: E501
+        txt_files = [txt for txt in os.listdir(txt_location) if txt.endswith(".txt")]
+        txt_files.sort(key=lambda x: int(x.split("label_")[1].split(".")[0]))
 
         df_list = []
 
@@ -107,20 +107,22 @@ class youtube_helper:
             txt_path = os.path.join(txt_location, filename)
 
         # Make sure the delimiter is correct, and adjust if necessary
-            df = pd.read_csv(txt_path, delimiter=" ", header=None, names=["YOLO_id", "X-center", "Y-center", "Width", "Height", "Unique Id"])   # noqa: E501
+            df = pd.read_csv(txt_path, delimiter=" ", header=None, names=["YOLO_id", "X-center", "Y-center", "Width", 
+                                                                          "Height", "Unique Id"])
             df_list.append(df)
 
         merged_df = pd.concat(df_list, axis=0)
 
     # Save the merged DataFrame to a CSV file with specific header
-        merged_df.to_csv(output_csv, index=False, header=["YOLO_id", "X-center", "Y-center", "Width", "Height", "Unique Id"])   # noqa: E501
+        merged_df.to_csv(output_csv, index=False, header=["YOLO_id", "X-center", "Y-center", "Width", "Height",
+                                                          "Unique Id"])
 
     def prediction_mode(self):
         model = YOLO(self.model)
-        model.predict(source=f"{params.output_path}/{self.video_title}_{self.resolution}.mp4",   # noqa: E501
+        model.predict(source=f"{params.output_path}/{self.video_title}_{self.resolution}.mp4",
                       save=True, conf=params.confidence, save_txt=True,
                       show=params.render, line_width=params.line_thickness,
-                      show_labels=params.show_labels, show_conf=params.show_conf)   # noqa: E501
+                      show_labels=params.show_labels, show_conf=params.show_conf)
 
     def tracking_mode(self, input_video_path, output_video_path):
         model = YOLO(self.model)
@@ -143,11 +145,13 @@ class youtube_helper:
 
     # Initialize a VideoWriter for the final video
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        final_video_writer = cv2.VideoWriter(final_video_output_path, fourcc, 30.0, (int(cap.get(3)), int(cap.get(4))))   # noqa: E501
+        final_video_writer = cv2.VideoWriter(final_video_output_path, fourcc, 30.0, (int(cap.get(3)), int(cap.get(4))))
 
         if params.display_frame_tracking:
             display_video_output_path = "runs/detect/display_video.mp4"
-            display_video_writer = cv2.VideoWriter(display_video_output_path, fourcc, 30.0, (int(cap.get(3)), int(cap.get(4))))   # noqa: E501
+            display_video_writer = cv2.VideoWriter(display_video_output_path, 
+                                                   fourcc, 30.0, (int(cap.get(3)), 
+                                                                  int(cap.get(4))))
 
         # Loop through the video frames
         frame_count = 0  # Variable to track the frame number
@@ -158,7 +162,7 @@ class youtube_helper:
             if success:
 
                 frame_count += 1  # Increment frame count
-                # Run YOLOv8 tracking on the frame, persisting tracks between frames   # noqa: E501
+                # Run YOLOv8 tracking on the frame, persisting tracks between frames
                 results = model.track(frame,
                                       tracker='bytetrack.yaml',
                                       persist=True,
@@ -184,7 +188,7 @@ class youtube_helper:
 
                 # Save annotated frame to file
                     if params.save_annoted_img:
-                        frame_filename = os.path.join(annotated_frame_output_path, f"frame_{frame_count}.jpg")   # noqa: E501
+                        frame_filename = os.path.join(annotated_frame_output_path, f"frame_{frame_count}.jpg")
                         cv2.imwrite(frame_filename, annotated_frame)
 
                 except Exception:
@@ -193,7 +197,7 @@ class youtube_helper:
                 # Save txt file with bounding box information
                 with open(text_filename, 'r') as text_file:
                     data = text_file.read()
-                new_txt_file_name = f"runs/detect/labels/label_{frame_count}.txt"   # noqa: E501
+                new_txt_file_name = f"runs/detect/labels/label_{frame_count}.txt"
                 with open(new_txt_file_name, 'w') as new_file:
                     new_file.write(data)
                     print("done")
@@ -201,7 +205,7 @@ class youtube_helper:
 
                 # save the labelled image
                 image_filename = "runs/detect/predict/image0.jpg"
-                new_img_file_name = f"runs/detect/frames/frame_{frame_count}.jpg"   # noqa: E501
+                new_img_file_name = f"runs/detect/frames/frame_{frame_count}.jpg"
                 shutil.move(image_filename, new_img_file_name)
 
                 # Plot the tracks
@@ -214,8 +218,9 @@ class youtube_helper:
                             track.pop(0)
 
                     # Draw the tracking lines
-                        points = np.hstack(track).astype(np.int32).reshape((-1, 1, 2))   # noqa: E501
-                        cv2.polylines(annotated_frame, [points], isClosed=False, color=(230, 230, 230), thickness=params.line_thickness*5)   # noqa: E501
+                        points = np.hstack(track).astype(np.int32).reshape((-1, 1, 2))
+                        cv2.polylines(annotated_frame, [points], isClosed=False, color=(230, 230, 230),
+                                      thickness=params.line_thickness*5)
 
                 except Exception:
                     pass
