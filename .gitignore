@@ -4,7 +4,7 @@ data
 source_videos
 yolov8x.pt
 check.py
-_output
+_outputs
 .vscode/
 params.py
 source_videos

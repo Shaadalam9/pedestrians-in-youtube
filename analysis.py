@@ -498,12 +498,12 @@ def plot_vehicle_vs_cross_time(df_mapping, dfs, data,
 # On an average how many times a person who is crossing a road will hesitate to do it.   # noqa: E501
 def plot_time_to_start_crossing(dfs, person_id=0):
     """Summary
-    
+
     Args:
         dfs (TYPE): Description
         person_id (int, optional): Description
     """
-    time_dict, sd_dict = {}, {}
+    time_dict, sd_dict, all_data = {}, {}, {}
     for location, df in dfs.items():
         data = {}
         crossed_ids = df[(df["YOLO_id"] == person_id)]
