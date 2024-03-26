@@ -4,12 +4,11 @@ data
 source_videos
 yolov8x.pt
 check.py
-_outputs
+_output
 .vscode/
 params.py
 source_videos
 __pycache__
-params.py
 # macOS
 **/.DS_Store
 
