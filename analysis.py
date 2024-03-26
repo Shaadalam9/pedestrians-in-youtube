@@ -1,3 +1,9 @@
+"""Summary
+
+Attributes:
+    logger (TYPE): Description
+    template (TYPE): Description
+"""
 import pandas as pd
 import os
 import plotly.express as px
@@ -32,6 +38,14 @@ template = common.get_configs('plotly_template')
 
 # Read the csv files and stores them as a dictionary in form {Unique_id : CSV}
 def read_csv_files(folder_path):
+    """Summary
+    
+    Args:
+        folder_path (TYPE): Description
+    
+    Returns:
+        TYPE: Description
+    """
     dfs = {}
     for file in os.listdir(folder_path):
         if file.endswith(".csv"):
@@ -44,6 +58,17 @@ def read_csv_files(folder_path):
 
 
 def pedestrian_crossing(dataframe, min_x, max_x, person_id):
+    """Summary
+    
+    Args:
+        dataframe (TYPE): Description
+        min_x (TYPE): Description
+        max_x (TYPE): Description
+        person_id (TYPE): Description
+    
+    Returns:
+        TYPE: Description
+    """
     # sort only person in the dataframe
     crossed_ids = dataframe[(dataframe["YOLO_id"] == person_id)]
     # Makes group based on Unique ID
@@ -55,6 +80,15 @@ def pedestrian_crossing(dataframe, min_x, max_x, person_id):
 
 
 def count_object(dataframe, id):
+    """Summary
+    
+    Args:
+        dataframe (TYPE): Description
+        id (TYPE): Description
+    
+    Returns:
+        TYPE: Description
+    """
     crossed_ids = dataframe[(dataframe["YOLO_id"] == id)]
     # Makes group based on Unique ID
     crossed_ids_grouped = crossed_ids.groupby("Unique Id")
@@ -63,6 +97,15 @@ def count_object(dataframe, id):
 
 
 def time_to_cross(dataframe, ids):
+    """Summary
+    
+    Args:
+        dataframe (TYPE): Description
+        ids (TYPE): Description
+    
+    Returns:
+        TYPE: Description
+    """
     var = {}
     for id in ids:
         x_min = dataframe[dataframe["Unique Id"] == id]["X-center"].min()
@@ -97,6 +140,14 @@ def time_to_cross(dataframe, ids):
 
 
 def adjust_annotation_positions(annotations):
+    """Summary
+    
+    Args:
+        annotations (TYPE): Description
+    
+    Returns:
+        TYPE: Description
+    """
     adjusted_annotations = []
     for i, ann in enumerate(annotations):
         adjusted_ann = ann.copy()
@@ -109,29 +160,57 @@ def adjust_annotation_positions(annotations):
 
 
 # makes scatter plots
-def save_plotly_figure(fig, filename_html, filename_png,
-                       filename_svg, width=1600, height=900, scale=3):
-
+def save_plotly_figure(fig, filename, width=1600, height=900, scale=3):
+    """Summary
+    
+    Args:
+        fig (TYPE): Description
+        filename (TYPE): Description
+        width (int, optional): Description
+        height (int, optional): Description
+        scale (int, optional): Description
+    """
     # Create directory if it doesn't exist
-    output_folder = "_outputs"
+    output_folder = "_output"
     os.makedirs(output_folder, exist_ok=True)
 
     # Save as HTML
-    fig.write_html(os.path.join(output_folder, filename_html))
+    fig.write_html(os.path.join(output_folder, filename + ".html"))
 
     # Save as PNG
-    fig.write_image(os.path.join(output_folder, filename_png),
-                    width=width, height=height, scale=scale)
+    fig.write_image(os.path.join(output_folder, filename + ".png"),
+                    width=width,
+                    height=height,
+                    scale=scale)
 
     # Save as SVG
-    fig.write_image(os.path.join(output_folder, filename_svg),
+    fig.write_image(os.path.join(output_folder, filename + ".svg"),
                     format="svg")
+
+    # Save as EPS
+    fig.write_image(os.path.join(output_folder, filename + ".eps"),
+                    width=width,
+                    height=height)
 
 
 def plot_scatter_diag(x, y, size, color, symbol,
                       city, plot_name, x_label, y_label,
                       legend_x=0.887, legend_y=0.986):
-
+    """Summary
+    
+    Args:
+        x (TYPE): Description
+        y (TYPE): Description
+        size (TYPE): Description
+        color (TYPE): Description
+        symbol (TYPE): Description
+        city (TYPE): Description
+        plot_name (TYPE): Description
+        x_label (TYPE): Description
+        y_label (TYPE): Description
+        legend_x (float, optional): Description
+        legend_y (float, optional): Description
+    """
     # Hard coded colors for continents
     continent_colors = {'Asia': 'blue', 'Europe': 'green',
                         'Africa': 'red', 'North America': 'orange',
@@ -202,12 +281,20 @@ def plot_scatter_diag(x, y, size, color, symbol,
         )
 
     fig.show()
-    save_plotly_figure(fig, f"{plot_name}.html",
-                       f"{plot_name}.png",
-                       f"{plot_name}.svg")
+    save_plotly_figure(fig, plot_name)
 
 
 def get_duration_for_key(video_column, duration_column, key):
+    """Summary
+    
+    Args:
+        video_column (TYPE): Description
+        duration_column (TYPE): Description
+        key (TYPE): Description
+    
+    Returns:
+        TYPE: Description
+    """
     for video, duration in zip(video_column, duration_column):
         if key in video:
             video_list = video.strip('[]').split(',')
@@ -217,6 +304,16 @@ def get_duration_for_key(video_column, duration_column, key):
 
 
 def get_single_value_for_key(video_column, value_column, key):
+    """Summary
+    
+    Args:
+        video_column (TYPE): Description
+        value_column (TYPE): Description
+        key (TYPE): Description
+    
+    Returns:
+        TYPE: Description
+    """
     for video, duration in zip(video_column, value_column):
         if key in video:
             value = duration  # Convert duration to integer
@@ -225,6 +322,12 @@ def get_single_value_for_key(video_column, value_column, key):
 
 # Plotting Functions
 def plot_cell_phone_vs_traffic_mortality(df_mapping, dfs):
+    """Summary
+    
+    Args:
+        df_mapping (TYPE): Description
+        dfs (TYPE): Description
+    """
     info = {}
     time_, traffic_mortality, continents,  = [], [], []
     gdp, conditions, city_ = [], [], []
@@ -297,6 +400,17 @@ def plot_cell_phone_vs_traffic_mortality(df_mapping, dfs):
 # TODO: Remove the un-necessary #noqa
 def plot_vehicle_vs_cross_time(df_mapping, dfs, data,
                                motorcycle=0, car=0, bus=0, truck=0):
+    """Summary
+    
+    Args:
+        df_mapping (TYPE): Description
+        dfs (TYPE): Description
+        data (TYPE): Description
+        motorcycle (int, optional): Description
+        car (int, optional): Description
+        bus (int, optional): Description
+        truck (int, optional): Description
+    """
     info, time_dict = {}, {}
     time_avg, continents, gdp = [], [], []
     conditions, time_, city_ = [], [], []
@@ -385,6 +499,12 @@ def plot_vehicle_vs_cross_time(df_mapping, dfs, data,
 # TODO : Check the calculation of mean and SD
 # On an average how many times a person who is crossing a road will hesitate to do it.   # noqa: E501
 def plot_time_to_start_crossing(dfs, person_id=0):
+    """Summary
+    
+    Args:
+        dfs (TYPE): Description
+        person_id (int, optional): Description
+    """
     time_dict, sd_dict = {}, {}
     for location, df in dfs.items():
         data = {}
@@ -582,11 +702,17 @@ def plot_time_to_start_crossing(dfs, person_id=0):
     # Plot the figure
     fig.show()
 
-    save_plotly_figure(fig, "time_to_start_cross.html", "time_to_start_cross.png", "time_to_start_cross.svg")  # noqa: E501
+    save_plotly_figure(fig, "time_to_start_cross")  # noqa: E501
 
 
 # TODO : Find the difference between a person as a pedestrian and as motorcyclist  # noqa: E501
 def plot_no_of_pedestrian_stop(dfs, person_id=0):
+    """Summary
+    
+    Args:
+        dfs (TYPE): Description
+        person_id (int, optional): Description
+    """
     count_dict = {}
     for location, df in dfs.items():
         data = {}
@@ -762,10 +888,17 @@ def plot_no_of_pedestrian_stop(dfs, person_id=0):
     # Plot the figure
     fig.show()
 
-    save_plotly_figure(fig, "no_of_cases_for_cross.html", "no_of_cases_for_cross.png", "no_of_cases_for_cross.svg")  # noqa: E501
+    save_plotly_figure(fig, "no_of_cases_for_cross")  # noqa: E501
 
 
 def plot_hesitation_vs_traffic_mortality(df_mapping, dfs, person_id=0):
+    """Summary
+    
+    Args:
+        df_mapping (TYPE): Description
+        dfs (TYPE): Description
+        person_id (int, optional): Description
+    """
     count_dict = {}
     time_, traffic_mortality, continents, gdp, conditions, city_ = [], [], [], [], [], []   # noqa: E501
     for key, df in dfs.items():
@@ -843,6 +976,14 @@ def plot_hesitation_vs_traffic_mortality(df_mapping, dfs, person_id=0):
 
 
 def plot_speed_of_crossing_vs_crossing_decision_time(df_mapping, dfs, data, person_id=0):  # noqa: E501
+    """Summary
+    
+    Args:
+        df_mapping (TYPE): Description
+        dfs (TYPE): Description
+        data (TYPE): Description
+        person_id (int, optional): Description
+    """
     avg_speed, time_dict, no_people = {}, {}, {}
     continents, gdp, conditions, time_ = [], [], [], []
 
@@ -1023,12 +1164,17 @@ def plot_speed_of_crossing_vs_crossing_decision_time(df_mapping, dfs, data, pers
         )
 
     fig.show()
-    save_plotly_figure(fig, "speed_of_crossing_vs_crossing_decision_time.html",
-                       "speed_of_crossing_vs_crossing_decision_time.png",
-                       "speed_of_crossing_vs_crossing_decision_time.svg")
+    save_plotly_figure(fig, "speed_of_crossing_vs_crossing_decision_time")
 
 
 def plot_traffic_mortality_vs_crossing_event_wt_traffic_light(df_mapping, dfs, data):   # noqa: E501
+    """Summary
+    
+    Args:
+        df_mapping (TYPE): Description
+        dfs (TYPE): Description
+        data (TYPE): Description
+    """
     var_exist, var_nt_exist, ratio = {}, {}, {}
     continents, gdp, traffic_mortality = [], [], []
     conditions, time_, city_ = [], [], []
@@ -1110,6 +1256,13 @@ def plot_traffic_mortality_vs_crossing_event_wt_traffic_light(df_mapping, dfs, d
 
 
 def plot_speed_of_crossing_vs_traffic_mortality(df_mapping, dfs, data):
+    """Summary
+    
+    Args:
+        df_mapping (TYPE): Description
+        dfs (TYPE): Description
+        data (TYPE): Description
+    """
     avg_speed, no_people = {}, {}
     continents, gdp, traffic_mortality, = [], [], []
     conditions, time_, city_ = [], [], [] 
@@ -1182,6 +1335,13 @@ def plot_speed_of_crossing_vs_traffic_mortality(df_mapping, dfs, data):
 
 
 def plot_speed_of_crossing_vs_literacy(df_mapping, dfs, data):
+    """Summary
+    
+    Args:
+        df_mapping (TYPE): Description
+        dfs (TYPE): Description
+        data (TYPE): Description
+    """
     avg_speed, no_people = {}, {}
     continents, gdp, literacy = [], [], []
     conditions, time_, city_ = [], [], []
@@ -1254,6 +1414,12 @@ def plot_speed_of_crossing_vs_literacy(df_mapping, dfs, data):
 
 
 def plot_traffic_safety_vs_traffic_mortality(df_mapping, dfs):
+    """Summary
+    
+    Args:
+        df_mapping (TYPE): Description
+        dfs (TYPE): Description
+    """
     info, duration_ = {}, {}
     traffic_mortality, continents, gdp = [], [], []
     conditions, time_, city_ = [], [], []
@@ -1315,6 +1481,12 @@ def plot_traffic_safety_vs_traffic_mortality(df_mapping, dfs):
 
 
 def plot_traffic_safety_vs_literacy(df_mapping, dfs):
+    """Summary
+    
+    Args:
+        df_mapping (TYPE): Description
+        dfs (TYPE): Description
+    """
     info, duration_ = {}, {}
     literacy, continents, gdp = [], [], []
     conditions, time_, city_ = [], [], []
@@ -1385,15 +1557,23 @@ if __name__ == "__main__":
         logger.info("Analysing data from {}.", key)
         count, ids = pedestrian_crossing(dfs[key], 0.45, 0.55, 0)
         pedestrian_crossing_count[key] = {"count": count, "ids": ids}
-        data[key] = time_to_cross(dfs[key], pedestrian_crossing_count[key]["ids"])  # noqa: E501
+        data[key] = time_to_cross(dfs[key], pedestrian_crossing_count[key]["ids"])
 
-    # Data is dictionary in the form {Unique_id : Values}. Values itself is another dictionary which is {Unique Id of person : Avg time to cross the road} # noqa: E501
-    # dfs is a dictionary in the form {Unique_id : CSV file}
+    # Data is dictionary in the form {Unique_id : Values}.Values itself
+    # is another dictionary which is {Unique Id of person : Avg time to cross
+    # the road}. dfs is a dictionary in the form {Unique_id : CSV file}
     # df_mapping is the csv file
-
     plot_cell_phone_vs_traffic_mortality(df_mapping, dfs)
-    plot_vehicle_vs_cross_time(df_mapping, dfs, data, motorcycle=1, car=1, bus=1, truck=1)  # noqa: E501
-    plot_traffic_mortality_vs_crossing_event_wt_traffic_light(df_mapping, dfs, data)  # noqa: E501
+    plot_vehicle_vs_cross_time(df_mapping,
+                               dfs,
+                               data,
+                               motorcycle=1,
+                               car=1,
+                               bus=1,
+                               truck=1)
+    plot_traffic_mortality_vs_crossing_event_wt_traffic_light(df_mapping,
+                                                              dfs,
+                                                              data)
     plot_hesitation_vs_traffic_mortality(df_mapping, dfs)
 
     plot_speed_of_crossing_vs_traffic_mortality(df_mapping, dfs, data)
@@ -1406,4 +1586,4 @@ if __name__ == "__main__":
     plot_no_of_pedestrian_stop(dfs)
     plot_speed_of_crossing_vs_crossing_decision_time(df_mapping, dfs, data)
 
-    print("Analysis Complete!!")
+    logger.info("Analysis completed.")
