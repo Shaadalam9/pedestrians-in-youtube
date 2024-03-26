@@ -452,7 +452,7 @@ def plot_vehicle_vs_cross_time(df_mapping, dfs, data, motorcycle=0, car=0, bus=0
             save_as = "truck_vs_cross_time"
 
         else:
-            print("No plot generated")
+            logger.info("No plot generated")
 
         vehicle_ids = vehicle_ids["Unique Id"].unique()
 
@@ -498,16 +498,15 @@ def plot_vehicle_vs_cross_time(df_mapping, dfs, data, motorcycle=0, car=0, bus=0
 
 
 # TODO : Add the flag
-# TODO : Check the calculation of mean and SD
 # On an average how many times a person who is crossing a road will hesitate to do it. 
 def plot_time_to_start_crossing(dfs, person_id=0):
     """Summary
-    
+
     Args:
         dfs (TYPE): Description
         person_id (int, optional): Description
     """
-    time_dict, sd_dict = {}, {}
+    time_dict, sd_dict, all_data = {}, {}, {}
     for location, df in dfs.items():
         data = {}
         crossed_ids = df[(df["YOLO_id"] == person_id)]
@@ -518,10 +517,6 @@ def plot_time_to_start_crossing(dfs, person_id=0):
             df_mapping['videos'], df_mapping['time_of_day'], location))
         city = get_single_value_for_key(
             df_mapping['videos'], df_mapping['city'], location)
-
-        # Initialize dictionaries to track sum and sum of squares for each city_condition combination 
-        sum_values = {}
-        sum_squares = {}
 
         for unique_id, group_data in crossed_ids_grouped:
             x_values = group_data["X-center"].values
@@ -557,35 +552,27 @@ def plot_time_to_start_crossing(dfs, person_id=0):
         if len(data) == 0:
             continue
 
-        values = [value / 30 for value in data.values()]
-        sd = statistics.stdev(values)
-
         city_condition_key = f'{city}_{condition}'
 
-        # Update sum and sum of squares for the city_condition combination
-        sum_values[city_condition_key] = sum(data.values())
-        sum_squares[city_condition_key] = sum(value**2 for value in data.values()) 
-
-        # Check if the city_condition combination already exists in time_dict
-        if city_condition_key in time_dict:
-            # Adjust the mean and standard deviation
-            old_mean = time_dict[city_condition_key]
-            old_sd = sd_dict[city_condition_key]
-            n_old = len(data) - 1  # Number of previous data points
-            n_new = 1  # Number of new data points
-            new_sum = sum_values[city_condition_key]
-            new_sum_squares = sum_squares[city_condition_key]
-
-            new_mean = (old_mean * n_old + new_sum) / (n_old + n_new)
-            new_sd = ((old_sd ** 2 * n_old + new_sum_squares) / (n_old + n_new) - new_mean ** 2) ** 0.5 
-
-            time_dict[city_condition_key] = new_mean
-            sd_dict[city_condition_key] = new_sd
-            continue
+        # Check if the city_condition combination already exists in all_data
+        if city_condition_key in all_data:
+            # Append the list of values from data to all_data
+            all_data[city_condition_key].extend(data.values())
         else:
-            # Add new entry to time_dict and sd_dict
-            time_dict[city_condition_key] = sum(data.values()) / len(data) / 30
-            sd_dict[city_condition_key] = sd
+            # Add new entry to all_data
+            all_data[city_condition_key] = list(data.values())
+
+        # Calculate time_dict and sd_dict
+        if all_data[city_condition_key]:
+            time_dict[city_condition_key] = statistics.mean(all_data[city_condition_key]) / 30
+            divided_data = [value / 30 for value in all_data[city_condition_key]]
+
+            # Calculate the standard deviation of the divided data
+            sd_dict[city_condition_key] = statistics.stdev(divided_data)
+        else:
+            # Handle the case when there are no values for the city_condition_key 
+            time_dict[city_condition_key] = 0
+            sd_dict[city_condition_key] = 0
 
     day_values = {}
     night_values = {}
@@ -753,7 +740,7 @@ def plot_no_of_pedestrian_stop(dfs, person_id=0):
                         consecutive_frame = 0
 
                 else:
-                    if (x_values[i] - margin >= x_values[i+1] >= x_values[i] + margin): 
+                    if (x_values[i] - margin >= x_values[i+1] >= x_values[i] + margin):  # noqa:E501
                         consecutive_frame += 1
                         if consecutive_frame == 3:
                             count += 1
@@ -859,7 +846,7 @@ def plot_no_of_pedestrian_stop(dfs, person_id=0):
         bar_value = sorted_day_values[city]
         x_coordinate = bar_value  # Set x-coordinate to the value of the bar
         bar_value_ = "{:.3f}".format(bar_value)
-        bar_value_ = str(float(bar_value_) * 1000)
+        bar_value_ = str(int(float(bar_value_) * 1000))
         fig.add_annotation(
             x=(x_coordinate/2) + 0.25,
             y=city,
@@ -876,7 +863,7 @@ def plot_no_of_pedestrian_stop(dfs, person_id=0):
         bar_value = sorted_night_values[city]
         x_coordinate = bar_value  # Set x-coordinate to the value of the bar
         bar_value_ = "{:.3f}".format(bar_value)
-        bar_value_ = str(float(bar_value_) * 1000)
+        bar_value_ = str(int(float(bar_value_) * 1000))
         fig.add_annotation(
             x=(-x_coordinate/2) - 0.25,
             y=city,
@@ -886,6 +873,25 @@ def plot_no_of_pedestrian_stop(dfs, person_id=0):
             xanchor='center',
             yanchor='middle'
         )
+
+    # Add more country codes and corresponding flag hexadecimal codes as needed
+    flag_unicode_hex = {
+        'US': '\U0001F1FA\U0001F1F8',  # United States
+        'GB': '\U0001F1EC\U0001F1E7',  # United Kingdom
+    }
+
+    for i, city in enumerate(sorted_cities):
+        # if city[:2] in flag_unicode_hex:  # Assuming the first two characters of the city represent the country code
+        flag_hex = flag_unicode_hex[city[:2]]
+        flag_char = flag_hex.encode('utf-8').decode('unicode-escape')
+        fig.add_annotation(
+                x=-0.5, y=city,  # Adjust x-coordinate as needed
+                text=flag_char,  # Use Unicode flag character
+                font=dict(color='black', size=20),
+                showarrow=False,
+                xanchor='center',
+                yanchor='middle'
+            )
 
     # Plot the figure
     fig.show()
@@ -1581,11 +1587,11 @@ if __name__ == "__main__":
                                                               data)
     plot_hesitation_vs_traffic_mortality(df_mapping, dfs)
 
-    plot_speed_of_crossing_vs_traffic_mortality(df_mapping, dfs, data)
-    plot_speed_of_crossing_vs_literacy(df_mapping, dfs, data)
+    # plot_speed_of_crossing_vs_traffic_mortality(df_mapping, dfs, data)
+    # plot_speed_of_crossing_vs_literacy(df_mapping, dfs, data)
 
-    plot_traffic_safety_vs_traffic_mortality(df_mapping, dfs)
-    plot_traffic_safety_vs_literacy(df_mapping, dfs)
+    # plot_traffic_safety_vs_traffic_mortality(df_mapping, dfs)
+    # plot_traffic_safety_vs_literacy(df_mapping, dfs)
 
     plot_time_to_start_crossing(dfs)
     plot_no_of_pedestrian_stop(dfs)
