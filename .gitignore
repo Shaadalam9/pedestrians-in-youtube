@@ -9,7 +9,6 @@ _output
 params.py
 source_videos
 __pycache__
-params.py
 # macOS
 **/.DS_Store
 
