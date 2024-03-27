@@ -25,7 +25,7 @@ template = common.get_configs('plotly_template')
 # YOLO_id = {
 #     0: 'person', 1: 'bicycle', 2: 'car', 3: 'motorcycle', 4: 'airplane', 5: 'bus', 6: 'train', 7: 'truck', 8: 'boat',
 #     9: 'traffic light', 10: 'fire hydrant', 11: 'stop sign', 12: 'parking meter', 13: 'bench', 14: 'bird', 15: 'cat',
-#     16: 'dog', 17: 'horse', 18: 'sheep', 19: 'cow', 20: 'elephant', 21: 'bear', 22: 'zebra', 23: 'giraffe', 
+#     16: 'dog', 17: 'horse', 18: 'sheep', 19: 'cow', 20: 'elephant', 21: 'bear', 22: 'zebra', 23: 'giraffe',
 #     24: 'backpack', 25: 'umbrella', 26: 'handbag', 27: 'tie', 28: 'suitcase', 29: 'frisbee',
 #     30: 'skis', 31: 'snowboard', 32: 'sports ball', 33: 'kite', 34: 'baseball bat', 35: 'baseball glove',
 #     36: 'skateboard', 37: 'surfboard', 38: 'tennis racket', 39: 'bottle', 40: 'wine glass', 41: 'cup', 42: 'fork',
@@ -41,10 +41,10 @@ template = common.get_configs('plotly_template')
 # Read the csv files and stores them as a dictionary in form {Unique_id : CSV}
 def read_csv_files(folder_path):
     """Summary
-    
+
     Args:
         folder_path (TYPE): Description
-    
+
     Returns:
         TYPE: Description
     """
@@ -61,13 +61,13 @@ def read_csv_files(folder_path):
 
 def pedestrian_crossing(dataframe, min_x, max_x, person_id):
     """Summary
-    
+
     Args:
         dataframe (TYPE): Description
         min_x (TYPE): Description
         max_x (TYPE): Description
         person_id (TYPE): Description
-    
+
     Returns:
         TYPE: Description
     """
@@ -83,11 +83,11 @@ def pedestrian_crossing(dataframe, min_x, max_x, person_id):
 
 def count_object(dataframe, id):
     """Summary
-    
+
     Args:
         dataframe (TYPE): Description
         id (TYPE): Description
-    
+
     Returns:
         TYPE: Description
     """
@@ -100,11 +100,11 @@ def count_object(dataframe, id):
 
 def time_to_cross(dataframe, ids):
     """Summary
-    
+
     Args:
         dataframe (TYPE): Description
         ids (TYPE): Description
-    
+
     Returns:
         TYPE: Description
     """
@@ -143,10 +143,10 @@ def time_to_cross(dataframe, ids):
 
 def adjust_annotation_positions(annotations):
     """Summary
-    
+
     Args:
         annotations (TYPE): Description
-    
+
     Returns:
         TYPE: Description
     """
@@ -164,7 +164,7 @@ def adjust_annotation_positions(annotations):
 # makes scatter plots
 def save_plotly_figure(fig, filename, width=1600, height=900, scale=3):
     """Summary
-    
+
     Args:
         fig (TYPE): Description
         filename (TYPE): Description
@@ -199,7 +199,7 @@ def plot_scatter_diag(x, y, size, color, symbol,
                       city, plot_name, x_label, y_label,
                       legend_x=0.887, legend_y=0.986):
     """Summary
-    
+
     Args:
         x (TYPE): Description
         y (TYPE): Description
@@ -288,12 +288,12 @@ def plot_scatter_diag(x, y, size, color, symbol,
 
 def get_duration_for_key(video_column, duration_column, key):
     """Summary
-    
+
     Args:
         video_column (TYPE): Description
         duration_column (TYPE): Description
         key (TYPE): Description
-    
+
     Returns:
         TYPE: Description
     """
@@ -307,12 +307,12 @@ def get_duration_for_key(video_column, duration_column, key):
 
 def get_single_value_for_key(video_column, value_column, key):
     """Summary
-    
+
     Args:
         video_column (TYPE): Description
         value_column (TYPE): Description
         key (TYPE): Description
-    
+
     Returns:
         TYPE: Description
     """
@@ -325,7 +325,7 @@ def get_single_value_for_key(video_column, value_column, key):
 # Plotting Functions
 def plot_cell_phone_vs_traffic_mortality(df_mapping, dfs):
     """Summary
-    
+
     Args:
         df_mapping (TYPE): Description
         dfs (TYPE): Description
@@ -358,7 +358,7 @@ def plot_cell_phone_vs_traffic_mortality(df_mapping, dfs):
             previous_value = info[f"{city}_{condition}"]
             info[f"{city}_{condition}"] = (previous_value + avg_cell_phone) / 2
             # No need to add variables like traffic mortality, continents and son on again for same city and condition
-            continue  
+            continue
 
         else:
             info[f"{city}_{condition}"] = avg_cell_phone
@@ -399,10 +399,10 @@ def plot_cell_phone_vs_traffic_mortality(df_mapping, dfs):
                       legend_x=0, legend_y=0.986)
 
 
-# TODO: check if there is a csv with avg vehicle ownership/usage on the city/country level 
+# TODO: check if there is a csv with avg vehicle ownership/usage on the city/country level
 def plot_vehicle_vs_cross_time(df_mapping, dfs, data, motorcycle=0, car=0, bus=0, truck=0):
     """Summary
-    
+
     Args:
         df_mapping (TYPE): Description
         dfs (TYPE): Description
@@ -431,7 +431,7 @@ def plot_vehicle_vs_cross_time(df_mapping, dfs, data, motorcycle=0, car=0, bus=0
             df_mapping['videos'], df_mapping['time_of_day'], key))
 
         if motorcycle == 1 & car == 1 & bus == 1 & truck == 1:
-            vehicle_ids = dataframe[(dataframe["YOLO_id"] == 2) | (dataframe["YOLO_id"] == 3) | 
+            vehicle_ids = dataframe[(dataframe["YOLO_id"] == 2) | (dataframe["YOLO_id"] == 3) |
                                     (dataframe["YOLO_id"] == 5) | (dataframe["YOLO_id"] == 7)]
             save_as = "all_vehicle_vs_cross_time"
 
@@ -498,7 +498,7 @@ def plot_vehicle_vs_cross_time(df_mapping, dfs, data, motorcycle=0, car=0, bus=0
 
 
 # TODO : Add the flag
-# On an average how many times a person who is crossing a road will hesitate to do it. 
+# On an average how many times a person who is crossing a road will hesitate to do it.
 def plot_time_to_start_crossing(dfs, person_id=0):
     """Summary
 
@@ -528,7 +528,7 @@ def plot_time_to_start_crossing(dfs, person_id=0):
 
             for i in range(0, len(x_values)-1):
                 if initial_x < 0.5:
-                    if (x_values[i] - margin <= x_values[i+1] <= x_values[i] + margin): 
+                    if (x_values[i] - margin <= x_values[i+1] <= x_values[i] + margin):
                         consecutive_frame += 1
                         if consecutive_frame == 3:
                             flag = 1
@@ -539,7 +539,7 @@ def plot_time_to_start_crossing(dfs, person_id=0):
                         consecutive_frame = 0
 
                 else:
-                    if (x_values[i] - margin >= x_values[i+1] >= x_values[i] + margin): 
+                    if (x_values[i] - margin >= x_values[i+1] >= x_values[i] + margin):
                         consecutive_frame += 1
                         if consecutive_frame == 3:
                             flag = 1
@@ -570,7 +570,7 @@ def plot_time_to_start_crossing(dfs, person_id=0):
             # Calculate the standard deviation of the divided data
             sd_dict[city_condition_key] = statistics.stdev(divided_data)
         else:
-            # Handle the case when there are no values for the city_condition_key 
+            # Handle the case when there are no values for the city_condition_key
             time_dict[city_condition_key] = 0
             sd_dict[city_condition_key] = 0
 
@@ -636,9 +636,9 @@ def plot_time_to_start_crossing(dfs, person_id=0):
             tickvals=[],
         ),
         xaxis=dict(
-            title="Average time taken by the pedestrian to start crossing the road (in seconds)", 
-            tickvals=[-val for val in range(1, max_value + 1)] + [val for val in range(1, max_value + 1)], 
-            ticktext=[abs(val) for val in range(1, max_value + 1)] + [val for val in range(1, max_value + 1)] 
+            title="Average time taken by the pedestrian to start crossing the road (in seconds)",
+            tickvals=[-val for val in range(1, max_value + 1)] + [val for val in range(1, max_value + 1)],
+            ticktext=[abs(val) for val in range(1, max_value + 1)] + [val for val in range(1, max_value + 1)]
         )
     )
 
@@ -697,7 +697,7 @@ def plot_time_to_start_crossing(dfs, person_id=0):
 # TODO : Find the difference between a person as a pedestrian and as motorcyclist
 def plot_no_of_pedestrian_stop(dfs, person_id=0):
     """Summary
-    
+
     Args:
         dfs (TYPE): Description
         person_id (int, optional): Description
@@ -728,7 +728,7 @@ def plot_no_of_pedestrian_stop(dfs, person_id=0):
 
             for i in range(0, len(x_values)-1):
                 if initial_x < 0.5:
-                    if (x_values[i] - margin <= x_values[i+1] <= x_values[i] + margin): 
+                    if (x_values[i] - margin <= x_values[i+1] <= x_values[i] + margin):
                         consecutive_frame += 1
                         if consecutive_frame == 3:
                             count += 1
@@ -822,9 +822,9 @@ def plot_no_of_pedestrian_stop(dfs, person_id=0):
             tickvals=[],
         ),
         xaxis=dict(
-            title="No of pedestrian in the study (in thousands)", 
-            tickvals=[-val for val in range(1, max_value + 1)] + [val for val in range(1, max_value + 1)], 
-            ticktext=[abs(val) for val in range(1, max_value + 1)] + [val for val in range(1, max_value + 1)] 
+            title="No of pedestrian in the study (in thousands)",
+            tickvals=[-val for val in range(1, max_value + 1)] + [val for val in range(1, max_value + 1)],
+            ticktext=[abs(val) for val in range(1, max_value + 1)] + [val for val in range(1, max_value + 1)]
         )
     )
 
@@ -874,25 +874,6 @@ def plot_no_of_pedestrian_stop(dfs, person_id=0):
             yanchor='middle'
         )
 
-    # Add more country codes and corresponding flag hexadecimal codes as needed
-    flag_unicode_hex = {
-        'US': '\U0001F1FA\U0001F1F8',  # United States
-        'GB': '\U0001F1EC\U0001F1E7',  # United Kingdom
-    }
-
-    for i, city in enumerate(sorted_cities):
-        # if city[:2] in flag_unicode_hex:  # Assuming the first two characters of the city represent the country code
-        flag_hex = flag_unicode_hex[city[:2]]
-        flag_char = flag_hex.encode('utf-8').decode('unicode-escape')
-        fig.add_annotation(
-                x=-0.5, y=city,  # Adjust x-coordinate as needed
-                text=flag_char,  # Use Unicode flag character
-                font=dict(color='black', size=20),
-                showarrow=False,
-                xanchor='center',
-                yanchor='middle'
-            )
-
     # Plot the figure
     fig.show()
 
@@ -901,19 +882,19 @@ def plot_no_of_pedestrian_stop(dfs, person_id=0):
 
 def plot_hesitation_vs_traffic_mortality(df_mapping, dfs, person_id=0):
     """Summary
-    
+
     Args:
         df_mapping (TYPE): Description
         dfs (TYPE): Description
         person_id (int, optional): Description
     """
     count_dict = {}
-    time_, traffic_mortality, continents, gdp, conditions, city_ = [], [], [], [], [], [] 
+    time_, traffic_mortality, continents, gdp, conditions, city_ = [], [], [], [], [], []
     for key, df in dfs.items():
         count, pedestrian_count = 0, 0
         crossed_ids = df[(df["YOLO_id"] == person_id)]
-        city = get_single_value_for_key(df_mapping['videos'], df_mapping['city'], key) 
-        condition = int(get_single_value_for_key(df_mapping['videos'], df_mapping['time_of_day'], key)) 
+        city = get_single_value_for_key(df_mapping['videos'], df_mapping['city'], key)
+        condition = int(get_single_value_for_key(df_mapping['videos'], df_mapping['time_of_day'], key))
 
         # Makes group based on Unique ID
         crossed_ids_grouped = crossed_ids.groupby("Unique Id")
@@ -945,7 +926,7 @@ def plot_hesitation_vs_traffic_mortality(df_mapping, dfs, person_id=0):
                         consecutive_frames += 1
                         if consecutive_frames >= 3:
                             pedestrian_count += 1
-                            # Check if there's any instance where X-center [i + 1] >= X-center [i] 
+                            # Check if there's any instance where X-center [i + 1] >= X-center [i]
                             for j in range(i+1, len(x_values) - 10):
                                 if x_values[j] >= x_values[j - 10]:
                                     count += 1
@@ -985,7 +966,7 @@ def plot_hesitation_vs_traffic_mortality(df_mapping, dfs, person_id=0):
 
 def plot_speed_of_crossing_vs_crossing_decision_time(df_mapping, dfs, data, person_id=0):
     """Summary
-    
+
     Args:
         df_mapping (TYPE): Description
         dfs (TYPE): Description
@@ -1061,7 +1042,7 @@ def plot_speed_of_crossing_vs_crossing_decision_time(df_mapping, dfs, data, pers
 
             for i in range(0, len(x_values)-1):
                 if initial_x < 0.5:
-                    if (x_values[i] - margin <= x_values[i+1] <= x_values[i] + margin): 
+                    if (x_values[i] - margin <= x_values[i+1] <= x_values[i] + margin):
                         consecutive_frame += 1
                         if consecutive_frame == 3:
                             flag = 1
@@ -1072,7 +1053,7 @@ def plot_speed_of_crossing_vs_crossing_decision_time(df_mapping, dfs, data, pers
                         consecutive_frame = 0
 
                 else:
-                    if (x_values[i] - margin >= x_values[i+1] >= x_values[i] + margin): 
+                    if (x_values[i] - margin >= x_values[i+1] >= x_values[i] + margin):
                         consecutive_frame += 1
                         if consecutive_frame == 3:
                             flag = 1
@@ -1122,7 +1103,7 @@ def plot_speed_of_crossing_vs_crossing_decision_time(df_mapping, dfs, data, pers
     # Adding labels and title
     fig.update_layout(
         xaxis_title="Average time pedestrian takes for crossing decision (in s)",
-        yaxis_title="Average speed of pedestrian while crossing the road (in m/s)" 
+        yaxis_title="Average speed of pedestrian while crossing the road (in m/s)"
     )
 
     for continent, color in continent_colors.items():
@@ -1176,9 +1157,9 @@ def plot_speed_of_crossing_vs_crossing_decision_time(df_mapping, dfs, data, pers
     save_plotly_figure(fig, "speed_of_crossing_vs_crossing_decision_time")
 
 
-def plot_traffic_mortality_vs_crossing_event_wt_traffic_light(df_mapping, dfs, data): 
+def plot_traffic_mortality_vs_crossing_event_wt_traffic_light(df_mapping, dfs, data):
     """Summary
-    
+
     Args:
         df_mapping (TYPE): Description
         dfs (TYPE): Description
@@ -1238,7 +1219,7 @@ def plot_traffic_mortality_vs_crossing_event_wt_traffic_light(df_mapping, dfs, d
                 continue
             # If already present, the array below will be filled multiple times
             else:
-                ratio[f'{city}_{condition}'] = ((counter_2[f'{city}_{condition}'] * 100) / 
+                ratio[f'{city}_{condition}'] = ((counter_2[f'{city}_{condition}'] * 100) /
                                                 (counter_1[f'{city}_{condition}'] + counter_2[f'{city}_{condition}']))
 
         traffic_mortality.append(float(
@@ -1268,7 +1249,7 @@ def plot_traffic_mortality_vs_crossing_event_wt_traffic_light(df_mapping, dfs, d
 
 def plot_speed_of_crossing_vs_traffic_mortality(df_mapping, dfs, data):
     """Summary
-    
+
     Args:
         df_mapping (TYPE): Description
         dfs (TYPE): Description
@@ -1276,7 +1257,7 @@ def plot_speed_of_crossing_vs_traffic_mortality(df_mapping, dfs, data):
     """
     avg_speed, no_people = {}, {}
     continents, gdp, traffic_mortality, = [], [], []
-    conditions, time_, city_ = [], [], [] 
+    conditions, time_, city_ = [], [], []
     for key, df in data.items():
         if df == {}:
             continue
@@ -1347,7 +1328,7 @@ def plot_speed_of_crossing_vs_traffic_mortality(df_mapping, dfs, data):
 
 def plot_speed_of_crossing_vs_literacy(df_mapping, dfs, data):
     """Summary
-    
+
     Args:
         df_mapping (TYPE): Description
         dfs (TYPE): Description
@@ -1426,7 +1407,7 @@ def plot_speed_of_crossing_vs_literacy(df_mapping, dfs, data):
 
 def plot_traffic_safety_vs_traffic_mortality(df_mapping, dfs):
     """Summary
-    
+
     Args:
         df_mapping (TYPE): Description
         dfs (TYPE): Description
@@ -1493,7 +1474,7 @@ def plot_traffic_safety_vs_traffic_mortality(df_mapping, dfs):
 
 def plot_traffic_safety_vs_literacy(df_mapping, dfs):
     """Summary
-    
+
     Args:
         df_mapping (TYPE): Description
         dfs (TYPE): Description
@@ -1575,23 +1556,17 @@ if __name__ == "__main__":
     # the road}. dfs is a dictionary in the form {Unique_id : CSV file}
     # df_mapping is the csv file
     plot_cell_phone_vs_traffic_mortality(df_mapping, dfs)
-    plot_vehicle_vs_cross_time(df_mapping,
-                               dfs,
-                               data,
-                               motorcycle=1,
-                               car=1,
-                               bus=1,
-                               truck=1)
+    plot_vehicle_vs_cross_time(df_mapping, dfs, data, motorcycle=1,
+                               car=1, bus=1, truck=1)
     plot_traffic_mortality_vs_crossing_event_wt_traffic_light(df_mapping,
-                                                              dfs,
-                                                              data)
+                                                              dfs, data)
     plot_hesitation_vs_traffic_mortality(df_mapping, dfs)
 
-    # plot_speed_of_crossing_vs_traffic_mortality(df_mapping, dfs, data)
-    # plot_speed_of_crossing_vs_literacy(df_mapping, dfs, data)
+    plot_speed_of_crossing_vs_traffic_mortality(df_mapping, dfs, data)
+    plot_speed_of_crossing_vs_literacy(df_mapping, dfs, data)
 
-    # plot_traffic_safety_vs_traffic_mortality(df_mapping, dfs)
-    # plot_traffic_safety_vs_literacy(df_mapping, dfs)
+    plot_traffic_safety_vs_traffic_mortality(df_mapping, dfs)
+    plot_traffic_safety_vs_literacy(df_mapping, dfs)
 
     plot_time_to_start_crossing(dfs)
     plot_no_of_pedestrian_stop(dfs)
