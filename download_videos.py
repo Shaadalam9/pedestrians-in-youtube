@@ -34,9 +34,9 @@ def download_video_with_resolution(video_ids, resolutions=["2160p", "1440p", "10
 
             selected_stream = video_streams[0]
             # Comment the below line to automatically download with video in "video" folder 
-            selected_stream.download(output_path, filename=f"{vid}.mp4") 
             logger.info("Started download of video {} entitled \"{}\" in resolution {}.", vid, youtube_object.title,
                         resolution)
+            selected_stream.download(output_path, filename=f"{vid}.mp4") 
     except Exception as e:
         logger.error("Error occurred {}.", e)
         return None
