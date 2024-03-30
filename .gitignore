@@ -6,9 +6,9 @@ yolov8x.pt
 check.py
 _output
 .vscode/
-params.py
 source_videos
 __pycache__
+
 # macOS
 **/.DS_Store
 
