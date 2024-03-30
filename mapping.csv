@@ -9,7 +9,7 @@ id,city,country,videos,time_of_day,gdp_per_capita,population,population_country,
 8,Rotterdam,Netherlands,[xgs5hOEzseI],0,52725,1876165,17700.98,3.8,[21],Europe,99,177.1
 9,Milan,Italy,[ZByZSqoqzaI],0,46854,4985668,59110,5.6,[54],Europe,99,168.1
 10,Toronto,Canada,"[3ai7SUaPoHM,yrNrcqo1SwE]",0,69110,6547381,38929.9,5.8,"[52,43]",North America,99,171.7
-11,Chicago,United States,"[XzwI2rGmf04,-sYQXSIK6Mc]",0,87259,9806184,333287,12.4,"[60,62]",North America,86,170.1
+11,Chicago,United States,[XzwI2rGmf04],0,87259,9806184,333287,12.4,[60],North America,86,170.1
 12,Las Vegas,United States,"[KWciBlhQjRA,87q4Fz8DeRk]",0,69190,2322985,333287,12.4,"[74,29]",North America,86,170.1
 13,Los Angeles,United States,[4uhMg5na888],0,83147,18372485,333287,12.4,[43],North America,86,170.1
 14,New York,United States,"[_Wyg213IZDI,LQLJu-EpkeE]",0,114293,21914996,333287,12.4,"[50,52]",North America,86,170.1
@@ -18,7 +18,7 @@ id,city,country,videos,time_of_day,gdp_per_capita,population,population_country,
 17,Luanda,Angola,[z3Gx2hp3Vo8],0,1503,2572000,35589,23.6,[31],Africa,72,163.3
 18,Moscow,Russia,"[wCKLtcGQnWc,vJJ2sITNN1w,XANvPSTY0Ho]",0,29012,17400000,144236.93,18,"[38,52,36]",Europe,100,170.5
 19,Seoul,South Korea,[qOx5CwCrN9k],0,36677,24800000,51628.11,9.8,[22],Asia,99,169.3
-20,Tokyo,Japan,"[oDejyTLYUTE,-YNLQlmPnqA]",0,51124,40700000,125125,4.1,"[36,34]",Asia,99,165.3
+20,Tokyo,Japan,[oDejyTLYUTE],0,51124,40700000,125125,4.1,[36],Asia,99,165.3
 21,Dhaka,Bangladesh,[ZruaEnhtYLA],0,4091,21300000,171186,15.3,[64],Asia,75,158.7
 22,Mexico City,Mexico,[MpA3FHZ3yZc],0,13798,24700000,333287,12.4,[49],North America,95,164.1
 23,Mumbai,India,"[MAj6y23vNuU,Y5fEXvJPuJs]",0,10651,26100000,1417173,22.6,"[67,63]",Asia,76,160.8
