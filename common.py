@@ -1,5 +1,5 @@
-# by Pavlo Bazilinskyy <pavlo.bazilinskyy@gmail.com>
 """Contains various function used throughout this project."""
+# by Pavlo Bazilinskyy <pavlo.bazilinskyy@gmail.com>
 import os
 import json
 import pickle
@@ -14,8 +14,7 @@ output_dir = os.path.join(root_dir, '_output')
 logger = CustomLogger(__name__)  # use custom logger
 
 
-def get_configs(entry_name: str, config_file_name: str = 'config',
-                config_default_file_name: str = 'default.config'):
+def get_configs(entry_name: str, config_file_name: str = 'config', config_default_file_name: str = 'default.config'):
     """
     Open the config file and return the requested entry.
     If no config file is found, open default.config.
@@ -27,7 +26,7 @@ def get_configs(entry_name: str, config_file_name: str = 'config',
         with open(os.path.join(root_dir, config_file_name)) as f:
             content = json.load(f)
     except FileNotFoundError:
-        with open(os.path.join(root_dir, config_default_file_name)) as f:  # noqa: E501
+        with open(os.path.join(root_dir, config_default_file_name)) as f:
             content = json.load(f)
     return content[entry_name]
 
@@ -62,8 +61,8 @@ def check_config(config_file_name: str = 'config',
         return False
     # check length of each file
     if len(config) < len(default):
-        logger.error('Config file has {} variables, which is fewer than {}'
-                     + ' variables in default.config. Please update.',
+        logger.error('Config file has {} variables, which is fewer than {} variables in default.config. Please'
+                     + ' update.',
                      len(config),
                      len(default))
         return False

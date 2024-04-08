@@ -1,4 +1,4 @@
-# by Shadab <md_shadab_alam@outlook.com>
+# by Shadab Alam and Pavlo Bazilinskyy <pavlo.bazilinskyy@gmail.com>
 import os
 from pytube import YouTube
 import pandas as pd
@@ -44,19 +44,18 @@ def download_video_with_resolution(video_ids, resolutions=["2160p", "1440p", "10
 
 
 if __name__ == "__main__":
-    logger.debug("Download of videos started.")
+    logger.info("Download of videos started.")
     df_mapping = pd.read_csv("mapping.csv")
-
-    new_directory = common.get_configs('source_videos')
-    if not os.path.exists(new_directory):
-        # If it doesn't exist, create it
-        os.makedirs(new_directory)
-        logger.debug("Directory '{}' created successfully.".format(new_directory))
+    source_videos = common.get_configs('source_videos')  # folder for output of videos
+    # Create folder for output
+    if not os.path.exists(source_videos):
+        os.makedirs(source_videos)
+        logger.debug("Directory '{}' created successfully.".format(source_videos))
     else:
-        logger.debug("Directory '{}' already exists.".format(new_directory))
-
+        logger.debug("Directory '{}' already exists.".format(source_videos))
+    num_videos = 0  # counter of videos
+    # Go over videos
     for index, row in df_mapping.iterrows():
-        video_link = row['videos']
-        my_city = row['city']
-        my_condition = row['time_of_day']
-        download_video_with_resolution(video_link, output_path=new_directory)
+        logger.info("Analysing videos for town={}, time_of_day={}.", row['city'], row['time_of_day'])
+        num_videos += download_video_with_resolution(row['videos'], source_videos=source_videos)
+    logger.info("Processed {} videos.", num_videos)
