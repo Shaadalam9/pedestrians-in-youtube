@@ -1,3 +1,4 @@
+# by Shadab <md_shadab_alam@outlook.com>
 import os
 from pytube import YouTube
 import pandas as pd
@@ -23,20 +24,20 @@ def download_video_with_resolution(video_ids, resolutions=["2160p", "1440p", "10
             youtube_url = f'https://www.youtube.com/watch?v={vid}'
             youtube_object = YouTube(youtube_url)
             for resolution in resolutions:
-                video_streams = youtube_object.streams.filter(res=f"{resolution}") 
+                video_streams = youtube_object.streams.filter(res=f"{resolution}")
                 if video_streams:
                     logger.debug(f"Found video {vid} in {resolution}.")
                     break
 
             if not video_streams:
-                logger.debug(f"No {resolution} resolution available for {vid}.") 
+                logger.debug(f"No {resolution} resolution available for {vid}.")
                 return None
 
             selected_stream = video_streams[0]
-            # Comment the below line to automatically download with video in "video" folder 
+            # Comment the below line to automatically download with video in "video" folder
             logger.info("Started download of video {} entitled \"{}\" in resolution {}.", vid, youtube_object.title,
                         resolution)
-            selected_stream.download(output_path, filename=f"{vid}.mp4") 
+            selected_stream.download(output_path, filename=f"{vid}.mp4")
     except Exception as e:
         logger.error("Error occurred {}.", e)
         return None
