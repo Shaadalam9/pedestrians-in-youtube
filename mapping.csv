@@ -17,7 +17,7 @@ id,city,country,videos,time_of_day,gdp_per_capita,population,population_country,
 16,Damascus,Syria,[qzimFzMh6lA],0,744.67,2079000,22125.25,26.5,[0],[1339],Asia,86.4,165.5
 17,Luanda,Angola,[z3Gx2hp3Vo8],0,1503,2572000,35589,23.6,[0],[1836],Africa,72,163.3
 18,Moscow,Russia,"[wCKLtcGQnWc,vJJ2sITNN1w,XANvPSTY0Ho,vffgKEGG-8Y,DGoQzuuL5CA,QgGTTYYAxLg]",0,29012,17400000,144236.93,18,"[0,5,0,0,0,65]","[2253,3223,2230,1837,4352,1425]",Europe,100,170.5
-19,Seoul,South Korea,"[qOx5CwCrN9k,bMydG1xiHzc,ZdwHjHIC7jA]",0,36677,24800000,51628.11,9.8,"[14,134,118]","[1417,1540,1915]",Asia,99,169.3
+19,Seoul,South Korea,"[qOx5CwCrN9k,bMydG1xiHzc,ZdwHjHIC7jA,Ab9FMZ2pKeI]",0,36677,24800000,51628.11,9.8,"[14,134,118,5]","[1417,1540,1915,2010]",Asia,99,169.3
 20,Tokyo,Japan,[oDejyTLYUTE],0,51124,40700000,125125,4.1,[23],[2310],Asia,99,165.3
 21,Dhaka,Bangladesh,[ZruaEnhtYLA],0,4091,21300000,171186,15.3,[58],[3990],Asia,75,158.7
 22,Mexico City,Mexico,[MpA3FHZ3yZc],0,13798,24700000,333287,12.4,[19],[3078],North America,95,164.1
@@ -75,7 +75,7 @@ id,city,country,videos,time_of_day,gdp_per_capita,population,population_country,
 74,Dubai,United Arab Emirates,"[y6Bi15Jditk,e-dGK0ZEkGY]",1,47557,4264316,9441,18.1,"[19,29]","[2323,2574]",Asia,98,167.3
 75,London,United Kingdom,[Ujyu8foke60],1,66108,14800000,66971,3.1,[25],[4743],Europe,99,171
 76,Rio de Janeiro,Brazil,[fG_idt30MZA],1,10084,17463349,215313,19.7,[0],[4237],South America,95,169
-77,Seoul,South Korea,"[eMv6SCniTPg,40xZVEFVBuE]",1,36677,24800000,51628.11,9.8,"[26,0]","[5476,3418]",Asia,99,169.3
+77,Seoul,South Korea,"[eMv6SCniTPg,40xZVEFVBuE,uL9Bc3oqFj0]",1,36677,24800000,51628.11,9.8,"[26,0,2]","[5476,3418,3332]",Asia,99,169.3
 78,Tokyo,Japan,[lSgTVt60M6U],1,51124,40700000,125125,4.1,[0],[3907],Asia,99,165.3
 79,Paris,France,[BfJM89EZRuk],1,63119,14800000,67971,5.5,[15],[2291],Europe,99,171.5
 80,Mexico City,Mexico,"[oxZBX-e84O8,JCXH_WyC8A4]",1,13798,24700000,333287,12.4,"[18,24]","[2191,2859]",North America,95,164.1
@@ -86,52 +86,52 @@ id,city,country,videos,time_of_day,gdp_per_capita,population,population_country,
 85,Madrid,Spain,[6CadnBQGLdE],1,39754,6980646,47778.34,4.1,[27],[2958],Europe,99,169
 86,Geneva,Switzerland,[m59XhZj5ZzQ],1,109457,506343,8775,2.7,[40],[2069],Europe,99,171.5
 87,New York,United States,[LQLJu-EpkeE],1,114293,21914996,333287,12.4,[22],[3140],North America,86,170.1
-88,Minsk,Belarus,[5py-m9Fg7ck],0,,,,,[0],[1638],Europe,,
-89,Chelyabinsk,Russua,[yXK6HFRuVuU],0,,,,,[230],[2552],Europe,,
+88,Minsk,Belarus,[5py-m9Fg7ck],0,19913,,,,[0],[1638],Europe,,
+89,Chelyabinsk,Russia,[yXK6HFRuVuU],0,,,,,[230],[2552],Europe,,
 90,Moscow,Russia,[KooHk6Q59po],1,29012,17400000,144236.93,18,[0],[4007],Europe,100,170.5
-91,Miami,United States,"[drt8bDQ49b4,9FGFA7Ki4-4,4AurpF9lMD8]",0,,,333287,,"[19,25,26]","[3806,2226,2251]",North America,,
-92,Seattle,United States,"[fkps18H3SXY,8DlZKmmnfs0,K35C2HRRTOk,Nyk4ySw5QXs]",0,,,333287,,"[[888,5019],[205],[250],[67]]","[[3762,9662],[3643],[3956],[2530]]",North America,86,170.1
+91,Miami,United States,"[drt8bDQ49b4,9FGFA7Ki4-4,4AurpF9lMD8]",0,483755,,333287,,"[19,25,26]","[3806,2226,2251]",North America,,
+92,Seattle,United States,"[fkps18H3SXY,8DlZKmmnfs0,K35C2HRRTOk,Nyk4ySw5QXs]",0,621369,,333287,,"[[888,5019],[205],[250],[67]]","[[3762,9662],[3643],[3956],[2530]]",North America,86,170.1
 93,Frankfurt,Germany,[2054gi9TzcA],1,,,,,[37],[2161],Europe,,
-94,Dublin,Ireland,[vQLGYK5gSz4],0,,,,,[0],[1240],Europe,,
-95,Portland,United States,"[MYYqxdszIoM,RFn7w3_qteA,kphGpP7rjNA,zH2HfHqlGHs,LVeQAkDJMno,mFE5jn4MyTs]",0,,,,,"[0,132,0,180,112,64]","[2520,2903,1970,3435,3357,3386]",North America,86,170.1
+94,Dublin,Ireland,[vQLGYK5gSz4],0,272454,,,,[0],[1240],Europe,,
+95,Portland,United States,"[MYYqxdszIoM,RFn7w3_qteA,kphGpP7rjNA,zH2HfHqlGHs,LVeQAkDJMno,mFE5jn4MyTs]",0,204319,,,,"[0,132,0,180,112,64]","[2520,2903,1970,3435,3357,3386]",North America,86,170.1
 96,New Jersey,United States,[6HwcN2cO0AM],0,,,333287,,[0],[2107],North America,,
 97,Portland,United States,"[M0AYvb9QgAM,n-ckxhXnTEM]",1,,,,,"[114,120]","[2671,3209]",United States,,
-98,Philadelphia,United States,"[wE5SyGMmA7I,HHydD31gFyM,IUqTNY5YkE8]",0,,,333287,,"[92,25,25]","[1934,2099,2068]",North America,86,170.1
-99,Boston,United States,[10LRHUNu6r8],0,,,333287,,[96],[2089],North America,86,170.1
-100,Portland(Maine),United States,[VnA8XSCuTqY],0,,,333287,,[0],[1561],North America,86,170.1
-101,San Antonio,United States,"[D0SAfk9zym4,PitqrljZHYo,5H4QYIy3J2I,3tL04ta2BPs,gY8mgji-DsA]",0,,,333287,,"[0,25,25,25,25]","[1965,2632,2691,2689,2259]",North America,86,170.1
+98,Philadelphia,United States,"[wE5SyGMmA7I,HHydD31gFyM,IUqTNY5YkE8]",0,518485,,333287,,"[92,25,25]","[1934,2099,2068]",North America,86,170.1
+99,Boston,United States,[10LRHUNu6r8],0,571667,,333287,,[96],[2089],North America,86,170.1
+100,Portland(Maine),United States,[VnA8XSCuTqY],0,43764,,333287,,[0],[1561],North America,86,170.1
+101,San Antonio,United States,"[D0SAfk9zym4,PitqrljZHYo,5H4QYIy3J2I,3tL04ta2BPs,gY8mgji-DsA,BeSoDontuQo]",0,163061,,333287,,"[0,25,25,25,25,18]","[1965,2632,2691,2689,2259,1253]",North America,86,170.1
 102,Inglewood,United States,[klpSPyLmxDE],0,,,333287,,[0],[1779],North America,86,170.1
 103,Hollywood,United States,[TcvvY3wbMk8],0,,,333287,,[0],[2150],North America,86,170.1
-104,Vancouver,Canada,[DlttaYstTFY],0,,,,,[76],[3240],North America,99,171.7
-105,Salt Lake,United States,"[VgTr1UtBkFQ,TJcXzdB-sqQ,iDaAg9e5tG0,y2iGUHl-5Eg,AkDF2kxfcDY]",0,,,333287,,"[60,0,30,5,38]","[1948,3113,2182,1081,6040]",North America,86,170.1
+104,Vancouver,Canada,[DlttaYstTFY],0,122113,,,,[76],[3240],North America,99,171.7
+105,Salt Lake,United States,"[VgTr1UtBkFQ,TJcXzdB-sqQ,iDaAg9e5tG0,y2iGUHl-5Eg,AkDF2kxfcDY,d_WuEG7NQEg]",0,134409,,333287,,"[60,0,30,5,38,22]","[1948,3113,2182,1081,6040,3823]",North America,86,170.1
 106,Dublin,Ireland,[zoqLX1Z5nm8],0,,,,,[23],[2435],Europe,,
-107,Fuzhou,China,[1frHQsvfVSk],1,,,1412175,,[86],[6154],Asia,97,169.6
+107,Fuzhou,China,[1frHQsvfVSk],1,183000,,1412175,,[86],[6154],Asia,97,169.6
 108,Mainyang,China,[1PLGBTgF_jM],0,,,1412175,,[57],[4764],Asia,97,169.6
-109,Xiamen,China,[GZZUDsUulZw],1,,,1412175,,[88],[4784],Asia,97,169.6
-110,Huai'an,China,[bphPeweI7Rg],0,,,1412175,,[52],[3806],Asia,97,169.6
+109,Xiamen,China,[GZZUDsUulZw],1,92557,,1412175,,[88],[4784],Asia,97,169.6
+110,Huai'an,China,[bphPeweI7Rg],0,58361,,1412175,,[52],[3806],Asia,97,169.6
 111,Liaoyuan,China,[vvl6R-dyu08],0,,,1412175,,[47],[2793],Asia,97,169.6
-112,Dalian,China,[DR729z5_GPU],1,,,1412175,,[52],[2660],Asia,97,169.6
-113,Changchun,China,[_8WCiRW0vZw],0,,,1412175,,[60],[6903],Asia,97,169.6
+112,Dalian,China,[DR729z5_GPU],1,125000,,1412175,,[52],[2660],Asia,97,169.6
+113,Changchun,China,[_8WCiRW0vZw],0,96240,,1412175,,[60],[6903],Asia,97,169.6
 114,Mudanjiang,China,[B5zSe0nSeLM],0,,,1412175,,[57],[3339],Asia,97,169.6
-115,Hangzhou,China,[LFzv3Fv7CIk],1,,,1412175,,[62],[5575],Asia,97,169.6
+115,Hangzhou,China,[LFzv3Fv7CIk],1,279000,,1412175,,[62],[5575],Asia,97,169.6
 116,Qiqihar,China,[lr5HXdc5mzI],0,,,1412175,,[45],[2212],Asia,97,169.6
-117,Zibo,China,[FZpWNwWtPpk],0,,,1412175,,[48],[3391],Asia,97,169.6
+117,Zibo,China,[FZpWNwWtPpk],0,53260,,1412175,,[48],[3391],Asia,97,169.6
 118,Fushun,China,[HkvdYOWtooU],0,,,1412175,,[36],[3201],Asia,97,169.6
 119,Jilin,China,[g07YfCOXmCE],0,,,1412175,,[47],[4154],Asia,97,169.6
-120,Harbin,China,[BvL1Hf2gD-g],0,,,1412175,,[70],[7963],Asia,97,169.6
-121,Shenyang,China,[jiA4PDQsSAo],0,,,1412175,,[67],[9338],Asia,97,169.6
+120,Harbin,China,[BvL1Hf2gD-g],0,94100,,1412175,,[70],[7963],Asia,97,169.6
+121,Shenyang,China,[jiA4PDQsSAo],0,95276,,1412175,,[67],[9338],Asia,97,169.6
 122,Tonghua,China,[m-C0tPbyT7Q],0,,,1412175,,[58],[2906],Asia,97,169.6
 123,Anyang,China,[Mpa_W1x__Dk],0,,,1412175,,[50],[3336],Asia,97,169.6
 124,Lanzhou,China,[TQ3FhZriHVs],0,,,1412175,,[58],[7628],Asia,97,169.6
-125,Anshan,China,[f_mzzHRtAjw],0,,,1412175,,[52],[3781],Asia,97,169.6
+125,Anshan,China,[f_mzzHRtAjw],0,80968,,1412175,,[52],[3781],Asia,97,169.6
 126,Shaoguan,China,[d5xkxWZDL0Q],0,,,1412175,,[45],[3912],Asia,97,169.6
 127,Wanzhou,China,[ArC_vEqSyX4],0,,,1412175,,[58],[5590],Asia,97,169.6
 128,Fengjie,China,[_FNUeJX4zMc],0,,,1412175,,[85],[2710],Asia,97,169.6
 129,Ankang,China,[F2rBHrBbNFM],0,,,1412175,,[102],[2820],Asia,97,169.6
-130,Xi'an,China,[4b2Y4WN3frY],1,,,1412175,,[121],[5805],Asia,97,169.6
-131,Shijiazhuang,China,[6yMwniU4KUI],0,,,1412175,,[109],[5395],Asia,97,169.6
+130,Xi'an,China,[4b2Y4WN3frY],1,171000,,1412175,,[121],[5805],Asia,97,169.6
+131,Shijiazhuang,China,[6yMwniU4KUI],0,81252,,1412175,,[109],[5395],Asia,97,169.6
 132,Chun'an,China,[FJVu-XHDIqo],0,,,1412175,,[100],[3664],Asia,97,169.6
-133,Taiyuan,China,[EZOP5cwrBXs],0,,,1412175,,[104],[7342],Asia,97,169.6
+133,Taiyuan,China,[EZOP5cwrBXs],0,60215,,1412175,,[104],[7342],Asia,97,169.6
 134,Jiujiang,China,[bh3HnAo71Po],0,,,1412175,,[401],[6676],Asia,97,169.6
 135,Enshi,China,[ZmcQZX_IyW0],0,,,1412175,,[67],[3068],Asia,97,169.6
 136,Beijing,China,[TutD2FP14lE],1,,,1412175,,[113],[8466],Asia,97,169.6
@@ -170,11 +170,16 @@ id,city,country,videos,time_of_day,gdp_per_capita,population,population_country,
 169,Sacramento,United States,"[Y8PTVLU5Vyk,SuEwmWpl2Ag]",0,,,333287,,"[25,25]","[2397,2370]",North America,86,170.1
 170,Columbus,United States,"[mDEgH6lN9Yk,_HVxRW-Tmt0,OMncunjvAIs,wDxidsJvSsk]",0,,,333287,,"[25,25,25,25]","[1991,1987,1939,1586]",North America,86,170.1
 171,Atlanta,United States,"[mnARGT8rnXU,KrK1oDuQobM,brHOrwiF-y4]",0,,,333287,,"[25,25,25]","[2530,2710,3131]",North America,86,170.1
-172,Dallas,United States,"[o7PEqqe9avE,XkguuPohDFg,h9K5CYwujhM]",0,,,333287,,"[25,25,25]","[2727,2727,2425]",North America,86,170.1
+172,Dallas,United States,"[o7PEqqe9avE,XkguuPohDFg,h9K5CYwujhM,zLuzEeQanGY]",0,,,333287,,"[25,25,25,133]","[2727,2727,2425,1543]",North America,86,170.1
 173,Denver,United States,"[yx2KheG5Oc4,UNUL1rIqrao,erj33Gmdhmk,Qv3g-t0anw0]",0,,,333287,,"[25,98,5,137]","[2363,2442,2755,3010]",North America,86,170.1
 174,Bozeman,United States,[JGkzIqWO-YI],0,,,333287,,[6450],[8357],North America,86,170.1
-175,Denver,United States,"[45oUgmLWAD4]",1,,,333287,,"[420]","[2686]",North America,86,170.1
+175,Denver,United States,[45oUgmLWAD4],1,,,333287,,[420],[2686],North America,86,170.1
 176,Colorado,United States,"[JJqFDX6yO5E,H3njLvw86G4,aVtyOTTyBZI]",0,,,333287,,"[0,0,5]","[1835,1832,1634]",North America,86,170.1
-177,Orange,United States,"[6XyuKrcXvjw]",0,,,333287,,"[0]","[1965]",North America,86,170.1
-178,Eugene,United States,"[LjILtZTtoIk]",0,,,333287,,"[0]","[1524]",North America,86,170.1
-179,Cheyenne,United States,"[EZUI4MkdH8k]",0,,,333287,,"[23]","[2404]",North America,86,170.1
+177,Orange,United States,[6XyuKrcXvjw],0,,,333287,,[0],[1965],North America,86,170.1
+178,Eugene,United States,[LjILtZTtoIk],0,,,333287,,[0],[1524],North America,86,170.1
+179,Cheyenne,United States,[EZUI4MkdH8k],0,,,333287,,[23],[2404],North America,86,170.1
+180,El Paso,United States,[9So1Q6zYNSE],0,,,333287,,[63],[1510],North America,86,170.1
+181,Midland,United States,[1xUC-moNf5U],0,,,333287,,[56],[1031],North America,86,170.1
+182,Austin,United States,[UNfH4bUhde8],0,,,333287,,[10],[1002],North America,86,170.1
+183,Fort Worth,United States,[J95uIsxSQxw],0,,,333287,,[10],[1502],North America,86,170.1
+184,Houston,United States,[AdYYTIiWceo],0,,,333287,,[15],[2031],North America,86,170.1
