@@ -107,7 +107,7 @@ class youtube_helper:
             txt_path = os.path.join(txt_location, filename)
 
         # Make sure the delimiter is correct, and adjust if necessary
-            df = pd.read_csv(txt_path, delimiter=" ", header=None, names=["YOLO_id", "X-center", "Y-center", "Width", 
+            df = pd.read_csv(txt_path, delimiter=" ", header=None, names=["YOLO_id", "X-center", "Y-center", "Width",
                                                                           "Height", "Unique Id"])
             df_list.append(df)
 
@@ -149,9 +149,8 @@ class youtube_helper:
 
         if params.display_frame_tracking:
             display_video_output_path = "runs/detect/display_video.mp4"
-            display_video_writer = cv2.VideoWriter(display_video_output_path, 
-                                                   fourcc, 30.0, (int(cap.get(3)), 
-                                                                  int(cap.get(4))))
+            display_video_writer = cv2.VideoWriter(display_video_output_path, fourcc, 30.0, (int(cap.get(3)),
+                                                                                             int(cap.get(4))))
 
         # Loop through the video frames
         frame_count = 0  # Variable to track the frame number

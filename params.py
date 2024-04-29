@@ -1,12 +1,5 @@
-import pandas as pd
-
-df = pd.read_csv("mapping.csv")
-
 input_csv_file = "mapping.csv"
 output_path = "video"
-
-trim_start = 360  # seconds
-trim_end = 420
 
 prediction_mode = False
 tracking_mode = True
