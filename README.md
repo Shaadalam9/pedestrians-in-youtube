@@ -50,6 +50,12 @@ https://github.com/Shaadalam9/youtube-pedestrian/assets/88769183/5303f4a5-52a2-4
 
 ![Countries where the study has been conducted](https://github.com/Shaadalam9/youtube-pedestrian/assets/88769183/07d263a5-e9d6-45cf-896b-1aa94ecbff6e)
 
+Number of pedestrian detected for crossing
+[![Number of pedestrian detected for crossing](figures/no_of_cases_for_cross.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/no_of_cases_for_cross.html)
+
+Time to start crossing
+[![time_to_start_cross.png](figures/time_to_start_cross.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/time_to_start_cross.html)  
+
 Number of traffic safety equipment detected vs. traffic mortality rate
 [![Number of traffic safety equipment detected vs. traffic mortality rate](figures/traffic_safety_vs_traffic_mortality.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/traffic_safety_vs_traffic_mortality.html)  
 
