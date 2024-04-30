@@ -3,14 +3,14 @@ output_path = "video"
 
 prediction_mode = False
 tracking_mode = True
-display_frame_tracking = True
+display_frame_tracking = False
 save_annoted_img = False
 delete_frames = True
 delete_youtube_video = True
 need_annotated_video = True
 
 model = "yolov8x.pt"
-confidence = 0.4
+confidence = 0.7
 render = True
 line_thickness = 1
 show_conf = True
