@@ -1631,19 +1631,19 @@ if __name__ == "__main__":
     # dfs is a dictionary in the form {Unique_id : CSV file}
     # df_mapping is the csv file
 
-    # plot_cell_phone_vs_traffic_mortality(df_mapping, dfs)
-    # plot_vehicle_vs_cross_time(df_mapping, dfs, data, motorcycle=1, car=1, bus=1, truck=1)
-    # plot_traffic_mortality_vs_crossing_event_wt_traffic_light(df_mapping, dfs, data)
-    # plot_hesitation_vs_traffic_mortality(df_mapping, dfs)
+    plot_cell_phone_vs_traffic_mortality(df_mapping, dfs)
+    plot_vehicle_vs_cross_time(df_mapping, dfs, data, motorcycle=1, car=1, bus=1, truck=1)
+    plot_traffic_mortality_vs_crossing_event_wt_traffic_light(df_mapping, dfs, data)
+    plot_hesitation_vs_traffic_mortality(df_mapping, dfs)
 
-    # plot_speed_of_crossing_vs_traffic_mortality(df_mapping, dfs, data)
-    # plot_speed_of_crossing_vs_literacy(df_mapping, dfs, data)
+    plot_speed_of_crossing_vs_traffic_mortality(df_mapping, dfs, data)
+    plot_speed_of_crossing_vs_literacy(df_mapping, dfs, data)
 
-    # plot_traffic_safety_vs_traffic_mortality(df_mapping, dfs)
-    # plot_traffic_safety_vs_literacy(df_mapping, dfs)
+    plot_traffic_safety_vs_traffic_mortality(df_mapping, dfs)
+    plot_traffic_safety_vs_literacy(df_mapping, dfs)
 
-    # plot_time_to_start_crossing(dfs)
-    # plot_no_of_pedestrian_stop(dfs)
+    plot_time_to_start_crossing(dfs)
+    plot_no_of_pedestrian_stop(dfs)
     plot_speed_of_crossing_vs_crossing_decision_time(df_mapping, dfs, data)
 
     logger.info("Analysis completed.")
