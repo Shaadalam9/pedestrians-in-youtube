@@ -25,6 +25,7 @@ for index, row in df.iterrows():
 
     for vid, start_times_list, end_times_list, time_of_day_list in zip(video_ids, start_times, end_times, time_of_day):
         for start_time, end_time, time_of_day_value in zip(start_times_list, end_times_list, time_of_day_list):
+            print(vid, start_time, end_time, time_of_day_value)
             result = helper.download_video_with_resolution(video_id=vid, output_path=params.output_path)
 
             if result:
@@ -34,6 +35,7 @@ for index, row in df.iterrows():
                 print(f"Video saved at: {video_file_path}")
             else:
                 logger.error("Download failed.")
+                # break
 
             input_video_path = f"{params.output_path}/{video_title}.mp4"
             output_video_path = f"{params.output_path}/{video_title}_mod.mp4"

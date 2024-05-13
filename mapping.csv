@@ -6,7 +6,7 @@ id,city,country,videos,time_of_day,gdp_per_capita,population,population_country,
 5,Melbourne,Australia,"[81n46krHrQA,gQ-9mmnfJjE,u_9_W9H04Ds,vhn1Y4BdRTM,lIziwOj5bjs]","[[0],[0],[0],[0],[0]]",61879,5150000,26005.54,5.6,"[[42],[0],[25],[25],[25]]","[[2964],[1835],[1665],[1498],[2046]]",Australia,99,171.7
 6,Cincinnati,United States,[G1I_PlmL_YA],[[0]],82180,2265051,333287,12.4,[[78]],[[2729]],North America,86,170.1
 7,Brisbane,Australia,[9pPBmcKvFOc],[[0]],77384,2287295,26005.54,5.6,[[23]],[[2922]],Australia,99,171.7
-8,Monaco,Monaco,[ij6xccYYIuE],[[1]],,,,,[[22]],[[1875]],Europe,,
+8,Monaco,Monaco,[ij6xccYYIuE],[[1]],6816,39150,39150,5.5,[[22]],[[1875]],Europe,99,180
 9,Milan,Italy,[ZByZSqoqzaI],[[0]],46854,4985668,59110,5.6,[[18]],[[3333]],Europe,99,168.1
 10,Kuala Lumpur,Malaysia,[AxQcSoA9vGQ],[[0]],6575,8900000,33938.22,23.6,[[23]],[[3140]],Asia,83,163.1
 11,Chicago,United States,"[XzwI2rGmf04,_28yBWAYiYg]","[[0],[1]]",87259,9806184,333287,12.4,"[[22],[0]]","[[3730],[4256]]",North America,86,170.1
@@ -15,7 +15,7 @@ id,city,country,videos,time_of_day,gdp_per_capita,population,population_country,
 14,New York,United States,"[_Wyg213IZDI,X-QBQXHaiEs,UPrPATfWJ2g,LQLJu-EpkeE,1ktTQ1yAC8I]","[[0],[1],[1],[0],[1]]",114293,21914996,333287,12.4,"[[18],[8],[23],[22],[30]]","[[3133],[2423],[3280],[3140],[3360]]",North America,86,170.1
 15,Damascus,Syria,[qzimFzMh6lA],[[0]],744.67,2079000,22125.25,26.5,[[0]],[[1339]],Asia,86.4,165.5
 16,Luanda,Angola,[z3Gx2hp3Vo8],[[0]],1503,2572000,35589,23.6,[[0]],[[1836]],Africa,72,163.3
-17,Moscow,Russia,"[wCKLtcGQnWc,vJJ2sITNN1w,XANvPSTY0Ho,vffgKEGG-8Y,DGoQzuuL5CA,QgGTTYYAxLg,KooHk6Q59po]","[[0],[0],[0],[0],[0],[0,0],[1]]",29012,17400000,144236.93,18,"[[0],[5],[0],[0],[0],[65,884],[0]","[[2253],[3223],[2230],[1837],[4352],[774,1425],[4007]]",Europe,100,170.5
+17,Moscow,Russia,"[wCKLtcGQnWc,vJJ2sITNN1w,XANvPSTY0Ho,vffgKEGG-8Y,DGoQzuuL5CA,QgGTTYYAxLg,KooHk6Q59po]","[[0],[0],[0],[0],[0],[0,0],[1]]",29012,17400000,144236.93,18,"[[0],[5],[0],[0],[0],[65,884],[0]]","[[2253],[3223],[2230],[1837],[4352],[774,1425],[4007]]",Europe,100,170.5
 18,Seoul,South Korea,"[qOx5CwCrN9k,bMydG1xiHzc,ZdwHjHIC7jA,Ab9FMZ2pKeI,eMv6SCniTPg,40xZVEFVBuE,uL9Bc3oqFj0]","[[0],[0],[0],[0],[1],[1],[1]]",36677,24800000,51628.11,9.8,"[[14],[134],[118],[5],[26],[0],[2]]","[[1417],[1540],[1915],[2010],[5476],[3418],[3332]]",Asia,99,169.3
 19,Tokyo,Japan,"[oDejyTLYUTE,lSgTVt60M6U]","[[0],[1]]",51124,40700000,125125,4.1,"[[23],[0]]","[[2310],[3907]]",Asia,99,165.3
 20,Dhaka,Bangladesh,[ZruaEnhtYLA],"[[0,0]]",4091,21300000,171186,15.3,"[[58,1632]]","[[1531,3990]]",Asia,75,158.7
@@ -82,13 +82,13 @@ id,city,country,videos,time_of_day,gdp_per_capita,population,population_country,
 81,Salt Lake,United States,"[VgTr1UtBkFQ,TJcXzdB-sqQ,iDaAg9e5tG0,y2iGUHl-5Eg,AkDF2kxfcDY,d_WuEG7NQEg]","[[0],[0],[0],[0],[0],[0]]",134409,,333287,,"[[60],[0],[30],[5],[38],[22]]","[[1948],[3113],[2182],[1081],[6040],[3823]]",North America,86,170.1
 82,Houston,United States,[AdYYTIiWceo],[[0]],,,333287,,[[15]],[[2031]],North America,86,170.1
 83,Fuzhou,China,[1frHQsvfVSk],[[1]],183000,,1412175,,[[86]],[[6154]],Asia,97,169.6
-84,Mainyang,China,[1PLGBTgF_jM],[[0]],,,1412175,,[[57],[[4764]],Asia,97,169.6
+84,Mainyang,China,[1PLGBTgF_jM],[[0]],,,1412175,,[[57]],[[4764]],Asia,97,169.6
 85,Xiamen,China,[GZZUDsUulZw],[[1]],92557,,1412175,,[[88]],[[4784]],Asia,97,169.6
 86,Huai'an,China,[bphPeweI7Rg],[[0]],58361,,1412175,,[[52]],[[3806]],Asia,97,169.6
 87,Liaoyuan,China,[vvl6R-dyu08],[[0]],,,1412175,,[[47]],[[2793]],Asia,97,169.6
 88,Dalian,China,[DR729z5_GPU],[[1]],125000,,1412175,,[[52]],[[2660]],Asia,97,169.6
-89,Changchun,China,[_8WCiRW0vZw],[[0]],96240,,1412175,,"[[60]]",[[6903]],Asia,97,169.6
-90,Qingdao,China,[AmvltaZF3JE],[[1]],,,,,"[[55]]","[[5303]]",Asia,97,169.6
+89,Changchun,China,[_8WCiRW0vZw],[[0]],96240,,1412175,,[[60]],[[6903]],Asia,97,169.6
+90,Qingdao,China,[AmvltaZF3JE],[[1]],,,,,[[55]],[[5303]],Asia,97,169.6
 91,Hangzhou,China,[LFzv3Fv7CIk],[[1]],279000,,1412175,,[[62]],[[5575]],Asia,97,169.6
 92,Chenngdu,China,[eDgNu3SpFgM],[[0]],,,,,[[52]],[[3834]],Asia,97,169.6
 93,Zibo,China,[FZpWNwWtPpk],[[0]],53260,,1412175,,[[48]],[[3391]],Asia,97,169.6
@@ -155,7 +155,7 @@ id,city,country,videos,time_of_day,gdp_per_capita,population,population_country,
 154,Cheyenne,United States,[EZUI4MkdH8k],[[0]],,,333287,,[[23]],[[2404]],North America,86,170.1
 155,El Paso,United States,[9So1Q6zYNSE],[[0]],,,333287,,[[63]],[[1510]],North America,86,170.1
 156,Midland,United States,[1xUC-moNf5U],[[0]],,,333287,,[[56]],[[1031]],North America,86,170.1
-157,Austin,United States,[UNfH4bUhde8],[[0]],,,333287,,[[10]],[[1002],North America,86,170.1
+157,Austin,United States,[UNfH4bUhde8],[[0]],,,333287,,[[10]],[[1002]],North America,86,170.1
 158,Fort Worth,United States,[J95uIsxSQxw],[[0]],,,333287,,[[10]],[[1502]],North America,86,170.1
 159,Washington DC,United States,[sY7ufpPpGhE],[[1]],,,333287,,[[26]],[[2130]],North America,86,170.1
 160,Pittsburgh,United States,[U3Zxe80ysd4],[[1]],,,333287,,[[65]],[[3690]],North America,86,170.1
