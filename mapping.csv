@@ -1,4 +1,16 @@
 id,city,country,videos,time_of_day,gdp_per_capita,population,population_country,traffic_mortality,start_time,end_time,continent,literacy_rate,avg_height
+1,Toronto,Canada,"[3ai7SUaPoHM,lmLWoDdQgtQ,oAsf9lqI1E4,iwD2qmNcm6k,qBH_yfaRqRw,q2vQ9woF8EQ,Ih1i-wzVP80,_e0RQL7NJZg,9mecWLY_MC4,tQtUvSZiZGg,STbVEZMJdC0,mtz_eM73GS0]","[[0],[0],[0],[0],[0],[0],[0],[0],[0],[0],[0],[1]]",69110,6547381,38929.9,5.8,"[[27],[25],[25],[27],[26],[26],[25],[25],[25],[25],[25],[18]]","[[3250],[2134],[2256],[2335],[2275],[2618],[2148],[2505],[2204],[2409],[2354],[5002]]",North America,99,171.7
+2,Jakarta,Indonesia,[gmDBzijaIAA],[[0]],9416,34307988,275501.34,12.2,[[29]],[[2968]],Asia,96,160.3
+3,Manila,Philippines,[JY-Xyiept88],[[0]],6148,26400000,118446,12.3,[[43]],[[4844]],Asia,96,159.6
+4,Sydney,Australia,"[wMu6Va5PhGY,jTyfIV2wres,_fxg06j8SNY]","[[0],[0],[1]]",73034,5450000,26005.54,5.6,"[[41],[10],[30]]","[[3040],[2362],[2172]]",Australia,99,171.7
+5,Melbourne,Australia,"[81n46krHrQA,gQ-9mmnfJjE,u_9_W9H04Ds,vhn1Y4BdRTM,lIziwOj5bjs]","[[0],[0],[0],[0],[0]]",61879,5150000,26005.54,5.6,"[[42],[0],[25],[25],[25]]","[[2964],[1835],[1665],[1498],[2046]]",Australia,99,171.7
+6,Cincinnati,United States,[G1I_PlmL_YA],[[0]],82180,2265051,333287,12.4,[[78]],[[2729]],North America,86,170.1
+7,Brisbane,Australia,[9pPBmcKvFOc],[[0]],77384,2287295,26005.54,5.6,[[23]],[[2922]],Australia,99,171.7
+8,Monaco,Monaco,[ij6xccYYIuE],[[1]],6816,39150,39150,5.5,[[22]],[[1875]],Europe,99,180
+9,Milan,Italy,[ZByZSqoqzaI],[[0]],46854,4985668,59110,5.6,[[18]],[[3333]],Europe,99,168.1
+10,Kuala Lumpur,Malaysia,[AxQcSoA9vGQ],[[0]],6575,8900000,33938.22,23.6,[[23]],[[3140]],Asia,83,163.1
+11,Chicago,United States,"[XzwI2rGmf04,_28yBWAYiYg]","[[0],[1]]",87259,9806184,333287,12.4,"[[22],[0]]","[[3730],[4256]]",North America,86,170.1
+12,Las Vegas,United States,"[KWciBlhQjRA,87q4Fz8DeRk,AaDu9M2cfKE,XFi48Q4bvQQ,xlf0nYzk5vk,HZaLvgP-R8E,fQ8oi4JEwFU]","[[0],[0],[0],[0],[0],[1],[1]]",69190,2322985,333287,12.4,"[[20],[21],[25],[25],[25],[18],[8],[]]","[[4569],[1869],[3091],[2118],[2131],[4537],[2618]]",North America,86,170.1
 13,Los Angeles,United States,"[4uhMg5na888,hNN8TJtmfxs,HSkpcuGMiaE,qja2qXGMCUM,gfdsMx5ETJI,VSk6E473L1I,f4w-xsione8,fgIiF6S6tTc,lFjiQc8ngN4,ZhelsVW9yZ8,nOtsUCWkXuo,g1BcC9gK3po,9u_PhtS4wtc,EUGYfzARI3Y,7AMTygnk-i8,OVA3QACyXzM,eR5vsN1Lq4E]","[[0],[0],[0],[0],[0],[0],[0],[0],[0],[0],[0],[0],[0],[0],[0],[1],[1]]",83147,18372485,333287,12.4,"[[13],[26],[25],[25],[26],[26],[25],[25],[26],[25],[25],[121],[10],[5],[5],[4],[0]]","[[2687],[2081],[1978],[2045],[1937],[2134],[2062],[2129],[1591],[1909],[2247],[2764],[1995],[3052],[1500],[4195],[2421]]",North America,86,170.1
 14,New York,United States,"[_Wyg213IZDI,X-QBQXHaiEs,UPrPATfWJ2g,LQLJu-EpkeE,1ktTQ1yAC8I]","[[0],[1],[1],[0],[1]]",114293,21914996,333287,12.4,"[[18],[8],[23],[22],[30]]","[[3133],[2423],[3280],[3140],[3360]]",North America,86,170.1
 15,Damascus,Syria,[qzimFzMh6lA],[[0]],744.67,2079000,22125.25,26.5,[[0]],[[1339]],Asia,86.4,165.5
