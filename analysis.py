@@ -620,7 +620,10 @@ def plot_time_to_start_crossing(dfs, person_id=0):
             divided_data = [value / 30 for value in all_data[city_condition_key]]
 
             # Calculate the standard deviation of the divided data
-            sd_dict[city_condition_key] = statistics.stdev(divided_data)
+            if len(divided_data) > 1:
+                sd_dict[city_condition_key] = statistics.stdev(divided_data)
+            else:
+                sd_dict[city_condition_key] = 0  # Handle cases with less than 2 points
         else:
             # Handle the case when there are no values for the city_condition_key
             time_dict[city_condition_key] = 0
@@ -1148,7 +1151,7 @@ def plot_speed_of_crossing_vs_crossing_decision_time(df_mapping, dfs, data, pers
             time_dict[f'{city}_{condition}'] = ((sum(data.values()) / 30) / len(data))
 
     ordered_values = []
-    print(time_dict)
+
     for key in time_dict:
         city, condition = key.split('_')
         df_ = df_mapping[(df_mapping['city'] == city)]
