@@ -63,7 +63,7 @@ id,city,country,videos,time_of_day,gdp_per_capita,population,population_country,
 62,Can Tho,Vietnam,[tjha2msVEXI],[[0]],3756,1282000,97470,26.4,[[0]],[[1695]],Asia,96,163.6
 63,Lahore,Pakistan,[b9YKof8b0iU],[[0]],,,235824,14.3,[[109]],[[2333]],Asia,58,161
 64,Cape Town,South Africa,[5bdCk5AQ9Kw],"[[0,1]]",12869,4375000,59893.9,25.9,"[[25,697]]","[[698,3078]]",Africa,90,164.1
-65,Mexico City,Mexico,"[MpA3FHZ3yZc,oxZBX-e84O8,JCXH_WyC8A4]","[[0],[1],[1]]",13798,24700000,333287,12.4,"[[18],[24],[19]]","[[2191],[2859],[3078]]",North America,95,164.1
+65,Mexico City,Mexico,"[MpA3FHZ3yZc,oxZBX-e84O8,JCXH_WyC8A4]","[[0],[1],[1]]",13798,24700000,333287,12.4,"[[18],[24],[19]]","[[3078],[2191],[2859]]",North America,95,164.1
 66,Minsk,Belarus,[5py-m9Fg7ck],[[0]],19913,,,,[[0]],[[1638]],Europe,,
 67,Chelyabinsk,Russia,[yXK6HFRuVuU],[[0]],,,,,[[230]],[[2552]],Europe,,
 68,Miami,United States,"[drt8bDQ49b4,9FGFA7Ki4-4,4AurpF9lMD8,Cod_ggrs69U,ASaXDIDStG4]","[[0],[0],[0],[1],[1]]",483755,,333287,,"[[19],[25],[26],[19],[23]]","[[3806],[2226],[2251],[4094],[3469]]",North America,,
