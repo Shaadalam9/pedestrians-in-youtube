@@ -235,8 +235,7 @@ def save_plotly_figure(fig, filename, width=1600, height=900, scale=3):
                     width=width, height=height)
 
 
-def plot_scatter_diag(x, y, size, color, symbol,
-                      city, plot_name, x_label, y_label,
+def plot_scatter_diag(x, y, size, color, symbol, city, plot_name, x_label, y_label,
                       legend_x=0.887, legend_y=0.986):
     """Plots a scatter plot with diagonal markers and annotations for city locations.
 
@@ -349,8 +348,8 @@ def find_values(df, key):
         time_of_day = ast.literal_eval(row["time_of_day"])
         city = row["city"]
         country = row["country"]
-        gdp = row["gdp_per_capita"]
-        population = row["population"]
+        gdp = row["gdp_city_(billion_US)"]
+        population = row["population_city"]
         population_country = row["population_country"]
         traffic_mortality = row["traffic_mortality"]
         continent = row["continent"]
@@ -367,26 +366,26 @@ def find_values(df, key):
                     # Check if the start time matches the specified start time
                     if int(start_) == s:
                         # Return relevant information once found
-                        return (video, s, end[counter], time_of_day_[counter], city, country, gdp, population,
-                                population_country, traffic_mortality, continent, literacy_rate, avg_height)
+                        return (video, s, end[counter], time_of_day_[counter], city,
+                                country, (gdp/population), population, population_country,
+                                traffic_mortality, continent, literacy_rate, avg_height)
                     counter += 1
 
 
 def plot_cell_phone_vs_traffic_mortality(df_mapping, dfs):
-    """Plots the relationship between cell phone usage and traffic mortality.
+    """Plots the relationship between average cell phone usage per person detected vs. traffic mortality.
 
     Args:
         df_mapping (DataFrame): DataFrame containing mapping information.
         dfs (dict): Dictionary of DataFrames containing video data.
     """
-    info = {}
+    info, no_person, total_time = {}, {}, {}
     time_, traffic_mortality, continents,  = [], [], []
     gdp, conditions, city_ = [], [], []
     for key, value in dfs.items():
         # Extract relevant information using the find_values function
-        (_, start, end, time_of_day, city, country, gdp_, population,
-         population_country, traffic_mortality_, continent, literacy_rate, avg_height) = find_values(df_mapping, key)
-
+        (_, start, end, time_of_day, city, country, gdp_, population, population_country,
+         traffic_mortality_, continent, literacy_rate, avg_height) = find_values(df_mapping, key)
         # Count the number of mobile objects in the video
         mobile_ids = count_object(value, 67)
 
@@ -401,18 +400,29 @@ def plot_cell_phone_vs_traffic_mortality(df_mapping, dfs):
         condition = time_of_day
 
         # Calculate average cell phones detected per person
-        if num_person == 0:
+        if num_person or mobile_ids == 0:
             continue
-        avg_cell_phone = (((mobile_ids * 60) / time_[-1]) / num_person) * 1000
 
         # Update the information dictionary
         if f"{city}_{condition}" in info:
             previous_value = info[f"{city}_{condition}"]
-            info[f"{city}_{condition}"] = (previous_value + avg_cell_phone) / 2
-            # No need to add variables like traffic mortality, continents,
-            # and so on again for the same city and condition
+            # Extracting the old number of detected mobiles
+            previous_value = previous_value * no_person[f"{city}_{condition}"] * total_time[
+                f"{city}_{condition}"] / 1000 / 60
+
+            # Summing up the previous value and the new value
+            total_value = previous_value + mobile_ids
+            no_person[f"{city}_{condition}"] += num_person
+            total_time[f"{city}_{condition}"] += duration
+
+            # Normalising with respect to total person detected and time
+            info[f"{city}_{condition}"] = (((total_value * 60) / total_time[f"{city}_{condition}"]
+                                            ) / no_person[f"{city}_{condition}"]) * 1000
             continue
         else:
+            no_person[f"{city}_{condition}"] = num_person
+            total_time[f"{city}_{condition}"] = duration
+            avg_cell_phone = (((mobile_ids * 60) / time_[-1]) / num_person) * 1000
             info[f"{city}_{condition}"] = avg_cell_phone
 
         # Store additional information for plotting
@@ -424,16 +434,11 @@ def plot_cell_phone_vs_traffic_mortality(df_mapping, dfs):
 
     # Filter out values where info[key] == 0
     filtered_info = {k: v for k, v in info.items() if v != 0}
-    filtered_traffic_mortality = [d for i, d in enumerate(traffic_mortality)
-                                  if info[list(info.keys())[i]] != 0]
-    filtered_continents = [c for i, c in enumerate(continents)
-                           if info[list(info.keys())[i]] != 0]
-    filtered_gdp = [c for i, c in enumerate(gdp)
-                    if info[list(info.keys())[i]] != 0]
-    filtered_conditions = [c for i, c in enumerate(conditions)
-                           if info[list(info.keys())[i]] != 0]
-    filtered_city = [c for i, c in enumerate(city_)
-                     if info[list(info.keys())[i]] != 0]
+    filtered_traffic_mortality = [d for i, d in enumerate(traffic_mortality) if info[list(info.keys())[i]] != 0]
+    filtered_continents = [c for i, c in enumerate(continents) if info[list(info.keys())[i]] != 0]
+    filtered_gdp = [c for i, c in enumerate(gdp) if info[list(info.keys())[i]] != 0]
+    filtered_conditions = [c for i, c in enumerate(conditions) if info[list(info.keys())[i]] != 0]
+    filtered_city = [c for i, c in enumerate(city_) if info[list(info.keys())[i]] != 0]
 
     # Plot the scatter diagram
     plot_scatter_diag(x=filtered_traffic_mortality,
@@ -517,8 +522,11 @@ def plot_vehicle_vs_cross_time(df_mapping, dfs, data, motorcycle=1, car=1, bus=1
             previous_value = info[f"{city}_{condition}"]
             info[f"{city}_{condition}"] = (previous_value + new_value) / 2
             continue
-
         else:
+            # no_person[f"{city}_{condition}"] = num_person
+            # total_time[f"{city}_{condition}"] = duration
+            # avg_cell_phone = (((mobile_ids * 60) / time_[-1]) / num_person) * 1000
+            # info[f"{city}_{condition}"] = avg_cell_phone
             info[f"{city}_{condition}"] = new_value
 
         # Extract additional data for plotting
@@ -537,12 +545,28 @@ def plot_vehicle_vs_cross_time(df_mapping, dfs, data, motorcycle=1, car=1, bus=1
         city_.append(city)
         conditions.append(condition)
 
+    # Extract city, condition, and count_ from the info dictionary
+    cities, conditions_ = [], []
+    for key, value in info.items():
+        city, condition = key.split('_')
+        cities.append(city)
+        conditions_.append(condition)
+
+    # Create the DataFrame
+    df_result = pd.DataFrame({
+        'City': cities,
+        'Condition': conditions_,
+        'Time_to_cross': time_avg
+    })
+
     # Plot the scatter diagram
     plot_scatter_diag(x=time_avg, y=info, size=gdp, color=continents,
                       symbol=conditions, city=city_, plot_name=save_as,
                       x_label="Average crossing time (in seconds)",
                       y_label="Number of vehicle detected (normalised)",
                       legend_x=0.887, legend_y=0.986)
+
+    return df_result
 
 
 def plot_time_to_start_crossing(dfs, person_id=0):
@@ -650,11 +674,9 @@ def plot_time_to_start_crossing(dfs, person_id=0):
         night_values.setdefault(city, 0)
 
     # Sort data based on values for condition 0
-    sorted_day_values = dict(sorted(
-        day_values.items(), key=lambda item: item[1]))
+    sorted_day_values = dict(sorted(day_values.items(), key=lambda item: item[1]))
 
-    sorted_night_values = dict(sorted(
-        night_values.items(), key=lambda item: item[1]))
+    sorted_night_values = dict(sorted(night_values.items(), key=lambda item: item[1]))
 
     sorted_cities = list(sorted_day_values.keys())
 
@@ -663,18 +685,14 @@ def plot_time_to_start_crossing(dfs, person_id=0):
     # Create traces for condition 0
     trace_pos = go.Bar(
         x=list(sorted_day_values.values()),
-        y=sorted_cities,
-        orientation='h',
-        name='Day',
+        y=sorted_cities, orientation='h', name='Day',
         marker=dict(color='rgba(50, 171, 96, 0.6)')
     )
 
     # Create traces for condition 1
     trace_neg = go.Bar(
         x=[-night_values[city] for city in sorted_cities],
-        y=sorted_cities,
-        orientation='h',
-        name='Night',
+        y=sorted_cities, orientation='h', name='Night',
         marker=dict(color='rgba(219, 64, 82, 0.6)')
     )
 
@@ -685,11 +703,8 @@ def plot_time_to_start_crossing(dfs, person_id=0):
     max_value = int(max(max(day_values.values()), max(night_values.values())))
     fig.update_layout(
         # title='Double-Sided Bar Plot',
-        barmode='relative',
-        bargap=0.1,
-        yaxis=dict(
-            tickvals=[],
-        ),
+        barmode='relative', bargap=0.1,
+        yaxis=dict(tickvals=[],),
         xaxis=dict(
             title="Average time taken by the pedestrian to start crossing the road (in seconds)",
             tickvals=[-val for val in range(1, max_value + 1)] + [val for val in range(1, max_value + 1)],
@@ -1028,12 +1043,28 @@ def plot_hesitation_vs_traffic_mortality(df_mapping, dfs, person_id=0):
         traffic_mortality.append(traffic_mortality_)
         conditions.append(condition)
 
+    # Extract city, condition, and count_ from the info dictionary
+    cities, conditions_, counts = [], [], []
+    for key, value in count_dict.items():
+        city, condition = key.split('_')
+        cities.append(city)
+        conditions_.append(condition)
+        counts.append(value)
+
+    # Create the DataFrame
+    df_result = pd.DataFrame({
+        'City': cities,
+        'Condition': conditions_,
+        'Hestitation': counts
+    })
+
     plot_scatter_diag(x=traffic_mortality, y=count_dict, size=gdp,
                       color=continents, symbol=conditions, city=city_,
                       plot_name="hesitation_vs_traffic_mortality",
                       x_label="Traffic mortality rate per 100k person",
                       y_label="Percentage of people who hesitated while crossing the road (normalised)",
                       legend_x=0.887, legend_y=0.986)
+    return df_result
 
 
 def plot_speed_of_crossing_vs_crossing_decision_time(df_mapping, dfs, data, person_id=0):
@@ -1083,7 +1114,8 @@ def plot_speed_of_crossing_vs_crossing_decision_time(df_mapping, dfs, data, pers
                 continue
 
             speed.append(speed_)
-
+        if len(speed) == 0:
+            continue
         no_people[f'{city}_{condition}'] = len(speed)
 
         if f'{city}_{condition}' in avg_speed:
@@ -1146,9 +1178,24 @@ def plot_speed_of_crossing_vs_crossing_decision_time(df_mapping, dfs, data, pers
         if f'{city}_{condition}' in time_dict:
             old_count = time_dict[f'{city}_{condition}']
             new_count = old_count * no_people[f'{city}_{condition}'] + (sum(data.values()) / 30)
-            time_dict[f'{city}_{condition}'] = new_count / (no_people[f'{city}_{condition}'] + len(data))  # noqa:E501
+            time_dict[f'{city}_{condition}'] = new_count / (no_people[f'{city}_{condition}'] + len(data))
         else:
             time_dict[f'{city}_{condition}'] = ((sum(data.values()) / 30) / len(data))
+
+    # Extract city, condition, and count_ from the info dictionary
+    cities, conditions_, counts = [], [], []
+    for key, value in time_dict.items():
+        city, condition = key.split('_')
+        cities.append(city)
+        conditions_.append(condition)
+        counts.append(value)
+
+    # Create the DataFrame
+    df_result = pd.DataFrame({
+        'City': cities,
+        'Condition': conditions_,
+        'Crossing_decision_time': counts
+    })
 
     ordered_values = []
 
@@ -1157,7 +1204,7 @@ def plot_speed_of_crossing_vs_crossing_decision_time(df_mapping, dfs, data, pers
         df_ = df_mapping[(df_mapping['city'] == city)]
         conditions.append(int(condition))
         continents.append(df_['continent'].values[0])
-        gdp.append(df_['gdp_per_capita'].values[0])
+        gdp.append(df_['gdp_city_(billion_US)'].values[0]/df_['population_city'].values[0])
 
         ordered_values.append((time_dict[key], avg_speed[key]))
 
@@ -1226,6 +1273,7 @@ def plot_speed_of_crossing_vs_crossing_decision_time(df_mapping, dfs, data, pers
 
     fig.show()
     save_plotly_figure(fig, "speed_of_crossing_vs_crossing_decision_time")
+    return df_result
 
 
 def plot_traffic_mortality_vs_crossing_event_wt_traffic_light(df_mapping, dfs, data):
@@ -1304,6 +1352,21 @@ def plot_traffic_mortality_vs_crossing_event_wt_traffic_light(df_mapping, dfs, d
         city_.append(city)
         conditions.append(condition)
 
+    # Extract city, condition, and count_ from the info dictionary
+    cities, conditions_, counts = [], [], []
+    for key, value in ratio.items():
+        city, condition = key.split('_')
+        cities.append(city)
+        conditions_.append(condition)
+        counts.append(value)
+
+    # Create the DataFrame
+    df_result = pd.DataFrame({
+        'City': cities,
+        'Condition': conditions_,
+        'Cross_wt_traffic_light': counts
+    })
+
     # Plot the scatter diagram
     plot_scatter_diag(x=traffic_mortality,
                       y=ratio, size=gdp,
@@ -1313,6 +1376,7 @@ def plot_traffic_mortality_vs_crossing_event_wt_traffic_light(df_mapping, dfs, d
                       x_label="Traffic mortality rate (per 100k)",
                       y_label="Percentage of Crossing Event without traffic light (normalised)",
                       legend_x=0, legend_y=0.986)
+    return df_result
 
 
 def plot_speed_of_crossing_vs_traffic_mortality(df_mapping, dfs, data):
@@ -1370,6 +1434,8 @@ def plot_speed_of_crossing_vs_traffic_mortality(df_mapping, dfs, data):
             speed.append(speed_)
 
         # Store the number of pedestrians for each city and condition
+        if len(speed) == 0:
+            continue
         no_people[f'{city}_{condition}'] = len(speed)
 
         # Calculate the average speed for each city and condition
@@ -1464,6 +1530,8 @@ def plot_speed_of_crossing_vs_literacy(df_mapping, dfs, data):
             avg_speed[f'{city}_{condition}'] = new_count / (no_people[f'{city}_{condition}'] + len(speed))
             continue
         else:
+            if len(speed) == 0:
+                continue
             avg_speed[f'{city}_{condition}'] = sum(speed) / len(speed)
 
         # Store additional data for plotting
@@ -1474,6 +1542,21 @@ def plot_speed_of_crossing_vs_literacy(df_mapping, dfs, data):
         gdp.append(gdp_)
         city_.append(city)
 
+    # Extract city, condition, and count_ from the info dictionary
+    cities, conditions_, counts = [], [], []
+    for key, value in avg_speed.items():
+        city, condition = key.split('_')
+        cities.append(city)
+        conditions_.append(condition)
+        counts.append(value)
+
+    # Create the DataFrame
+    df_result = pd.DataFrame({
+        'City': cities,
+        'Condition': conditions_,
+        'Speed': counts
+    })
+
     # Plot the scatter diagram
     plot_scatter_diag(x=literacy,
                       y=avg_speed, size=gdp,
@@ -1483,6 +1566,7 @@ def plot_speed_of_crossing_vs_literacy(df_mapping, dfs, data):
                       x_label="Literacy rate in the country (in percentage)",
                       y_label="Average speed of the pedestrian to cross the road (in m/s)",
                       legend_x=0, legend_y=1)
+    return df_result
 
 
 def plot_traffic_safety_vs_traffic_mortality(df_mapping, dfs):
@@ -1607,12 +1691,88 @@ def plot_traffic_safety_vs_literacy(df_mapping, dfs):
         time_.append(duration)
         literacy.append(literacy_rate)
 
+    # Extract city, condition, and count_ from the info dictionary
+    cities, conditions_, counts = [], [], []
+    for key, value in info.items():
+        city, condition = key.split('_')
+        cities.append(city)
+        conditions_.append(condition)
+        counts.append(value)
+
+    # Create the DataFrame
+    df_result = pd.DataFrame({
+        'City': cities,
+        'Condition': conditions_,
+        'Safety': counts
+    })
+
     # Plot the scatter diagram
     plot_scatter_diag(x=literacy, y=info, size=gdp, color=continents, symbol=conditions,
                       city=city_, plot_name="traffic_safety_vs_literacy",
                       x_label="Literacy rate in the country (in percentage)",
                       y_label="Number of traffic instruments detected (normalised)",
                       legend_x=0.07, legend_y=0.96)
+
+    return df_result
+
+
+def correlation_matrix(df_mapping, df_cross_time, df_cross_wt_traffic_light, df_hesitation,
+                       df_speed_of_crossing, df_safety, df_crossing_dec_time):
+
+    # Extract relevant columns from df_mapping
+    df_city_info = df_mapping[['city', 'gdp_city_(billion_US)', 'population_city', 'traffic_mortality', 'literacy_rate']]
+
+    # Rename columns for merging
+    df_city_info.rename(columns={'city': 'City'}, inplace=True)
+
+    # DataFrames to merge
+    dfs = [df_cross_time, df_cross_wt_traffic_light, df_hesitation,
+           df_speed_of_crossing, df_safety, df_crossing_dec_time]
+
+    # Initialize the merged DataFrame with the first DataFrame in the list
+    df_merged = dfs[0]
+
+    # Check if all required columns are present
+    required_columns = {'City', 'Condition'}
+
+    # Iterate over the rest of the DataFrames and merge them sequentially
+    for df in dfs[1:]:
+        if not required_columns.issubset(df.columns):
+            raise ValueError(f"DataFrame is missing required columns: {required_columns - set(df.columns)}")
+        df_merged = pd.merge(df_merged, df, on=['City', 'Condition'], how='outer')
+
+    # Merge with the city information DataFrame
+    df_combined = pd.merge(df_merged, df_city_info, on='City', how='left')
+
+    # Drop 'City' and 'Condition' columns
+    df_combined_for_corr = df_combined.drop(columns=['City', 'Condition'])
+
+    # Calculate the correlation matrix
+    correlation_matrix = df_combined_for_corr.corr()
+
+    print("Combined DataFrame:")
+    print(df_combined)
+    print("\nCorrelation Matrix:")
+    print(correlation_matrix)
+
+    # Plot the correlation matrix heatmap using Plotly
+    fig = go.Figure(data=go.Heatmap(
+        z=correlation_matrix.values,
+        x=correlation_matrix.columns,
+        y=correlation_matrix.index,
+        colorscale='Viridis',
+        zmin=-1, zmax=1,
+        texttemplate="%{z:.3f}",  # Add this line to show values in cells
+        textfont={"size": 10}
+    ))
+
+    fig.update_layout(
+        title='Correlation Matrix Heatmap',
+        xaxis_nticks=36,
+        yaxis_nticks=36
+    )
+
+    fig.show()
 
 
 # Execute analysis
@@ -1633,20 +1793,22 @@ if __name__ == "__main__":
     # Values itself is another dictionary which is {Unique Id of person : Avg time to cross the road}
     # dfs is a dictionary in the form {Unique_id : CSV file}
     # df_mapping is the csv file
+    # plot_cell_phone_vs_traffic_mortality(df_mapping, dfs)
+    df_cross_time = plot_vehicle_vs_cross_time(df_mapping, dfs, data, motorcycle=1, car=1, bus=1, truck=1)
+    df_cross_wt_traffic_light = plot_traffic_mortality_vs_crossing_event_wt_traffic_light(df_mapping, dfs, data)
+    df_hesitation = plot_hesitation_vs_traffic_mortality(df_mapping, dfs)
 
-    plot_cell_phone_vs_traffic_mortality(df_mapping, dfs)
-    plot_vehicle_vs_cross_time(df_mapping, dfs, data, motorcycle=1, car=1, bus=1, truck=1)
-    plot_traffic_mortality_vs_crossing_event_wt_traffic_light(df_mapping, dfs, data)
-    plot_hesitation_vs_traffic_mortality(df_mapping, dfs)
+    # plot_speed_of_crossing_vs_traffic_mortality(df_mapping, dfs, data)
+    df_speed_of_crossing = plot_speed_of_crossing_vs_literacy(df_mapping, dfs, data)
 
-    plot_speed_of_crossing_vs_traffic_mortality(df_mapping, dfs, data)
-    plot_speed_of_crossing_vs_literacy(df_mapping, dfs, data)
+    # plot_traffic_safety_vs_traffic_mortality(df_mapping, dfs)
+    df_safety = plot_traffic_safety_vs_literacy(df_mapping, dfs)
 
-    plot_traffic_safety_vs_traffic_mortality(df_mapping, dfs)
-    plot_traffic_safety_vs_literacy(df_mapping, dfs)
+    # plot_time_to_start_crossing(dfs)
+    # plot_no_of_pedestrian_stop(dfs)
+    df_crossing_dec_time = plot_speed_of_crossing_vs_crossing_decision_time(df_mapping, dfs, data)
 
-    plot_time_to_start_crossing(dfs)
-    plot_no_of_pedestrian_stop(dfs)
-    plot_speed_of_crossing_vs_crossing_decision_time(df_mapping, dfs, data)
+    correlation_matrix(df_mapping, df_cross_time, df_cross_wt_traffic_light, df_hesitation,
+                       df_speed_of_crossing, df_safety, df_crossing_dec_time)
 
     logger.info("Analysis completed.")
