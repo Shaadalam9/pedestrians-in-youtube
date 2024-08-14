@@ -1,9 +1,3 @@
-"""Summary
-
-Attributes:
-    logger (TYPE): Description
-    template (TYPE): Description
-"""
 import pandas as pd
 import os
 import plotly.express as px
@@ -558,7 +552,6 @@ def plot_vehicle_vs_cross_time(df_mapping, dfs, data, motorcycle=1, car=1, bus=1
         'Condition': conditions_,
         'Time_to_cross': time_avg
     })
-
     # Plot the scatter diagram
     plot_scatter_diag(x=time_avg, y=info, size=gdp, color=continents,
                       symbol=conditions, city=city_, plot_name=save_as,
@@ -1720,7 +1713,8 @@ def correlation_matrix(df_mapping, df_cross_time, df_cross_wt_traffic_light, df_
                        df_speed_of_crossing, df_safety, df_crossing_dec_time):
 
     # Extract relevant columns from df_mapping
-    df_city_info = df_mapping[['city', 'gdp_city_(billion_US)', 'population_city', 'traffic_mortality', 'literacy_rate']]
+    df_city_info = df_mapping[['city', 'gdp_city_(billion_US)', 'population_city',
+                               'traffic_mortality', 'literacy_rate']]
 
     # Rename columns for merging
     df_city_info.rename(columns={'city': 'City'}, inplace=True)
@@ -1781,31 +1775,41 @@ if __name__ == "__main__":
     df_mapping = pd.read_csv("mapping.csv")
     dfs = read_csv_files(common.get_configs('data'))
     pedestrian_crossing_count, data = {}, {}
-
+    person_counter, bicycle_counter, car_counter, motorcycle_counter = 0, 0, 0, 0
+    bus_counter, truck_counter, cellphone_counter, traffic_light_counter, stop_sign_counter = 0, 0, 0, 0, 0
     # Loop over rows of data
     for key, value in dfs.items():
         logger.info("Analysing data from {}.", key)
         count, ids = pedestrian_crossing(dfs[key], 0.45, 0.55, 0)
         pedestrian_crossing_count[key] = {"count": count, "ids": ids}
         data[key] = time_to_cross(dfs[key], pedestrian_crossing_count[key]["ids"])
+        person_counter += count_object(dfs[key], 0)
+        bicycle_counter += count_object(dfs[key], 1)
+        car_counter += count_object(dfs[key], 2)
+        motorcycle_counter += count_object(dfs[key], 3)
+        bus_counter += count_object(dfs[key], 5)
+        truck_counter += count_object(dfs[key], 7)
+        cellphone_counter += count_object(dfs[key], 67)
+        traffic_light_counter += count_object(dfs[key], 9)
+        stop_sign_counter += count_object(dfs[key], 11)
 
-    # Data is dictionary in the form {Unique_id : Values}.
-    # Values itself is another dictionary which is {Unique Id of person : Avg time to cross the road}
-    # dfs is a dictionary in the form {Unique_id : CSV file}
-    # df_mapping is the csv file
+    print(f"Person : {person_counter} ; bicycle : {bicycle_counter} ; car : {car_counter}")
+    print(f"Motorcycle : {motorcycle_counter} ; Bus : {bus_counter} ; Truck : {truck_counter}")
+    print(f"Cell phone : {cellphone_counter}; Traffic light : {traffic_light_counter}; stop sign: {stop_sign_counter}")
+
     # plot_cell_phone_vs_traffic_mortality(df_mapping, dfs)
     df_cross_time = plot_vehicle_vs_cross_time(df_mapping, dfs, data, motorcycle=1, car=1, bus=1, truck=1)
     df_cross_wt_traffic_light = plot_traffic_mortality_vs_crossing_event_wt_traffic_light(df_mapping, dfs, data)
     df_hesitation = plot_hesitation_vs_traffic_mortality(df_mapping, dfs)
 
-    # plot_speed_of_crossing_vs_traffic_mortality(df_mapping, dfs, data)
+    plot_speed_of_crossing_vs_traffic_mortality(df_mapping, dfs, data)
     df_speed_of_crossing = plot_speed_of_crossing_vs_literacy(df_mapping, dfs, data)
 
-    # plot_traffic_safety_vs_traffic_mortality(df_mapping, dfs)
+    plot_traffic_safety_vs_traffic_mortality(df_mapping, dfs)
     df_safety = plot_traffic_safety_vs_literacy(df_mapping, dfs)
 
-    # plot_time_to_start_crossing(dfs)
-    # plot_no_of_pedestrian_stop(dfs)
+    plot_time_to_start_crossing(dfs)
+    plot_no_of_pedestrian_stop(dfs)
     df_crossing_dec_time = plot_speed_of_crossing_vs_crossing_decision_time(df_mapping, dfs, data)
 
     correlation_matrix(df_mapping, df_cross_time, df_cross_wt_traffic_light, df_hesitation,

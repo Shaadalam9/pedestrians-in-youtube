@@ -1,5 +1,6 @@
 import os
-from pytube import YouTube
+from pytubefix import YouTube
+from pytubefix.cli import on_progress
 from moviepy.video.io.VideoFileClip import VideoFileClip
 import cv2
 from ultralytics import YOLO
@@ -33,7 +34,7 @@ class youtube_helper:
     def download_video_with_resolution(self, video_id, resolutions=["720p", "480p", "360p"], output_path="."):
         try:
             youtube_url = f'https://www.youtube.com/watch?v={video_id}'
-            youtube_object = YouTube(youtube_url)
+            youtube_object = YouTube(youtube_url, on_progress_callback=on_progress)
             for resolution in resolutions:
                 video_streams = youtube_object.streams.filter(res=f"{resolution}").all()
                 if video_streams:

@@ -8,6 +8,8 @@ _output
 .vscode/
 source_videos
 __pycache__
+run_download.py
+extra.csv
 
 # macOS
 **/.DS_Store
