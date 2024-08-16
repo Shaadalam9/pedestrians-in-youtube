@@ -1,5 +1,6 @@
 import os
-from pytube import YouTube
+from pytubefix import YouTube
+from pytubefix.cli import on_progress
 from moviepy.video.io.VideoFileClip import VideoFileClip
 import cv2
 from ultralytics import YOLO
@@ -33,8 +34,7 @@ class youtube_helper:
     def download_video_with_resolution(self, video_id, resolutions=["720p", "480p", "360p"], output_path="."):
         try:
             youtube_url = f'https://www.youtube.com/watch?v={video_id}'
-            print(youtube_url)
-            youtube_object = YouTube(youtube_url)
+            youtube_object = YouTube(youtube_url, on_progress_callback=on_progress)
             for resolution in resolutions:
                 video_streams = youtube_object.streams.filter(res=f"{resolution}").all()
                 if video_streams:
@@ -107,7 +107,7 @@ class youtube_helper:
             txt_path = os.path.join(txt_location, filename)
 
         # Make sure the delimiter is correct, and adjust if necessary
-            df = pd.read_csv(txt_path, delimiter=" ", header=None, names=["YOLO_id", "X-center", "Y-center", "Width", 
+            df = pd.read_csv(txt_path, delimiter=" ", header=None, names=["YOLO_id", "X-center", "Y-center", "Width",
                                                                           "Height", "Unique Id"])
             df_list.append(df)
 
@@ -149,9 +149,8 @@ class youtube_helper:
 
         if params.display_frame_tracking:
             display_video_output_path = "runs/detect/display_video.mp4"
-            display_video_writer = cv2.VideoWriter(display_video_output_path, 
-                                                   fourcc, 30.0, (int(cap.get(3)), 
-                                                                  int(cap.get(4))))
+            display_video_writer = cv2.VideoWriter(display_video_output_path, fourcc, 30.0, (int(cap.get(3)),
+                                                                                             int(cap.get(4))))
 
         # Loop through the video frames
         frame_count = 0  # Variable to track the frame number

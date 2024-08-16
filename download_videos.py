@@ -57,5 +57,5 @@ if __name__ == "__main__":
     # Go over videos
     for index, row in df_mapping.iterrows():
         logger.info("Analysing videos for town={}, time_of_day={}.", row['city'], row['time_of_day'])
-        num_videos += download_video_with_resolution(row['videos'], source_videos=source_videos)
+        download_video_with_resolution(row['videos'], output_path=source_videos)
     logger.info("Processed {} videos.", num_videos)
