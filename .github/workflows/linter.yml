@@ -53,6 +53,6 @@ jobs:
           VALIDATE_ALL_CODEBASE: false
           DEFAULT_BRANCH: main
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          FILTER_REGEX_INCLUDE: .*trust/.*
+          FILTER_REGEX_INCLUDE: .*
           VALIDATE_PYTHON_BLACK: false
           VALIDATE_PYTHON_ISORT: false
