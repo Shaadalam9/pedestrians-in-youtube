@@ -26,3 +26,5 @@ extra.csv
 # Instance specific files
 config
 secret
+
+.vscode
