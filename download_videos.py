@@ -1,6 +1,7 @@
-# by Shadab Alam and Pavlo Bazilinskyy <pavlo.bazilinskyy@gmail.com>
+# by Shadab Alam
 import os
-from pytube import YouTube
+from pytubefix import YouTube
+from pytubefix.cli import on_progress
 import pandas as pd
 import common
 from custom_logger import CustomLogger
@@ -22,7 +23,7 @@ def download_video_with_resolution(video_ids, resolutions=["2160p", "1440p", "10
                 logger.debug(f"MP4 file for video with {vid} already exists in the folder.")
                 continue
             youtube_url = f'https://www.youtube.com/watch?v={vid}'
-            youtube_object = YouTube(youtube_url)
+            youtube_object = YouTube(youtube_url, on_progress_callback=on_progress)
             for resolution in resolutions:
                 video_streams = youtube_object.streams.filter(res=f"{resolution}")
                 if video_streams:

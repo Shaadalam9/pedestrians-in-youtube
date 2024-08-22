@@ -517,10 +517,6 @@ def plot_vehicle_vs_cross_time(df_mapping, dfs, data, motorcycle=1, car=1, bus=1
             info[f"{city}_{condition}"] = (previous_value + new_value) / 2
             continue
         else:
-            # no_person[f"{city}_{condition}"] = num_person
-            # total_time[f"{city}_{condition}"] = duration
-            # avg_cell_phone = (((mobile_ids * 60) / time_[-1]) / num_person) * 1000
-            # info[f"{city}_{condition}"] = avg_cell_phone
             info[f"{city}_{condition}"] = new_value
 
         # Extract additional data for plotting
@@ -1168,12 +1164,13 @@ def plot_speed_of_crossing_vs_crossing_decision_time(df_mapping, dfs, data, pers
 
         no_people[f'{city}_{condition}'] = len(data)
 
-        if f'{city}_{condition}' in time_dict:
-            old_count = time_dict[f'{city}_{condition}']
-            new_count = old_count * no_people[f'{city}_{condition}'] + (sum(data.values()) / 30)
-            time_dict[f'{city}_{condition}'] = new_count / (no_people[f'{city}_{condition}'] + len(data))
-        else:
-            time_dict[f'{city}_{condition}'] = ((sum(data.values()) / 30) / len(data))
+        if f'{city}_{condition}' in avg_speed:
+            if f'{city}_{condition}' in time_dict:
+                old_count = time_dict[f'{city}_{condition}']
+                new_count = old_count * no_people[f'{city}_{condition}'] + (sum(data.values()) / 30)
+                time_dict[f'{city}_{condition}'] = new_count / (no_people[f'{city}_{condition}'] + len(data))
+            else:
+                time_dict[f'{city}_{condition}'] = ((sum(data.values()) / 30) / len(data))
 
     # Extract city, condition, and count_ from the info dictionary
     cities, conditions_, counts = [], [], []
