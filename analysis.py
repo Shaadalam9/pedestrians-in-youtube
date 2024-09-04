@@ -366,6 +366,94 @@ def find_values(df, key):
                     counter += 1
 
 
+def calculate_total_seconds(df):
+    """Calculates the total seconds based on start_time and end_time columns in the DataFrame."""
+    grand_total_seconds = 0
+
+    # Iterate through each row in the DataFrame
+    for index, row in df.iterrows():
+        # Extracting data from the DataFrame row
+        start_times = ast.literal_eval(row["start_time"])
+        end_times = ast.literal_eval(row["end_time"])
+
+        # Iterate through each start time and end time
+        for start, end in zip(start_times, end_times):
+            for s, e in zip(start, end):
+                grand_total_seconds += (int(e) - int(s))
+
+    return grand_total_seconds
+
+
+def calculate_total_videos(df):
+    """Calculates the total number of videos in the DataFrame."""
+    total_videos = set()
+    # Iterate through each row in the DataFrame
+    for index, row in df.iterrows():
+        videos = row["videos"]
+
+        videos_list = videos.split(",")  # Split by comma to convert string to list
+
+        for video in videos_list:
+            total_videos.add(video.strip())  # Add the video to the set (removing any extra whitespace)
+
+    return len(total_videos)
+
+
+def get_unique_countries(df):
+    """Calculates the number of unique countries from a DataFrame.
+
+    Args:
+        df (DataFrame): A DataFrame containing the CSV data.
+
+    Returns:
+        tuple: A set of unique countries and the total count of unique countries.
+    """
+    # Extract unique countries from the 'country' column
+    unique_countries = set(df['country'].unique())
+
+    return unique_countries, len(unique_countries)
+
+
+def get_world_plot(countries):
+    countries.add('Greenland')
+
+    # Convert the set to a list before creating the DataFrame
+    countries_list = list(countries)
+
+    # Create a DataFrame for highlighted countries with a value (same for all to have the same color)
+    df = pd.DataFrame({'country': countries_list, 'value': 1})
+
+    # Create a choropleth map using Plotly
+    fig = px.choropleth(df,
+                        locations="country",
+                        locationmode="country names",
+                        color="value",
+                        hover_name="country",
+                        hover_data={'value': False, 'country': False},
+                        color_continuous_scale=["#FF0000", "#FF0000"],
+                        labels={'value': 'Highlighted'})
+
+    # Update layout to remove Antarctica, Easter Island, remove the color bar, and set ocean color
+    fig.update_layout(
+        coloraxis_showscale=False,  # Remove color bar
+        geo=dict(
+            showframe=False,
+            showcoastlines=True,
+            projection_type='equirectangular',
+            showlakes=False,
+            lakecolor='rgb(173, 216, 230)',  # Light blue for lakes
+            projection_scale=1,
+            center=dict(lat=20, lon=0),  # Center map to remove Antarctica
+            bgcolor='rgb(173, 216, 230)',  # Light blue for ocean
+            resolution=50
+        )
+    )
+
+    # Show the figure
+    save_plotly_figure(fig, "world_map")
+    fig.show()
+
+
 def plot_cell_phone_vs_traffic_mortality(df_mapping, dfs):
     """Plots the relationship between average cell phone usage per person detected vs. traffic mortality.
 
@@ -1768,15 +1856,23 @@ def correlation_matrix(df_mapping, df_cross_time, df_cross_wt_traffic_light, df_
 
 # Execute analysis
 if __name__ == "__main__":
-    logger.info("Analysis started.")
+    # logger.info("Analysis started.")
     df_mapping = pd.read_csv("mapping.csv")
     dfs = read_csv_files(common.get_configs('data'))
     pedestrian_crossing_count, data = {}, {}
     person_counter, bicycle_counter, car_counter, motorcycle_counter = 0, 0, 0, 0
     bus_counter, truck_counter, cellphone_counter, traffic_light_counter, stop_sign_counter = 0, 0, 0, 0, 0
+
+    print("Duration of videos in seconds: ", calculate_total_seconds(df_mapping))
+    print("Total number of videos: ", calculate_total_videos(df_mapping))
+    country, number = get_unique_countries(df_mapping)
+    print("Total number of countries: ", number)
+    get_world_plot(country)
+
     # Loop over rows of data
     for key, value in dfs.items():
         logger.info("Analysing data from {}.", key)
+
         count, ids = pedestrian_crossing(dfs[key], 0.45, 0.55, 0)
         pedestrian_crossing_count[key] = {"count": count, "ids": ids}
         data[key] = time_to_cross(dfs[key], pedestrian_crossing_count[key]["ids"])
@@ -1793,6 +1889,7 @@ if __name__ == "__main__":
     print(f"Person : {person_counter} ; bicycle : {bicycle_counter} ; car : {car_counter}")
     print(f"Motorcycle : {motorcycle_counter} ; Bus : {bus_counter} ; Truck : {truck_counter}")
     print(f"Cell phone : {cellphone_counter}; Traffic light : {traffic_light_counter}; stop sign: {stop_sign_counter}")
+    # Print no of hours of phottage, number of videos
 
     # plot_cell_phone_vs_traffic_mortality(df_mapping, dfs)
     df_cross_time = plot_vehicle_vs_cross_time(df_mapping, dfs, data, motorcycle=1, car=1, bus=1, truck=1)
