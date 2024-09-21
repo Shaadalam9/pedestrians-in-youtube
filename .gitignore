@@ -4,13 +4,11 @@ data
 data_all
 source_videos
 yolov8x.pt
-check.py
 _output
 .vscode/
 source_videos
 __pycache__
 run_download.py
-extra.csv
 
 # macOS
 **/.DS_Store
@@ -27,5 +25,4 @@ extra.csv
 # Instance specific files
 config
 secret
-
-.vscode
+city_coordinates.pkl
