@@ -1798,9 +1798,9 @@ if __name__ == "__main__":
         traffic_light_counter += Analysis.count_object(dfs[key], 9)
         stop_sign_counter += Analysis.count_object(dfs[key], 11)
 
-    logger.info(f"Person : {person_counter} ; bicycle : {bicycle_counter} ; car : {car_counter}")
-    logger.info(f"Motorcycle : {motorcycle_counter} ; Bus : {bus_counter} ; Truck : {truck_counter}")
-    logger.info(f"Cell phone : {cellphone_counter}; Traffic light : {traffic_light_counter}; sign: {stop_sign_counter}")
+    logger.info(f"person: {person_counter} ; bicycle: {bicycle_counter} ; car: {car_counter}")
+    logger.info(f"motorcycle: {motorcycle_counter} ; bus: {bus_counter} ; truck: {truck_counter}")
+    logger.info(f"cellphone: {cellphone_counter}; traffic light: {traffic_light_counter}; sign: {stop_sign_counter}")
 
     Analysis.speed_and_time_to_start_cross(df_mapping, dfs, data)
     Analysis.time_to_start_crossing_vs_literacy(df_mapping, dfs, data)
