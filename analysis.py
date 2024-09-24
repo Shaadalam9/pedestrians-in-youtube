@@ -1765,10 +1765,10 @@ if __name__ == "__main__":
     person_counter, bicycle_counter, car_counter, motorcycle_counter = 0, 0, 0, 0
     bus_counter, truck_counter, cellphone_counter, traffic_light_counter, stop_sign_counter = 0, 0, 0, 0, 0
 
-    print("Duration of videos in seconds: ", Analysis.calculate_total_seconds(df_mapping))
-    print("Total number of videos: ", Analysis.calculate_total_videos(df_mapping))
+    logger.info("Duration of videos in seconds: ", Analysis.calculate_total_seconds(df_mapping))
+    logger.info("Total number of videos: ", Analysis.calculate_total_videos(df_mapping))
     country, number = Analysis.get_unique_values(df_mapping, "country")
-    print("Total number of countries: ", number)
+    logger.info("Total number of countries: ", number)
     Analysis.get_world_plot(df_mapping)
 
     # # Loop over rows of data
