@@ -1768,10 +1768,10 @@ if __name__ == "__main__":
     person_counter, bicycle_counter, car_counter, motorcycle_counter = 0, 0, 0, 0
     bus_counter, truck_counter, cellphone_counter, traffic_light_counter, stop_sign_counter = 0, 0, 0, 0, 0
 
-    logger.info("Duration of videos in seconds: ", Analysis.calculate_total_seconds(df_mapping))
-    logger.info("Total number of videos: ", Analysis.calculate_total_videos(df_mapping))
+    logger.info("Duration of videos in seconds: {}", Analysis.calculate_total_seconds(df_mapping))
+    logger.info("Total number of videos: {}", Analysis.calculate_total_videos(df_mapping))
     country, number = Analysis.get_unique_values(df_mapping, "country")
-    logger.info("Total number of countries: ", number)
+    logger.info("Total number of countries: {}", number)
     Analysis.get_world_plot(df_mapping)
 
     # # Loop over rows of data
@@ -1798,9 +1798,9 @@ if __name__ == "__main__":
         traffic_light_counter += Analysis.count_object(dfs[key], 9)
         stop_sign_counter += Analysis.count_object(dfs[key], 11)
 
-    print(f"Person : {person_counter} ; bicycle : {bicycle_counter} ; car : {car_counter}")
-    print(f"Motorcycle : {motorcycle_counter} ; Bus : {bus_counter} ; Truck : {truck_counter}")
-    print(f"Cell phone : {cellphone_counter}; Traffic light : {traffic_light_counter}; sign: {stop_sign_counter}")
+    logger.info(f"Person : {person_counter} ; bicycle : {bicycle_counter} ; car : {car_counter}")
+    logger.info(f"Motorcycle : {motorcycle_counter} ; Bus : {bus_counter} ; Truck : {truck_counter}")
+    logger.info(f"Cell phone : {cellphone_counter}; Traffic light : {traffic_light_counter}; sign: {stop_sign_counter}")
 
     Analysis.speed_and_time_to_start_cross(df_mapping, dfs, data)
     Analysis.time_to_start_crossing_vs_literacy(df_mapping, dfs, data)
