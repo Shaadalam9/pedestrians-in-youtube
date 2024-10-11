@@ -24,19 +24,22 @@ for index, row in df.iterrows():
 
     for vid, start_times_list, end_times_list, time_of_day_list in zip(video_ids, start_times, end_times, time_of_day):
         for start_time, end_time, time_of_day_value in zip(start_times_list, end_times_list, time_of_day_list):
-            print(vid, start_time, end_time, time_of_day_value)
+            logger.info(vid, start_time, end_time, time_of_day_value)
 
             # Attempt to download the video
             result = helper.download_video_with_resolution(video_id=vid, output_path=params.output_path)
+            # result = None
             if result:
                 video_file_path, video_title, resolution = result
-                print(f"Downloaded video: {video_file_path}")
+                logger.info(f"Downloaded video: {video_file_path}")
+                helper.set_video_title(video_title)
             else:
                 # If download fails, check if the video already exists in the folder
                 video_file_path = f"{params.output_path}/{vid}.mp4"
                 if os.path.exists(video_file_path):
                     video_title = vid  # Assuming the video ID is the title for simplicity
-                    print(f"Video found: {video_file_path}")
+                    logger.info(f"Video found: {video_file_path}")
+                    helper.set_video_title(video_title)
                 else:
                     logger.error(f"Video {vid} not found and download failed. Skipping this video.")
                     continue
@@ -45,17 +48,15 @@ for index, row in df.iterrows():
             output_video_path = f"{params.output_path}/{video_title}_mod.mp4"
 
             if start_time is None and end_time is None:
-                print("No trimming required")
+                logger.info("No trimming required")
             else:
-                print("Trimming in progress.......")
+                logger.info("Trimming in progress.......")
                 # Some frames are missing in the last seconds
                 end_time = end_time - 1
                 helper.trim_video(input_video_path, output_video_path, start_time, end_time)
                 os.remove(input_video_path)
-                print("Deleted the untrimmed video")
+                logger.info("Deleted the untrimmed video")
                 os.rename(output_video_path, input_video_path)
-
-            print(f"{video_title}_{resolution}")
 
             if params.prediction_mode:
                 helper.prediction_mode()
@@ -67,15 +68,17 @@ for index, row in df.iterrows():
 
                 data_folder = "data"
                 os.makedirs(data_folder, exist_ok=True)
-                helper.merge_txt_files(params.txt_output_path, f"data/{video_title}_{start_time}.csv")
+                os.rename(f"runs/detect/{vid}.csv", f"runs/detect/{vid}_{start_time}.csv")
+                shutil.move(f"runs/detect/{vid}_{start_time}.csv", data_folder)
 
                 shutil.rmtree("runs/detect/predict")
-                if params.delete_frames:
-                    shutil.rmtree("runs/detect/frames")
 
-                helper.rename_folder(
-                    "runs/detect", f"runs/{video_title}_{resolution}_{datetime.now()}"
-                )
+                if params.delete_runs_files:
+                    shutil.rmtree("runs/detect")
+                else:
+                    helper.rename_folder(
+                        "runs/detect", f"runs/{video_title}_{resolution}_{datetime.now()}"
+                    )
                 counter += 1
 
             if params.delete_youtube_video:

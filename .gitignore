@@ -25,4 +25,7 @@ run_download.py
 # Instance specific files
 config
 secret
+
+# Pickle files
 city_coordinates.pkl
+analysis_results.pkl

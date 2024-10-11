@@ -17,19 +17,22 @@ logger = CustomLogger(__name__)  # use custom logger
 
 class youtube_helper:
 
-    def __init__(self):
+    def __init__(self, video_title=None):
         self.model = params.model
         self.resolution = None
-        self.video_title = None
+        self.video_title = video_title
+
+    def set_video_title(self, title):
+        self.video_title = title
 
     @staticmethod
     def rename_folder(old_name, new_name):
         try:
             os.rename(old_name, new_name)
         except FileNotFoundError:
-            print(f"Error: Folder '{old_name}' not found.")
+            logger.error(f"Error: Folder '{old_name}' not found.")
         except FileExistsError:
-            print(f"Error: Folder '{new_name}' already exists.")
+            logger.error(f"Error: Folder '{new_name}' already exists.")
 
     def download_video_with_resolution(self, video_id, resolutions=["720p", "480p", "360p"], output_path="."):
         try:
@@ -39,26 +42,26 @@ class youtube_helper:
                 video_streams = youtube_object.streams.filter(res=f"{resolution}").all()
                 if video_streams:
                     self.resolution = resolution
-                    print(f"Got the video in {resolution}")
+                    logger.info(f"Got the video in {resolution}")
                     break
 
             if not video_streams:
-                print(f"No {resolution} resolution available for '{youtube_object.title}'.")
+                logger.error(f"No {resolution} resolution available for '{youtube_object.title}'.")
                 return None
 
             selected_stream = video_streams[0]
 
             video_file_path = f"{output_path}/{video_id}.mp4"
-            print("Youtube video download in progress...")
+            logger.info("Youtube video download in progress...")
             # Comment the below line to automatically download with video in "video" folder
             selected_stream.download(output_path, filename=f"{video_id}.mp4")
 
-            print(f"Download of '{youtube_object.title}' in {resolution} completed successfully.")
+            logger.info(f"Download of '{youtube_object.title}' in {resolution} completed successfully.")
             self.video_title = youtube_object.title
             return video_file_path, video_id, resolution
 
         except Exception as e:
-            print(f"An error occurred: {e}")
+            logger.error(f"An error occurred: {e}")
             return None
 
     @staticmethod
@@ -72,7 +75,7 @@ class youtube_helper:
         images = [img for img in os.listdir(image_folder) if img.endswith(".jpg")]
 
         if not images:
-            print("No JPG images found in the specified folder.")
+            logger.error("No JPG images found in the specified folder.")
             return
 
         images.sort(key=lambda x: int(x.split("frame_")[1].split(".")[0]))
@@ -81,8 +84,8 @@ class youtube_helper:
         frame = cv2.imread(first_image_path)
         height, width, layers = frame.shape
 
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        video = cv2.VideoWriter(output_video_path, fourcc, frame_rate, (width, height))  # noqa: E501
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # type: ignore
+        video = cv2.VideoWriter(output_video_path, fourcc, frame_rate, (width, height))
 
         for image in images:
             img_path = os.path.join(image_folder, image)
@@ -91,31 +94,33 @@ class youtube_helper:
             if frame is not None:
                 video.write(frame)
             else:
-                print(f"Failed to read frame: {img_path}")
+                logger.error(f"Failed to read frame: {img_path}")
 
         video.release()
-        print(f"Video created successfully at: {output_video_path}")
+        logger.info(f"Video created successfully at: {output_video_path}")
 
     @staticmethod
-    def merge_txt_files(txt_location, output_csv):
-        txt_files = [txt for txt in os.listdir(txt_location) if txt.endswith(".txt")]
-        txt_files.sort(key=lambda x: int(x.split("label_")[1].split(".")[0]))
+    def merge_txt_to_csv_dynamically(txt_location, output_csv, frame_count):
+        # Define the path for the new text file
+        new_txt_file_name = os.path.join(txt_location, f"label_{frame_count}.txt")
 
-        df_list = []
+        # Read data from the new text file
+        with open(new_txt_file_name, 'r') as text_file:
+            data = text_file.read()
 
-        for filename in txt_files:
-            txt_path = os.path.join(txt_location, filename)
+        # Save the data into the new text file
+        with open(new_txt_file_name, 'w') as new_file:
+            new_file.write(data)
 
-        # Make sure the delimiter is correct, and adjust if necessary
-            df = pd.read_csv(txt_path, delimiter=" ", header=None, names=["YOLO_id", "X-center", "Y-center", "Width",
-                                                                          "Height", "Unique Id"])
-            df_list.append(df)
+        # Read the newly created text file into a DataFrame
+        df = pd.read_csv(new_txt_file_name, delimiter=" ", header=None,
+                         names=["YOLO_id", "X-center", "Y-center", "Width", "Height", "Unique Id"])
 
-        merged_df = pd.concat(df_list, axis=0)
-
-    # Save the merged DataFrame to a CSV file with specific header
-        merged_df.to_csv(output_csv, index=False, header=["YOLO_id", "X-center", "Y-center", "Width", "Height",
-                                                          "Unique Id"])
+        # Append the DataFrame to the CSV file
+        if not os.path.exists(output_csv):
+            df.to_csv(output_csv, index=False, mode='w')  # If the CSV does not exist, create it
+        else:
+            df.to_csv(output_csv, index=False, mode='a', header=False)  # If it exists, append without header
 
     def prediction_mode(self):
         model = YOLO(self.model)
@@ -144,13 +149,14 @@ class youtube_helper:
         os.makedirs(annotated_frame_output_path, exist_ok=True)
 
     # Initialize a VideoWriter for the final video
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        final_video_writer = cv2.VideoWriter(final_video_output_path, fourcc, 30.0, (int(cap.get(3)), int(cap.get(4))))
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # type: ignore
+        final_video_writer = cv2.VideoWriter(final_video_output_path,
+                                             fourcc, 30.0, (int(cap.get(3)), int(cap.get(4))))
 
         if params.display_frame_tracking:
             display_video_output_path = "runs/detect/display_video.mp4"
-            display_video_writer = cv2.VideoWriter(display_video_output_path, fourcc, 30.0, (int(cap.get(3)),
-                                                                                             int(cap.get(4))))
+            display_video_writer = cv2.VideoWriter(display_video_output_path,
+                                                   fourcc, 30.0, (int(cap.get(3)), int(cap.get(4))))
 
         # Loop through the video frames
         frame_count = 0  # Variable to track the frame number
@@ -162,12 +168,9 @@ class youtube_helper:
 
                 frame_count += 1  # Increment frame count
                 # Run YOLOv8 tracking on the frame, persisting tracks between frames
-                results = model.track(frame,
-                                      tracker='bytetrack.yaml',
-                                      persist=True,
-                                      conf=params.confidence,
-                                      save=True,
-                                      save_txt=True,
+                results = model.track(frame, tracker='bytetrack.yaml',
+                                      persist=True, conf=params.confidence,
+                                      save=True, save_txt=True,
                                       line_width=params.line_thickness,
                                       show_labels=params.show_labels,
                                       show_conf=params.show_labels,
@@ -199,13 +202,17 @@ class youtube_helper:
                 new_txt_file_name = f"runs/detect/labels/label_{frame_count}.txt"
                 with open(new_txt_file_name, 'w') as new_file:
                     new_file.write(data)
-                    print("done")
+                youtube_helper.merge_txt_to_csv_dynamically("runs/detect/labels",
+                                                            f"runs/detect/{self.video_title}.csv", frame_count)
                 os.remove(text_filename)
+                if params.delete_labels is True:
+                    os.remove(f"runs/detect/labels/label_{frame_count}.txt")
 
                 # save the labelled image
-                image_filename = "runs/detect/predict/image0.jpg"
-                new_img_file_name = f"runs/detect/frames/frame_{frame_count}.jpg"
-                shutil.move(image_filename, new_img_file_name)
+                if params.delete_frames is False:
+                    image_filename = "runs/detect/predict/image0.jpg"
+                    new_img_file_name = f"runs/detect/frames/frame_{frame_count}.jpg"
+                    shutil.move(image_filename, new_img_file_name)
 
                 # Plot the tracks
                 try:

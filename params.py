@@ -2,12 +2,14 @@ input_csv_file = "mapping.csv"
 output_path = "video"
 
 prediction_mode = False
-tracking_mode = False
+tracking_mode = True
 display_frame_tracking = False
 save_annoted_img = False
+delete_labels = True
 delete_frames = True
-delete_youtube_video = False
+delete_youtube_video = True
 need_annotated_video = False
+delete_runs_files = True
 
 model = "yolov8x.pt"
 confidence = 0.7

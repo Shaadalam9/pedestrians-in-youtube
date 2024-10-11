@@ -20,7 +20,8 @@ logger = CustomLogger(__name__)  # use custom logger
 template = common.get_configs('plotly_template')
 
 # File to store the city coordinates
-PICKLE_FILE = 'city_coordinates.pkl'
+pickle_file_coordinates = 'city_coordinates.pkl'
+pickle_file_path = 'analysis_results.pkl'
 
 
 class Analysis():
@@ -309,6 +310,7 @@ class Analysis():
         # Iterate through each row in the DataFrame
         for index, row in df.iterrows():
             # Extracting data from the DataFrame row
+
             start_times = ast.literal_eval(row["start_time"])
             end_times = ast.literal_eval(row["end_time"])
 
@@ -396,11 +398,11 @@ class Analysis():
                     city_coordinates[city_country] = (location.latitude, location.longitude)  # type: ignore
                     return location.latitude, location.longitude  # type: ignore
                 else:
-                    print(f"Failed to geocode {city_country}")  # Debugging print
+                    logger.error(f"Failed to geocode {city_country}")
                     return None, None  # Return None if city is not found
 
             except GeocoderTimedOut:
-                print(f"Geocoding timed out for {city_country}. Retrying...")
+                logger.error(f"Geocoding timed out for {city_country}. Retrying...")
 
     @staticmethod
     def get_world_plot(df_mapping):
@@ -439,8 +441,8 @@ class Analysis():
         )
 
         # Load city coordinates from the pickle file if it exists
-        if os.path.exists(PICKLE_FILE):
-            with open(PICKLE_FILE, 'rb') as f:
+        if os.path.exists(pickle_file_coordinates):
+            with open(pickle_file_coordinates, 'rb') as f:
                 city_coordinates = pickle.load(f)
         else:
             city_coordinates = {}
@@ -454,14 +456,12 @@ class Analysis():
                 city_coords.append({'city': city, 'lat': lat, 'lon': lon})
 
         # Save the updated city coordinates back to the pickle file
-        with open(PICKLE_FILE, 'wb') as f:
+        with open(pickle_file_coordinates, 'wb') as f:
             pickle.dump(city_coordinates, f)
 
         if city_coords:
             city_df = pd.DataFrame(city_coords)
-            city_trace = px.scatter_geo(city_df,
-                                        lat='lat',
-                                        lon='lon',
+            city_trace = px.scatter_geo(city_df, lat='lat', lon='lon',
                                         hover_name='city',  # Display city name on hover
                                         hover_data={'lat': False, 'lon': False}  # Only show city name
                                         )
@@ -628,7 +628,7 @@ class Analysis():
 
             else:
                 # Handle the case where no data was found for the given key
-                print(f"No matching data found for key: {key}")
+                logger.error(f"No matching data found for key: {key}")
 
         return info
 
@@ -1012,15 +1012,15 @@ class Analysis():
             top_5_max_speed = sorted_diff_speed_values[:5]  # Top 5 maximum differences
             top_5_min_speed = sorted_diff_speed_values[-5:]  # Top 5 minimum differences (including possible zeroes)
 
-            print("\nTop 5 cities with max |speed_0 - speed_1| differences:")
+            logger.info("\nTop 5 cities with max |speed_0 - speed_1| differences:")
             for city, diff in top_5_max_speed:
-                print(f"{city}: {diff}")
+                logger.info(f"{city}: {diff}")
 
-            print("\nTop 5 cities with min |speed_0 - speed_1| differences:")
+            logger.info("\nTop 5 cities with min |speed_0 - speed_1| differences:")
             for city, diff in top_5_min_speed:
-                print(f"{city}: {diff}")
+                logger.info(f"{city}: {diff}")
         else:
-            print("\nNo valid speed_0 and speed_1 values found for comparison.")
+            logger.info("\nNo valid speed_0 and speed_1 values found for comparison.")
 
         # Extract all valid time_0 and time_1 values along with their corresponding cities
         diff_time_values = [(city, abs(data['time_0'] - data['time_1']))
@@ -1033,15 +1033,15 @@ class Analysis():
             top_5_max = sorted_diff_time_values[:5]  # Top 5 maximum differences
             top_5_min = sorted_diff_time_values[-5:]  # Top 5 minimum differences (including possible zeroes)
 
-            print("\nTop 5 cities with max |time_0 - time_1| differences:")
+            logger.info("\nTop 5 cities with max |time_0 - time_1| differences:")
             for city, diff in top_5_max:
-                print(f"{city}: {diff}")
+                logger.info(f"{city}: {diff}")
 
-            print("\nTop 5 cities with min |time_0 - time_1| differences:")
+            logger.info("\nTop 5 cities with min |time_0 - time_1| differences:")
             for city, diff in top_5_min:
-                print(f"{city}: {diff}")
+                logger.info(f"{city}: {diff}")
         else:
-            print("\nNo valid time_0 and time_1 values found for comparison.")
+            logger.info("\nNo valid time_0 and time_1 values found for comparison.")
 
         # Filtering out entries where speed_0 or speed_1 is None
         filtered_dict_s_0 = {city: info for city, info in final_dict.items() if info["speed_0"] is not None}
@@ -1056,8 +1056,8 @@ class Analysis():
             max_speed_value_0 = filtered_dict_s_0[max_speed_city_0]["speed_0"]
             min_speed_value_0 = filtered_dict_s_0[min_speed_city_0]["speed_0"]
 
-            print(f"\nCity with max speed_0: {max_speed_city_0} with speed_0 = {max_speed_value_0}")
-            print(f"\nCity with min speed_0: {min_speed_city_0} with speed_0 = {min_speed_value_0}")
+            logger.info(f"\nCity with max speed_0: {max_speed_city_0} with speed_0 = {max_speed_value_0}")
+            logger.info(f"\nCity with min speed_0: {min_speed_city_0} with speed_0 = {min_speed_value_0}")
 
         if filtered_dict_s_1:
             max_speed_city_1 = max(filtered_dict_s_1, key=lambda city: filtered_dict_s_1[city]["speed_1"])
@@ -1065,8 +1065,8 @@ class Analysis():
             max_speed_value_1 = filtered_dict_s_1[max_speed_city_1]["speed_1"]
             min_speed_value_1 = filtered_dict_s_1[min_speed_city_1]["speed_1"]
 
-            print(f"\nCity with max speed at night: {max_speed_city_1} with speed = {max_speed_value_1}")
-            print(f"City with min speed at night: {min_speed_city_1} with speed = {min_speed_value_1}")
+            logger.info(f"\nCity with max speed at night: {max_speed_city_1} with speed = {max_speed_value_1}")
+            logger.info(f"City with min speed at night: {min_speed_city_1} with speed = {min_speed_value_1}")
 
         # Find city with max and min time_0 and time_1
         if filtered_dict_t_0:
@@ -1075,8 +1075,8 @@ class Analysis():
             max_time_value_0 = filtered_dict_t_0[max_time_city_0]["time_0"]
             min_time_value_0 = filtered_dict_t_0[min_time_city_0]["time_0"]
 
-            print(f"\nCity with max time_0: {max_time_city_0} with time_0 = {max_time_value_0}")
-            print(f"City with min time_0: {min_time_city_0} with time_0 = {min_time_value_0}")
+            logger.info(f"\nCity with max time_0: {max_time_city_0} with time_0 = {max_time_value_0}")
+            logger.info(f"City with min time_0: {min_time_city_0} with time_0 = {min_time_value_0}")
 
         if filtered_dict_t_1:
             max_time_city_1 = max(filtered_dict_t_1, key=lambda city: filtered_dict_t_1[city]["time_1"])
@@ -1084,8 +1084,8 @@ class Analysis():
             max_time_value_1 = filtered_dict_t_1[max_time_city_1]["time_1"]
             min_time_value_1 = filtered_dict_t_1[min_time_city_1]["time_1"]
 
-            print(f"\nCity with max time_1: {max_time_city_1} with time_1 = {max_time_value_1}")
-            print(f"City with min time_1: {min_time_city_1} with time_1 = {min_time_value_1}")
+            logger.info(f"\nCity with max time_1: {max_time_city_1} with time_1 = {max_time_value_1}")
+            logger.info(f"City with min time_1: {min_time_city_1} with time_1 = {min_time_value_1}")
 
         # Extract valid speed and time values and calculate statistics
         speed_0_values = [data['speed_0'] for data in final_dict.values() if data['speed_0'] is not None]
@@ -1096,34 +1096,34 @@ class Analysis():
         if speed_0_values:
             mean_speed_0 = statistics.mean(speed_0_values)
             sd_speed_0 = statistics.stdev(speed_0_values) if len(speed_0_values) > 1 else 0
-            print(f"\nMean of speed during day time: {mean_speed_0}")
-            print(f"Standard deviation of speed during day time: {sd_speed_0}")
+            logger.info(f"\nMean of speed during day time: {mean_speed_0}")
+            logger.info(f"Standard deviation of speed during day time: {sd_speed_0}")
         else:
-            print("No valid speed during day time values found.")
+            logger.error("No valid speed during day time values found.")
 
         if speed_1_values:
             mean_speed_1 = statistics.mean(speed_1_values)
             sd_speed_1 = statistics.stdev(speed_1_values) if len(speed_1_values) > 1 else 0
-            print(f"\nMean of speed during night time: {mean_speed_1}")
-            print(f"Standard deviation of speed during night time: {sd_speed_1}")
+            logger.info(f"\nMean of speed during night time: {mean_speed_1}")
+            logger.info(f"Standard deviation of speed during night time: {sd_speed_1}")
         else:
-            print("No valid speed during night time values found.")
+            logger.error("No valid speed during night time values found.")
 
         if time_0_values:
             mean_time_0 = statistics.mean(time_0_values)
             sd_time_0 = statistics.stdev(time_0_values) if len(time_0_values) > 1 else 0
-            print(f"\nMean of time during day time: {mean_time_0}")
-            print(f"Standard deviation of time during day time: {sd_time_0}")
+            logger.info(f"\nMean of time during day time: {mean_time_0}")
+            logger.info(f"Standard deviation of time during day time: {sd_time_0}")
         else:
-            print("No valid time during day time values found.")
+            logger.error("No valid time during day time values found.")
 
         if time_1_values:
             mean_time_1 = statistics.mean(time_1_values)
             sd_time_1 = statistics.stdev(time_1_values) if len(time_1_values) > 1 else 0
-            print(f"\nMean of time during night time: {mean_time_1}")
-            print(f"Standard deviation of time during night time: {sd_time_1}")
+            logger.info(f"\nMean of time during night time: {mean_time_1}")
+            logger.info(f"Standard deviation of time during night time: {sd_time_1}")
         else:
-            print("No valid time during night time values found.")
+            logger.error("No valid time during night time values found.")
 
         # Extract city, condition, and count_ from the info dictionary
         cities, conditions_, counts = [], [], []
@@ -1134,7 +1134,6 @@ class Analysis():
             counts.append(value)
 
         # Combine keys from speed and time to ensure we include all available cities and conditions
-        # print(speed, time)
         all_keys = set(speed_values.keys()).union(set(time_values.keys()))
 
         # Extract unique cities
@@ -1774,29 +1773,44 @@ if __name__ == "__main__":
     logger.info("Total number of countries: {}", number)
     Analysis.get_world_plot(df_mapping)
 
-    # # Loop over rows of data
-    for key, value in dfs.items():
-        logger.info("Analysing data from {}.", key)
+    if os.path.exists(pickle_file_path):
+        # Load the data from the pickle file
+        with open(pickle_file_path, 'rb') as file:
+            (data, pedestrian_crossing_count, person_counter, bicycle_counter, car_counter,
+             motorcycle_counter, bus_counter, truck_counter, cellphone_counter,
+             traffic_light_counter, stop_sign_counter) = pickle.load(file)
+        logger.info("Loaded analysis results from pickle file.")
+    else:
+        # Loop over rows of data
+        for key, value in dfs.items():
+            logger.info("Analysing data from {}.", key)
 
-        # Get the number of number and unique id of the object crossing the road
-        count, ids = Analysis.pedestrian_crossing(dfs[key], 0.45, 0.55, 0)
+            # Get the number of number and unique id of the object crossing the road
+            count, ids = Analysis.pedestrian_crossing(dfs[key], 0.45, 0.55, 0)
 
-        # Saving it in a dictionary in: {name_time: count, ids}
-        pedestrian_crossing_count[key] = {"count": count, "ids": ids}
+            # Saving it in a dictionary in: {name_time: count, ids}
+            pedestrian_crossing_count[key] = {"count": count, "ids": ids}
 
-    #     # Saves the time to cross in form {name_time: {id(s): time(s)}}
-        data[key] = Analysis.time_to_cross(dfs[key], pedestrian_crossing_count[key]["ids"])
+            # Saves the time to cross in form {name_time: {id(s): time(s)}}
+            data[key] = Analysis.time_to_cross(dfs[key], pedestrian_crossing_count[key]["ids"])
 
-        # Calculate the total number of different objects detected
-        person_counter += Analysis.count_object(dfs[key], 0)
-        bicycle_counter += Analysis.count_object(dfs[key], 1)
-        car_counter += Analysis.count_object(dfs[key], 2)
-        motorcycle_counter += Analysis.count_object(dfs[key], 3)
-        bus_counter += Analysis.count_object(dfs[key], 5)
-        truck_counter += Analysis.count_object(dfs[key], 7)
-        cellphone_counter += Analysis.count_object(dfs[key], 67)
-        traffic_light_counter += Analysis.count_object(dfs[key], 9)
-        stop_sign_counter += Analysis.count_object(dfs[key], 11)
+            # Calculate the total number of different objects detected
+            person_counter += Analysis.count_object(dfs[key], 0)
+            bicycle_counter += Analysis.count_object(dfs[key], 1)
+            car_counter += Analysis.count_object(dfs[key], 2)
+            motorcycle_counter += Analysis.count_object(dfs[key], 3)
+            bus_counter += Analysis.count_object(dfs[key], 5)
+            truck_counter += Analysis.count_object(dfs[key], 7)
+            cellphone_counter += Analysis.count_object(dfs[key], 67)
+            traffic_light_counter += Analysis.count_object(dfs[key], 9)
+            stop_sign_counter += Analysis.count_object(dfs[key], 11)
+
+        # Save the results to a pickle file
+        with open(pickle_file_path, 'wb') as file:
+            pickle.dump((data, pedestrian_crossing_count, person_counter, bicycle_counter, car_counter,
+                         motorcycle_counter, bus_counter, truck_counter, cellphone_counter,
+                         traffic_light_counter, stop_sign_counter), file)
+        logger.info("Analysis results saved to pickle file.")
 
     logger.info(f"person: {person_counter} ; bicycle: {bicycle_counter} ; car: {car_counter}")
     logger.info(f"motorcycle: {motorcycle_counter} ; bus: {bus_counter} ; truck: {truck_counter}")
