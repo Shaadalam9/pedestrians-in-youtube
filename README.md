@@ -6,34 +6,53 @@ Welcome to the YOLOv8 YouTube Video Analysis project! This repository contains c
 This study presents a comprehensive cross-cultural evaluation of pedestrian behavior during road crossings, examining variations between developed and developing states worldwide. As urban landscapes evolve and autonomous vehicles (AVs) become integral to future transportation, understanding pedestrian behavior becomes paramount for ensuring safe interactions between humans and AVs. Through an extensive review of global pedestrian studies, we analyze key factors influencing crossing behavior, such as cultural norms, socioeconomic factors, infrastructure development, and regulatory frameworks. Our findings reveal distinct patterns in pedestrian conduct across different regions. Developed states generally exhibit more structured and rule-oriented crossing behaviors, influenced by established traffic regulations and advanced infrastructure. In contrast, developing states often witness a higher degree of informal and adaptive behavior due to limited infrastructure and diverse cultural influences. These insights underscore the necessity for AVs to adapt to diverse pedestrian behaviors on a global scale, emphasizing the importance of incorporating cultural nuances into AV programming and decision-making algorithms. As the integration of AVs into urban environments accelerates, this research contributes valuable insights for enhancing the safety and efficiency of autonomous transportation systems. By recognizing and accommodating diverse pedestrian behaviors, AVs can navigate complex and dynamic urban settings, ensuring a harmonious coexistence with human road users across the globe.
 
 ## Usage of the code
-The code is open-source and free to use. It is aimed for, but not limited to, academic research. We welcome forking of this repository, pull requests, and any contributions in the spirit of open science and open-source code 😍😄 For inquiries about collaboration, you may contact Pavlo Bazilinskyy (pavlo.bazilinskyy@gmail.com) or Md Shadab Alam (md_shadab_alam@outlook.com).
+The code is open-source and free to use. It is aimed for, but not limited to, academic research. We welcome forking of this repository, pull requests, and any contributions in the spirit of open science and open-source code 😍😄 For inquiries about collaboration, you may contact Md Shadab Alam (md_shadab_alam@outlook.com) or Pavlo Bazilinskyy (pavlo.bazilinskyy@gmail.com).
 
 ## Getting Started
-Tested with Python 3.9.1. To setup the environment run these two commands in a parent folder of the downloaded repository (replace `/` with `\` and possibly add `--user` if on Windows:
+Tested with Python 3.9.19. To setup the environment run these two commands in a parent folder of the downloaded repository (replace `/` with `\` and possibly add `--user` if on Windows:
 
-**Step 1:**  
+**Step 1:**
 
 Clone the repository
 ```command line
-git clone https://github.com/Shaadalam9/youtube-pedestrian.git
+git clone https://github.com/Shaadalam9/pedestrians-in-youtube.git
 ```
 
-**Step 2:** 
+**Step 2:**
 
-Install Dependencies
+Create a new virtual environment
 ```command line
-pip install -r requirements.txt
+python -m venv venv
 ```
 
 **Step 3:**
 
-Ensure you have the required datasets in the data/ directory, including the mapping.csv file.
+Activate the virtual environment
+```command line
+source venv/bin/activate
+```
+
+On Windows use
+```command line
+venv\Scripts\activate
+```
 
 **Step 4:**
 
+Install dependencies
+```command line
+pip install -r requirements.txt
+```
+
+**Step 5:**
+
+Ensure you have the required datasets in the data/ directory, including the mapping.csv file.
+
+**Step 6:**
+
 Run the code:
 ```command line
-python3 main.py
+python3 analysis.py
 ```
 
 ## License
@@ -44,32 +63,37 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 https://github.com/Shaadalam9/youtube-pedestrian/assets/88769183/5303f4a5-52a2-4230-bd05-89a53927a5be
 
 
-
-
 ## Results
 
-![Countries where the study has been conducted](https://github.com/Shaadalam9/youtube-pedestrian/assets/88769183/07d263a5-e9d6-45cf-896b-1aa94ecbff6e)
+Countries where the study has been conducted)
+[![Countries where the study has been conducted](figures/world_map.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/world_map.html)
 
-Number of pedestrian detected for crossing
-[![Number of pedestrian detected for crossing](figures/no_of_cases_for_cross.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/no_of_cases_for_cross.html)
+Time to start crossing(sorted by coutries)
+[![Time to start crossing(sorted by coutries](figures/time_to_start_cross.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/time_to_start_cross.html)
 
-Time to start crossing
-[![time_to_start_cross.png](figures/time_to_start_cross.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/time_to_start_cross.html)  
+Speed of crossing(sorted by coutries)
+[![Speed of crossing(sorted by coutries](figures/speed_of_crossing.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/speed_of_crossing.html)
 
-Number of traffic safety equipment detected vs. traffic mortality rate
-[![Number of traffic safety equipment detected vs. traffic mortality rate](figures/traffic_safety_vs_traffic_mortality.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/traffic_safety_vs_traffic_mortality.html)  
+Time to start crossing(sorted by average of day and night)
+[![Time to start crossing(sorted by average of day and night)](figures/time_to_start_cross_by_avg.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/time_to_start_cross_by_avg.html)
 
-Number of people hesitated vs. Traffic mortality rate
-[![Number of people hesitated vs. Traffic mortality rate](figures/hesitation_vs_traffic_mortality.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/hesitation_vs_traffic_mortality.html)  
+Speed of crossing(sorted by average of day and night)
+[![Speed of crossing(sorted by average of day and night)](figures/speed_of_crossing_by_avg.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/speed_of_crossing_by_avg.html)
 
-Speed of crossing the road vs. Literacy rate of the country
-[![Speed of crossing the road vs. Literacy rate of the country](figures/speed_of_crossing_vs_literacy.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/speed_of_crossing_vs_literacy.html)
+Merged figure of speed of crossing ad time to start crossing(sorted by coutries)
+[![Merged figure of speed of crossing ad time to start crossing(sorted by coutries)](figures/consolidate.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/consolidate.html)
 
-Number of traffic safety equipment detected vs. Literacy rate  of the country
-[![Number of traffic safety equipment detected vs. Literacy rate  of the country](figures/traffic_safety_vs_literacy.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/traffic_safety_vs_literacy.html)  
+Number of cell phone detected vs. traffic mortality rate
+[![Number of cell phone detected vs. traffic mortality rate](figures/cell_phone_vs_traffic_mortality.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/cell_phone_vs_traffic_mortality.html)
 
-Number of motor Vehicles detected vs. Average crossing time
-[![Number of Motor Vehicles detected vs. Average crossing time](figures/all_vehicle_vs_cross_time.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/all_vehicle_vs_cross_time.html)  
+Time to start crossing the road vs. literacy  rate
+[![Time to start crossing the road vs. literacy  rate](figures/time_to_start_crossing_vs_literacy.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/time_to_start_crossing_vs_literacy.html)
+
+Time to start crossing the road vs. traffic mortality rate
+[![Time to start crossing the road vs. traffic mortality rate](figures/time_to_start_crossing_vs_traffic_mortality.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/time_to_start_crossing_vs_traffic_mortality.html)
+
+Traffic mortality rate vs. crossing event without traffic light
+[![Traffic mortality rate vs. crossing event without traffic light](figures/traffic_mortality_vs_crossing_event_wt_traffic_light.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/traffic_mortality_vs_crossing_event_wt_traffic_light.html)
 
 ## Contact
 If you have any questions or suggestions, feel free to reach out to md_shadab_alam@outlook.com
