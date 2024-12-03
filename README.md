@@ -68,10 +68,10 @@ https://github.com/Shaadalam9/youtube-pedestrian/assets/88769183/5303f4a5-52a2-4
 Countries where the study has been conducted)
 [![Countries where the study has been conducted](figures/world_map.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/world_map.html)
 
-Time to start crossing(sorted by coutries)
+Time to start crossing(sorted by countries)
 [![Time to start crossing(sorted by coutries](figures/time_to_start_cross.png?raw=true)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/time_to_start_cross.html)
 
-Speed of crossing(sorted by coutries)
+Speed of crossing(sorted by countries)
 [![Speed of crossing(sorted by coutries](figures/speed_of_crossing.png?raw=true)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/speed_of_crossing.html)
 
 Time to start crossing(sorted by average of day and night)
@@ -80,10 +80,10 @@ Time to start crossing(sorted by average of day and night)
 Speed of crossing(sorted by average of day and night)
 [![Speed of crossing(sorted by average of day and night)](figures/speed_of_crossing_by_avg.png?raw=true)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/speed_of_crossing_by_avg.html)
 
-Merged figure of speed of crossing ad time to start crossing(sorted by coutries)
+Merged figure of the speed of crossing and time to start crossing(sorted by countries)
 [![Merged figure of speed of crossing ad time to start crossing(sorted by coutries)](figures/consolidate.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/consolidate.html)
 
-Number of cell phone detected vs. traffic mortality rate
+Number of cell phones detected vs. traffic mortality rate
 [![Number of cell phone detected vs. traffic mortality rate](figures/cell_phone_vs_traffic_mortality.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/cell_phone_vs_traffic_mortality.html)
 
 Time to start crossing the road vs. literacy  rate
