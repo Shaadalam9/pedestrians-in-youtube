@@ -2,6 +2,7 @@
 
 import math
 import pandas as pd
+import numpy as np
 import os
 import plotly.express as px
 import plotly.graph_objects as go
@@ -88,7 +89,7 @@ class Analysis():
         return num_groups
 
     @staticmethod
-    def save_plotly_figure(fig, filename, width=1600, height=900, scale=3):
+    def save_plotly_figure(fig, filename, scatter_plot_flag=False, width=1600, height=900, scale=3):
         """Saves a Plotly figure as HTML, PNG, SVG, and EPS formats.
 
         Args:
@@ -106,8 +107,12 @@ class Analysis():
         fig.write_html(os.path.join(output_folder, filename + ".html"))
 
         # Save as PNG
-        fig.write_image(os.path.join(output_folder, filename + ".png"),
-                        width=1600, height=900, scale=scale)
+        if scatter_plot_flag:
+            fig.write_image(os.path.join(output_folder, filename + ".png"),
+                            scale=scale)
+        else:
+            fig.write_image(os.path.join(output_folder, filename + ".png"),
+                            width=width, height=height, scale=scale)
 
         # Save as SVG
         fig.write_image(os.path.join(output_folder, filename + ".svg"),
@@ -235,7 +240,7 @@ class Analysis():
         fig.show()
 
         # Save the plot
-        Analysis.save_plotly_figure(fig, plot_name)
+        Analysis.save_plotly_figure(fig, plot_name, scatter_plot_flag=True)
 
     @staticmethod
     def find_values_with_video_id(df, key):
@@ -404,6 +409,13 @@ class Analysis():
     def get_world_plot(df_mapping):
         cities = df_mapping["city"]
         countries = df_mapping["country"]
+        gdp_city = df_mapping["gdp_city_(billion_US)"]
+        population_city = df_mapping["population_city"]
+        population_country = df_mapping["population_country"]
+        traffic_mortality_rate = df_mapping["traffic_mortality"]
+        continent = df_mapping["continent"]
+        literacy_rate = df_mapping["literacy_rate"]
+        avg_height = df_mapping["avg_height"]
 
         # Create the country list to highlight in the choropleth map
         countries_set = set(countries)  # Use set to avoid duplicates
@@ -449,7 +461,19 @@ class Analysis():
             city_country = f"{city}, {countries[i]}"  # Combine city and country
             lat, lon = Analysis.get_coordinates(city_country, city_coordinates)  # type: ignore
             if lat and lon:
-                city_coords.append({'city': city, 'lat': lat, 'lon': lon})
+                city_coords.append({
+                    'city': city,
+                    'Country': countries[i],
+                    'lat': lat,
+                    'lon': lon,
+                    'GDP (Billion USD)': gdp_city[i],
+                    'City population (thousand)': population_city[i],
+                    'Country population (thousand)': population_country[i],
+                    'Traffic mortality rate (per 100k people)': traffic_mortality_rate[i],
+                    'Continent': continent[i],
+                    'Literacy rate': literacy_rate[i],
+                    'Average height (cm)': avg_height[i]
+                })
 
         # Save the updated city coordinates back to the pickle file
         with open(pickle_file_coordinates, 'wb') as f:
@@ -457,12 +481,25 @@ class Analysis():
 
         if city_coords:
             city_df = pd.DataFrame(city_coords)
-            city_trace = px.scatter_geo(city_df, lat='lat', lon='lon',
-                                        hover_name='city',  # Display city name on hover
-                                        hover_data={'lat': False, 'lon': False}  # Only show city name
-                                        )
+            city_df["City"] = city_df["city"]  # Format city name with "City:"
+            city_trace = px.scatter_geo(
+                city_df, lat='lat', lon='lon',
+                hover_data={
+                    'City': True,
+                    'Country': True,
+                    'GDP (Billion USD)': True,
+                    'City population (thousand)': True,
+                    'Country population (thousand)': True,
+                    'Traffic mortality rate (per 100k people)': True,
+                    'Continent': True,
+                    'Literacy rate': True,
+                    'Average height (cm)': True,
+                    'lat': False,
+                    'lon': False  # Hide lat and lon
+                }
+            )
             # Update the city markers to be red and adjust size
-            city_trace.update_traces(marker=dict(color="red", size=10))
+            city_trace.update_traces(marker=dict(color="red", size=7))
 
             # Add the scatter_geo trace to the choropleth map
             fig.add_trace(city_trace.data[0])
@@ -629,17 +666,18 @@ class Analysis():
         return info
 
     @staticmethod
-    def calculate_vehicle_detected(df_mapping, dfs, data, motorcycle=1, car=1, bus=1, truck=1):
+    def calculate_traffic(df_mapping, dfs, person=0, bicycle=0, motorcycle=0, car=0, bus=0, truck=0):
         """Plots the relationship between vehicle detection and crossing time.
 
         Args:
             df_mapping (DataFrame): DataFrame containing mapping information.
             dfs (dict): Dictionary of DataFrames containing video data.
             data (dict): Dictionary containing information about which object is crossing.
-            motorcycle (int, optional): Flag to include motorcycles. Default is 1.
-            car (int, optional): Flag to include cars. Default is 1.
-            bus (int, optional): Flag to include buses. Default is 1.
-            truck (int, optional): Flag to include trucks. Default is 1.
+            bicycle (int, optional): Flag to include bicycle. Default is 0.
+            motorcycle (int, optional): Flag to include motorcycles. Default is 0.
+            car (int, optional): Flag to include cars. Default is 0.
+            bus (int, optional): Flag to include buses. Default is 0.
+            truck (int, optional): Flag to include trucks. Default is 0.
         """
 
         info = {}
@@ -681,6 +719,12 @@ class Analysis():
                 elif truck == 1:
                     vehicle_ids = dataframe[(dataframe["YOLO_id"] == 7)]
 
+                elif bicycle == 1:
+                    vehicle_ids = dataframe[(dataframe["YOLO_id"] == 1)]
+
+                elif person == 1:
+                    vehicle_ids = dataframe[(dataframe["YOLO_id"] == 0)]
+
                 else:
                     logger.info("No plot generated")
 
@@ -704,7 +748,7 @@ class Analysis():
 
     @staticmethod
     def calculate_speed_of_crossing(df_mapping, dfs, data, person_id=0):
-        avg_speed, no_people = {}, {},
+        speed_dict = {}
         time_ = []
         # Create a dictionary to store country information for each city
         city_country_map_ = {}
@@ -729,7 +773,6 @@ class Analysis():
                 time_.append(duration)
 
                 grouped = value.groupby('Unique Id')
-                speed = []
                 for id, time in df.items():
                     grouped_with_id = grouped.get_group(id)
                     mean_height = grouped_with_id['Height'].mean()
@@ -744,24 +787,24 @@ class Analysis():
                     # Taken from https://doi.org/10.1177/0361198106198200104
                     if speed_ > 1.2:  # Exclude outlier speeds
                         continue
+                    if f'{city}_{condition}' in speed_dict:
+                        speed_dict[f'{city}_{condition}'].append(speed_)
+                    else:
+                        speed_dict[f'{city}_{condition}'] = [speed_]
 
-                    speed.append(speed_)
-                if len(speed) == 0:
-                    continue
-                no_people[f'{city}_{condition}'] = len(speed)
+        return speed_dict
 
-                if f'{city}_{condition}' in avg_speed:
-                    old_count = avg_speed[f'{city}_{condition}']
-                    new_count = old_count * no_people[f'{city}_{condition}'] + sum(speed)
-                    avg_speed[f'{city}_{condition}'] = new_count / (no_people[f'{city}_{condition}'] + len(speed))
-                else:
-                    avg_speed[f'{city}_{condition}'] = sum(speed) / len(speed)
+    @staticmethod
+    def avg_speed_of_crossing(df_mapping, dfs, data):
+
+        speed_array = Analysis.calculate_speed_of_crossing(df_mapping, dfs, data)
+        avg_speed = {key: sum(values) / len(values) for key, values in speed_array.items()}
 
         return avg_speed
 
     @staticmethod
     def time_to_start_cross(df_mapping, dfs, data, person_id=0):
-        time_dict, no_people_ = {}, {}
+        time_dict = {}
         for key, df in dfs.items():
             data_cross = {}
             crossed_ids = df[(df["YOLO_id"] == person_id)]
@@ -808,19 +851,23 @@ class Analysis():
                             else:
                                 consecutive_frame = 0
 
-                if len(data_cross) == 0:  # Skip if no crossing events detected
+                if len(data_cross) == 0:
                     continue
 
                 if f'{city}_{condition}' in time_dict:
-                    old_count = time_dict[f'{city}_{condition}']
-                    new_count = old_count * no_people_[f'{city}_{condition}'] + (sum(data_cross.values()) / 30)
-                    no_people_[f'{city}_{condition}'] += len(data_cross)
-                    time_dict[f'{city}_{condition}'] = new_count / no_people_[f'{city}_{condition}']
+                    time_dict[f'{city}_{condition}'].extend([value / 3 for key, value in data_cross.items()])
                 else:
-                    time_dict[f'{city}_{condition}'] = ((sum(data_cross.values()) / 30) / len(data_cross))
-                    no_people_[f'{city}_{condition}'] = len(data_cross)
+                    time_dict[f'{city}_{condition}'] = [value / 3 for key, value in data_cross.items()]
 
         return time_dict
+
+    @staticmethod
+    def avg_time_to_start_cross(df_mapping, dfs, data):
+
+        time_array = Analysis.time_to_start_cross(df_mapping, dfs, data)
+        avg_time = {key: sum(values) / len(values) for key, values in time_array.items()}
+
+        return avg_time
 
     @staticmethod
     def traffic_signs(df_mapping, dfs):
@@ -952,6 +999,29 @@ class Analysis():
                                                         counter_2[f'{city}_{condition}']))
         return ratio
 
+    @staticmethod
+    def pedestrian_cross_per_city(pedestrian_crossing_count, df_mapping):
+        final = {}
+        count = {key: value['count'] for key, value in pedestrian_crossing_count.items()}
+
+        for key, df in count.items():
+            result = Analysis.find_values_with_video_id(df_mapping, key)
+
+            if result is not None:
+                (_, start, end, time_of_day, city, country, gdp_, population, population_country, traffic_mortality_,
+                 continent, literacy_rate, avg_height, iso_country) = result
+
+                # Create the city_time_key (city + time_of_day)
+                city_time_key = f'{city}_{time_of_day}'
+
+                # Add the count to the corresponding city_time_key in the final dict
+                if city_time_key in final:
+                    final[city_time_key] += count[key]  # Add the current count to the existing sum
+                else:
+                    final[city_time_key] = count[key]
+
+        return final
+
 # Plotting functions:
 
     @staticmethod
@@ -960,22 +1030,22 @@ class Analysis():
         with open(pickle_file_path, 'rb') as file:
             data_tuple = pickle.load(file)
 
-        speed_values = data_tuple[-1]
-        time_values = data_tuple[-2]
+        avg_speed = data_tuple[-1]
+        avg_time = data_tuple[-2]
 
         # Check if both 'speed' and 'time' are valid dictionaries
-        if speed_values is None or time_values is None:
+        if avg_speed is None or avg_time is None:
             raise ValueError("Either 'speed' or 'time' returned None, please check the input data or calculations.")
 
         # Remove the ones where there is data missing for a specific country and condition
-        common_keys = speed_values.keys() & time_values.keys()
+        common_keys = avg_speed.keys() & avg_time.keys()
 
         # Retain only the key-value pairs where the key is present in both dictionaries
-        speed_values = {key: speed_values[key] for key in common_keys}
-        time_values = {key: time_values[key] for key in common_keys}
+        avg_speed = {key: avg_speed[key] for key in common_keys}
+        avg_time = {key: avg_time[key] for key in common_keys}
 
         # Now populate the final_dict with city-wise data
-        for city_condition, speed in speed_values.items():
+        for city_condition, speed in avg_speed.items():
             city, condition = city_condition.split('_')
 
             # Get the country from the previously stored city_country_map
@@ -991,8 +1061,8 @@ class Analysis():
                     }
                 # Populate the corresponding speed and time based on the condition
                 final_dict[city][f"speed_{condition}"] = speed
-                if f'{city}_{condition}' in time_values:
-                    final_dict[city][f"time_{condition}"] = time_values[f'{city}_{condition}']
+                if f'{city}_{condition}' in avg_time:
+                    final_dict[city][f"time_{condition}"] = avg_time[f'{city}_{condition}']
 
         # Extract all valid speed_0 and speed_1 values along with their corresponding cities
         diff_speed_values = [(city, abs(data['speed_0'] - data['speed_1']))
@@ -1006,15 +1076,15 @@ class Analysis():
             top_5_max_speed = sorted_diff_speed_values[:5]  # Top 5 maximum differences
             top_5_min_speed = sorted_diff_speed_values[-5:]  # Top 5 minimum differences (including possible zeroes)
 
-            logger.info("\nTop 5 cities with max |speed_0 - speed_1| differences:")
+            logger.info("\n\nTop 5 cities with max |speed_0 - speed_1| differences:")
             for city, diff in top_5_max_speed:
                 logger.info(f"{city}: {diff}")
 
-            logger.info("\nTop 5 cities with min |speed_0 - speed_1| differences:")
+            logger.info("\n\nTop 5 cities with min |speed_0 - speed_1| differences:")
             for city, diff in top_5_min_speed:
                 logger.info(f"{city}: {diff}")
         else:
-            logger.info("\nNo valid speed_0 and speed_1 values found for comparison.")
+            logger.info("\n\nNo valid speed_0 and speed_1 values found for comparison.")
 
         # Extract all valid time_0 and time_1 values along with their corresponding cities
         diff_time_values = [(city, abs(data['time_0'] - data['time_1']))
@@ -1027,17 +1097,17 @@ class Analysis():
             top_5_max = sorted_diff_time_values[:5]  # Top 5 maximum differences
             top_5_min = sorted_diff_time_values[-5:]  # Top 5 minimum differences (including possible zeroes)
 
-            logger.info("\nTop 5 cities with max |time_0 - time_1| differences:")
+            logger.info("\n\nTop 5 cities with max |time_0 - time_1| differences:")
             for city, diff in top_5_max:
                 logger.info(f"{city}: {diff}")
 
-            logger.info("\nTop 5 cities with min |time_0 - time_1| differences:")
+            logger.info("\n\nTop 5 cities with min |time_0 - time_1| differences:")
             for city, diff in top_5_min:
                 logger.info(f"{city}: {diff}")
         else:
-            logger.info("\nNo valid time_0 and time_1 values found for comparison.")
+            logger.info("\n\nNo valid time_0 and time_1 values found for comparison.")
 
-        # Filtering out entries where speed_0 or speed_1 is None
+        # Filtering out entries where entries is None
         filtered_dict_s_0 = {city: info for city, info in final_dict.items() if info["speed_0"] is not None}
         filtered_dict_s_1 = {city: info for city, info in final_dict.items() if info["speed_1"] is not None}
         filtered_dict_t_0 = {city: info for city, info in final_dict.items() if info["time_0"] is not None}
@@ -1050,8 +1120,8 @@ class Analysis():
             max_speed_value_0 = filtered_dict_s_0[max_speed_city_0]["speed_0"]
             min_speed_value_0 = filtered_dict_s_0[min_speed_city_0]["speed_0"]
 
-            logger.info(f"\nCity with max speed_0: {max_speed_city_0} with speed_0 = {max_speed_value_0}")
-            logger.info(f"\nCity with min speed_0: {min_speed_city_0} with speed_0 = {min_speed_value_0}")
+            logger.info(f"\n\nCity with max speed at day: {max_speed_city_0} with speed is {max_speed_value_0}m/s")
+            logger.info(f"\nCity with min speed at day: {min_speed_city_0} with speed is {min_speed_value_0}m/s")
 
         if filtered_dict_s_1:
             max_speed_city_1 = max(filtered_dict_s_1, key=lambda city: filtered_dict_s_1[city]["speed_1"])
@@ -1059,8 +1129,8 @@ class Analysis():
             max_speed_value_1 = filtered_dict_s_1[max_speed_city_1]["speed_1"]
             min_speed_value_1 = filtered_dict_s_1[min_speed_city_1]["speed_1"]
 
-            logger.info(f"\nCity with max speed at night: {max_speed_city_1} with speed = {max_speed_value_1}")
-            logger.info(f"City with min speed at night: {min_speed_city_1} with speed = {min_speed_value_1}")
+            logger.info(f"\n\nCity with max speed at night: {max_speed_city_1} with speed is {max_speed_value_1}m/s")
+            logger.info(f"\nCity with min speed at night: {min_speed_city_1} with speed is {min_speed_value_1}m/s")
 
         # Find city with max and min time_0 and time_1
         if filtered_dict_t_0:
@@ -1069,8 +1139,8 @@ class Analysis():
             max_time_value_0 = filtered_dict_t_0[max_time_city_0]["time_0"]
             min_time_value_0 = filtered_dict_t_0[min_time_city_0]["time_0"]
 
-            logger.info(f"\nCity with max time_0: {max_time_city_0} with time_0 = {max_time_value_0}")
-            logger.info(f"City with min time_0: {min_time_city_0} with time_0 = {min_time_value_0}")
+            logger.info(f"\n\nCity with max time at day: {max_time_city_0} with time is {max_time_value_0}s")
+            logger.info(f"\nCity with min time at day: {min_time_city_0} with time_0 is {min_time_value_0}s")
 
         if filtered_dict_t_1:
             max_time_city_1 = max(filtered_dict_t_1, key=lambda city: filtered_dict_t_1[city]["time_1"])
@@ -1078,57 +1148,57 @@ class Analysis():
             max_time_value_1 = filtered_dict_t_1[max_time_city_1]["time_1"]
             min_time_value_1 = filtered_dict_t_1[min_time_city_1]["time_1"]
 
-            logger.info(f"\nCity with max time_1: {max_time_city_1} with time_1 = {max_time_value_1}")
-            logger.info(f"City with min time_1: {min_time_city_1} with time_1 = {min_time_value_1}")
+            logger.info(f"\n\nCity with max time at night: {max_time_city_1} with time is {max_time_value_1}s")
+            logger.info(f"\nCity with min time at night: {min_time_city_1} with time_1 is {min_time_value_1}s")
 
         # Extract valid speed and time values and calculate statistics
-        speed_0_values = [data['speed_0'] for data in final_dict.values() if data['speed_0'] is not None]
-        speed_1_values = [data['speed_1'] for data in final_dict.values() if data['speed_1'] is not None]
-        time_0_values = [data['time_0'] for data in final_dict.values() if data['time_0'] is not None]
-        time_1_values = [data['time_1'] for data in final_dict.values() if data['time_1'] is not None]
+        speed_0_values = [data['speed_0'] for data in final_dict.values() if pd.notna(data['speed_0'])]
+        speed_1_values = [data['speed_1'] for data in final_dict.values() if pd.notna(data['speed_1'])]
+        time_0_values = [data['time_0'] for data in final_dict.values() if pd.notna(data['time_0'])]
+        time_1_values = [data['time_1'] for data in final_dict.values() if pd.notna(data['time_1'])]
 
         if speed_0_values:
             mean_speed_0 = statistics.mean(speed_0_values)
             sd_speed_0 = statistics.stdev(speed_0_values) if len(speed_0_values) > 1 else 0
-            logger.info(f"\nMean of speed during day time: {mean_speed_0}")
-            logger.info(f"Standard deviation of speed during day time: {sd_speed_0}")
+            logger.info(f"\n\nMean of speed during day time: {mean_speed_0}")
+            logger.info(f"\nStandard deviation of speed during day time: {sd_speed_0}")
         else:
             logger.error("No valid speed during day time values found.")
 
         if speed_1_values:
             mean_speed_1 = statistics.mean(speed_1_values)
             sd_speed_1 = statistics.stdev(speed_1_values) if len(speed_1_values) > 1 else 0
-            logger.info(f"\nMean of speed during night time: {mean_speed_1}")
-            logger.info(f"Standard deviation of speed during night time: {sd_speed_1}")
+            logger.info(f"\n\nMean of speed during night time: {mean_speed_1}")
+            logger.info(f"\nStandard deviation of speed during night time: {sd_speed_1}")
         else:
             logger.error("No valid speed during night time values found.")
 
         if time_0_values:
             mean_time_0 = statistics.mean(time_0_values)
             sd_time_0 = statistics.stdev(time_0_values) if len(time_0_values) > 1 else 0
-            logger.info(f"\nMean of time during day time: {mean_time_0}")
-            logger.info(f"Standard deviation of time during day time: {sd_time_0}")
+            logger.info(f"\n\nMean of time during day time: {mean_time_0}")
+            logger.info(f"\nStandard deviation of time during day time: {sd_time_0}")
         else:
             logger.error("No valid time during day time values found.")
 
         if time_1_values:
             mean_time_1 = statistics.mean(time_1_values)
             sd_time_1 = statistics.stdev(time_1_values) if len(time_1_values) > 1 else 0
-            logger.info(f"\nMean of time during night time: {mean_time_1}")
-            logger.info(f"Standard deviation of time during night time: {sd_time_1}")
+            logger.info(f"\n\nMean of time during night time: {mean_time_1}")
+            logger.info(f"\nStandard deviation of time during night time: {sd_time_1}")
         else:
             logger.error("No valid time during night time values found.")
 
         # Extract city, condition, and count_ from the info dictionary
         cities, conditions_, counts = [], [], []
-        for key, value in time_values.items():
+        for key, value in avg_time.items():
             city, condition = key.split('_')
             cities.append(city)
             conditions_.append(condition)
             counts.append(value)
 
         # Combine keys from speed and time to ensure we include all available cities and conditions
-        all_keys = set(speed_values.keys()).union(set(time_values.keys()))
+        all_keys = set(avg_speed.keys()).union(set(avg_time.keys()))
 
         # Extract unique cities
         cities = list(set([key.split('_')[0] for key in all_keys]))
@@ -1282,9 +1352,9 @@ class Analysis():
                     textfont=dict(size=14, color='white')), row=row, col=2)
 
         # Calculate the maximum value across all data to use as x-axis range
-        max_value_speed = max([
-            (day_avg_speed[i] if day_avg_speed[i] is not None else 0) +
-            (night_avg_speed[i] if night_avg_speed[i] is not None else 0)
+        max_value_time = max([
+            (day_time_dict[i] if day_time_dict[i] is not None else 0) +
+            (night_time_dict[i] if night_time_dict[i] is not None else 0)
             for i in range(len(cities))
         ]) if cities else 0
 
@@ -1299,13 +1369,13 @@ class Analysis():
             # Update x-axis for the left column (top for speed, bottom for time)
             if i % 2 == 1:  # Odd rows (representing speed)
                 fig.update_xaxes(
-                    range=[0, max_value_speed], row=i, col=1,
+                    range=[0, max_value_time], row=i, col=1,
                     showticklabels=(i == first_row_left_column),
                     side='top', showgrid=False
                 )
             else:  # Even rows (representing time)
                 fig.update_xaxes(
-                    range=[0, max_value_speed], row=i, col=1,
+                    range=[0, max_value_time], row=i, col=1,
                     showticklabels=(i == last_row_left_column),
                     side='bottom', showgrid=False
                 )
@@ -1313,13 +1383,13 @@ class Analysis():
             # Update x-axis for the right column (top for speed, bottom for time)
             if i % 2 == 1:  # Odd rows (representing speed)
                 fig.update_xaxes(
-                    range=[0, max_value_speed], row=i, col=2,  # Use speed max value for top axis
+                    range=[0, max_value_time], row=i, col=2,  # Use speed max value for top axis
                     showticklabels=(i == first_row_right_column),
                     side='top', showgrid=False
                 )
             else:  # Even rows (representing time)
                 fig.update_xaxes(
-                    range=[0, max_value_speed], row=i, col=2,  # Use time max value for bottom axis
+                    range=[0, max_value_time], row=i, col=2,  # Use time max value for bottom axis
                     showticklabels=(i == last_row_right_column),
                     side='bottom', showgrid=False
                 )
@@ -1352,8 +1422,9 @@ class Analysis():
             margin=dict(t=150, b=150), bargap=0, bargroupgap=0
         )
 
-        # Manually add gridlines using `shapes`
-        x_grid_values = [0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8]  # Define the gridline positions on the x-axis
+        # Set the x-axis range to cover the values you want in x_grid_values
+        x_grid_values = [2, 4, 6, 8, 10, 12, 14, 16, 18]
+
         for x in x_grid_values:
             fig.add_shape(
                 type="line",
@@ -1508,7 +1579,7 @@ class Analysis():
         # Final adjustments and display
         fig.update_layout(margin=dict(l=80, r=100, t=150, b=180))
         fig.show()
-        Analysis.save_plotly_figure(fig, "consolidate",   scale=1)
+        Analysis.save_plotly_figure(fig, "consolidate", width=2400, height=3200, scale=3)
 
     @staticmethod
     def time_to_start_crossing_vs_literacy(df_mapping, need_annotations=True):
@@ -1587,7 +1658,7 @@ class Analysis():
         with open(pickle_file_path, 'rb') as file:
             data_tuple = pickle.load(file)
 
-        info = data_tuple[-3]
+        info = data_tuple[-5]
 
         for key, value in info.items():
             city, condition = key.split('_')
@@ -1626,7 +1697,7 @@ class Analysis():
         with open(pickle_file_path, 'rb') as file:
             data_tuple = pickle.load(file)
 
-        info = data_tuple[-4]
+        info = data_tuple[-6]
 
         for key, value in info.items():
             city, condition = key.split('_')
@@ -1668,7 +1739,7 @@ class Analysis():
             data_tuple = pickle.load(file)
 
         time = data_tuple[-2]
-        info = data_tuple[-5]
+        info = data_tuple[-7]
 
         for key, value in info.items():
             city, condition = key.split('_')
@@ -1707,7 +1778,7 @@ class Analysis():
         with open(pickle_file_path, 'rb') as file:
             data_tuple = pickle.load(file)
 
-        info = data_tuple[-6]
+        info = data_tuple[-8]
 
         for key, value in info.items():
             city, condition = key.split('_')
@@ -1744,7 +1815,7 @@ class Analysis():
         with open(pickle_file_path, 'rb') as file:
             data_tuple = pickle.load(file)
 
-        info = data_tuple[-3]
+        info = data_tuple[-5]
 
         for key, value in info.items():
             city, condition = key.split('_')
@@ -1771,18 +1842,18 @@ class Analysis():
         with open(pickle_file_path, 'rb') as file:
             data_tuple = pickle.load(file)
 
-        speed_values = data_tuple[-1]
+        avg_speed = data_tuple[-1]
 
         # Remove the cities where the values are "nan"
-        speed_values = {key: value for key, value in speed_values.items() if not (isinstance(
+        avg_speed = {key: value for key, value in avg_speed.items() if not (isinstance(
             value, float) and math.isnan(value))}
 
         # Check if 'speed' is valid
-        if speed_values is None:
+        if avg_speed is None:
             raise ValueError("'speed' returned None, please check the input data or calculations.")
 
         # Now populate the final_dict with city-wise speed data
-        for city_condition, speed in speed_values.items():
+        for city_condition, speed in avg_speed.items():
             city, condition = city_condition.split('_')
 
             # Get the country from the previously stored city_country_map
@@ -2099,7 +2170,7 @@ class Analysis():
 
         # Final adjustments and display
         fig.update_layout(margin=dict(l=80, r=100, t=150, b=180))
-        Analysis.save_plotly_figure(fig, "speed_of_crossing", scale=1)
+        Analysis.save_plotly_figure(fig, "speed_of_crossing", width=2400, height=3200, scale=3)
         fig.show()
 
     @staticmethod
@@ -2108,14 +2179,14 @@ class Analysis():
         with open(pickle_file_path, 'rb') as file:
             data_tuple = pickle.load(file)
 
-        time_values = data_tuple[-2]
+        avg_time = data_tuple[-2]
 
         # Check if both 'speed' and 'time' are valid dictionaries
-        if time_values is None:
+        if avg_time is None:
             raise ValueError("'time' returned None, please check the input data or calculations.")
 
         # Now populate the final_dict with city-wise data
-        for city_condition, speed in time_values.items():
+        for city_condition, speed in avg_time.items():
             city, condition = city_condition.split('_')
 
             # Get the country from the previously stored city_country_map
@@ -2130,8 +2201,8 @@ class Analysis():
                     }
                 # Populate the corresponding speed and time based on the condition
                 final_dict[city][f"speed_{condition}"] = speed
-                if f'{city}_{condition}' in time_values:
-                    final_dict[city][f"time_{condition}"] = time_values[f'{city}_{condition}']
+                if f'{city}_{condition}' in avg_time:
+                    final_dict[city][f"time_{condition}"] = avg_time[f'{city}_{condition}']
 
         # Extract unique cities
         cities = list(set([key.split('_')[0] for key in final_dict.keys()]))
@@ -2313,7 +2384,7 @@ class Analysis():
                                         y_start=y_legend_start_bottom, spacing=0.02, font_size=40)
 
         # Manually add gridlines using `shapes`
-        x_grid_values = [0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8]  # Define the gridline positions on the x-axis
+        x_grid_values = [2, 4, 6, 8, 10, 12, 14, 16, 18]  # Define the gridline positions on the x-axis
         for x in x_grid_values:
             fig.add_shape(
                 type="line",
@@ -2440,7 +2511,7 @@ class Analysis():
         # Final adjustments and display
         fig.update_layout(margin=dict(l=80, r=100, t=150, b=180))
         fig.show()
-        Analysis.save_plotly_figure(fig, "time_to_start_cross", scale=1)
+        Analysis.save_plotly_figure(fig, "time_to_start_cross", width=2400, height=3200, scale=3)
 
     @staticmethod
     def plot_speed_to_cross_by_average(df_mapping):
@@ -2448,18 +2519,18 @@ class Analysis():
         with open(pickle_file_path, 'rb') as file:
             data_tuple = pickle.load(file)
 
-        speed_values = data_tuple[-1]
+        avg_speed = data_tuple[-1]
 
         # Remove the cities where the values are "nan"
-        speed_values = {key: value for key, value in speed_values.items() if not (
+        avg_speed = {key: value for key, value in avg_speed.items() if not (
             isinstance(value, float) and math.isnan(value))}
 
         # Check if 'speed' is valid
-        if speed_values is None:
+        if avg_speed is None:
             raise ValueError("'speed' returned None, please check the input data or calculations.")
 
         # Now populate the final_dict with city-wise speed data
-        for city_condition, speed in speed_values.items():
+        for city_condition, speed in avg_speed.items():
             city, condition = city_condition.split('_')
 
             # Get the country from the previously stored city_country_map
@@ -2735,7 +2806,7 @@ class Analysis():
 
         # Final adjustments and display
         fig.update_layout(margin=dict(l=80, r=100, t=150, b=180))
-        Analysis.save_plotly_figure(fig, "speed_of_crossing_by_avg", scale=1)
+        Analysis.save_plotly_figure(fig, "speed_of_crossing_by_avg", width=2400, height=3200, scale=3)
         fig.show()
 
     @staticmethod
@@ -2744,14 +2815,14 @@ class Analysis():
         with open(pickle_file_path, 'rb') as file:
             data_tuple = pickle.load(file)
 
-        time_values = data_tuple[-2]
+        avg_time = data_tuple[-2]
 
         # Check if both 'speed' and 'time' are valid dictionaries
-        if time_values is None:
+        if avg_time is None:
             raise ValueError("'time' returned None, please check the input data or calculations.")
 
         # Now populate the final_dict with city-wise speed data
-        for city_condition, time in time_values.items():
+        for city_condition, time in avg_time.items():
             city, condition = city_condition.split('_')
 
             # Get the country from the previously stored city_country_map
@@ -2911,7 +2982,7 @@ class Analysis():
         )
 
         # Manually add gridlines using `shapes`
-        x_grid_values = [0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8]  # Define the gridline positions on the x-axis
+        x_grid_values = [2, 4, 6, 8, 10, 12, 14, 16, 18]  # Define the gridline positions on the x-axis
         for x in x_grid_values:
             fig.add_shape(
                 type="line",
@@ -3030,7 +3101,336 @@ class Analysis():
         # Final adjustments and display
         fig.update_layout(margin=dict(l=80, r=100, t=150, b=180))
         fig.show()
-        Analysis.save_plotly_figure(fig, "time_to_start_cross_by_avg", scale=1)
+        Analysis.save_plotly_figure(fig, "time_to_start_cross_by_avg", width=2400, height=3200, scale=3)
+
+    @staticmethod
+    def correlation_matrix(df_mapping):
+        final_dict = {}
+        with open(pickle_file_path, 'rb') as file:
+            data_tuple = pickle.load(file)
+
+        (ped_cross_city, ped_crossing_count, person_city, bicycle_city, car_city,
+         motorcycle_city, bus_city, truck_city, cross_evnt_city, vehicle_city,
+         cellphone_city, trf_sign_city, speed_values, time_values, avg_time, avg_speed) = data_tuple[10:]
+
+        # Check if both 'speed' and 'time' are valid dictionaries
+        if avg_speed is None or avg_time is None:
+            raise ValueError("Either 'speed' or 'time' returned None, please check the input data or calculations.")
+
+        # Remove the ones where there is data missing for a specific country and condition
+        common_keys = avg_speed.keys() & avg_time.keys()
+
+        # Retain only the key-value pairs where the key is present in both dictionaries
+        avg_speed = {key: avg_speed[key] for key in common_keys}
+        avg_time = {key: avg_time[key] for key in common_keys}
+
+        # Now populate the final_dict with city-wise data
+        for city_condition, speed in avg_speed.items():
+            city, condition = city_condition.split('_')
+
+            # Get the country from the previously stored city_country_map
+            country = Analysis.get_value(df_mapping, "city", city, "country")
+            iso_code = Analysis.get_value(df_mapping, "city", city, "ISO_country")
+            continent = Analysis.get_value(df_mapping, "city", city, "continent")
+            population_country = Analysis.get_value(df_mapping, "city", city, "population_country")
+            gdp_city = Analysis.get_value(df_mapping, "city", city, "gdp_city_(billion_US)")
+            traffic_mortality = Analysis.get_value(df_mapping, "city", city, "traffic_mortality")
+            literacy_rate = Analysis.get_value(df_mapping, "city", city, "literacy_rate")
+
+            if country or iso_code is not None:
+
+                # Initialize the city's dictionary if not already present
+                if city not in final_dict:
+                    final_dict[city] = {
+                        "avg_speed_0": None, "avg_speed_1": None, "avg_time_0": None, "avg_time_1": None,
+                        "speed_val_0": None, "speed_val_1": None, "time_val_0": None, "time_val_1": None,
+                        "ped_cross_city_0": 0, "ped_cross_city_1": 0,
+                        "person_city_0": 0, "person_city_1": 0, "bicycle_city_0": 0,
+                        "bicycle_city_1": 0, "car_city_0": 0, "car_city_1": 0,
+                        "motorcycle_city_0": 0, "motorcycle_city_1": 0, "bus_city_0": 0,
+                        "bus_city_1": 0, "truck_city_0": 0, "truck_city_1": 0,
+                        "cross_evnt_city_0": 0, "cross_evnt_city_1": 0, "vehicle_city_0": 0,
+                        "vehicle_city_1": 0, "cellphone_city_0": 0, "cellphone_city_1": 0,
+                        "trf_sign_city_0": 0, "trf_sign_city_1": 0,
+                    }
+
+                # Populate the corresponding speed and time based on the condition
+                final_dict[city][f"avg_speed_{condition}"] = speed
+                if f'{city}_{condition}' in avg_time:
+                    final_dict[city][f"avg_time_{condition}"] = avg_time.get(f'{city}_{condition}', None)
+                    final_dict[city][f"time_val_{condition}"] = time_values.get(f'{city}_{condition}', None)
+                    final_dict[city][f"speed_val_{condition}"] = speed_values.get(f'{city}_{condition}', None)
+                    final_dict[city][f"time_val_{condition}"] = time_values.get(f'{city}_{condition}', None)
+                    final_dict[city][f"ped_cross_city_{condition}"] = ped_cross_city.get(f'{city}_{condition}', None)
+                    final_dict[city][f"person_city_{condition}"] = person_city.get(f'{city}_{condition}', 0)
+                    final_dict[city][f"bicycle_city_{condition}"] = bicycle_city.get(f'{city}_{condition}', 0)
+                    final_dict[city][f"car_city_{condition}"] = car_city.get(f'{city}_{condition}', 0)
+                    final_dict[city][f"motorcycle_city_{condition}"] = motorcycle_city.get(f'{city}_{condition}', 0)
+                    final_dict[city][f"bus_city_{condition}"] = bus_city.get(f'{city}_{condition}', 0)
+                    final_dict[city][f"truck_city_{condition}"] = truck_city.get(f'{city}_{condition}', 0)
+                    final_dict[city][f"cross_evnt_city_{condition}"] = cross_evnt_city.get(f'{city}_{condition}', 0)
+                    final_dict[city][f"vehicle_city_{condition}"] = vehicle_city.get(f'{city}_{condition}', None)
+                    final_dict[city][f"cellphone_city_{condition}"] = cellphone_city.get(f'{city}_{condition}', 0)
+                    final_dict[city][f"trf_sign_city_{condition}"] = trf_sign_city.get(f'{city}_{condition}', 0)
+                    final_dict[city][f"gmp_{condition}"] = gdp_city/population_country
+                    final_dict[city][f"traffic_mortality_{condition}"] = traffic_mortality
+                    final_dict[city][f"literacy_rate_{condition}"] = literacy_rate
+                    final_dict[city][f"continent_{condition}"] = continent
+
+        # Initialize an empty list to store the rows for the DataFrame
+        data_day, data_night = [], []
+
+        # Loop over each city and gather relevant values for condition 0
+        for city in final_dict:
+            # Initialize a dictionary for the row
+            row_day, row_night = {}, {}
+
+            # Add data for condition 0 (ignore 'speed_val' and 'time_val')
+            for condition in ['0']:  # Only include condition 0
+                for key, value in final_dict[city].items():
+                    if condition in key and 'speed_val' not in key and 'time_val' not in key and 'continent' not in key:
+                        row_day[key] = value
+
+            # Append the row to the data list
+            data_day.append(row_day)
+
+            for condition in ['1']:  # Only include condition 1
+                for key, value in final_dict[city].items():
+                    if condition in key and 'speed_val' not in key and 'time_val' not in key and 'continent' not in key:
+                        row_night[key] = value
+
+            # Append the row to the data list
+            data_night.append(row_night)
+
+        # Convert the list of rows into a Pandas DataFrame
+        df_day = pd.DataFrame(data_day)
+        df_night = pd.DataFrame(data_night)
+
+        # Calculate the correlation matrix
+        corr_matrix_day = df_day.corr(method='spearman')
+        corr_matrix_night = df_night.corr(method='spearman')
+
+        # Rename the variables in the correlation matrix
+        rename_dict_1 = {
+            'avg_speed_0': 'Average Speed', 'avg_speed_1': 'Average Speed',
+            'avg_time_0': 'Average Time', 'avg_time_1': 'Average Time',
+            'ped_cross_city_0': 'Crosswalk Traffic', 'ped_cross_city_1': 'Crosswalk Traffic',
+            'person_city_0': 'Detected people', 'person_city_1': 'Detected people',
+            'bicycle_city_0': 'Detected bicycle', 'bicycle_city_1': 'Detected bicycle',
+            'car_city_0': 'Detected car', 'car_city_1': 'Detected car',
+            'motorcycle_city_0': 'Detected motorcycle', 'motorcycle_city_1': 'Detected motorcycle',
+            'bus_city_0': 'Detected bus', 'bus_city_1': 'Detected bus',
+            'truck_city_0': 'Detected truck', 'truck_city_1': 'Detected truck',
+            'cross_evnt_city_0': 'Detected crossing without traffic light',
+            'cross_evnt_city_1': 'Detected crossing without traffic light',
+            'vehicle_city_0': 'Detected total number of motor vehicle',
+            'vehicle_city_1': 'Detected total number of motor vehicle',
+            'cellphone_city_0': 'Detected cellphone', 'cellphone_city_1': 'Detected cellphone',
+            'trf_sign_city_0': 'Detected traffic signs', 'trf_sign_city_1': 'Detected traffic signs',
+            'gmp_0': 'Gross metropolitan product', 'gmp_1': 'Gross metropolitan product',
+            'traffic_mortality_0': 'Traffic mortality', 'traffic_mortality_1': 'Traffic mortality',
+            'literacy_rate_0': 'Literacy rate', 'literacy_rate_1': 'Literacy rate',
+            }
+
+        corr_matrix_day = corr_matrix_day.rename(columns=rename_dict_1, index=rename_dict_1)
+        corr_matrix_night = corr_matrix_night.rename(columns=rename_dict_1, index=rename_dict_1)
+
+        # Generate the heatmap using Plotly
+        fig = px.imshow(corr_matrix_day, text_auto=True,  # Display correlation values on the heatmap
+                        color_continuous_scale='RdBu',  # Color scale (you can customize this)
+                        aspect="auto")  # Automatically adjust aspect ratio
+        fig.update_layout(coloraxis_showscale=False)
+
+        Analysis.save_plotly_figure(fig, "Correlation_matrix_heatmap_in_daylight")
+
+        fig.show()
+
+        # Generate the heatmap using Plotly
+        fig = px.imshow(corr_matrix_night, text_auto=True,  # Display correlation values on the heatmap
+                        color_continuous_scale='RdBu',  # Color scale (you can customize this)
+                        aspect="auto",  # Automatically adjust aspect ratio
+                        # title="Correlation Matrix Heatmap in night"  # Title of the heatmap
+                        )
+        fig.update_layout(coloraxis_showscale=False)
+
+        Analysis.save_plotly_figure(fig, "Correlation_matrix_heatmap_in_night")
+
+        fig.show()
+
+        # Initialize a list to store rows of data (one row per city)
+        data_rows = []
+
+        # Assuming `conditions` is a list of conditions you are working with
+        conditions = ['0', '1']  # Modify this list to include all conditions you have (e.g., '0', '1', etc.)
+
+        # Iterate over each city and condition
+        for city in final_dict:
+            # Initialize a dictionary to store the values for the current row
+            row_data = {}
+
+            # For each condition
+            for condition in conditions:
+                # For each variable (exclude avg_speed and avg_time)
+                for var in ['ped_cross_city', 'person_city', 'bicycle_city', 'car_city', 'motorcycle_city', 'bus_city',
+                            'truck_city', 'cross_evnt_city', 'vehicle_city', 'cellphone_city', 'trf_sign_city',
+                            'gmp', 'traffic_mortality', 'literacy_rate']:
+                    # Populate each variable in the row_data dictionary
+                    row_data[f"{var}_{condition}"] = final_dict[city].get(f"{var}_{condition}", 0)
+
+                # Calculate average of speed_val and time_val (assumed to be arrays)
+                speed_vals = final_dict[city].get(f"speed_val_{condition}", [])
+                time_vals = final_dict[city].get(f"time_val_{condition}", [])
+
+                if speed_vals:  # Avoid division by zero or empty arrays
+                    row_data[f"avg_speed_val_{condition}"] = np.mean(speed_vals)
+                else:
+                    row_data[f"avg_speed_val_{condition}"] = np.nan  # Handle empty or missing arrays
+
+                if time_vals:
+                    row_data[f"avg_time_val_{condition}"] = np.mean(time_vals)
+                else:
+                    row_data[f"avg_time_val_{condition}"] = np.nan  # Handle empty or missing arrays
+
+            # Append the row data for the current city
+            data_rows.append(row_data)
+
+        # Convert the data into a pandas DataFrame
+        df = pd.DataFrame(data_rows)
+
+        # Create a new DataFrame to average the columns across conditions
+        agg_df = pd.DataFrame()
+
+        # Loop through the columns in the original DataFrame
+        for col in df.columns:
+            # Extract the feature name (without condition part)
+            feature_name = "_".join(col.split("_")[:-1])
+            condition = col.split("_")[-1]
+
+            # Create a new column by averaging values across conditions for the same feature
+            if feature_name not in agg_df.columns:
+                # Select the columns for this feature across all conditions
+                condition_cols = [c for c in df.columns if feature_name in c]
+                agg_df[feature_name] = df[condition_cols].mean(axis=1)
+
+        # Compute the correlation matrix on the aggregated DataFrame
+        corr_matrix_avg = agg_df.corr(method='spearman')
+
+        # Rename the variables in the correlation matrix (example: renaming keys)
+        rename_dict_2 = {
+            'avg_speed_val': 'Average Speed', 'avg_time_val': 'Average Time',
+            'ped_cross_city': 'Crosswalk Traffic', 'person_city': 'Detected people',
+            'bicycle_city': 'Detected bicycle', 'car_city': 'Detected car',
+            'motorcycle_city': 'Detected motorcycle', 'bus_city': 'Detected bus',
+            'truck_city': 'Detected truck', 'cross_evnt_city': 'Crossing without traffic light',
+            'vehicle_city': 'Detected total number of motor vehicle', 'cellphone_city': 'Detected cellphone',
+            'trf_sign_city': 'Detected traffic signs', 'gmp_city': 'Gross metropolitan product',
+            'traffic_mortality_city': 'Traffic mortality', 'literacy_rate_city': 'Literacy rate',
+            }
+
+        corr_matrix_avg = corr_matrix_avg.rename(columns=rename_dict_2, index=rename_dict_2)
+
+        # Generate the heatmap using Plotly
+        fig = px.imshow(corr_matrix_avg, text_auto=True,  # Display correlation values on the heatmap
+                        color_continuous_scale='RdBu',  # Color scale (you can customize this)
+                        aspect="auto",  # Automatically adjust aspect ratio
+                        # title="Correlation matrix heatmap averaged" # Title of the heatmap
+                        )
+        fig.update_layout(coloraxis_showscale=False)
+
+        Analysis.save_plotly_figure(fig, "Correlation_matrix_heatmap_averaged")
+        fig.show()
+
+        # Continent Wise
+
+        # Initialize a list to store rows of data (one row per city)
+        data_rows = []
+
+        # Assuming `conditions` is a list of conditions you are working with
+        conditions = ['0', '1']  # Modify this list to include all conditions you have (e.g., '0', '1', etc.)
+        unique_continents = df_mapping['continent'].unique()
+
+        # Iterate over each city and condition
+        for city in final_dict:
+            # Initialize a dictionary to store the values for the current row
+            row_data = {}
+
+            # For each condition
+            for condition in conditions:
+                # For each variable (exclude avg_speed and avg_time)
+                for var in ['ped_cross_city', 'person_city', 'bicycle_city', 'car_city', 'motorcycle_city', 'bus_city',
+                            'truck_city', 'cross_evnt_city', 'vehicle_city', 'cellphone_city', 'trf_sign_city',
+                            'gmp', 'traffic_mortality', 'literacy_rate', 'continent']:
+                    # Populate each variable in the row_data dictionary
+                    row_data[f"{var}_{condition}"] = final_dict[city].get(f"{var}_{condition}", 0)
+
+                # Calculate average of speed_val and time_val (assumed to be arrays)
+                speed_vals = final_dict[city].get(f"speed_val_{condition}", [])
+                time_vals = final_dict[city].get(f"time_val_{condition}", [])
+
+                if speed_vals:  # Avoid division by zero or empty arrays
+                    row_data[f"avg_speed_val_{condition}"] = np.mean(speed_vals)
+                else:
+                    row_data[f"avg_speed_val_{condition}"] = np.nan  # Handle empty or missing arrays
+
+                if time_vals:
+                    row_data[f"avg_time_val_{condition}"] = np.mean(time_vals)
+                else:
+                    row_data[f"avg_time_val_{condition}"] = np.nan  # Handle empty or missing arrays
+
+            # Append the row data for the current city
+            data_rows.append(row_data)
+
+        # Convert the data into a pandas DataFrame
+        df = pd.DataFrame(data_rows)
+
+        for continents in unique_continents:
+            filtered_df = df[(df['continent_0'] == continents) | (df['continent_1'] == continents)]
+            # Create a new DataFrame to average the columns across conditions
+            agg_df = pd.DataFrame()
+
+            # Loop through the columns in the original DataFrame
+            for col in filtered_df.columns:
+                # Extract the feature name (without condition part)
+                feature_name = "_".join(col.split("_")[:-1])
+                condition = col.split("_")[-1]
+
+                # Skip columns named "continent_0" or "continent_1"
+                if "continent" in feature_name:
+                    continue
+
+                # Create a new column by averaging values across conditions for the same feature
+                if feature_name not in agg_df.columns:
+                    # Select the columns for this feature across all conditions
+                    condition_cols = [c for c in filtered_df.columns if feature_name in c]
+                    agg_df[feature_name] = filtered_df[condition_cols].mean(axis=1)
+
+            # Compute the correlation matrix on the aggregated DataFrame
+            corr_matrix_avg = agg_df.corr(method='spearman')
+
+            # Rename the variables in the correlation matrix (example: renaming keys)
+            rename_dict_3 = {
+                'avg_speed_val': 'Average Speed', 'avg_time_val': 'Average Time',
+                'ped_cross_city': 'Crosswalk Traffic', 'person_city': 'Detected people',
+                'bicycle_city': 'Detected bicycle', 'car_city': 'Detected car',
+                'motorcycle_city': 'Detected motorcycle', 'bus_city': 'Detected bus',
+                'truck_city': 'Detected truck', 'cross_evnt_city': 'Crossing without traffic light',
+                'vehicle_city': 'Detected total number of motor vehicle', 'cellphone_city': 'Detected cellphone',
+                'trf_sign_city': 'Detected traffic signs', 'gmp': 'Gross metropolitan product',
+                'traffic_mortality': 'Traffic mortality', 'literacy_rate': 'Literacy rate',
+                }
+
+            corr_matrix_avg = corr_matrix_avg.rename(columns=rename_dict_3, index=rename_dict_3)
+
+            # Generate the heatmap using Plotly
+            fig = px.imshow(corr_matrix_avg, text_auto=True,  # Display correlation values on the heatmap
+                            color_continuous_scale='RdBu',  # Color scale (you can customize this)
+                            aspect="auto",  # Automatically adjust aspect ratio
+                            # title=f"Correlation matrix heatmap {continents}"  # Title of the heatmap
+                            )
+            fig.update_layout(coloraxis_showscale=False)
+
+            Analysis.save_plotly_figure(fig, f"Correlation_matrix_heatmap_{continents}")
+            fig.show()
 
 
 # Execute analysis
@@ -3048,15 +3448,17 @@ if __name__ == "__main__":
     logger.info("Total number of videos: {}", Analysis.calculate_total_videos(df_mapping))
     country, number = Analysis.get_unique_values(df_mapping, "country")
     logger.info("Total number of countries: {}", number)
-    Analysis.get_world_plot(df_mapping)
+    # Analysis.get_world_plot(df_mapping)
 
     if os.path.exists(pickle_file_path):
         # Load the data from the pickle file
         with open(pickle_file_path, 'rb') as file:
-            (data, pedestrian_crossing_count, person_counter, bicycle_counter, car_counter,
-             motorcycle_counter, bus_counter, truck_counter, cellphone_counter,
-             traffic_light_counter, stop_sign_counter, cross_evnt_city, vehicle_city,
-             cellphone_city, traffic_sign_city, time_values, avg_speed) = pickle.load(file)
+            (data, person_counter, bicycle_counter, car_counter, motorcycle_counter,
+             bus_counter, truck_counter, cellphone_counter, traffic_light_counter, stop_sign_counter,
+             pedestrian_cross_city, pedestrian_crossing_count, person_city, bicycle_city, car_city,
+             motorcycle_city, bus_city, truck_city, cross_evnt_city, vehicle_city,
+             cellphone_city, traffic_sign_city, speed_values, time_values, avg_time, avg_speed) = pickle.load(file)
+
         logger.info("Loaded analysis results from pickle file.")
     else:
         # Stores the content of the csv file in form of {name_time: content}
@@ -3085,35 +3487,47 @@ if __name__ == "__main__":
             traffic_light_counter += Analysis.count_object(dfs[key], 9)
             stop_sign_counter += Analysis.count_object(dfs[key], 11)
 
-        avg_speed = Analysis.calculate_speed_of_crossing(df_mapping, dfs, data)
+        speed_values = Analysis.calculate_speed_of_crossing(df_mapping, dfs, data)
         time_values = Analysis.time_to_start_cross(df_mapping, dfs, data)
+        avg_speed = Analysis.avg_speed_of_crossing(df_mapping, dfs, data)
+        avg_time = Analysis.avg_time_to_start_cross(df_mapping, dfs, data)
         traffic_sign_city = Analysis.traffic_signs(df_mapping, dfs)
         cellphone_city = Analysis.calculate_cell_phones(df_mapping, dfs)
-        vehicle_city = Analysis.calculate_vehicle_detected(df_mapping, dfs, data, motorcycle=1, car=1, bus=1, truck=1)
+        vehicle_city = Analysis.calculate_traffic(df_mapping, dfs, motorcycle=1, car=1, bus=1, truck=1)
+        bicycle_city = Analysis.calculate_traffic(df_mapping, dfs, bicycle=1)
+        car_city = Analysis.calculate_traffic(df_mapping, dfs, car=1)
+        motorcycle_city = Analysis.calculate_traffic(df_mapping, dfs, motorcycle=1)
+        bus_city = Analysis.calculate_traffic(df_mapping, dfs, bus=1)
+        truck_city = Analysis.calculate_traffic(df_mapping, dfs, truck=1)
+        person_city = Analysis.calculate_traffic(df_mapping, dfs, person=1)
         cross_evnt_city = Analysis.crossing_event_wt_traffic_light(df_mapping, dfs, data)
+        pedestrian_cross_city = Analysis.pedestrian_cross_per_city(pedestrian_crossing_count, df_mapping)
+
         # Save the results to a pickle file
         with open(pickle_file_path, 'wb') as file:
-            pickle.dump((data, pedestrian_crossing_count, person_counter, bicycle_counter, car_counter,
-                         motorcycle_counter, bus_counter, truck_counter, cellphone_counter,
-                         traffic_light_counter, stop_sign_counter, cross_evnt_city, vehicle_city,
-                         cellphone_city, traffic_sign_city, time_values, avg_speed), file)
+            pickle.dump((data, person_counter, bicycle_counter, car_counter, motorcycle_counter,
+                         bus_counter, truck_counter, cellphone_counter, traffic_light_counter, stop_sign_counter,
+                         pedestrian_cross_city, pedestrian_crossing_count, person_city, bicycle_city, car_city,
+                         motorcycle_city, bus_city, truck_city, cross_evnt_city, vehicle_city,
+                         cellphone_city, traffic_sign_city, speed_values, time_values, avg_time, avg_speed), file)
         logger.info("Analysis results saved to pickle file.")
 
     logger.info(f"person: {person_counter} ; bicycle: {bicycle_counter} ; car: {car_counter}")
     logger.info(f"motorcycle: {motorcycle_counter} ; bus: {bus_counter} ; truck: {truck_counter}")
     logger.info(f"cellphone: {cellphone_counter}; traffic light: {traffic_light_counter}; sign: {stop_sign_counter}")
 
-    Analysis.speed_and_time_to_start_cross(df_mapping)
-    Analysis.time_to_start_crossing_vs_literacy(df_mapping)
-    Analysis.time_to_start_crossing_vs_traffic_mortality(df_mapping)
-    Analysis.traffic_safety_vs_literacy(df_mapping)
-    Analysis.plot_cell_phone_vs_traffic_mortality(df_mapping)
-    Analysis.vehicle_vs_cross_time(df_mapping)
-    Analysis.traffic_mortality_vs_crossing_event_wt_traffic_light(df_mapping)
-    Analysis.plot_traffic_safety_vs_traffic_mortality(df_mapping)
+    # Analysis.speed_and_time_to_start_cross(df_mapping)
+    # Analysis.time_to_start_crossing_vs_literacy(df_mapping)
+    # Analysis.time_to_start_crossing_vs_traffic_mortality(df_mapping)
+    # Analysis.traffic_safety_vs_literacy(df_mapping)
+    # Analysis.plot_cell_phone_vs_traffic_mortality(df_mapping)
+    # Analysis.vehicle_vs_cross_time(df_mapping)
+    # Analysis.traffic_mortality_vs_crossing_event_wt_traffic_light(df_mapping)
+    # Analysis.plot_traffic_safety_vs_traffic_mortality(df_mapping)
     Analysis.plot_speed_to_cross_by_alphabetical_order(df_mapping)
     Analysis.plot_time_to_start_cross_by_alphabetical_order(df_mapping)
     Analysis.plot_speed_to_cross_by_average(df_mapping)
     Analysis.plot_time_to_start_cross_by_average(df_mapping)
+    # Analysis.correlation_matrix(df_mapping)
 
     logger.info("Analysis completed.")
