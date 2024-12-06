@@ -65,7 +65,7 @@ https://github.com/Shaadalam9/youtube-pedestrian/assets/88769183/5303f4a5-52a2-4
 
 ## Results
 
-Countries where the study has been conducted)
+Countries where the study has been conducted
 [![Countries where the study has been conducted](figures/world_map.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/world_map.html)
 
 Time to start crossing(sorted by countries)
