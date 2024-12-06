@@ -3188,7 +3188,7 @@ class Analysis():
             # Add data for condition 0 (ignore 'speed_val' and 'time_val')
             for condition in ['0']:  # Only include condition 0
                 for key, value in final_dict[city].items():
-                    if condition in key and 'speed_val' not in key and 'time_val' not in key and 'continent' not in key:
+                    if condition in key and 'speed_val' not in key and 'time_val' not in key and 'continent' not in key:  # noqa:E501
                         row_day[key] = value
 
             # Append the row to the data list
@@ -3196,7 +3196,7 @@ class Analysis():
 
             for condition in ['1']:  # Only include condition 1
                 for key, value in final_dict[city].items():
-                    if condition in key and 'speed_val' not in key and 'time_val' not in key and 'continent' not in key:
+                    if condition in key and 'speed_val' not in key and 'time_val' not in key and 'continent' not in key:  # noqa:E501
                         row_night[key] = value
 
             # Append the row to the data list
@@ -3448,7 +3448,7 @@ if __name__ == "__main__":
     logger.info("Total number of videos: {}", Analysis.calculate_total_videos(df_mapping))
     country, number = Analysis.get_unique_values(df_mapping, "country")
     logger.info("Total number of countries: {}", number)
-    # Analysis.get_world_plot(df_mapping)
+    Analysis.get_world_plot(df_mapping)
 
     if os.path.exists(pickle_file_path):
         # Load the data from the pickle file
@@ -3524,10 +3524,10 @@ if __name__ == "__main__":
     # Analysis.vehicle_vs_cross_time(df_mapping)
     # Analysis.traffic_mortality_vs_crossing_event_wt_traffic_light(df_mapping)
     # Analysis.plot_traffic_safety_vs_traffic_mortality(df_mapping)
-    Analysis.plot_speed_to_cross_by_alphabetical_order(df_mapping)
-    Analysis.plot_time_to_start_cross_by_alphabetical_order(df_mapping)
-    Analysis.plot_speed_to_cross_by_average(df_mapping)
-    Analysis.plot_time_to_start_cross_by_average(df_mapping)
+    # Analysis.plot_speed_to_cross_by_alphabetical_order(df_mapping)
+    # Analysis.plot_time_to_start_cross_by_alphabetical_order(df_mapping)
+    # Analysis.plot_speed_to_cross_by_average(df_mapping)
+    # Analysis.plot_time_to_start_cross_by_average(df_mapping)
     # Analysis.correlation_matrix(df_mapping)
 
     logger.info("Analysis completed.")
