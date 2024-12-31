@@ -252,7 +252,7 @@ id,city,country,ISO_country,videos,time_of_day,gdp_city_(billion_US),population_
 251,Corsica,France,FRA,[clXyiGcBvA8],[[0]],,,,,"[[0,3430]]","[[644,3829]]",Europe,,,[],"[[0,3430]]"
 252,Miskolc,Hungary,HUN,[lo7Cxy6IZz0],[[0]],,,,,[[300]],[[1699]],Europe,,,[],[[300]]
 253,Prizren,Kosovo,XKX,[WkBxHIikVWU],[[0]],,,,,[[22]],[[964]],Europe,,,[],[[22]]
-254,Pristina,Kosovo,XKX,"[cvaQdOWdmio,sTTp-GL6mF0]","[[0],[0]]",,,,,"[[50],[19]]","[[2340],[1777]]",Europe,,,[,31082023],[[50]]
+254,Pristina,Kosovo,XKX,"[cvaQdOWdmio,sTTp-GL6mF0]","[[0],[0]]",,,,,"[[50],[19]]","[[2340],[1777]]",Europe,,,"[,31082023]",[[50]]
 255,Kruševac,Serbia,SRB,[r3mBtsWWLGw],[[0]],,,,,[[30]],[[1105]],Europe,,,[],[[30]]
 256,Uppsala,Sweden,SWE,[1izw5Hx59ZA],[[0]],,,,,[[65]],[[934]],Europe,,,[],[[65]]
 257,Brussels,Belgium,BEL,"[T91xv0KO6T0,9A7wEMeCR6Y,-Zc-JSTfzPo,P00zkZ3_yYY,-AuNREzf1HQ,sn2F64fBPuY,0_7keNYhHNA,ripu3ZYkdvg]","[[0],[1],[1],[0],[0],[1],[0],[0]]",,,,,"[[19],[0],[0],[10],[0],[232],[32],[0]]","[[1120],[2628],[3229],[2305],[855],[2282],[2265],[1345]]",Europe,,,[],"[[19],[0],[0],[10],[0],[232],[32],[0]]"
