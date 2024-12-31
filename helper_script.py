@@ -4,21 +4,33 @@ from pytubefix.cli import on_progress
 from moviepy.video.io.VideoFileClip import VideoFileClip
 import cv2
 from ultralytics import YOLO
-import params as params
 from collections import defaultdict
 import shutil
 import numpy as np
 import pandas as pd
 from custom_logger import CustomLogger
-
+import common
 
 logger = CustomLogger(__name__)  # use custom logger
+
+mapping = pd.read_csv(common.get_configs("mapping"))
+confidence = common.get_configs("confidence")
+render = common.get_configs("render")
+line_thickness = common.get_configs("line_thickness")
+show_labels = common.get_configs("show_labels")
+show_conf = common.get_configs("show_conf")
+display_frame_tracking = common.get_configs("display_frame_tracking")
+output_path = common.get_configs("output_path")
+save_annoted_img = common.get_configs("save_annoted_img")
+delete_labels = common.get_configs("delete_labels")
+delete_frames = common.get_configs("delete_frames")
+display_frame_tracking = common.get_configs("display_frame_tracking")
 
 
 class youtube_helper:
 
     def __init__(self, video_title=None):
-        self.model = params.model
+        self.model = common.get_configs("model")
         self.resolution = None
         self.video_title = video_title
 
@@ -51,17 +63,34 @@ class youtube_helper:
 
             selected_stream = video_streams[0]
 
-            video_file_path = f"{output_path}/{video_id}.mp4"
+            video_file_path = os.path.join(output_path, f"{video_id}.mp4")
             logger.info("Youtube video download in progress...")
             # Comment the below line to automatically download with video in "video" folder
             selected_stream.download(output_path, filename=f"{video_id}.mp4")
 
             logger.info(f"Download of '{youtube_object.title}' in {resolution} completed successfully.")
             self.video_title = youtube_object.title
-            return video_file_path, video_id, resolution
+
+            # Get the FPS of the video
+            fps = self.get_video_fps(video_file_path)
+            logger.info(f"The fps of '{youtube_object.title}' is '{fps}'")
+
+            return video_file_path, video_id, resolution, fps
 
         except Exception as e:
             logger.error(f"An error occurred: {e}")
+            return None
+
+    def get_video_fps(self, video_file_path):
+        try:
+            # Open the video file using OpenCV
+            video = cv2.VideoCapture(video_file_path)
+            # Get FPS using OpenCV's `CAP_PROP_FPS` property
+            fps = video.get(cv2.CAP_PROP_FPS)
+            video.release()
+            return round(fps, 0)
+        except Exception as e:
+            logger.error(f"Failed to retrieve FPS: {e}")
             return None
 
     @staticmethod
@@ -71,7 +100,7 @@ class youtube_helper:
         video_clip.close()
 
     @staticmethod
-    def create_video_from_images(image_folder, output_video_path, frame_rate=30):
+    def create_video_from_images(image_folder, output_video_path, frame_rate):
         images = [img for img in os.listdir(image_folder) if img.endswith(".jpg")]
 
         if not images:
@@ -124,39 +153,36 @@ class youtube_helper:
 
     def prediction_mode(self):
         model = YOLO(self.model)
-        model.predict(source=f"{params.output_path}/{self.video_title}_{self.resolution}.mp4",
-                      save=True, conf=params.confidence, save_txt=True,
-                      show=params.render, line_width=params.line_thickness,
-                      show_labels=params.show_labels, show_conf=params.show_conf)
+        model.predict(source=os.path.join(output_path, f"{self.video_title}.mp4"),
+                      save=True, conf=confidence, save_txt=True,
+                      show=render, line_width=line_thickness,
+                      show_labels=show_labels, show_conf=show_conf)
 
-    def tracking_mode(self, input_video_path, output_video_path):
+    def tracking_mode(self, input_video_path, output_video_path, video_fps=25):
         model = YOLO(self.model)
         cap = cv2.VideoCapture(input_video_path)
 
         # Store the track history
         track_history = defaultdict(lambda: [])
 
-    # Output paths for frames, txt files, and final video
-        frames_output_path = "runs/detect/frames"
-        annotated_frame_output_path = "runs/detect/annotated_frames"
-        txt_output_path = "runs/detect/labels"
-        final_video_output_path = "runs/detect/final_video.mp4"
-        text_filename = "runs/detect/predict/labels/image0.txt"
+        # Output paths for frames, txt files, and final video
+        frames_output_path = os.path.join("runs", "detect", "frames")
+        annotated_frame_output_path = os.path.join("runs", "detect", "annotated_frames")
+        txt_output_path = os.path.join("runs", "detect", "labels")
+        text_filename = os.path.join("runs", "detect", "predict", "labels", "image0.txt")
+        display_video_output_path = os.path.join("runs", "detect", "display_video.mp4")
 
         # Create directories if they don't exist
         os.makedirs(frames_output_path, exist_ok=True)
         os.makedirs(txt_output_path, exist_ok=True)
         os.makedirs(annotated_frame_output_path, exist_ok=True)
 
-    # Initialize a VideoWriter for the final video
+        # Initialize a VideoWriter for the final video
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # type: ignore
-        final_video_writer = cv2.VideoWriter(final_video_output_path,
-                                             fourcc, 30.0, (int(cap.get(3)), int(cap.get(4))))
 
-        if params.display_frame_tracking:
-            display_video_output_path = "runs/detect/display_video.mp4"
+        if display_frame_tracking:
             display_video_writer = cv2.VideoWriter(display_video_output_path,
-                                                   fourcc, 30.0, (int(cap.get(3)), int(cap.get(4))))
+                                                   fourcc, video_fps, (int(cap.get(3)), int(cap.get(4))))
 
         # Loop through the video frames
         frame_count = 0  # Variable to track the frame number
@@ -169,12 +195,11 @@ class youtube_helper:
                 frame_count += 1  # Increment frame count
                 # Run YOLOv8 tracking on the frame, persisting tracks between frames
                 results = model.track(frame, tracker='bytetrack.yaml',
-                                      persist=True, conf=params.confidence,
+                                      persist=True, conf=confidence,
                                       save=True, save_txt=True,
-                                      line_width=params.line_thickness,
-                                      show_labels=params.show_labels,
-                                      show_conf=params.show_labels,
-                                      show=params.render)
+                                      line_width=line_thickness,
+                                      show_labels=show_labels,
+                                      show_conf=show_labels, show=render)
 
                 # Get the boxes and track IDs
                 boxes = results[0].boxes.xywh.cpu()
@@ -189,7 +214,7 @@ class youtube_helper:
                     annotated_frame = results[0].plot()
 
                 # Save annotated frame to file
-                    if params.save_annoted_img:
+                    if save_annoted_img:
                         frame_filename = os.path.join(annotated_frame_output_path, f"frame_{frame_count}.jpg")
                         cv2.imwrite(frame_filename, annotated_frame)
 
@@ -199,19 +224,23 @@ class youtube_helper:
                 # Save txt file with bounding box information
                 with open(text_filename, 'r') as text_file:
                     data = text_file.read()
-                new_txt_file_name = f"runs/detect/labels/label_{frame_count}.txt"
+                new_txt_file_name = os.path.join("runs", "detect", "labels", f"label_{frame_count}.txt")
                 with open(new_txt_file_name, 'w') as new_file:
                     new_file.write(data)
-                youtube_helper.merge_txt_to_csv_dynamically("runs/detect/labels",
-                                                            f"runs/detect/{self.video_title}.csv", frame_count)
+
+                labels_path = os.path.join("runs", "detect", "labels")
+                output_csv_path = os.path.join("runs", "detect", f"{self.video_title}.csv")
+
+                youtube_helper.merge_txt_to_csv_dynamically(labels_path, output_csv_path, frame_count)
+
                 os.remove(text_filename)
-                if params.delete_labels is True:
-                    os.remove(f"runs/detect/labels/label_{frame_count}.txt")
+                if delete_labels is True:
+                    os.remove(os.path.join("runs", "detect", "labels", f"label_{frame_count}.txt"))
 
                 # save the labelled image
-                if params.delete_frames is False:
-                    image_filename = "runs/detect/predict/image0.jpg"
-                    new_img_file_name = f"runs/detect/frames/frame_{frame_count}.jpg"
+                if delete_frames is False:
+                    image_filename = os.path.join("runs", "detect", "predict", "image0.jpg")
+                    new_img_file_name = os.path.join("runs", "detect", "frames", f"frame_{frame_count}.jpg")
                     shutil.move(image_filename, new_img_file_name)
 
                 # Plot the tracks
@@ -226,13 +255,13 @@ class youtube_helper:
                     # Draw the tracking lines
                         points = np.hstack(track).astype(np.int32).reshape((-1, 1, 2))
                         cv2.polylines(annotated_frame, [points], isClosed=False, color=(230, 230, 230),
-                                      thickness=params.line_thickness*5)
+                                      thickness=line_thickness*5)
 
                 except Exception:
                     pass
 
                 # Display the annotated frame
-                if params.display_frame_tracking:
+                if display_frame_tracking:
 
                     cv2.imshow("YOLOv8 Tracking", annotated_frame)
                     display_video_writer.write(annotated_frame)
@@ -246,4 +275,3 @@ class youtube_helper:
         # Release the video capture object and close the display window
         cap.release()
         cv2.destroyAllWindows()
-        final_video_writer.release()

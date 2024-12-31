@@ -287,9 +287,10 @@ class Analysis():
             literacy_rate = row["literacy_rate"]
             avg_height = row["avg_height"]
             iso_country = row["ISO_country"]
+            fps_list = ast.literal_eval(row["fps_list"])
 
             # Iterate through each video, start time, end time, and time of day
-            for video, start, end, time_of_day_ in zip(video_ids, start_times, end_times, time_of_day):
+            for video, start, end, time_of_day_, fps in zip(video_ids, start_times, end_times, time_of_day, fps_list):
                 # Check if the current video matches the specified ID
                 if video == id:
                     counter = 0
@@ -300,7 +301,7 @@ class Analysis():
                             # Return relevant information once found
                             return (video, s, end[counter], time_of_day_[counter], city,
                                     country, (gdp/population), population, population_country,
-                                    traffic_mortality, continent, literacy_rate, avg_height, iso_country)
+                                    traffic_mortality, continent, literacy_rate, avg_height, iso_country, fps[0])
                         counter += 1
 
     @staticmethod
@@ -540,7 +541,7 @@ class Analysis():
         return len(crossed_ids), crossed_ids
 
     @staticmethod
-    def time_to_cross(dataframe, ids):
+    def time_to_cross(dataframe, ids, video_id):
         """Calculates the time taken for each object with specified IDs to cross the road.
 
         Args:
@@ -551,6 +552,13 @@ class Analysis():
             dict: A dictionary where keys are object IDs and values are the time taken for
             each object to cross the road, in seconds.
         """
+        result = Analysis.find_values_with_video_id(df_mapping, video_id)
+
+        # Check if the result is None (i.e., no matching data was found)
+        if result is not None:
+            # Unpack the result since it's not None
+            (video, start, end, time_of_day, city, country, gdp_, population, population_country,
+             traffic_mortality_, continent, literacy_rate, avg_height, iso_country, fps) = result
 
         # Initialize an empty dictionary to store time taken for each object to cross
         var = {}
@@ -580,7 +588,7 @@ class Analysis():
                         count += 1
                         if value == x_max:
                             # Calculate time taken for crossing and store in dictionary
-                            var[id] = count/30
+                            var[id] = count/fps
                             break
 
             else:
@@ -591,7 +599,7 @@ class Analysis():
                         count += 1
                         if value == x_min:
                             # Calculate time taken for crossing and store in dictionary
-                            var[id] = count / 30
+                            var[id] = count / fps
                             break
 
         return var
@@ -614,7 +622,7 @@ class Analysis():
             if result is not None:
                 # Unpack the result since it's not None
                 (video, start, end, time_of_day, city, country, gdp_, population, population_country,
-                 traffic_mortality_, continent, literacy_rate, avg_height, iso_country) = result
+                 traffic_mortality_, continent, literacy_rate, avg_height, iso_country, fps) = result
 
                 # Count the number of mobile objects in the video
                 mobile_ids = Analysis.count_object(value, 67)
@@ -691,7 +699,7 @@ class Analysis():
             if result is not None:
                 # Unpack the result since it's not None
                 (video, start, end, time_of_day, city, country, gdp_, population, population_country,
-                 traffic_mortality_, continent, literacy_rate, avg_height, iso_country) = result
+                 traffic_mortality_, continent, literacy_rate, avg_height, iso_country, fps) = result
 
                 # Calculate the duration of the video
                 duration = end - start
@@ -761,7 +769,7 @@ class Analysis():
             # Check if the result is None (i.e., no matching data was found)
             if result is not None:
                 (_, start, end, condition, city, country, gdp_, population, population_country, traffic_mortality_,
-                 continent, literacy_rate, avg_height, iso_country) = result
+                 continent, literacy_rate, avg_height, iso_country, fps) = result
 
                 value = dfs.get(key)
 
@@ -815,7 +823,7 @@ class Analysis():
             # Check if the result is None (i.e., no matching data was found)
             if result is not None:
                 (_, start, end, condition, city, country, gdp_, population, population_country, traffic_mortality_,
-                 continent, literacy_rate, avg_height, iso_country) = result
+                 continent, literacy_rate, avg_height, iso_country, fps) = result
 
                 # Makes group based on Unique ID
                 crossed_ids_grouped = crossed_ids.groupby("Unique Id")
@@ -855,9 +863,9 @@ class Analysis():
                     continue
 
                 if f'{city}_{condition}' in time_dict:
-                    time_dict[f'{city}_{condition}'].extend([value / 3 for key, value in data_cross.items()])
+                    time_dict[f'{city}_{condition}'].extend([value / (fps/10) for key, value in data_cross.items()])
                 else:
-                    time_dict[f'{city}_{condition}'] = [value / 3 for key, value in data_cross.items()]
+                    time_dict[f'{city}_{condition}'] = [value / (fps/10) for key, value in data_cross.items()]
 
         return time_dict
 
@@ -888,7 +896,7 @@ class Analysis():
             # Check if the result is None (i.e., no matching data was found)
             if result is not None:
                 (_, start, end, time_of_day, city, country, gdp_, population, population_country, traffic_mortality_,
-                 continent, literacy_rate, avg_height, iso_country) = result
+                 continent, literacy_rate, avg_height, iso_country, fps) = result
 
                 dataframe = value
 
@@ -949,7 +957,7 @@ class Analysis():
             if result is not None:
 
                 (_, start, end, time_of_day, city, country, gdp_, population, population_country, traffic_mortality_,
-                 continent, literacy_rate, avg_height, iso_country) = result
+                 continent, literacy_rate, avg_height, iso_country, fps) = result
 
                 # Calculate the duration of the video
                 duration = end - start
@@ -1009,7 +1017,7 @@ class Analysis():
 
             if result is not None:
                 (_, start, end, time_of_day, city, country, gdp_, population, population_country, traffic_mortality_,
-                 continent, literacy_rate, avg_height, iso_country) = result
+                 continent, literacy_rate, avg_height, iso_country, fps) = result
 
                 # Create the city_time_key (city + time_of_day)
                 city_time_key = f'{city}_{time_of_day}'
@@ -3172,10 +3180,11 @@ class Analysis():
                     final_dict[city][f"vehicle_city_{condition}"] = vehicle_city.get(f'{city}_{condition}', None)
                     final_dict[city][f"cellphone_city_{condition}"] = cellphone_city.get(f'{city}_{condition}', 0)
                     final_dict[city][f"trf_sign_city_{condition}"] = trf_sign_city.get(f'{city}_{condition}', 0)
-                    final_dict[city][f"gmp_{condition}"] = gdp_city/population_country
                     final_dict[city][f"traffic_mortality_{condition}"] = traffic_mortality
                     final_dict[city][f"literacy_rate_{condition}"] = literacy_rate
                     final_dict[city][f"continent_{condition}"] = continent
+                    if gdp_city is not None:
+                        final_dict[city][f"gmp_{condition}"] = gdp_city/population_country
 
         # Initialize an empty list to store the rows for the DataFrame
         data_day, data_night = [], []
@@ -3448,7 +3457,7 @@ if __name__ == "__main__":
     logger.info("Total number of videos: {}", Analysis.calculate_total_videos(df_mapping))
     country, number = Analysis.get_unique_values(df_mapping, "country")
     logger.info("Total number of countries: {}", number)
-    Analysis.get_world_plot(df_mapping)
+    # Analysis.get_world_plot(df_mapping)
 
     if os.path.exists(pickle_file_path):
         # Load the data from the pickle file
@@ -3474,7 +3483,7 @@ if __name__ == "__main__":
             pedestrian_crossing_count[key] = {"count": count, "ids": ids}
 
             # Saves the time to cross in form {name_time: {id(s): time(s)}}
-            data[key] = Analysis.time_to_cross(dfs[key], pedestrian_crossing_count[key]["ids"])
+            data[key] = Analysis.time_to_cross(dfs[key], pedestrian_crossing_count[key]["ids"], key)
 
             # Calculate the total number of different objects detected
             person_counter += Analysis.count_object(dfs[key], 0)
@@ -3516,7 +3525,7 @@ if __name__ == "__main__":
     logger.info(f"motorcycle: {motorcycle_counter} ; bus: {bus_counter} ; truck: {truck_counter}")
     logger.info(f"cellphone: {cellphone_counter}; traffic light: {traffic_light_counter}; sign: {stop_sign_counter}")
 
-    # Analysis.speed_and_time_to_start_cross(df_mapping)
+    Analysis.speed_and_time_to_start_cross(df_mapping)
     # Analysis.time_to_start_crossing_vs_literacy(df_mapping)
     # Analysis.time_to_start_crossing_vs_traffic_mortality(df_mapping)
     # Analysis.traffic_safety_vs_literacy(df_mapping)
