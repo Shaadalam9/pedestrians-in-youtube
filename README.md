@@ -83,18 +83,6 @@ Speed of crossing(sorted by average of day and night)
 Merged figure of the speed of crossing and time to start crossing(sorted by countries)
 [![Merged figure of speed of crossing ad time to start crossing(sorted by coutries)](figures/consolidate.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/consolidate.html)
 
-Number of cell phones detected vs. traffic mortality rate
-[![Number of cell phone detected vs. traffic mortality rate](figures/cell_phone_vs_traffic_mortality.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/cell_phone_vs_traffic_mortality.html)
-
-Time to start crossing the road vs. literacy  rate
-[![Time to start crossing the road vs. literacy  rate](figures/time_to_start_crossing_vs_literacy.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/time_to_start_crossing_vs_literacy.html)
-
-Time to start crossing the road vs. traffic mortality rate
-[![Time to start crossing the road vs. traffic mortality rate](figures/time_to_start_crossing_vs_traffic_mortality.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/time_to_start_crossing_vs_traffic_mortality.html)
-
-Traffic mortality rate vs. crossing event without traffic light
-[![Traffic mortality rate vs. crossing event without traffic light](figures/traffic_mortality_vs_crossing_event_wt_traffic_light.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/traffic_mortality_vs_crossing_event_wt_traffic_light.html)
-
 Correlation Matrix
 [![Correlation Matrix based on average speed and time to start cross](figures/Correlation_matrix_heatmap_averaged.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/Correlation_matrix_heatmap_averaged.html)
 
