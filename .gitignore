@@ -1,26 +1,32 @@
-runs
-video
-data
-data_all
-source_videos
+# Runs and output folders
+runs/
+_output/
+
+# Video and data folders
+video/
+data/
+source_videos/
+
+# Model files
 yolov8x.pt
-_output
+
+# Python environment files
 .vscode/
-source_videos
-__pycache__
-run_download.py
-
-# macOS
-**/.DS_Store
-
-# sublime text project files
-*.sublime-project
-*.sublime-workspace
-
-# Python files
-*/__pycache__
+.pytest_cache/
+__pycache__/
 *.pyc
 *.egg-info/
+
+# Scripts
+run_download.py
+check.py
+
+# macOS specific files
+**/.DS_Store
+
+# Sublime Text project files
+*.sublime-project
+*.sublime-workspace
 
 # Instance specific files
 config

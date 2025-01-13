@@ -172,7 +172,7 @@ class Analysis():
         """
         # Hard coded colors for continents
         continent_colors = {'Asia': 'blue', 'Europe': 'green', 'Africa': 'red', 'North America': 'orange',
-                            'South America': 'purple', 'Australia': 'brown'}
+                            'South America': 'purple', 'Oceania': 'brown'}
 
         # Create the scatter plot with hover_data for additional information (continents and sizes)
         fig = px.scatter(x=x, y=list(y.values()), size=size, color=color, symbol=symbol,
@@ -301,7 +301,7 @@ class Analysis():
                             # Return relevant information once found
                             return (video, s, end[counter], time_of_day_[counter], city,
                                     country, (gdp/population), population, population_country,
-                                    traffic_mortality, continent, literacy_rate, avg_height, iso_country, fps[0])
+                                    traffic_mortality, continent, literacy_rate, avg_height, iso_country, fps)
                         counter += 1
 
     @staticmethod
@@ -3144,6 +3144,8 @@ class Analysis():
             gdp_city = Analysis.get_value(df_mapping, "city", city, "gdp_city_(billion_US)")
             traffic_mortality = Analysis.get_value(df_mapping, "city", city, "traffic_mortality")
             literacy_rate = Analysis.get_value(df_mapping, "city", city, "literacy_rate")
+            geni = Analysis.get_value(df_mapping, "city", city, "geni")
+            traffic_index = Analysis.get_value(df_mapping, "city", city, "traffic_index")
 
             if country or iso_code is not None:
 
@@ -3182,6 +3184,8 @@ class Analysis():
                     final_dict[city][f"trf_sign_city_{condition}"] = trf_sign_city.get(f'{city}_{condition}', 0)
                     final_dict[city][f"traffic_mortality_{condition}"] = traffic_mortality
                     final_dict[city][f"literacy_rate_{condition}"] = literacy_rate
+                    final_dict[city][f"geni_{condition}"] = geni
+                    final_dict[city][f"traffic_index_{condition}"] = traffic_index
                     final_dict[city][f"continent_{condition}"] = continent
                     if gdp_city is not None:
                         final_dict[city][f"gmp_{condition}"] = gdp_city/population_country
@@ -3239,6 +3243,9 @@ class Analysis():
             'gmp_0': 'Gross metropolitan product', 'gmp_1': 'Gross metropolitan product',
             'traffic_mortality_0': 'Traffic mortality', 'traffic_mortality_1': 'Traffic mortality',
             'literacy_rate_0': 'Literacy rate', 'literacy_rate_1': 'Literacy rate',
+            'geni_0': 'GENI', 'geni_1': 'GENI', 'traffic_index_0': 'Traffic index',
+            'traffic_index_1': 'Traffic index',
+
             }
 
         corr_matrix_day = corr_matrix_day.rename(columns=rename_dict_1, index=rename_dict_1)
@@ -3282,7 +3289,7 @@ class Analysis():
                 # For each variable (exclude avg_speed and avg_time)
                 for var in ['ped_cross_city', 'person_city', 'bicycle_city', 'car_city', 'motorcycle_city', 'bus_city',
                             'truck_city', 'cross_evnt_city', 'vehicle_city', 'cellphone_city', 'trf_sign_city',
-                            'gmp', 'traffic_mortality', 'literacy_rate']:
+                            'gmp', 'traffic_mortality', 'literacy_rate', 'geni', 'traffic_index']:
                     # Populate each variable in the row_data dictionary
                     row_data[f"{var}_{condition}"] = final_dict[city].get(f"{var}_{condition}", 0)
 
@@ -3333,7 +3340,8 @@ class Analysis():
             'truck_city': 'Detected truck', 'cross_evnt_city': 'Crossing without traffic light',
             'vehicle_city': 'Detected total number of motor vehicle', 'cellphone_city': 'Detected cellphone',
             'trf_sign_city': 'Detected traffic signs', 'gmp_city': 'Gross metropolitan product',
-            'traffic_mortality_city': 'Traffic mortality', 'literacy_rate_city': 'Literacy rate',
+            'traffic_mortality_city': 'Traffic mortality', 'literacy_rate_city': 'Literacy rate', 'geni': 'GENI',
+            'traffic_index': 'Traffic Index'
             }
 
         corr_matrix_avg = corr_matrix_avg.rename(columns=rename_dict_2, index=rename_dict_2)
@@ -3368,7 +3376,7 @@ class Analysis():
                 # For each variable (exclude avg_speed and avg_time)
                 for var in ['ped_cross_city', 'person_city', 'bicycle_city', 'car_city', 'motorcycle_city', 'bus_city',
                             'truck_city', 'cross_evnt_city', 'vehicle_city', 'cellphone_city', 'trf_sign_city',
-                            'gmp', 'traffic_mortality', 'literacy_rate', 'continent']:
+                            'gmp', 'traffic_mortality', 'literacy_rate', 'continent', 'geni', 'traffic_index']:
                     # Populate each variable in the row_data dictionary
                     row_data[f"{var}_{condition}"] = final_dict[city].get(f"{var}_{condition}", 0)
 
@@ -3425,7 +3433,8 @@ class Analysis():
                 'truck_city': 'Detected truck', 'cross_evnt_city': 'Crossing without traffic light',
                 'vehicle_city': 'Detected total number of motor vehicle', 'cellphone_city': 'Detected cellphone',
                 'trf_sign_city': 'Detected traffic signs', 'gmp': 'Gross metropolitan product',
-                'traffic_mortality': 'Traffic mortality', 'literacy_rate': 'Literacy rate',
+                'traffic_mortality': 'Traffic mortality', 'literacy_rate': 'Literacy rate', 'geni': 'GENI',
+                'traffic_index': 'Traffic Index'
                 }
 
             corr_matrix_avg = corr_matrix_avg.rename(columns=rename_dict_3, index=rename_dict_3)
@@ -3457,7 +3466,7 @@ if __name__ == "__main__":
     logger.info("Total number of videos: {}", Analysis.calculate_total_videos(df_mapping))
     country, number = Analysis.get_unique_values(df_mapping, "country")
     logger.info("Total number of countries: {}", number)
-    # Analysis.get_world_plot(df_mapping)
+    Analysis.get_world_plot(df_mapping)
 
     if os.path.exists(pickle_file_path):
         # Load the data from the pickle file
@@ -3525,7 +3534,7 @@ if __name__ == "__main__":
     logger.info(f"motorcycle: {motorcycle_counter} ; bus: {bus_counter} ; truck: {truck_counter}")
     logger.info(f"cellphone: {cellphone_counter}; traffic light: {traffic_light_counter}; sign: {stop_sign_counter}")
 
-    Analysis.speed_and_time_to_start_cross(df_mapping)
+    # Analysis.speed_and_time_to_start_cross(df_mapping)
     # Analysis.time_to_start_crossing_vs_literacy(df_mapping)
     # Analysis.time_to_start_crossing_vs_traffic_mortality(df_mapping)
     # Analysis.traffic_safety_vs_literacy(df_mapping)
@@ -3537,6 +3546,6 @@ if __name__ == "__main__":
     # Analysis.plot_time_to_start_cross_by_alphabetical_order(df_mapping)
     # Analysis.plot_speed_to_cross_by_average(df_mapping)
     # Analysis.plot_time_to_start_cross_by_average(df_mapping)
-    # Analysis.correlation_matrix(df_mapping)
+    Analysis.correlation_matrix(df_mapping)
 
     logger.info("Analysis completed.")

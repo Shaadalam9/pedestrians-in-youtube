@@ -8,6 +8,11 @@ from collections import defaultdict
 import shutil
 import numpy as np
 import pandas as pd
+import world_bank_data as wb
+import yt_dlp
+from datetime import datetime
+import pycountry
+from pycountry_convert import country_name_to_country_alpha2, country_alpha2_to_continent_code
 from custom_logger import CustomLogger
 import common
 
@@ -46,7 +51,7 @@ class youtube_helper:
         except FileExistsError:
             logger.error(f"Error: Folder '{new_name}' already exists.")
 
-    def download_video_with_resolution(self, video_id, resolutions=["720p", "480p", "360p"], output_path="."):
+    def download_video_with_resolution(self, video_id, resolutions=["720p", "480p", "144p"], output_path="."):
         try:
             youtube_url = f'https://www.youtube.com/watch?v={video_id}'
             youtube_object = YouTube(youtube_url, on_progress_callback=on_progress)
@@ -96,6 +101,7 @@ class youtube_helper:
     @staticmethod
     def trim_video(input_path, output_path, start_time, end_time):
         video_clip = VideoFileClip(input_path).subclip(start_time, end_time)
+
         video_clip.write_videofile(output_path, codec="libx264", audio_codec="aac")
         video_clip.close()
 
@@ -150,6 +156,313 @@ class youtube_helper:
             df.to_csv(output_csv, index=False, mode='w')  # If the CSV does not exist, create it
         else:
             df.to_csv(output_csv, index=False, mode='a', header=False)  # If it exists, append without header
+
+    @staticmethod
+    def get_iso_alpha_3(country_name, existing_iso):
+        try:
+            return pycountry.countries.lookup(country_name).alpha_3
+        except LookupError:
+            if country_name.strip().upper() == "KOSOVO":
+                return "XKX"  # User-assigned code for Kosovo
+            return existing_iso if existing_iso else None
+
+    @staticmethod
+    def get_latest_population():
+        # Search for the population indicator
+        indicator = 'SP.POP.TOTL'  # Total Population (World Bank indicator code)
+
+        # Fetch the latest population data
+        population_data = wb.get_series(indicator, id_or_value='id', mrv=1)
+
+        # Convert the data to a DataFrame
+        population_df = population_data.reset_index()
+
+        # Rename columns appropriately
+        population_df = population_df.rename(columns={
+            population_df.columns[0]: 'ISO_country',
+            population_df.columns[2]: 'Year',
+            population_df.columns[3]: 'Population'
+        })
+
+        # Divide population by 1000
+        population_df['Population'] = population_df['Population'] / 1000
+
+        return population_df
+
+    @staticmethod
+    def update_population_in_csv(data):
+
+        # Ensure the required columns exist in the CSV
+        if "ISO_country" not in data.columns:
+            raise KeyError("The CSV file does not have a 'ISO_country' column.")
+
+        if "population_country" not in data.columns:
+            data["population_country"] = None  # Initialize the column if it doesn't exist
+
+        # Get the latest population data
+        latest_population = youtube_helper.get_latest_population()
+
+        # Create a dictionary for quick lookup
+        population_dict = dict(zip(latest_population['ISO_country'], latest_population['Population']))
+
+        # Update the population_country column
+        for index, row in data.iterrows():
+            ISO_country = row["ISO_country"]
+            population = population_dict.get(ISO_country, None)
+            data.at[index, "population_country"] = population  # Always update with the latest population data
+
+        # Save the updated DataFrame back to the same CSV
+        data.to_csv(common.get_configs("mapping"), index=False)
+        logger.info("Mapping file updated sucessfully with country population.")
+
+    @staticmethod
+    def get_continent_from_country(country):
+        """
+        Returns the continent based on the country name using pycountry_convert.
+        """
+        try:
+            # Convert country name to ISO Alpha-2 code
+            alpha2_code = country_name_to_country_alpha2(country)
+            # Convert ISO Alpha-2 code to continent code
+            continent_code = country_alpha2_to_continent_code(alpha2_code)
+            # Map continent codes to continent names
+            continent_map = {
+                "AF": "Africa",
+                "AS": "Asia",
+                "EU": "Europe",
+                "NA": "North America",
+                "SA": "South America",
+                "OC": "Oceania",
+                "AN": "Antarctica"
+            }
+            return continent_map.get(continent_code, "Unknown")
+        except KeyError:
+            return "Unknown"
+
+    @staticmethod
+    def update_csv_with_fps(df):
+        """
+        Updates the existing CSV file by adding a new column 'fps_list' with the FPS values for each video's IDs.
+
+        Args:
+            file_path (str): The path to the CSV file to be updated.
+        """
+        def get_fps(video_id):
+            try:
+                video_url = f"https://www.youtube.com/watch?v={video_id}"
+                ydl_opts = {'quiet': True}
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    info = ydl.extract_info(video_url, download=False)
+                    if not info:
+                        return None
+
+                    # Extract formats with 720p resolution and FPS information
+                    formats_720p = [
+                        fmt
+                        for fmt in info.get('formats', [])
+                        if fmt.get('height') == 720 and 'fps' in fmt
+                    ]
+
+                    if formats_720p:
+                        # Select the format with the highest FPS
+                        max_fps_format = max(formats_720p, key=lambda fmt: fmt['fps'])
+                        return max_fps_format['fps']
+
+                    # Fallback: No 720p formats with FPS information
+                    logger.warning(f"No valid 720p formats with FPS found for video {video_id}.")
+                    return None
+            except yt_dlp.utils.DownloadError:
+                logger.error(f"Video {video_id} not found or unavailable.")
+                return None
+            except Exception as e:
+                logger.error(f"Error fetching FPS for video {video_id}: {e}")
+                return None
+
+        def process_videos(video_ids, existing_fps_list):
+            video_ids = video_ids.strip("[]").split(",")
+
+            # Ensure existing_fps_list is a valid string or initialize as an empty list
+            if isinstance(existing_fps_list, str) and existing_fps_list.strip():
+                try:
+                    existing_fps = eval(existing_fps_list)  # Convert string to list
+                except Exception as e:
+                    logger.error(f"Error parsing existing_fps_list: {e}")
+                    existing_fps = [None] * len(video_ids)
+            else:
+                existing_fps = [None] * len(video_ids)
+
+            fps_values = []
+            for i, video_id in enumerate(video_ids):
+                video_id = video_id.strip()
+                # Skip processing if the FPS value already exists
+                if i < len(existing_fps) and existing_fps[i] is not None:
+                    fps_values.append(existing_fps[i])
+                    logger.info(f"Skipping video {video_id} as FPS is already available.")
+                else:
+                    fps = get_fps(video_id)
+                    fps_values.append(fps)
+            return str(fps_values)
+        # Process the 'videos' column and add/update the 'fps_list' column
+        if 'fps_list' not in df.columns:
+            df['fps_list'] = None
+
+        for index, row in df.iterrows():
+            existing_fps_list = row['fps_list']
+            df.at[index, 'fps_list'] = process_videos(row['videos'], existing_fps_list)
+
+        # Save the updated DataFrame back to the same file
+        df.to_csv(common.get_configs("mapping"), index=False)
+        logger.info("Mapping file updated successfully with FPS data.")
+
+    @staticmethod
+    def get_upload_date(video_id):
+        try:
+            # Construct YouTube URL from video ID
+            video_url = f"https://www.youtube.com/watch?v={video_id}"
+
+            # Create YouTube object
+            yt = YouTube(video_url)
+
+            # Fetch upload date
+            upload_date = yt.publish_date
+
+            if upload_date:
+                # Format the date as ddmmyyyy
+                return upload_date.strftime('%d%m%Y')
+            else:
+                return None
+        except Exception:
+            return None
+
+    @staticmethod
+    def get_latest_traffic_mortality():
+        """
+        Fetch the latest traffic mortality data from the World Bank.
+
+        Returns:
+            pd.DataFrame: DataFrame with ISO_country and the latest Traffic Mortality Rate.
+        """
+        # World Bank indicator for traffic mortality rate
+        indicator = 'SH.STA.TRAF.P5'  # Road traffic deaths per 100,000 people
+
+        # Fetch the most recent data (mrv=1 for the most recent value)
+        traffic_mortality_data = wb.get_series(indicator, id_or_value='id', mrv=1)
+
+        # Convert the data to a DataFrame
+        traffic_df = traffic_mortality_data.reset_index()
+
+        # Rename columns appropriately
+        traffic_df = traffic_df.rename(columns={
+            traffic_df.columns[0]: 'ISO_country',
+            traffic_df.columns[2]: 'Year',
+            traffic_df.columns[3]: 'traffic_mortality'
+        })
+
+        # Keep only the latest value for each country
+        traffic_df = traffic_df.sort_values(by=['ISO_country', 'Year'],
+                                            ascending=[True, False]).drop_duplicates(subset=['ISO_country'])
+
+        # Add default value for XKX
+        traffic_df.loc[traffic_df['ISO_country'] == 'XKX', 'traffic_mortality'] = 7.4
+
+        return traffic_df[['ISO_country', 'traffic_mortality']]
+
+    @staticmethod
+    def fill_traffic_mortality(df):
+        """
+        Fill the traffic mortality rate column in a CSV file using World Bank data.
+
+        Args:
+            file_path (str): Path to the input CSV file.
+        """
+        try:
+            # Ensure the required columns exist
+            if 'ISO_country' not in df.columns or 'traffic_mortality' not in df.columns:
+                logger.error("The required columns 'ISO_country' and 'traffic_mortality' are missing from the file.")
+                return
+
+            # Get the latest traffic mortality data
+            traffic_df = youtube_helper.get_latest_traffic_mortality()
+
+            # Merge the traffic mortality data with the existing DataFrame
+            updated_df = pd.merge(df, traffic_df, on='ISO_country', how='left', suffixes=('', '_new'))
+
+            # Update the traffic_mortality column with the new data
+            updated_df['traffic_mortality'] = updated_df['traffic_mortality_new'].combine_first(
+                updated_df['traffic_mortality'])
+
+            # Drop the temporary column
+            updated_df = updated_df.drop(columns=['traffic_mortality_new'])
+
+            # Save the updated DataFrame back to the same CSV file
+            updated_df.to_csv(common.get_configs("mapping"), index=False)
+            logger.info("Mapping file updated successfully with traffic mortality rate.")
+
+        except Exception as e:
+            logger.error(f"An error occurred: {e}")
+
+    @staticmethod
+    def get_latest_geni_values():
+        """
+        Fetch the latest GINI index data from the World Bank.
+
+        Returns:
+            pd.DataFrame: DataFrame with ISO_country and the latest GINI index values.
+        """
+        # World Bank indicator for GINI index
+        indicator = 'SI.POV.GINI'  # GINI index
+
+        # Fetch the most recent data (mrv=1 for the most recent value)
+        geni_data = wb.get_series(indicator, id_or_value='id', mrv=1)
+
+        # Convert the data to a DataFrame
+        geni_df = geni_data.reset_index()
+
+        # Rename columns appropriately
+        geni_df = geni_df.rename(columns={
+            geni_df.columns[0]: 'ISO_country',
+            geni_df.columns[2]: 'Year',
+            geni_df.columns[3]: 'geni'
+        })
+
+        # Keep only the latest value for each country
+        geni_df = geni_df.sort_values(by=['ISO_country', 'Year'],
+                                      ascending=[True, False]).drop_duplicates(subset=['ISO_country'])
+
+        return geni_df[['ISO_country', 'geni']]
+
+    @staticmethod
+    def fill_gini_data(df):
+        """
+        Fill the GINI index column in a CSV file using World Bank data.
+
+        Args:
+            file_path (str): Path to the input CSV file.
+        """
+        try:
+            # Ensure the required column exists
+            if 'geni' not in df.columns:
+                logger.error("The required columns 'ISO_country' and 'geni' are missing from the file.")
+                return
+
+            # Get the latest GINI index data
+            geni_df = youtube_helper.get_latest_geni_values()
+
+            # Merge the GINI index data with the existing DataFrame
+            updated_df = pd.merge(df, geni_df, on='ISO_country', how='left', suffixes=('', '_new'))
+
+            # Update the geni column with the new data
+            updated_df['geni'] = updated_df['geni_new'].combine_first(updated_df['geni'])
+
+            # Drop the temporary column
+            updated_df = updated_df.drop(columns=['geni_new'])
+
+            # Save the updated DataFrame back to the same CSV file
+            updated_df.to_csv(common.get_configs("mapping"), index=False)
+            logger.info("Mapping file updated successfully with GINI value.")
+
+        except Exception as e:
+            logger.error(f"An error occurred: {e}")
 
     def prediction_mode(self):
         model = YOLO(self.model)

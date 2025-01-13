@@ -22,18 +22,73 @@ delete_runs_files = common.get_configs("delete_runs_files")
 delete_youtube_video = common.get_configs("delete_youtube_video")
 data_folder = common.get_configs("data")
 
-# Add a new column to store fps values if not already present
-if 'fps_list' not in mapping.columns:
-    mapping['fps_list'] = ['[60]'] * len(mapping)
+if common.get_configs("update_ISO_code"):
+    # Ensure the country column exists
+    if "country" not in mapping.columns:
+        raise KeyError("The CSV file does not have a 'country' column.")
+
+    # Update the ISO_country column without using apply
+    if "ISO_country" not in mapping.columns:
+        mapping["ISO_country"] = None  # Initialize the column if it doesn't exist
+
+    for index, row in mapping.iterrows():
+        mapping.at[index, "ISO_country"] = helper.get_iso_alpha_3(row["country"], row["ISO_country"])
+
+    # Save the updated DataFrame back to the same CSV
+    mapping.to_csv(common.get_configs("mapping"), index=False)
+
+    logger.info("Mapping file updated with ISO codes.")
+
+if common.get_configs("update_pop_country"):
+    helper.update_population_in_csv(mapping)
+
+if common.get_configs("update_continent"):
+    # Update the continent column based on the country
+    mapping['continent'] = mapping['country'].apply(helper.get_continent_from_country)
+
+    # Save the updated CSV file
+    mapping.to_csv(common.get_configs("mapping"), index=False)
+    logger.info("Mapping file updated successfully with continents.")
+
+if common.get_configs("update_mortality_rate"):
+    helper.fill_traffic_mortality(mapping)
+
+if common.get_configs("update_gini_value"):
+    helper.fill_gini_data(mapping)
+
+if common.get_configs("update_fps_list"):
+    helper.update_csv_with_fps(mapping)
+
+if common.get_configs("update_upload_date"):
+    # Process the 'videos' column
+    def extract_upload_dates(video_column):
+        upload_dates = []
+        for video_list in video_column:
+            # Parse the video IDs from the string
+            video_ids = video_list.strip('[]').split(',')
+            video_ids = [vid.strip() for vid in video_ids]
+
+            # Get upload dates for all video IDs in the list
+            dates = [helper.get_upload_date(vid) for vid in video_ids]
+
+            # Combine dates in the same format as requested
+            upload_dates.append(f"[{','.join(date if date else 'None' for date in dates)}]")
+        return upload_dates
+
+    mapping['upload_date'] = extract_upload_dates(mapping['videos'])
+
+    # Save the updated file
+    mapping.to_csv(common.get_configs("mapping"), index=False)
+    logger.info("Mapping file updated successfully with upload dates.")
+
 
 for index, row in mapping.iterrows():
     video_ids = [id.strip() for id in row["videos"].strip("[]").split(',')]
     start_times = ast.literal_eval(row["start_time"])
     end_times = ast.literal_eval(row["end_time"])
     time_of_day = ast.literal_eval(row["time_of_day"])
-    # Check if 'fps_list' is NaN or empty
     if pd.isna(row["fps_list"]) or row["fps_list"] == '[]':
-        fps_values = [[60] for _ in range(len(video_ids))]
+        fps_values = [60 for _ in range(len(video_ids))]
     else:
         fps_values = ast.literal_eval(row["fps_list"])
 
@@ -47,21 +102,19 @@ for index, row in mapping.iterrows():
             # result = None
             if result:
                 video_file_path, video_title, resolution, fps = result
-
                 # Update the fps value for the current video
                 if len(fps_values) <= vid_index:
                     # Extend the list if the index doesn't exist yet
-                    fps_values.extend([[] for _ in range(vid_index - len(fps_values) + 1)])
+                    fps_values.extend([60 for _ in range(vid_index - len(fps_values) + 1)])  # type: ignore
 
                 # Update the specific FPS value for the current video and index
-                fps_values[vid_index] = [fps]  # Replace the list with the new FPS value
+                fps_values[vid_index] = fps  # Replace the list with the new FPS value
 
                 # Dynamically update the 'fps_list' column for the current row
                 mapping.at[index, 'fps_list'] = str(fps_values)
 
                 # Write the updated DataFrame back to the CSV file after every update
                 mapping.to_csv(common.get_configs("mapping"), index=False)
-
                 logger.info(f"Downloaded video: {video_file_path}")
                 helper.set_video_title(video_title)
             else:
@@ -93,9 +146,9 @@ for index, row in mapping.iterrows():
                 helper.prediction_mode()
 
             if common.get_configs("tracking_mode"):
-                if fps_values[vid_index]:
-                    video_fps = fps_values[vid_index][-1]  # Get the last FPS value
-                    helper.tracking_mode(input_video_path, output_video_path, video_fps)
+                if fps_values[vid_index]:  # Get the last FPS value
+                    tracking_fps = fps_values[vid_index]
+                    helper.tracking_mode(input_video_path, output_video_path, tracking_fps)
                 else:
                     logger.warning(f"FPS not found for video ID: {vid}. Skipping tracking mode.")
 
