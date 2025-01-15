@@ -1533,8 +1533,8 @@ class Analysis():
         right_column_cities = cities_ordered[num_cities_per_col:]
 
         # Adjust x positioning for the left and right columns
-        x_position_left = -0.01  # Position for the left column
-        x_position_right = 1.02  # Position for the right column
+        x_position_left = 0.0  # Position for the left column
+        x_position_right = 1.0  # Position for the right column
         font_size = 20  # Font size for visibility
 
         # Initialize variables for dynamic y positioning for both columns
@@ -1580,6 +1580,8 @@ class Analysis():
 
         # Add annotations for country names dynamically for the right column
         for country, y_position in y_position_map_right.items():
+            iso2 = Analysis.iso3_to_iso2(country)
+            country = country + Analysis.iso2_to_flag(iso2)
             fig.add_annotation(
                 x=x_position_right,  # Right column x position
                 y=y_position,  # Calculated y position based on the city order
@@ -3494,7 +3496,7 @@ class Analysis():
             fig.update_layout(font=dict(family=common.get_configs('font_family')))
 
             Analysis.save_plotly_figure(fig, f"correlation_matrix_heatmap_{continents}")
-    
+
     @staticmethod
     def iso2_to_flag(iso2):
         return chr(ord('🇦') + (ord(iso2[0]) - ord('A'))) + chr(ord('🇦') + (ord(iso2[1]) - ord('A')))
