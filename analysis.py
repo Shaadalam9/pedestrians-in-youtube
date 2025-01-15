@@ -247,7 +247,7 @@ class Analysis():
         )
 
         # Show the plot
-        fig.show()
+        # fig.show()
 
         # Save the plot
         Analysis.save_plotly_figure(fig, plot_name, scatter_plot_flag=True)
@@ -515,7 +515,7 @@ class Analysis():
             # Add the scatter_geo trace to the choropleth map
             fig.add_trace(city_trace.data[0])
 
-        fig.show()
+        # fig.show()
 
         # Save and display the figure
         Analysis.save_plotly_figure(fig, "world_map")
@@ -1596,7 +1596,7 @@ class Analysis():
 
         # Final adjustments and display
         fig.update_layout(margin=dict(l=80, r=100, t=150, b=180))
-        fig.show()
+        # fig.show()
         Analysis.save_plotly_figure(fig, "consolidate", width=2400, height=3200, scale=3)
 
     @staticmethod
@@ -2189,7 +2189,7 @@ class Analysis():
         # Final adjustments and display
         fig.update_layout(margin=dict(l=80, r=100, t=150, b=180))
         Analysis.save_plotly_figure(fig, "speed_of_crossing", width=2400, height=3200, scale=3)
-        fig.show()
+        # fig.show()
 
     @staticmethod
     def plot_time_to_start_cross_by_alphabetical_order(df_mapping):
@@ -2528,7 +2528,7 @@ class Analysis():
 
         # Final adjustments and display
         fig.update_layout(margin=dict(l=80, r=100, t=150, b=180))
-        fig.show()
+        # fig.show()
         Analysis.save_plotly_figure(fig, "time_to_start_cross", width=2400, height=3200, scale=3)
 
     @staticmethod
@@ -2825,7 +2825,7 @@ class Analysis():
         # Final adjustments and display
         fig.update_layout(margin=dict(l=80, r=100, t=150, b=180))
         Analysis.save_plotly_figure(fig, "speed_of_crossing_by_avg", width=2400, height=3200, scale=3)
-        fig.show()
+        # fig.show()
 
     @staticmethod
     def plot_time_to_start_cross_by_average(df_mapping):
@@ -3122,7 +3122,7 @@ class Analysis():
 
         # Final adjustments and display
         fig.update_layout(margin=dict(l=80, r=100, t=150, b=180))
-        fig.show()
+        # fig.show()
         Analysis.save_plotly_figure(fig, "time_to_start_cross_by_avg", width=2400, height=3200, scale=3)
 
     @staticmethod
@@ -3273,7 +3273,7 @@ class Analysis():
 
         Analysis.save_plotly_figure(fig, "correlation_matrix_heatmap_in_daylight")
 
-        fig.show()
+        # fig.show()
 
         # Generate the heatmap using Plotly
         fig = px.imshow(corr_matrix_night, text_auto=True,  # Display correlation values on the heatmap
@@ -3285,7 +3285,7 @@ class Analysis():
 
         Analysis.save_plotly_figure(fig, "correlation_matrix_heatmap_in_night")
 
-        fig.show()
+        # fig.show()
 
         # Initialize a list to store rows of data (one row per city)
         data_rows = []
@@ -3369,7 +3369,7 @@ class Analysis():
         fig.update_layout(coloraxis_showscale=False)
 
         Analysis.save_plotly_figure(fig, "correlation_matrix_heatmap_averaged")
-        fig.show()
+        # fig.show()
 
         # Continent Wise
 
