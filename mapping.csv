@@ -45,7 +45,7 @@ id,city,country,ISO_country,videos,time_of_day,gdp_city_(billion_US),population_
 44,Shanghai,China,CHN,"[WvvJb_TrOD0,8T044v8EG5E,MAiltiE8tgI]","[[0],[1],[0]]",663.874,24890.106,1410710.0,17.4,"[[0],[76],[109]]","[[2327],[5612],[8380]]",Asia,97.0,169.6,"[None,None,None]","[60.0, 60.0, 60.0]",35.7,146.7
 45,Gulberg,Pakistan,PAK,[I5P1sc-OTIs],[[0]],338.368,235824.0,247504.495,13.0,[[37]],[[1270]],Asia,58.0,161.0,[None],[50.0],29.6,162.2
 46,Riyadh,Saudi Arabia,SAU,[kjc38p4dJK0],[[0]],243.973,7821.0,33264.292,35.9,[[0]],[[2873]],Asia,98.0,164.7,[None],[30.0],,139.8
-47,Istanbul,Turkiye,TUR,"[RKIPWCWldzE,EekQAq5bufc,LBjC1JVy9-0,ALA09uSzD7E]","[[0],[0],[0],[0]]",275.365,16500.0,,12.3,"[[26],[65],[5],[45]]","[[5558],[3300],[3760],[6248]]",Asia,97.0,169.1,"[20112020,None,None,None]","[30.0, 30.0, 30.0, 60.0]",44.4,
+47,Istanbul,Turkiye,TUR,"[RKIPWCWldzE,EekQAq5bufc,LBjC1JVy9-0,ALA09uSzD7E]","[[0],[0],[0],[0]]",275.365,16500.0,,12.3,"[[26],[65],[5],[0]]","[[5558],[3300],[3760],[6248]]",Asia,97.0,169.1,"[20112020,None,None,None]","[30.0, 30.0, 30.0, 60.0]",44.4,
 48,Dusseldorf,Germany,DEU,"[d59wPaenvzs,irdbjlYLw7k]","[[0],[0]]",4456.081,83798.0,83280.0,3.8,"[[48],[120]]","[[2316],[2890]]",Europe,99.0,173.2,"[None,None]","[50.0, 24.0]",32.4,99.7
 49,Helsinki,Finland,FIN,"[X_Gdgh07k8E,LY1jpXPgOss,sx_gQjzYNlY]","[[0],[0],[0]]",125.166,1500.0,5583.911,3.9,"[[19],[36],[190]]","[[2644],[1470],[1512]]",Europe,100.0,173.5,"[None,None,None]","[25.0, 60.0, 25.0]",27.7,78.3
 50,Algiers,Algeria,DZA,[v2UmU4knL0c],[[0]],239.9,44903.0,46164.219,20.9,[[0]],[[2123]],Africa,81.0,168.6,[None],[30.0],27.6,
