@@ -84,31 +84,31 @@ Merged figure of the speed of crossing and time to start crossing(sorted by coun
 [![Merged figure of speed of crossing ad time to start crossing(sorted by coutries)](figures/consolidate.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/consolidate.html)
 
 Correlation Matrix
-[![Correlation Matrix based on average speed and time to start cross](figures/Correlation_matrix_heatmap_averaged.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/Correlation_matrix_heatmap_averaged.html)
+[![Correlation Matrix based on average speed and time to start cross](figures/correlation_matrix_heatmap_averaged.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/correlation_matrix_heatmap_averaged.html)
 
 Correlation Matrix at day-time
-[![Correlation Matrix at day-time](figures/Correlation_matrix_heatmap_in_daylight.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/Correlation_matrix_heatmap_in_daylight.html)
+[![Correlation Matrix at day-time](figures/correlation_matrix_heatmap_in_daylight.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/correlation_matrix_heatmap_in_daylight.html)
 
 Correlation Matrix at night-time
-[![Correlation Matrix at night-time](figures/Correlation_matrix_heatmap_in_night.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/Correlation_matrix_heatmap_in_night.html)
+[![Correlation Matrix at night-time](figures/correlation_matrix_heatmap_in_night.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/correlation_matrix_heatmap_in_night.html)
 
 Correlation Matrix of Africa
-[![Correlation Matrix of Africa](figures/Correlation_matrix_heatmap_Africa.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/Correlation_matrix_heatmap_Africa.html)
+[![Correlation Matrix of Africa](figures/correlation_matrix_heatmap_Africa.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/correlation_matrix_heatmap_Africa.html)
 
 Correlation Matrix of Asia
-[![Correlation Matrix of Asia](figures/Correlation_matrix_heatmap_Asia.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/Correlation_matrix_heatmap_Asia.html)
+[![Correlation Matrix of Asia](figures/correlation_matrix_heatmap_Asia.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/correlation_matrix_heatmap_Asia.html)
 
 Correlation Matrix of Australia
-[![Correlation Matrix of Australia](figures/Correlation_matrix_heatmap_Australia.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/Correlation_matrix_heatmap_Australia.html)
+[![Correlation Matrix of Australia](figures/correlation_matrix_heatmap_Oceania.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/correlation_matrix_heatmap_Oceania.html)
 
 Correlation Matrix of Europe
-[![Correlation Matrix of Europe](figures/Correlation_matrix_heatmap_Europe.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/Correlation_matrix_heatmap_Europe.html)
+[![Correlation Matrix of Europe](figures/correlation_matrix_heatmap_Europe.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/correlation_matrix_heatmap_Europe.html)
 
 Correlation Matrix of North America
-[![Correlation Matrix of North America](figures/Correlation_matrix_heatmap_North_America.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/Correlation_matrix_heatmap_North_America.html)
+[![Correlation Matrix of North America](figures/correlation_matrix_heatmap_North_America.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/correlation_matrix_heatmap_North_America.html)
 
 Correlation Matrix of South America
-[![Correlation Matrix of South America](figures/Correlation_matrix_heatmap_South_America.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/Correlation_matrix_heatmap_South_America.html)
+[![Correlation Matrix of South America](figures/correlation_matrix_heatmap_South_America.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/correlation_matrix_heatmap_South_America.html)
 
 ## Contact
 If you have any questions or suggestions, feel free to reach out to md_shadab_alam@outlook.com

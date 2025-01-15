@@ -16,6 +16,7 @@ from geopy.exc import GeocoderTimedOut
 from geopy.geocoders import Nominatim
 import pickle
 from datetime import datetime
+import plotly as py
 
 logs(show_level='info', show_color=True)
 logger = CustomLogger(__name__)  # use custom logger
@@ -89,7 +90,7 @@ class Analysis():
         return num_groups
 
     @staticmethod
-    def save_plotly_figure(fig, filename, scatter_plot_flag=False, width=1600, height=900, scale=3):
+    def save_plotly_figure(fig, filename, scatter_plot_flag=False, width=1600, height=900, scale=3, save_final=False):
         """Saves a Plotly figure as HTML, PNG, SVG, and EPS formats.
 
         Args:
@@ -98,29 +99,38 @@ class Analysis():
             width (int, optional): Width of the PNG and EPS images in pixels. Defaults to 1600.
             height (int, optional): Height of the PNG and EPS images in pixels. Defaults to 900.
             scale (int, optional): Scaling factor for the PNG image. Defaults to 3.
+            save_final (bool, optional): whether to save the "good" final figure.
         """
         # Create directory if it doesn't exist
         output_folder = "_output"
+        output_final = "figures"
         os.makedirs(output_folder, exist_ok=True)
+        os.makedirs(output_final, exist_ok=True)
 
         # Save as HTML
-        fig.write_html(os.path.join(output_folder, filename + ".html"))
+        # fig.write_html(os.path.join(output_folder, filename + ".html"))
+        py.offline.plot(fig, filename=os.path.join(output_folder, filename + ".html"))
+        # also save the final figure
+        if save_final:
+            py.offline.plot(fig, filename=os.path.join(output_final, filename + ".html"))
 
         # Save as PNG
         if scatter_plot_flag:
-            fig.write_image(os.path.join(output_folder, filename + ".png"),
-                            scale=scale)
+            fig.write_image(os.path.join(output_folder, filename + ".png"), scale=scale)
+            # also save the final figure
+            if save_final:
+                fig.write_image(os.path.join(output_final, filename + ".png"), scale=scale)
         else:
-            fig.write_image(os.path.join(output_folder, filename + ".png"),
-                            width=width, height=height, scale=scale)
-
-        # Save as SVG
-        fig.write_image(os.path.join(output_folder, filename + ".svg"),
-                        format="svg")
+            fig.write_image(os.path.join(output_folder, filename + ".png"), width=width, height=height, scale=scale)
+            # also save the final figure
+            if save_final:
+                fig.write_image(os.path.join(output_final, filename + ".png"), width=width, height=height, scale=scale)
 
         # Save as EPS
-        fig.write_image(os.path.join(output_folder, filename + ".eps"),
-                        width=width, height=height)
+        fig.write_image(os.path.join(output_folder, filename + ".eps"), width=width, height=height)
+        # also save the final figure
+        if save_final:
+            fig.write_image(os.path.join(output_final, filename + ".eps"), width=width, height=height)
 
     @staticmethod
     def adjust_annotation_positions(annotations):
@@ -3261,7 +3271,7 @@ class Analysis():
                         aspect="auto")  # Automatically adjust aspect ratio
         fig.update_layout(coloraxis_showscale=False)
 
-        Analysis.save_plotly_figure(fig, "Correlation_matrix_heatmap_in_daylight")
+        Analysis.save_plotly_figure(fig, "correlation_matrix_heatmap_in_daylight")
 
         fig.show()
 
@@ -3273,7 +3283,7 @@ class Analysis():
                         )
         fig.update_layout(coloraxis_showscale=False)
 
-        Analysis.save_plotly_figure(fig, "Correlation_matrix_heatmap_in_night")
+        Analysis.save_plotly_figure(fig, "correlation_matrix_heatmap_in_night")
 
         fig.show()
 
@@ -3358,7 +3368,7 @@ class Analysis():
                         )
         fig.update_layout(coloraxis_showscale=False)
 
-        Analysis.save_plotly_figure(fig, "Correlation_matrix_heatmap_averaged")
+        Analysis.save_plotly_figure(fig, "correlation_matrix_heatmap_averaged")
         fig.show()
 
         # Continent Wise
@@ -3451,8 +3461,8 @@ class Analysis():
                             )
             fig.update_layout(coloraxis_showscale=False)
 
-            Analysis.save_plotly_figure(fig, f"Correlation_matrix_heatmap_{continents}")
-            fig.show()
+            Analysis.save_plotly_figure(fig, f"correlation_matrix_heatmap_{continents}")
+            # fig.show()
 
 
 # Execute analysis
