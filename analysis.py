@@ -17,6 +17,7 @@ from geopy.geocoders import Nominatim
 import pickle
 from datetime import datetime
 import plotly as py
+import pycountry
 
 logs(show_level='info', show_color=True)
 logger = CustomLogger(__name__)  # use custom logger
@@ -439,7 +440,8 @@ class Analysis():
         # Create a choropleth map using Plotly with grey color for countries
         fig = px.choropleth(df, locations="country", locationmode="country names",
                             color="value", hover_name="country", hover_data={'value': False, 'country': False},
-                            color_continuous_scale=["rgb(242, 186, 78)", "rgb(242, 186, 78)"], labels={'value': 'Highlighted'})
+                            color_continuous_scale=["rgb(242, 186, 78)", "rgb(242, 186, 78)"],
+                            labels={'value': 'Highlighted'})
 
         # Update layout to remove Antarctica, Easter Island, remove the color bar, and set ocean color
         fig.update_layout(
@@ -1268,10 +1270,11 @@ class Analysis():
                     x=[day_avg_speed[i]], y=[city], orientation='h',
                     name=f"{city} speed during day", marker=dict(color=common.get_configs('bar_colour_1')), text=[''],
                     textposition='auto', insidetextanchor='start', showlegend=False,
-                    textfont=dict(size=14*2, color='white')), row=row, col=1)
+                    textfont=dict(size=28, color='white')), row=row, col=1)
                 fig.add_trace(go.Bar(
                     x=[night_avg_speed[i]], y=[city], orientation='h',
-                    name=f"{city} speed during night", marker=dict(color=common.get_configs('bar_colour_2')),
+                    name=f"{city} speed during night",
+                    marker=dict(color=common.get_configs('bar_colour_2')),
                     text=[''], textposition='auto', showlegend=False), row=row, col=1)
 
             elif day_avg_speed[i] is not None:  # Only day data available
@@ -1279,14 +1282,15 @@ class Analysis():
                     x=[day_avg_speed[i]], y=[city], orientation='h',
                     name=f"{city} speed during day", marker=dict(color=common.get_configs('bar_colour_1')), text=[''],
                     textposition='auto', insidetextanchor='start', showlegend=False,
-                    textfont=dict(size=14*2, color='white')), row=row, col=1)
+                    textfont=dict(size=28, color='white')), row=row, col=1)
 
             elif night_avg_speed[i] is not None:  # Only night data available
                 fig.add_trace(go.Bar(
                     x=[night_avg_speed[i]], y=[city], orientation='h',
-                    name=f"{city} speed during night", marker=dict(color=common.get_configs('bar_colour_2')),
-                    text=[''], textposition='auto', insidetextanchor='start', showlegend=False,
-                    textfont=dict(size=14*2, color='white')), row=row, col=1)
+                    name=f"{city} speed during night",
+                    marker=dict(color=common.get_configs('bar_colour_2')), text=[''],
+                    textposition='auto', insidetextanchor='start', showlegend=False,
+                    textfont=dict(size=28, color='white')), row=row, col=1)
 
             # Row for time (Day and Night)
             row = 2 * i + 2
@@ -1295,7 +1299,7 @@ class Analysis():
                     x=[day_time_dict[i]], y=[city], orientation='h',
                     name=f"{city} time during day", marker=dict(color=common.get_configs('bar_colour_3')),
                     text=[''], textposition='auto', insidetextanchor='start', showlegend=False,
-                    textfont=dict(size=14*2, color='white')), row=row, col=1)
+                    textfont=dict(size=28, color='white')), row=row, col=1)
                 fig.add_trace(go.Bar(
                     x=[night_time_dict[i]], y=[city], orientation='h',
                     name=f"{city} time during night", marker=dict(color=common.get_configs('bar_colour_4')), text=[''],
@@ -1306,14 +1310,14 @@ class Analysis():
                     x=[day_time_dict[i]], y=[city], orientation='h',
                     name=f"{city} time during day", marker=dict(color=common.get_configs('bar_colour_3')),
                     text=[''], textposition='auto', insidetextanchor='start', showlegend=False,
-                    textfont=dict(size=14*2, color='white')), row=row, col=1)
+                    textfont=dict(size=28, color='white')), row=row, col=1)
 
             elif night_time_dict[i] is not None:  # Only night time data available
                 fig.add_trace(go.Bar(
                     x=[night_time_dict[i]], y=[city], orientation='h',
                     name=f"{city} time during night", marker=dict(color=common.get_configs('bar_colour_4')),
                     text=[''], textposition='auto', insidetextanchor='start', showlegend=False,
-                    textfont=dict(size=14*2, color='white')), row=row, col=1)
+                    textfont=dict(size=28, color='white')), row=row, col=1)
 
         # Similarly for the right column
         for i, city in enumerate(cities_ordered[num_cities_per_col:]):
@@ -1324,7 +1328,7 @@ class Analysis():
                     x=[day_avg_speed[idx]], y=[city], orientation='h',
                     name=f"{city} speed during day", marker=dict(color=common.get_configs('bar_colour_1')), text=[''],
                     textposition='inside', insidetextanchor='start', showlegend=False,
-                    textfont=dict(size=14*2, color='white')), row=row, col=2)
+                    textfont=dict(size=28, color='white')), row=row, col=2)
                 fig.add_trace(go.Bar(
                     x=[night_avg_speed[idx]], y=[city], orientation='h',
                     name=f"{city} speed during night", marker=dict(color=common.get_configs('bar_colour_2')),
@@ -1335,14 +1339,14 @@ class Analysis():
                     x=[day_avg_speed[idx]], y=[city], orientation='h',
                     name=f"{city} speed during day", marker=dict(color=common.get_configs('bar_colour_1')), text=[''],
                     textposition='inside', insidetextanchor='start', showlegend=False,
-                    textfont=dict(size=14*2, color='white')), row=row, col=2)
+                    textfont=dict(size=28, color='white')), row=row, col=2)
 
             elif night_avg_speed[idx] is not None:
                 fig.add_trace(go.Bar(
                     x=[night_avg_speed[idx]], y=[city], orientation='h',
                     name=f"{city} speed during night", marker=dict(color=common.get_configs('bar_colour_2')),
                     text=[''], textposition='inside', insidetextanchor='start', showlegend=False,
-                    textfont=dict(size=14*2, color='white')), row=row, col=2)
+                    textfont=dict(size=28, color='white')), row=row, col=2)
 
             row = 2 * i + 2
             if day_time_dict[idx] is not None and night_time_dict[idx] is not None:
@@ -1350,7 +1354,7 @@ class Analysis():
                     x=[day_time_dict[idx]], y=[city], orientation='h',
                     name=f"{city} time during day", marker=dict(color=common.get_configs('bar_colour_3')),
                     text=[''], textposition='inside', insidetextanchor='start', showlegend=False,
-                    textfont=dict(size=14*2, color='white')), row=row, col=2)
+                    textfont=dict(size=28, color='white')), row=row, col=2)
                 fig.add_trace(go.Bar(
                     x=[night_time_dict[idx]], y=[city], orientation='h',
                     name=f"{city} time during night", marker=dict(color=common.get_configs('bar_colour_4')), text=[''],
@@ -1361,14 +1365,14 @@ class Analysis():
                     x=[day_time_dict[idx]], y=[city], orientation='h',
                     name=f"{city} time during day", marker=dict(color=common.get_configs('bar_colour_3')),
                     text=[''], textposition='inside', insidetextanchor='start', showlegend=False,
-                    textfont=dict(size=14*2, color='white')), row=row, col=2)
+                    textfont=dict(size=28, color='white')), row=row, col=2)
 
             elif night_time_dict[idx] is not None:  # Only night time data available
                 fig.add_trace(go.Bar(
                     x=[night_time_dict[idx]], y=[city], orientation='h',
                     name=f"{city} time during night", marker=dict(color=common.get_configs('bar_colour_4')),
                     text=[''], textposition='inside', insidetextanchor='start', showlegend=False,
-                    textfont=dict(size=14*2, color='white')), row=row, col=2)
+                    textfont=dict(size=28, color='white')), row=row, col=2)
 
         # Calculate the maximum value across all data to use as x-axis range
         max_value_time = max([
@@ -1437,7 +1441,7 @@ class Analysis():
         # Update layout to hide the main legend and adjust margins
         fig.update_layout(
             plot_bgcolor='white', paper_bgcolor='white', barmode='stack',
-            height=3508*2, width=2480*2, showlegend=False,  # Hide the default legend
+            height=7016, width=4960, showlegend=False,  # Hide the default legend
             margin=dict(t=150, b=150), bargap=0, bargroupgap=0
         )
 
@@ -1559,6 +1563,8 @@ class Analysis():
 
         # Add annotations for country names dynamically for the left column
         for country, y_position in y_position_map_left.items():
+            iso2 = Analysis.iso3_to_iso2(country)
+            country = country + Analysis.iso2_to_flag(iso2)
             fig.add_annotation(
                 x=x_position_left,  # Left column x position
                 y=y_position,  # Calculated y position based on the city order
@@ -1587,7 +1593,7 @@ class Analysis():
                 # bordercolor="black",  # Border for visibility
             )
         fig.update_yaxes(
-            tickfont=dict(size=14*1.5, color="black"),
+            tickfont=dict(size=21, color="black"),
             showticklabels=True,  # Ensure city names are visible
             ticklabelposition='inside',  # Move the tick labels inside the bars
         )
@@ -1601,7 +1607,7 @@ class Analysis():
         # Final adjustments and display
         fig.update_layout(margin=dict(l=80, r=100, t=150, b=180))
         # fig.show()
-        Analysis.save_plotly_figure(fig, "consolidated", width=2400, height=3200, scale=3)
+        Analysis.save_plotly_figure(fig, "consolidated", height=7016, width=4960, scale=3)
 
     @staticmethod
     def time_to_start_crossing_vs_literacy(df_mapping, need_annotations=True):
@@ -2606,7 +2612,7 @@ class Analysis():
                 fig.add_trace(go.Bar(
                     x=[night_avg_speed[i]], y=[city], orientation='h',
                     name=f"{city} speed during night", marker=dict(color=common.get_configs('bar_colour_2')),
-                     text=[''], textposition='auto', showlegend=False), row=row, col=1)
+                    text=[''], textposition='auto', showlegend=False), row=row, col=1)
 
             elif day_avg_speed[i] is not None:  # Only day data available
                 fig.add_trace(go.Bar(
@@ -3292,8 +3298,6 @@ class Analysis():
 
         Analysis.save_plotly_figure(fig, "correlation_matrix_heatmap_in_daylight")
 
-        # fig.show()
-
         # Generate the heatmap using Plotly
         fig = px.imshow(corr_matrix_night, text_auto=True,  # Display correlation values on the heatmap
                         color_continuous_scale='RdBu',  # Color scale (you can customize this)
@@ -3490,7 +3494,20 @@ class Analysis():
             fig.update_layout(font=dict(family=common.get_configs('font_family')))
 
             Analysis.save_plotly_figure(fig, f"correlation_matrix_heatmap_{continents}")
-            # fig.show()
+    
+    @staticmethod
+    def iso2_to_flag(iso2):
+        return chr(ord('🇦') + (ord(iso2[0]) - ord('A'))) + chr(ord('🇦') + (ord(iso2[1]) - ord('A')))
+
+    @staticmethod
+    def iso3_to_iso2(iso3_code):
+        try:
+            # Find the country by ISO-3 code
+            country = pycountry.countries.get(alpha_3=iso3_code)
+            # Return the ISO-2 code
+            return country.alpha_2 if country else None
+        except AttributeError:
+            return None
 
 
 # Execute analysis
@@ -3577,17 +3594,17 @@ if __name__ == "__main__":
     logger.info(f"cellphone: {cellphone_counter}; traffic light: {traffic_light_counter}; sign: {stop_sign_counter}")
 
     Analysis.speed_and_time_to_start_cross(df_mapping)
-    # Analysis.time_to_start_crossing_vs_literacy(df_mapping)
-    # Analysis.time_to_start_crossing_vs_traffic_mortality(df_mapping)
-    # Analysis.traffic_safety_vs_literacy(df_mapping)
-    # Analysis.plot_cell_phone_vs_traffic_mortality(df_mapping)
-    # Analysis.vehicle_vs_cross_time(df_mapping)
-    # Analysis.traffic_mortality_vs_crossing_event_wt_traffic_light(df_mapping)
-    # Analysis.plot_traffic_safety_vs_traffic_mortality(df_mapping)
-    # Analysis.plot_speed_to_cross_by_alphabetical_order(df_mapping)
-    # Analysis.plot_time_to_start_cross_by_alphabetical_order(df_mapping)
-    # Analysis.plot_speed_to_cross_by_average(df_mapping)
-    # Analysis.plot_time_to_start_cross_by_average(df_mapping)
-    # Analysis.correlation_matrix(df_mapping)
+    Analysis.time_to_start_crossing_vs_literacy(df_mapping)
+    Analysis.time_to_start_crossing_vs_traffic_mortality(df_mapping)
+    Analysis.traffic_safety_vs_literacy(df_mapping)
+    Analysis.plot_cell_phone_vs_traffic_mortality(df_mapping)
+    Analysis.vehicle_vs_cross_time(df_mapping)
+    Analysis.traffic_mortality_vs_crossing_event_wt_traffic_light(df_mapping)
+    Analysis.plot_traffic_safety_vs_traffic_mortality(df_mapping)
+    Analysis.plot_speed_to_cross_by_alphabetical_order(df_mapping)
+    Analysis.plot_time_to_start_cross_by_alphabetical_order(df_mapping)
+    Analysis.plot_speed_to_cross_by_average(df_mapping)
+    Analysis.plot_time_to_start_cross_by_average(df_mapping)
+    Analysis.correlation_matrix(df_mapping)
 
     logger.info("Analysis completed.")
