@@ -439,7 +439,7 @@ class Analysis():
         # Create a choropleth map using Plotly with grey color for countries
         fig = px.choropleth(df, locations="country", locationmode="country names",
                             color="value", hover_name="country", hover_data={'value': False, 'country': False},
-                            color_continuous_scale=["#808080", "#808080"], labels={'value': 'Highlighted'})
+                            color_continuous_scale=["rgb(242, 186, 78)", "rgb(242, 186, 78)"], labels={'value': 'Highlighted'})
 
         # Update layout to remove Antarctica, Easter Island, remove the color bar, and set ocean color
         fig.update_layout(
@@ -448,7 +448,7 @@ class Analysis():
                 showframe=False,
                 showcoastlines=True,
                 projection_type='equirectangular',
-                showlakes=False,
+                showlakes=True,
                 lakecolor='rgb(173, 216, 230)',  # Light blue for lakes
                 projection_scale=1,
                 center=dict(lat=20, lon=0),  # Center map to remove Antarctica
@@ -510,7 +510,7 @@ class Analysis():
                 }
             )
             # Update the city markers to be red and adjust size
-            city_trace.update_traces(marker=dict(color="red", size=7))
+            city_trace.update_traces(marker=dict(color="red", size=5))
 
             # Add the scatter_geo trace to the choropleth map
             fig.add_trace(city_trace.data[0])
@@ -1597,7 +1597,7 @@ class Analysis():
         # Final adjustments and display
         fig.update_layout(margin=dict(l=80, r=100, t=150, b=180))
         # fig.show()
-        Analysis.save_plotly_figure(fig, "consolidate", width=2400, height=3200, scale=3)
+        Analysis.save_plotly_figure(fig, "consolidated", width=2400, height=3200, scale=3)
 
     @staticmethod
     def time_to_start_crossing_vs_literacy(df_mapping, need_annotations=True):
