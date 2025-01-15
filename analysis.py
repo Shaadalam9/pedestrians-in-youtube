@@ -3488,8 +3488,6 @@ class Analysis():
 
             # update font family
             fig.update_layout(font=dict(family=common.get_configs('font_family')))
-            # update font size
-            fig.update_layout(font=dict(size=common.get_configs('font_size')))
 
             Analysis.save_plotly_figure(fig, f"correlation_matrix_heatmap_{continents}")
             # fig.show()
