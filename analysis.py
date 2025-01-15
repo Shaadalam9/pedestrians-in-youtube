@@ -246,8 +246,8 @@ class Analysis():
             yaxis=dict(tickfont=dict(size=tick_font_size))
         )
 
-        # Show the plot
-        # fig.show()
+        # update font family
+        fig.update_layout(font=dict(family=common.get_configs('font_family')))
 
         # Save the plot
         Analysis.save_plotly_figure(fig, plot_name, scatter_plot_flag=True)
@@ -515,7 +515,8 @@ class Analysis():
             # Add the scatter_geo trace to the choropleth map
             fig.add_trace(city_trace.data[0])
 
-        # fig.show()
+        # update font family
+        fig.update_layout(font=dict(family=common.get_configs('font_family')))
 
         # Save and display the figure
         Analysis.save_plotly_figure(fig, "world_map")
@@ -1586,7 +1587,7 @@ class Analysis():
                 # bordercolor="black",  # Border for visibility
             )
         fig.update_yaxes(
-            tickfont=dict(size=10, color="black"),
+            tickfont=dict(size=14, color="black"),
             showticklabels=True,  # Ensure city names are visible
             ticklabelposition='inside',  # Move the tick labels inside the bars
         )
@@ -1596,8 +1597,6 @@ class Analysis():
 
         # update font family
         fig.update_layout(font=dict(family=common.get_configs('font_family')))
-        # update font size
-        fig.update_layout(font=dict(size=common.get_configs('font_size')))
 
         # Final adjustments and display
         fig.update_layout(margin=dict(l=80, r=100, t=150, b=180))
@@ -2191,6 +2190,9 @@ class Analysis():
             tickangle=0,  # No rotation or small rotation for the x-axis
         )
 
+        # update font family
+        fig.update_layout(font=dict(family=common.get_configs('font_family')))
+
         # Final adjustments and display
         fig.update_layout(margin=dict(l=80, r=100, t=150, b=180))
         Analysis.save_plotly_figure(fig, "speed_of_crossing", width=2400, height=3200, scale=3)
@@ -2531,6 +2533,9 @@ class Analysis():
             tickangle=0,  # No rotation or small rotation for the x-axis
         )
 
+        # update font family
+        fig.update_layout(font=dict(family=common.get_configs('font_family')))
+
         # Final adjustments and display
         fig.update_layout(margin=dict(l=80, r=100, t=150, b=180))
         # fig.show()
@@ -2826,6 +2831,9 @@ class Analysis():
         fig.update_xaxes(
             tickangle=0,  # No rotation or small rotation for the x-axis
         )
+
+        # update font family
+        fig.update_layout(font=dict(family=common.get_configs('font_family')))
 
         # Final adjustments and display
         fig.update_layout(margin=dict(l=80, r=100, t=150, b=180))
@@ -3125,6 +3133,9 @@ class Analysis():
             tickangle=0,  # No rotation or small rotation for the x-axis
         )
 
+        # update font family
+        fig.update_layout(font=dict(family=common.get_configs('font_family')))
+
         # Final adjustments and display
         fig.update_layout(margin=dict(l=80, r=100, t=150, b=180))
         # fig.show()
@@ -3276,6 +3287,9 @@ class Analysis():
                         aspect="auto")  # Automatically adjust aspect ratio
         fig.update_layout(coloraxis_showscale=False)
 
+        # update font family
+        fig.update_layout(font=dict(family=common.get_configs('font_family')))
+
         Analysis.save_plotly_figure(fig, "correlation_matrix_heatmap_in_daylight")
 
         # fig.show()
@@ -3287,6 +3301,9 @@ class Analysis():
                         # title="Correlation Matrix Heatmap in night"  # Title of the heatmap
                         )
         fig.update_layout(coloraxis_showscale=False)
+
+        # update font family
+        fig.update_layout(font=dict(family=common.get_configs('font_family')))
 
         Analysis.save_plotly_figure(fig, "correlation_matrix_heatmap_in_night")
 
@@ -3372,6 +3389,9 @@ class Analysis():
                         # title="Correlation matrix heatmap averaged" # Title of the heatmap
                         )
         fig.update_layout(coloraxis_showscale=False)
+
+        # update font family
+        fig.update_layout(font=dict(family=common.get_configs('font_family')))
 
         Analysis.save_plotly_figure(fig, "correlation_matrix_heatmap_averaged")
         # fig.show()
@@ -3465,6 +3485,11 @@ class Analysis():
                             # title=f"Correlation matrix heatmap {continents}"  # Title of the heatmap
                             )
             fig.update_layout(coloraxis_showscale=False)
+
+            # update font family
+            fig.update_layout(font=dict(family=common.get_configs('font_family')))
+            # update font size
+            fig.update_layout(font=dict(size=common.get_configs('font_size')))
 
             Analysis.save_plotly_figure(fig, f"correlation_matrix_heatmap_{continents}")
             # fig.show()
