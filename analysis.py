@@ -1765,7 +1765,7 @@ class Analysis():
 
         # Plot the scatter diagram
         Analysis.plot_scatter_diag(x=time_cal, y=info, size=gdp, color=continents, symbol=conditions,
-                                   city=cities, plot_name="cell_phone_vs_traffic_mortality",
+                                   city=cities, plot_name="vehicle_vs_cross_time",
                                    x_label="Traffic mortality rate (per 100,000 population)",
                                    y_label="Number of Mobile detected in the video (normalised)",
                                    legend_x=0.07, legend_y=0.96)
