@@ -1594,6 +1594,11 @@ class Analysis():
             tickangle=0,  # No rotation or small rotation for the x-axis
         )
 
+        # update font family
+        fig.update_layout(font=dict(family=common.get_configs('font_family')))
+        # update font size
+        fig.update_layout(font=dict(size=common.get_configs('font_size')))
+
         # Final adjustments and display
         fig.update_layout(margin=dict(l=80, r=100, t=150, b=180))
         # fig.show()
