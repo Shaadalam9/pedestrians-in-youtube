@@ -108,7 +108,7 @@ for index, row in mapping.iterrows():
                     fps_values.extend([60 for _ in range(vid_index - len(fps_values) + 1)])  # type: ignore
 
                 # Update the specific FPS value for the current video and index
-                fps_values[vid_index] = fps  # Replace the list with the new FPS value
+                fps_values[vid_index] = fps  # type: ignore # Replace the list with the new FPS value
 
                 # Dynamically update the 'fps_list' column for the current row
                 mapping.at[index, 'fps_list'] = str(fps_values)

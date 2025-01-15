@@ -1255,25 +1255,25 @@ class Analysis():
             if day_avg_speed[i] is not None and night_avg_speed[i] is not None:
                 fig.add_trace(go.Bar(
                     x=[day_avg_speed[i]], y=[city], orientation='h',
-                    name=f"{city} speed during day", marker=dict(color='#FFA15A'), text=[''],
+                    name=f"{city} speed during day", marker=dict(color=common.get_configs('bar_colour_1')), text=[''],
                     textposition='auto', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=1)
                 fig.add_trace(go.Bar(
                     x=[night_avg_speed[i]], y=[city], orientation='h',
-                    name=f"{city} speed during night", marker=dict(color='#19D3F3'), text=[''],
+                    name=f"{city} speed during night", marker=dict(color=common.get_configs('bar_colour_1')), text=[''],
                     textposition='auto', showlegend=False), row=row, col=1)
 
             elif day_avg_speed[i] is not None:  # Only day data available
                 fig.add_trace(go.Bar(
                     x=[day_avg_speed[i]], y=[city], orientation='h',
-                    name=f"{city} speed during day", marker=dict(color='#FFA15A'), text=[''],
+                    name=f"{city} speed during day", marker=dict(color=common.get_configs('bar_colour_1')), text=[''],
                     textposition='auto', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=1)
 
             elif night_avg_speed[i] is not None:  # Only night data available
                 fig.add_trace(go.Bar(
                     x=[night_avg_speed[i]], y=[city], orientation='h',
-                    name=f"{city} speed during night", marker=dict(color='#19D3F3'), text=[''],
+                    name=f"{city} speed during night", marker=dict(color=common.get_configs('bar_colour_2')), text=[''],
                     textposition='auto', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=1)
 
@@ -1282,25 +1282,25 @@ class Analysis():
             if day_time_dict[i] is not None and night_time_dict[i] is not None:
                 fig.add_trace(go.Bar(
                     x=[day_time_dict[i]], y=[city], orientation='h',
-                    name=f"{city} time during day", marker=dict(color='#FF6692'),
+                    name=f"{city} time during day", marker=dict(color=common.get_configs('bar_colour_3')),
                     text=[''], textposition='auto', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=1)
                 fig.add_trace(go.Bar(
                     x=[night_time_dict[i]], y=[city], orientation='h',
-                    name=f"{city} time during night", marker=dict(color='#B6E880'), text=[''],
+                    name=f"{city} time during night", marker=dict(color=common.get_configs('bar_colour_4')), text=[''],
                     textposition='auto', showlegend=False), row=row, col=1)
 
             elif day_time_dict[i] is not None:  # Only day time data available
                 fig.add_trace(go.Bar(
                     x=[day_time_dict[i]], y=[city], orientation='h',
-                    name=f"{city} time during day", marker=dict(color='#FF6692'),
+                    name=f"{city} time during day", marker=dict(color=common.get_configs('bar_colour_3')),
                     text=[''], textposition='auto', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=1)
 
             elif night_time_dict[i] is not None:  # Only night time data available
                 fig.add_trace(go.Bar(
                     x=[night_time_dict[i]], y=[city], orientation='h',
-                    name=f"{city} time during night", marker=dict(color='#B6E880'),
+                    name=f"{city} time during night", marker=dict(color=common.get_configs('bar_colour_4')),
                     text=[''], textposition='auto', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=1)
 
@@ -1311,51 +1311,51 @@ class Analysis():
             if day_avg_speed[idx] is not None and night_avg_speed[idx] is not None:
                 fig.add_trace(go.Bar(
                     x=[day_avg_speed[idx]], y=[city], orientation='h',
-                    name=f"{city} speed during day", marker=dict(color='#FFA15A'), text=[''],
+                    name=f"{city} speed during day", marker=dict(color=common.get_configs('bar_colour_1')), text=[''],
                     textposition='inside', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=2)
                 fig.add_trace(go.Bar(
                     x=[night_avg_speed[idx]], y=[city], orientation='h',
-                    name=f"{city} speed during night", marker=dict(color='#19D3F3'), text=[''],
-                    textposition='inside', showlegend=False), row=row, col=2)
+                    name=f"{city} speed during night", marker=dict(color=common.get_configs('bar_colour_2')),
+                    text=[''], textposition='inside', showlegend=False), row=row, col=2)
 
             elif day_avg_speed[idx] is not None:
                 fig.add_trace(go.Bar(
                     x=[day_avg_speed[idx]], y=[city], orientation='h',
-                    name=f"{city} speed during day", marker=dict(color='#FFA15A'), text=[''],
+                    name=f"{city} speed during day", marker=dict(color=common.get_configs('bar_colour_1')), text=[''],
                     textposition='inside', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=2)
 
             elif night_avg_speed[idx] is not None:
                 fig.add_trace(go.Bar(
                     x=[night_avg_speed[idx]], y=[city], orientation='h',
-                    name=f"{city} speed during night", marker=dict(color='#19D3F3'), text=[''],
-                    textposition='inside', insidetextanchor='start', showlegend=False,
+                    name=f"{city} speed during night", marker=dict(color=common.get_configs('bar_colour_2')),
+                    text=[''], textposition='inside', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=2)
 
             row = 2 * i + 2
             if day_time_dict[idx] is not None and night_time_dict[idx] is not None:
                 fig.add_trace(go.Bar(
                     x=[day_time_dict[idx]], y=[city], orientation='h',
-                    name=f"{city} time during day", marker=dict(color='#FF6692'),
+                    name=f"{city} time during day", marker=dict(color=common.get_configs('bar_colour_3')),
                     text=[''], textposition='inside', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=2)
                 fig.add_trace(go.Bar(
                     x=[night_time_dict[idx]], y=[city], orientation='h',
-                    name=f"{city} time during night", marker=dict(color='#B6E880'), text=[''],
+                    name=f"{city} time during night", marker=dict(color=common.get_configs('bar_colour_4')), text=[''],
                     textposition='inside', showlegend=False), row=row, col=2)
 
             elif day_time_dict[idx] is not None:  # Only day time data available
                 fig.add_trace(go.Bar(
                     x=[day_time_dict[idx]], y=[city], orientation='h',
-                    name=f"{city} time during day", marker=dict(color='#FF6692'),
+                    name=f"{city} time during day", marker=dict(color=common.get_configs('bar_colour_3')),
                     text=[''], textposition='inside', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=2)
 
             elif night_time_dict[idx] is not None:  # Only night time data available
                 fig.add_trace(go.Bar(
                     x=[night_time_dict[idx]], y=[city], orientation='h',
-                    name=f"{city} time during night", marker=dict(color='#B6E880'),
+                    name=f"{city} time during night", marker=dict(color=common.get_configs('bar_colour_4')),
                     text=[''], textposition='inside', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=2)
 
@@ -1466,10 +1466,10 @@ class Analysis():
 
         # Define the legend items
         legend_items = [
-            {"name": "Speed during day", "color": "#FFA15A"},
-            {"name": "Speed during night", "color": "#19D3F3"},
-            {"name": "Time during day", "color": "#FF6692"},
-            {"name": "Time during night", "color": "#B6E880"},
+            {"name": "Speed during day", "color": common.get_configs('bar_colour_1')},
+            {"name": "Speed during night", "color": common.get_configs('bar_colour_2')},
+            {"name": "Time during day", "color": common.get_configs('bar_colour_3')},
+            {"name": "Time during night", "color": common.get_configs('bar_colour_4')},
         ]
 
         # Add vertical legends with the positions you will provide
@@ -1910,26 +1910,26 @@ class Analysis():
             if day_avg_speed[i] is not None and night_avg_speed[i] is not None:
                 fig.add_trace(go.Bar(
                     x=[day_avg_speed[i]], y=[city], orientation='h',
-                    name=f"{city} speed during day", marker=dict(color='#FFA15A'), text=[''],
+                    name=f"{city} speed during day", marker=dict(color=common.get_configs('bar_colour_1')), text=[''],
                     textposition='auto', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=1)
                 fig.add_trace(go.Bar(
                     x=[night_avg_speed[i]], y=[city], orientation='h',
-                    name=f"{city} speed during night", marker=dict(color='#19D3F3'), text=[''],
-                    textposition='auto', showlegend=False), row=row, col=1)
+                    name=f"{city} speed during night", marker=dict(color=common.get_configs('bar_colour_2')),
+                    text=[''], textposition='auto', showlegend=False), row=row, col=1)
 
             elif day_avg_speed[i] is not None:  # Only day data available
                 fig.add_trace(go.Bar(
                     x=[day_avg_speed[i]], y=[city], orientation='h',
-                    name=f"{city} speed during day", marker=dict(color='#FFA15A'), text=[''],
+                    name=f"{city} speed during day", marker=dict(color=common.get_configs('bar_colour_1')), text=[''],
                     textposition='auto', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=1)
 
             elif night_avg_speed[i] is not None:  # Only night data available
                 fig.add_trace(go.Bar(
                     x=[night_avg_speed[i]], y=[city], orientation='h',
-                    name=f"{city} speed during night", marker=dict(color='#19D3F3'), text=[''],
-                    textposition='auto', insidetextanchor='start', showlegend=False,
+                    name=f"{city} speed during night", marker=dict(color=common.get_configs('bar_colour_2')),
+                    text=[''], textposition='auto', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=1)
 
         for i, city in enumerate(cities_ordered[num_cities_per_col:]):
@@ -1938,26 +1938,26 @@ class Analysis():
             if day_avg_speed[idx] is not None and night_avg_speed[idx] is not None:
                 fig.add_trace(go.Bar(
                     x=[day_avg_speed[idx]], y=[city], orientation='h',
-                    name=f"{city} speed during day", marker=dict(color='#FFA15A'), text=[''],
+                    name=f"{city} speed during day", marker=dict(color=common.get_configs('bar_colour_1')), text=[''],
                     textposition='inside', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=2)
                 fig.add_trace(go.Bar(
                     x=[night_avg_speed[idx]], y=[city], orientation='h',
-                    name=f"{city} speed during night", marker=dict(color='#19D3F3'), text=[''],
-                    textposition='inside', showlegend=False), row=row, col=2)
+                    name=f"{city} speed during night", marker=dict(color=common.get_configs('bar_colour_2')),
+                    text=[''], textposition='inside', showlegend=False), row=row, col=2)
 
             elif day_avg_speed[idx] is not None:
                 fig.add_trace(go.Bar(
                     x=[day_avg_speed[idx]], y=[city], orientation='h',
-                    name=f"{city} speed during day", marker=dict(color='#FFA15A'), text=[''],
+                    name=f"{city} speed during day", marker=dict(color=common.get_configs('bar_colour_1')), text=[''],
                     textposition='inside', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=2)
 
             elif night_avg_speed[idx] is not None:
                 fig.add_trace(go.Bar(
                     x=[night_avg_speed[idx]], y=[city], orientation='h',
-                    name=f"{city} speed during night", marker=dict(color='#19D3F3'), text=[''],
-                    textposition='inside', insidetextanchor='start', showlegend=False,
+                    name=f"{city} speed during night", marker=dict(color=common.get_configs('bar_colour_2')),
+                    text=[''], textposition='inside', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=2)
 
         # Calculate the maximum value across all data to use as x-axis range
@@ -2060,8 +2060,8 @@ class Analysis():
 
         # Define the legend items
         legend_items = [
-            {"name": "Speed during day", "color": "#FFA15A"},
-            {"name": "Speed during night", "color": "#19D3F3"},
+            {"name": "Speed during day", "color": common.get_configs('bar_colour_1')},
+            {"name": "Speed during night", "color": common.get_configs('bar_colour_2')},
         ]
 
         # Add vertical legends with the positions you will provide
@@ -2278,25 +2278,25 @@ class Analysis():
             if day_time_dict[idx] is not None and night_time_dict[idx] is not None:
                 fig.add_trace(go.Bar(
                     x=[day_time_dict[idx]], y=[city], orientation='h',
-                    name=f"{city} time during day", marker=dict(color='#FF6692'),
+                    name=f"{city} time during day", marker=dict(color=common.get_configs('bar_colour_1')),
                     text=[''], textposition='inside', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=2)
                 fig.add_trace(go.Bar(
                     x=[night_time_dict[idx]], y=[city], orientation='h',
-                    name=f"{city} time during night", marker=dict(color='#B6E880'), text=[''],
+                    name=f"{city} time during night", marker=dict(color=common.get_configs('bar_colour_2')), text=[''],
                     textposition='inside', showlegend=False), row=row, col=2)
 
             elif day_time_dict[idx] is not None:  # Only day time data available
                 fig.add_trace(go.Bar(
                     x=[day_time_dict[idx]], y=[city], orientation='h',
-                    name=f"{city} time during day", marker=dict(color='#FF6692'),
+                    name=f"{city} time during day", marker=dict(color=common.get_configs('bar_colour_1')),
                     text=[''], textposition='inside', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=2)
 
             elif night_time_dict[idx] is not None:  # Only night time data available
                 fig.add_trace(go.Bar(
                     x=[night_time_dict[idx]], y=[city], orientation='h',
-                    name=f"{city} time during night", marker=dict(color='#B6E880'),
+                    name=f"{city} time during night", marker=dict(color=common.get_configs('bar_colour_2')),
                     text=[''], textposition='inside', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=2)
 
@@ -2379,8 +2379,8 @@ class Analysis():
 
         # Define the legend items
         legend_items = [
-            {"name": "Time during day", "color": "#FF6692"},
-            {"name": "Time during night", "color": "#B6E880"},
+            {"name": "Time during day", "color": common.get_configs('bar_colour_1')},
+            {"name": "Time during night", "color": common.get_configs('bar_colour_2')},
         ]
 
         # Add vertical legends with the positions you will provide
@@ -2580,27 +2580,27 @@ class Analysis():
             if day_avg_speed[i] is not None and night_avg_speed[i] is not None:
                 fig.add_trace(go.Bar(
                     x=[day_avg_speed[i]], y=[city], orientation='h',
-                    name=f"{city} speed during day", marker=dict(color='#FFA15A'), text=[''],
+                    name=f"{city} speed during day", marker=dict(color=common.get_configs('bar_colour_1')), text=[''],
                     textposition='auto', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=1)
                 fig.add_trace(go.Bar(
                     x=[night_avg_speed[i]], y=[city], orientation='h',
-                    name=f"{city} speed during night", marker=dict(color='#19D3F3'), text=[''],
-                    textposition='auto', showlegend=False), row=row, col=1)
+                    name=f"{city} speed during night", marker=dict(color=common.get_configs('bar_colour_2')),
+                     text=[''], textposition='auto', showlegend=False), row=row, col=1)
 
             elif day_avg_speed[i] is not None:  # Only day data available
                 fig.add_trace(go.Bar(
                     x=[day_avg_speed[i]], y=[city], orientation='h',
-                    name=f"{city} speed during day", marker=dict(color='#FFA15A'), text=[''],
+                    name=f"{city} speed during day", marker=dict(color=common.get_configs('bar_colour_1')), text=[''],
                     textposition='auto', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=1)
 
             elif night_avg_speed[i] is not None:  # Only night data available
                 fig.add_trace(go.Bar(
                     x=[night_avg_speed[i]], y=[city], orientation='h',
-                    name=f"{city} speed during night", marker=dict(color='#19D3F3'), text=[''],
+                    name=f"{city} speed during night", marker=dict(color=common.get_configs('bar_colour_2')),
                     textposition='auto', insidetextanchor='start', showlegend=False,
-                    textfont=dict(size=14, color='white')), row=row, col=1)
+                    text=[''], textfont=dict(size=14, color='white')), row=row, col=1)
 
         for i, city in enumerate(cities_ordered[num_cities_per_col:]):
             row = i + 1
@@ -2608,27 +2608,27 @@ class Analysis():
             if day_avg_speed[idx] is not None and night_avg_speed[idx] is not None:
                 fig.add_trace(go.Bar(
                     x=[day_avg_speed[idx]], y=[city], orientation='h',
-                    name=f"{city} speed during day", marker=dict(color='#FFA15A'), text=[''],
+                    name=f"{city} speed during day", marker=dict(color=common.get_configs('bar_colour_1')), text=[''],
                     textposition='inside', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=2)
                 fig.add_trace(go.Bar(
                     x=[night_avg_speed[idx]], y=[city], orientation='h',
-                    name=f"{city} speed during night", marker=dict(color='#19D3F3'), text=[''],
-                    textposition='inside', showlegend=False), row=row, col=2)
+                    name=f"{city} speed during night", marker=dict(color=common.get_configs('bar_colour_2')),
+                    text=[''], textposition='inside', showlegend=False), row=row, col=2)
 
             elif day_avg_speed[idx] is not None:
                 fig.add_trace(go.Bar(
                     x=[day_avg_speed[idx]], y=[city], orientation='h',
-                    name=f"{city} speed during day", marker=dict(color='#FFA15A'), text=[''],
+                    name=f"{city} speed during day", marker=dict(color=common.get_configs('bar_colour_1')), text=[''],
                     textposition='inside', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=2)
 
             elif night_avg_speed[idx] is not None:
                 fig.add_trace(go.Bar(
                     x=[night_avg_speed[idx]], y=[city], orientation='h',
-                    name=f"{city} speed during night", marker=dict(color='#19D3F3'), text=[''],
+                    name=f"{city} speed during night", marker=dict(color=common.get_configs('bar_colour_2')),
                     textposition='inside', insidetextanchor='start', showlegend=False,
-                    textfont=dict(size=14, color='white')), row=row, col=2)
+                    text=[''], textfont=dict(size=14, color='white')), row=row, col=2)
 
         # Calculate the maximum value across all data to use as x-axis range
         max_value_speed = max([
@@ -2730,8 +2730,8 @@ class Analysis():
 
         # Define the legend items
         legend_items = [
-            {"name": "Speed during day", "color": "#FFA15A"},
-            {"name": "Speed during night", "color": "#19D3F3"},
+            {"name": "Speed during day", "color": common.get_configs('bar_colour_1')},
+            {"name": "Speed during night", "color": common.get_configs('bar_colour_2')},
         ]
 
         # Add vertical legends with the positions you will provide
@@ -2873,25 +2873,29 @@ class Analysis():
             if day_time_dict[i] is not None and night_time_dict[i] is not None:
                 fig.add_trace(go.Bar(
                     x=[day_time_dict[i]], y=[city], orientation='h',
-                    name=f"{city} time during day", marker=dict(color='#FF6692'),
+                    # name=f"{city} time during day", marker=dict(color='#FF6692'),
+                    name=f"{city} time during day", marker=dict(color=common.get_configs('bar_colour_1')),
                     text=[''], textposition='auto', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=1)
                 fig.add_trace(go.Bar(
                     x=[night_time_dict[i]], y=[city], orientation='h',
-                    name=f"{city} time during night", marker=dict(color='#B6E880'), text=[''],
+                    name=f"{city} time during night", marker=dict(color=common.get_configs('bar_colour_2')),
+                    # name=f"{city} time during night", marker=dict(color='#B6E880'), text=[''],
                     textposition='auto', showlegend=False), row=row, col=1)
 
             elif day_time_dict[i] is not None:  # Only day time data available
                 fig.add_trace(go.Bar(
                     x=[day_time_dict[i]], y=[city], orientation='h',
-                    name=f"{city} time during day", marker=dict(color='#FF6692'),
+                    name=f"{city} time during day", marker=dict(color=common.get_configs('bar_colour_1')),
+                    # name=f"{city} time during day", marker=dict(color='#FF6692'),
                     text=[''], textposition='auto', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=1)
 
             elif night_time_dict[i] is not None:  # Only night time data available
                 fig.add_trace(go.Bar(
                     x=[night_time_dict[i]], y=[city], orientation='h',
-                    name=f"{city} time during night", marker=dict(color='#B6E880'),
+                    name=f"{city} time during night", marker=dict(color=common.get_configs('bar_colour_2')),
+                    # name=f"{city} time during night", marker=dict(color='#B6E880'),
                     text=[''], textposition='auto', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=1)
 
@@ -2902,25 +2906,25 @@ class Analysis():
             if day_time_dict[idx] is not None and night_time_dict[idx] is not None:
                 fig.add_trace(go.Bar(
                     x=[day_time_dict[idx]], y=[city], orientation='h',
-                    name=f"{city} time during day", marker=dict(color='#FF6692'),
+                    name=f"{city} time during day", marker=dict(color=common.get_configs('bar_colour_1')),
                     text=[''], textposition='inside', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=2)
                 fig.add_trace(go.Bar(
                     x=[night_time_dict[idx]], y=[city], orientation='h',
-                    name=f"{city} time during night", marker=dict(color='#B6E880'), text=[''],
+                    name=f"{city} time during night", marker=dict(color=common.get_configs('bar_colour_2')), text=[''],
                     textposition='inside', showlegend=False), row=row, col=2)
 
             elif day_time_dict[idx] is not None:  # Only day time data available
                 fig.add_trace(go.Bar(
                     x=[day_time_dict[idx]], y=[city], orientation='h',
-                    name=f"{city} time during day", marker=dict(color='#FF6692'),
+                    name=f"{city} time during day", marker=dict(color=common.get_configs('bar_colour_1')),
                     text=[''], textposition='inside', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=2)
 
             elif night_time_dict[idx] is not None:  # Only night time data available
                 fig.add_trace(go.Bar(
                     x=[night_time_dict[idx]], y=[city], orientation='h',
-                    name=f"{city} time during night", marker=dict(color='#B6E880'),
+                    name=f"{city} time during night", marker=dict(color=common.get_configs('bar_colour_2')),
                     text=[''], textposition='inside', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=2)
 
@@ -3024,8 +3028,8 @@ class Analysis():
 
         # Define the legend items
         legend_items = [
-            {"name": "Time during day", "color": "#FF6692"},
-            {"name": "Time during night", "color": "#B6E880"},
+            {"name": "Time during day", "color": common.get_configs('bar_colour_1')},
+            {"name": "Time during night", "color": common.get_configs('bar_colour_2')},
         ]
 
         # Add vertical legends with the positions you will provide
@@ -3534,18 +3538,18 @@ if __name__ == "__main__":
     logger.info(f"motorcycle: {motorcycle_counter} ; bus: {bus_counter} ; truck: {truck_counter}")
     logger.info(f"cellphone: {cellphone_counter}; traffic light: {traffic_light_counter}; sign: {stop_sign_counter}")
 
-    # Analysis.speed_and_time_to_start_cross(df_mapping)
-    # Analysis.time_to_start_crossing_vs_literacy(df_mapping)
-    # Analysis.time_to_start_crossing_vs_traffic_mortality(df_mapping)
-    # Analysis.traffic_safety_vs_literacy(df_mapping)
-    # Analysis.plot_cell_phone_vs_traffic_mortality(df_mapping)
-    # Analysis.vehicle_vs_cross_time(df_mapping)
-    # Analysis.traffic_mortality_vs_crossing_event_wt_traffic_light(df_mapping)
-    # Analysis.plot_traffic_safety_vs_traffic_mortality(df_mapping)
-    # Analysis.plot_speed_to_cross_by_alphabetical_order(df_mapping)
-    # Analysis.plot_time_to_start_cross_by_alphabetical_order(df_mapping)
-    # Analysis.plot_speed_to_cross_by_average(df_mapping)
-    # Analysis.plot_time_to_start_cross_by_average(df_mapping)
+    Analysis.speed_and_time_to_start_cross(df_mapping)
+    Analysis.time_to_start_crossing_vs_literacy(df_mapping)
+    Analysis.time_to_start_crossing_vs_traffic_mortality(df_mapping)
+    Analysis.traffic_safety_vs_literacy(df_mapping)
+    Analysis.plot_cell_phone_vs_traffic_mortality(df_mapping)
+    Analysis.vehicle_vs_cross_time(df_mapping)
+    Analysis.traffic_mortality_vs_crossing_event_wt_traffic_light(df_mapping)
+    Analysis.plot_traffic_safety_vs_traffic_mortality(df_mapping)
+    Analysis.plot_speed_to_cross_by_alphabetical_order(df_mapping)
+    Analysis.plot_time_to_start_cross_by_alphabetical_order(df_mapping)
+    Analysis.plot_speed_to_cross_by_average(df_mapping)
+    Analysis.plot_time_to_start_cross_by_average(df_mapping)
     Analysis.correlation_matrix(df_mapping)
 
     logger.info("Analysis completed.")
