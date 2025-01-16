@@ -568,7 +568,7 @@ class Analysis():
         fig.update_layout(font=dict(family=common.get_configs('font_family')))
 
         # Save and display the figure
-        Analysis.save_plotly_figure(fig, "world_map")
+        Analysis.save_plotly_figure(fig, "world_map", save_final=True)
 
     @staticmethod
     def pedestrian_crossing(dataframe, min_x, max_x, person_id):
@@ -1659,8 +1659,7 @@ class Analysis():
 
         # Final adjustments and display
         fig.update_layout(margin=dict(l=80, r=100, t=150, b=180))
-        # fig.show()
-        Analysis.save_plotly_figure(fig, "consolidated", height=7016, width=4960, scale=3)
+        Analysis.save_plotly_figure(fig, "consolidated", height=7016, width=4960, scale=3, save_final=True)
 
     @staticmethod
     def time_to_start_crossing_vs_literacy(df_mapping, need_annotations=True):
@@ -2320,8 +2319,8 @@ class Analysis():
 
         # Final adjustments and display
         fig.update_layout(margin=dict(l=80, r=100, t=150, b=180))
-        Analysis.save_plotly_figure(fig, "speed_of_crossing_by_alphabetical_order", width=2400, height=3200, scale=3)
-        # fig.show()
+        Analysis.save_plotly_figure(fig, "speed_of_crossing_by_alphabetical_order",
+                                    width=2400, height=3200, scale=3, save_final=True)
 
     @staticmethod
     def plot_time_to_start_cross_by_alphabetical_order(df_mapping):
@@ -2667,8 +2666,7 @@ class Analysis():
 
         # Final adjustments and display
         fig.update_layout(margin=dict(l=80, r=100, t=150, b=180))
-        # fig.show()
-        Analysis.save_plotly_figure(fig, "time_to_start_cross", width=2400, height=3200, scale=3)
+        Analysis.save_plotly_figure(fig, "time_to_start_cross", width=2400, height=3200, scale=3, save_final=True)
 
     @staticmethod
     def plot_speed_to_cross_by_average(df_mapping):
@@ -2978,8 +2976,7 @@ class Analysis():
 
         # Final adjustments and display
         fig.update_layout(margin=dict(l=80, r=100, t=150, b=180))
-        Analysis.save_plotly_figure(fig, "speed_of_crossing_by_avg", width=2400, height=3200, scale=3)
-        # fig.show()
+        Analysis.save_plotly_figure(fig, "speed_of_crossing_by_avg", width=2400, height=3200, scale=3, save_final=True)
 
     @staticmethod
     def plot_time_to_start_cross_by_average(df_mapping):
@@ -3291,8 +3288,8 @@ class Analysis():
 
         # Final adjustments and display
         fig.update_layout(margin=dict(l=80, r=100, t=150, b=180))
-        # fig.show()
-        Analysis.save_plotly_figure(fig, "time_to_start_cross_by_avg", width=2400, height=3200, scale=3)
+        Analysis.save_plotly_figure(fig, "time_to_start_cross_by_avg",
+                                    width=2400, height=3200, scale=3, save_final=True)
 
     @staticmethod
     def correlation_matrix(df_mapping):
@@ -3317,24 +3314,24 @@ class Analysis():
 
         # Now populate the final_dict with city-wise data
         for city_condition, speed in avg_speed.items():
-            city, condition = city_condition.split('_')
+            city, state, condition = city_condition.split('_')
 
             # Get the country from the previously stored city_country_map
-            country = Analysis.get_value(df_mapping, "city", city, "country")
-            iso_code = Analysis.get_value(df_mapping, "city", city, "ISO_country")
-            continent = Analysis.get_value(df_mapping, "city", city, "continent")
-            population_country = Analysis.get_value(df_mapping, "city", city, "population_country")
-            gdp_city = Analysis.get_value(df_mapping, "city", city, "gdp_city_(billion_US)")
-            traffic_mortality = Analysis.get_value(df_mapping, "city", city, "traffic_mortality")
-            literacy_rate = Analysis.get_value(df_mapping, "city", city, "literacy_rate")
-            geni = Analysis.get_value(df_mapping, "city", city, "geni")
-            traffic_index = Analysis.get_value(df_mapping, "city", city, "traffic_index")
+            country = Analysis.get_value(df_mapping, "city", city, "state", state, "country")
+            iso_code = Analysis.get_value(df_mapping, "city", city, "state", state, "ISO_country")
+            continent = Analysis.get_value(df_mapping, "city", city, "state", state, "continent")
+            population_country = Analysis.get_value(df_mapping, "city", city, "state", state, "population_country")
+            gdp_city = Analysis.get_value(df_mapping, "city", city, "state", state, "gdp_city_(billion_US)")
+            traffic_mortality = Analysis.get_value(df_mapping, "city", city, "state", state, "traffic_mortality")
+            literacy_rate = Analysis.get_value(df_mapping, "city", city, "state", state, "literacy_rate")
+            geni = Analysis.get_value(df_mapping, "city", city, "state", state, "geni")
+            traffic_index = Analysis.get_value(df_mapping, "city", city, "state", state, "traffic_index")
 
             if country or iso_code is not None:
 
                 # Initialize the city's dictionary if not already present
-                if city not in final_dict:
-                    final_dict[city] = {
+                if f'{city}_{state}' not in final_dict:
+                    final_dict[f'{city}_{state}'] = {
                         "avg_speed_0": None, "avg_speed_1": None, "avg_time_0": None, "avg_time_1": None,
                         "speed_val_0": None, "speed_val_1": None, "time_val_0": None, "time_val_1": None,
                         "ped_cross_city_0": 0, "ped_cross_city_1": 0,
@@ -3348,30 +3345,30 @@ class Analysis():
                     }
 
                 # Populate the corresponding speed and time based on the condition
-                final_dict[city][f"avg_speed_{condition}"] = speed
-                if f'{city}_{condition}' in avg_time:
-                    final_dict[city][f"avg_time_{condition}"] = avg_time.get(f'{city}_{condition}', None)
-                    final_dict[city][f"time_val_{condition}"] = time_values.get(f'{city}_{condition}', None)
-                    final_dict[city][f"speed_val_{condition}"] = speed_values.get(f'{city}_{condition}', None)
-                    final_dict[city][f"time_val_{condition}"] = time_values.get(f'{city}_{condition}', None)
-                    final_dict[city][f"ped_cross_city_{condition}"] = ped_cross_city.get(f'{city}_{condition}', None)
-                    final_dict[city][f"person_city_{condition}"] = person_city.get(f'{city}_{condition}', 0)
-                    final_dict[city][f"bicycle_city_{condition}"] = bicycle_city.get(f'{city}_{condition}', 0)
-                    final_dict[city][f"car_city_{condition}"] = car_city.get(f'{city}_{condition}', 0)
-                    final_dict[city][f"motorcycle_city_{condition}"] = motorcycle_city.get(f'{city}_{condition}', 0)
-                    final_dict[city][f"bus_city_{condition}"] = bus_city.get(f'{city}_{condition}', 0)
-                    final_dict[city][f"truck_city_{condition}"] = truck_city.get(f'{city}_{condition}', 0)
-                    final_dict[city][f"cross_evnt_city_{condition}"] = cross_evnt_city.get(f'{city}_{condition}', 0)
-                    final_dict[city][f"vehicle_city_{condition}"] = vehicle_city.get(f'{city}_{condition}', None)
-                    final_dict[city][f"cellphone_city_{condition}"] = cellphone_city.get(f'{city}_{condition}', 0)
-                    final_dict[city][f"trf_sign_city_{condition}"] = trf_sign_city.get(f'{city}_{condition}', 0)
-                    final_dict[city][f"traffic_mortality_{condition}"] = traffic_mortality
-                    final_dict[city][f"literacy_rate_{condition}"] = literacy_rate
-                    final_dict[city][f"geni_{condition}"] = geni
-                    final_dict[city][f"traffic_index_{condition}"] = traffic_index
-                    final_dict[city][f"continent_{condition}"] = continent
+                final_dict[f'{city}_{state}'][f"avg_speed_{condition}"] = speed
+                if f'{city}_{state}_{condition}' in avg_time:
+                    final_dict[f'{city}_{state}'][f"avg_time_{condition}"] = avg_time.get(f'{city}_{state}_{condition}', None)
+                    final_dict[f'{city}_{state}'][f"time_val_{condition}"] = time_values.get(f'{city}_{state}_{condition}', None)
+                    final_dict[f'{city}_{state}'][f"speed_val_{condition}"] = speed_values.get(f'{city}_{state}_{condition}', None)
+                    final_dict[f'{city}_{state}'][f"time_val_{condition}"] = time_values.get(f'{city}_{state}_{condition}', None)
+                    final_dict[f'{city}_{state}'][f"ped_cross_city_{condition}"] = ped_cross_city.get(f'{city}_{state}_{condition}', None)
+                    final_dict[f'{city}_{state}'][f"person_city_{condition}"] = person_city.get(f'{city}_{state}_{condition}', 0)
+                    final_dict[f'{city}_{state}'][f"bicycle_city_{condition}"] = bicycle_city.get(f'{city}_{state}_{condition}', 0)
+                    final_dict[f'{city}_{state}'][f"car_city_{condition}"] = car_city.get(f'{city}_{state}_{condition}', 0)
+                    final_dict[f'{city}_{state}'][f"motorcycle_city_{condition}"] = motorcycle_city.get(f'{city}_{state}_{condition}', 0)
+                    final_dict[f'{city}_{state}'][f"bus_city_{condition}"] = bus_city.get(f'{city}_{state}_{condition}', 0)
+                    final_dict[f'{city}_{state}'][f"truck_city_{condition}"] = truck_city.get(f'{city}_{state}_{condition}', 0)
+                    final_dict[f'{city}_{state}'][f"cross_evnt_city_{condition}"] = cross_evnt_city.get(f'{city}_{state}_{condition}', 0)
+                    final_dict[f'{city}_{state}'][f"vehicle_city_{condition}"] = vehicle_city.get(f'{city}_{state}_{condition}', None)
+                    final_dict[f'{city}_{state}'][f"cellphone_city_{condition}"] = cellphone_city.get(f'{city}_{state}_{condition}', 0)
+                    final_dict[f'{city}_{state}'][f"trf_sign_city_{condition}"] = trf_sign_city.get(f'{city}_{state}_{condition}', 0)
+                    final_dict[f'{city}_{state}'][f"traffic_mortality_{condition}"] = traffic_mortality
+                    final_dict[f'{city}_{state}'][f"literacy_rate_{condition}"] = literacy_rate
+                    final_dict[f'{city}_{state}'][f"geni_{condition}"] = geni
+                    final_dict[f'{city}_{state}'][f"traffic_index_{condition}"] = traffic_index
+                    final_dict[f'{city}_{state}'][f"continent_{condition}"] = continent
                     if gdp_city is not None:
-                        final_dict[city][f"gmp_{condition}"] = gdp_city/population_country
+                        final_dict[f'{city}_{state}'][f"gmp_{condition}"] = gdp_city/population_country
 
         # Initialize an empty list to store the rows for the DataFrame
         data_day, data_night = [], []
@@ -3423,7 +3420,7 @@ class Analysis():
             'vehicle_city_1': 'Detected total number of motor vehicle',
             'cellphone_city_0': 'Detected cellphone', 'cellphone_city_1': 'Detected cellphone',
             'trf_sign_city_0': 'Detected traffic signs', 'trf_sign_city_1': 'Detected traffic signs',
-            'gmp_0': 'Gross metropolitan product', 'gmp_1': 'Gross metropolitan product',
+            'gmp_0': 'GMP', 'gmp_1': 'GMP',
             'traffic_mortality_0': 'Traffic mortality', 'traffic_mortality_1': 'Traffic mortality',
             'literacy_rate_0': 'Literacy rate', 'literacy_rate_1': 'Literacy rate',
             'geni_0': 'GENI', 'geni_1': 'GENI', 'traffic_index_0': 'Traffic index',
@@ -3443,7 +3440,7 @@ class Analysis():
         # update font family
         fig.update_layout(font=dict(family=common.get_configs('font_family')))
 
-        Analysis.save_plotly_figure(fig, "correlation_matrix_heatmap_in_daylight")
+        Analysis.save_plotly_figure(fig, "correlation_matrix_heatmap_in_daylight", save_final=True)
 
         # Generate the heatmap using Plotly
         fig = px.imshow(corr_matrix_night, text_auto=True,  # Display correlation values on the heatmap
@@ -3456,9 +3453,7 @@ class Analysis():
         # update font family
         fig.update_layout(font=dict(family=common.get_configs('font_family')))
 
-        Analysis.save_plotly_figure(fig, "correlation_matrix_heatmap_in_night")
-
-        # fig.show()
+        Analysis.save_plotly_figure(fig, "correlation_matrix_heatmap_in_night", save_final=True)
 
         # Initialize a list to store rows of data (one row per city)
         data_rows = []
@@ -3544,8 +3539,7 @@ class Analysis():
         # update font family
         fig.update_layout(font=dict(family=common.get_configs('font_family')))
 
-        Analysis.save_plotly_figure(fig, "correlation_matrix_heatmap_averaged")
-        # fig.show()
+        Analysis.save_plotly_figure(fig, "correlation_matrix_heatmap_averaged", save_final=True)
 
         # Continent Wise
 
@@ -3640,7 +3634,7 @@ class Analysis():
             # update font family
             fig.update_layout(font=dict(family=common.get_configs('font_family')))
 
-            Analysis.save_plotly_figure(fig, f"correlation_matrix_heatmap_{continents}")
+            Analysis.save_plotly_figure(fig, f"correlation_matrix_heatmap_{continents}", save_final=True)
 
     @staticmethod
     def iso2_to_flag(iso2):
@@ -3755,7 +3749,7 @@ if __name__ == "__main__":
     # Analysis.plot_speed_to_cross_by_alphabetical_order(df_mapping)
     # Analysis.plot_time_to_start_cross_by_alphabetical_order(df_mapping)
     # Analysis.plot_speed_to_cross_by_average(df_mapping)
-    Analysis.plot_time_to_start_cross_by_average(df_mapping)
-    # Analysis.correlation_matrix(df_mapping)
+    # Analysis.plot_time_to_start_cross_by_average(df_mapping)
+    Analysis.correlation_matrix(df_mapping)
 
     logger.info("Analysis completed.")
