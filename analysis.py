@@ -188,7 +188,7 @@ class Analysis():
         # Create the scatter plot with hover_data for additional information (continents and sizes)
         fig = px.scatter(x=x, y=list(y.values()), size=size, color=color, symbol=symbol,
                          labels={"color": "Continent"}, color_discrete_map=continent_colors,
-                         hover_data={"City": city})
+                         hover_data={"City": Analysis.format_city_state(city)}, size_max=10)
 
         # Customize the hovertemplate to only show the fields you want
         fig.update_traces(
@@ -223,7 +223,7 @@ class Analysis():
         if need_annotations:
             for i, key in enumerate(y.keys()):
                 annotations.append(
-                    dict(x=x[i], y=list(y.values())[i], text=city[i], showarrow=False)
+                    dict(x=x[i], y=list(y.values())[i], text=Analysis.format_city_state(city[i]), showarrow=False)
                 )
 
         # Adjust annotation positions to avoid overlap
@@ -268,6 +268,7 @@ class Analysis():
                 - End time
                 - Time of day
                 - City
+                - State
                 - Country
                 - GDP per capita
                 - Population
@@ -289,6 +290,7 @@ class Analysis():
             end_times = ast.literal_eval(row["end_time"])
             time_of_day = ast.literal_eval(row["time_of_day"])
             city = row["city"]
+            state = row['state'] if not pd.isna(row['state']) else "unknown"
             country = row["country"]
             gdp = row["gdp_city_(billion_US)"]
             population = row["population_city"]
@@ -310,7 +312,7 @@ class Analysis():
                         # Check if the start time matches the specified start time
                         if int(start_) == s:
                             # Return relevant information once found
-                            return (video, s, end[counter], time_of_day_[counter], city,
+                            return (video, s, end[counter], time_of_day_[counter], city, state,
                                     country, (gdp/population), population, population_country,
                                     traffic_mortality, continent, literacy_rate, avg_height, iso_country, fps)
                         counter += 1
@@ -365,22 +367,67 @@ class Analysis():
         return unique_countries, len(unique_countries)
 
     @staticmethod
-    def get_value(df, column_name, column_value, target_column):
+    def format_city_state(city_state):
+        """
+        Formats a city_state string or a list of strings in the format 'City_State'.
+        If the state is 'unknown', only the city is returned.
+        Handles cases where the format is incorrect or missing the '_'.
+
+        Args:
+            city_state (str or list): A single string or list of strings in the format 'City_State'.
+
+        Returns:
+            str or list: A formatted string or list of formatted strings in the format 'City, State' or 'City'.
+        """
+        if isinstance(city_state, str):  # If input is a single string
+            if "_" in city_state:
+                city, state = city_state.split("_", 1)
+                return f"{city}, {state}" if state.lower() != "unknown" else city
+            else:
+                return city_state  # Return as-is if no '_' in string
+        elif isinstance(city_state, list):  # If input is a list
+            formatted_list = []
+            for cs in city_state:
+                if "_" in cs:
+                    city, state = cs.split("_", 1)
+                    if state.lower() != "unknown":
+                        formatted_list.append(f"{city}, {state}")
+                    else:
+                        formatted_list.append(city)
+                else:
+                    formatted_list.append(cs)  # Append as-is if no '_'
+            return formatted_list
+        else:
+            raise TypeError("Input must be a string or a list of strings.")
+
+    # Update this
+    @staticmethod
+    def get_value(df, column_name1, column_value1, column_name2, column_value2, target_column):
         """
         Retrieves a value from the target_column based on the condition
-        that the column_name matches the column_value.
+        that both column_name1 matches column_value1 and column_name2 matches column_value2.
 
         Parameters:
         df (pandas.DataFrame): The DataFrame containing the mapping file.
-        column_name (str): The column to search for the matching value.
-        column_value (str): The value to search for in column_name.
+        column_name1 (str): The first column to search for the matching value.
+        column_value1 (str): The value to search for in column_name1.
+        column_name2 (str): The second column to search for the matching value.
+        column_value2 (str): The value to search for in column_name2. If "unknown", the value is treated as NaN.
         target_column (str): The column from which to retrieve the corresponding value.
 
         Returns:
-        Any: The value from target_column that corresponds to the matching column_value in column_name.
+        Any: The value from target_column that corresponds to the matching values in both
+             column_name1 and column_name2.
         """
-        # Filter the DataFrame where column_name has the value column_value
-        result = df[df[column_name] == column_value][target_column]
+        # Treat column_value2 as NaN if it is "unknown"
+        if column_value2 == "unknown":
+            column_value2 = float('nan')
+
+        # Filter the DataFrame where both conditions are met
+        if pd.isna(column_value2):
+            result = df[(df[column_name1] == column_value1) & (df[column_name2].isna())][target_column]
+        else:
+            result = df[(df[column_name1] == column_value1) & (df[column_name2] == column_value2)][target_column]
 
         # Check if the result is not empty (i.e., if there is a match)
         if not result.empty:
@@ -475,15 +522,15 @@ class Analysis():
             lat, lon = Analysis.get_coordinates(city_country, city_coordinates)  # type: ignore
             if lat and lon:
                 city_coords.append({
-                    'city': city,
+                    'City': city,
                     'Country': countries[i],
+                    'Continent': continent[i],
                     'lat': lat,
                     'lon': lon,
                     'GDP (Billion USD)': gdp_city[i],
                     'City population (thousand)': population_city[i],
                     'Country population (thousand)': population_country[i],
                     'Traffic mortality rate (per 100k people)': traffic_mortality_rate[i],
-                    'Continent': continent[i],
                     'Literacy rate': literacy_rate[i],
                     'Average height (cm)': avg_height[i]
                 })
@@ -500,11 +547,11 @@ class Analysis():
                 hover_data={
                     'City': True,
                     'Country': True,
+                    'Continent': True,
                     'GDP (Billion USD)': True,
                     'City population (thousand)': True,
                     'Country population (thousand)': True,
                     'Traffic mortality rate (per 100k people)': True,
-                    'Continent': True,
                     'Literacy rate': True,
                     'Average height (cm)': True,
                     'lat': False,
@@ -570,7 +617,7 @@ class Analysis():
         # Check if the result is None (i.e., no matching data was found)
         if result is not None:
             # Unpack the result since it's not None
-            (video, start, end, time_of_day, city, country, gdp_, population, population_country,
+            (video, start, end, time_of_day, city, state, country, gdp_, population, population_country,
              traffic_mortality_, continent, literacy_rate, avg_height, iso_country, fps) = result
 
         # Initialize an empty dictionary to store time taken for each object to cross
@@ -634,7 +681,7 @@ class Analysis():
             # Check if the result is None (i.e., no matching data was found)
             if result is not None:
                 # Unpack the result since it's not None
-                (video, start, end, time_of_day, city, country, gdp_, population, population_country,
+                (video, start, end, time_of_day, city, state, country, gdp_, population, population_country,
                  traffic_mortality_, continent, literacy_rate, avg_height, iso_country, fps) = result
 
                 # Count the number of mobile objects in the video
@@ -655,30 +702,30 @@ class Analysis():
                     continue
 
                 # Update the information dictionary
-                if f"{city}_{condition}" in info:
-                    previous_value = info[f"{city}_{condition}"]
+                if f"{city}_{state}_{condition}" in info:
+                    previous_value = info[f"{city}_{state}_{condition}"]
                     # Extracting the old number of detected mobiles
-                    previous_value = previous_value * no_person[f"{city}_{condition}"] * total_time[
-                        f"{city}_{condition}"] / 1000 / 60
+                    previous_value = previous_value * no_person[f"{city}_{state}_{condition}"] * total_time[
+                        f"{city}_{state}_{condition}"] / 1000 / 60
 
                     # Summing up the previous value and the new value
                     total_value = previous_value + mobile_ids
-                    no_person[f"{city}_{condition}"] += num_person
-                    total_time[f"{city}_{condition}"] += duration
+                    no_person[f"{city}_{state}_{condition}"] += num_person
+                    total_time[f"{city}_{state}_{condition}"] += duration
 
                     # Normalising with respect to total person detected and time
-                    info[f"{city}_{condition}"] = (((total_value * 60) / total_time[f"{city}_{condition}"]
-                                                    ) / no_person[f"{city}_{condition}"]) * 1000
+                    info[f"{city}_{state}_{condition}"] = (((total_value * 60) / total_time[
+                        f"{city}_{state}_{condition}"]) / no_person[f"{city}_{state}_{condition}"]) * 1000
                     continue  # Skip saving the variable in plotting variables
                 else:
-                    no_person[f"{city}_{condition}"] = num_person
-                    total_time[f"{city}_{condition}"] = duration
+                    no_person[f"{city}_{state}_{condition}"] = num_person
+                    total_time[f"{city}_{state}_{condition}"] = duration
 
                     """Normalising the detection with respect to time and numvber of person in the video.
                     Multiplied by 1000 to increase the value to look better in plotting."""
 
                     avg_cell_phone = (((mobile_ids * 60) / time_[-1]) / num_person) * 1000
-                    info[f"{city}_{condition}"] = avg_cell_phone
+                    info[f"{city}_{state}_{condition}"] = avg_cell_phone
 
             else:
                 # Handle the case where no data was found for the given key
@@ -711,7 +758,7 @@ class Analysis():
             # Check if the result is None (i.e., no matching data was found)
             if result is not None:
                 # Unpack the result since it's not None
-                (video, start, end, time_of_day, city, country, gdp_, population, population_country,
+                (video, start, end, time_of_day, city, state, country, gdp_, population, population_country,
                  traffic_mortality_, continent, literacy_rate, avg_height, iso_country, fps) = result
 
                 # Calculate the duration of the video
@@ -758,12 +805,12 @@ class Analysis():
                 new_value = ((len(vehicle_ids)/time_[-1]) * 60)
 
                 # Update the information dictionary
-                if f"{city}_{condition}" in info:
-                    previous_value = info[f"{city}_{condition}"]
-                    info[f"{city}_{condition}"] = (previous_value + new_value) / 2
+                if f"{city}_{state}_{condition}" in info:
+                    previous_value = info[f"{city}_{state}_{condition}"]
+                    info[f"{city}_{state}_{condition}"] = (previous_value + new_value) / 2
                     continue
                 else:
-                    info[f"{city}_{condition}"] = new_value
+                    info[f"{city}_{state}_{condition}"] = new_value
 
         return info
 
@@ -781,13 +828,13 @@ class Analysis():
 
             # Check if the result is None (i.e., no matching data was found)
             if result is not None:
-                (_, start, end, condition, city, country, gdp_, population, population_country, traffic_mortality_,
-                 continent, literacy_rate, avg_height, iso_country, fps) = result
+                (_, start, end, condition, city, state, country, gdp_, population, population_country,
+                 traffic_mortality_, continent, literacy_rate, avg_height, iso_country, fps) = result
 
                 value = dfs.get(key)
 
                 # Store the country associated with each city
-                city_country_map_[city] = iso_country
+                city_country_map_[f'{city}_{state}'] = iso_country
 
                 # Calculate the duration of the video
                 duration = end - start
@@ -808,10 +855,10 @@ class Analysis():
                     # Taken from https://doi.org/10.1177/0361198106198200104
                     if speed_ > 1.2:  # Exclude outlier speeds
                         continue
-                    if f'{city}_{condition}' in speed_dict:
-                        speed_dict[f'{city}_{condition}'].append(speed_)
+                    if f'{city}_{state}_{condition}' in speed_dict:
+                        speed_dict[f'{city}_{state}_{condition}'].append(speed_)
                     else:
-                        speed_dict[f'{city}_{condition}'] = [speed_]
+                        speed_dict[f'{city}_{state}_{condition}'] = [speed_]
 
         return speed_dict
 
@@ -835,8 +882,8 @@ class Analysis():
 
             # Check if the result is None (i.e., no matching data was found)
             if result is not None:
-                (_, start, end, condition, city, country, gdp_, population, population_country, traffic_mortality_,
-                 continent, literacy_rate, avg_height, iso_country, fps) = result
+                (_, start, end, condition, city, state, country, gdp_, population, population_country,
+                 traffic_mortality_, continent, literacy_rate, avg_height, iso_country, fps) = result
 
                 # Makes group based on Unique ID
                 crossed_ids_grouped = crossed_ids.groupby("Unique Id")
@@ -875,10 +922,11 @@ class Analysis():
                 if len(data_cross) == 0:
                     continue
 
-                if f'{city}_{condition}' in time_dict:
-                    time_dict[f'{city}_{condition}'].extend([value / (fps/10) for key, value in data_cross.items()])
+                if f'{city}_{state}_{condition}' in time_dict:
+                    time_dict[f'{city}_{state}_{condition}'].extend([value / (fps/10) for key,
+                                                                     value in data_cross.items()])
                 else:
-                    time_dict[f'{city}_{condition}'] = [value / (fps/10) for key, value in data_cross.items()]
+                    time_dict[f'{city}_{state}_{condition}'] = [value / (fps/10) for key, value in data_cross.items()]
 
         return time_dict
 
@@ -908,8 +956,8 @@ class Analysis():
 
             # Check if the result is None (i.e., no matching data was found)
             if result is not None:
-                (_, start, end, time_of_day, city, country, gdp_, population, population_country, traffic_mortality_,
-                 continent, literacy_rate, avg_height, iso_country, fps) = result
+                (_, start, end, time_of_day, city, state, country, gdp_, population, population_country,
+                 traffic_mortality_, continent, literacy_rate, avg_height, iso_country, fps) = result
 
                 dataframe = value
 
@@ -929,17 +977,18 @@ class Analysis():
                 count_ = ((len(instrument_ids)/duration) * 60)
 
                 # Update info dictionary with count normalized by duration
-                if f'{city}_{condition}' in info:
-                    old_count = info[f'{city}_{condition}']
-                    new_count = (old_count * duration_.get(f'{city}_{condition}', 0)) + count_
-                    if f'{city}_{condition}' in duration_:
-                        duration_[f'{city}_{condition}'] = duration_.get(f'{city}_{condition}', 0) + count
+                if f'{city}_{state}_{condition}' in info:
+                    old_count = info[f'{city}_{state}_{condition}']
+                    new_count = (old_count * duration_.get(f'{city}_{state}_{condition}', 0)) + count_
+                    if f'{city}_{state}_{condition}' in duration_:
+                        duration_[f'{city}_{state}_{condition}'] = duration_.get(f'{city}_{state}_{condition}',
+                                                                                 0) + count
                     else:
-                        duration_[f'{city}_{condition}'] = count
-                    info[f'{city}_{condition}'] = new_count / duration_.get(f'{city}_{condition}', 0)
+                        duration_[f'{city}_{state}_{condition}'] = count
+                    info[f'{city}_{state}_{condition}'] = new_count / duration_.get(f'{city}_{state}_{condition}', 0)
                     continue
                 else:
-                    info[f'{city}_{condition}'] = count_
+                    info[f'{city}_{state}_{condition}'] = count_
 
         return info
 
@@ -969,8 +1018,8 @@ class Analysis():
             # Check if the result is None (i.e., no matching data was found)
             if result is not None:
 
-                (_, start, end, time_of_day, city, country, gdp_, population, population_country, traffic_mortality_,
-                 continent, literacy_rate, avg_height, iso_country, fps) = result
+                (_, start, end, time_of_day, city, state, country, gdp_, population, population_country,
+                 traffic_mortality_, continent, literacy_rate, avg_height, iso_country, fps) = result
 
                 # Calculate the duration of the video
                 duration = end - start
@@ -1001,23 +1050,25 @@ class Analysis():
                 var_exist[key] = ((counter_exists * 60) / time_[-1])
                 var_nt_exist[key] = ((counter_nt_exists * 60) / time_[-1])
 
-                counter_1[f'{city}_{condition}'] = counter_1.get(f'{city}_{condition}', 0) + var_exist[key]
-                counter_2[f'{city}_{condition}'] = counter_2.get(f'{city}_{condition}', 0) + var_nt_exist[key]
+                counter_1[f'{city}_{state}_{condition}'] = counter_1.get(f'{city}_{state}_{condition}',
+                                                                         0) + var_exist[key]
+                counter_2[f'{city}_{state}_{condition}'] = counter_2.get(f'{city}_{state}_{condition}',
+                                                                         0) + var_nt_exist[key]
 
-                if (counter_1[f'{city}_{condition}'] + counter_2[f'{city}_{condition}']) == 0:
+                if (counter_1[f'{city}_{state}_{condition}'] + counter_2[f'{city}_{state}_{condition}']) == 0:
                     # Gives an error of division by 0
                     continue
                 else:
-                    if f'{city}_{condition}' in ratio:
-                        ratio[f'{city}_{condition}'] = ((counter_2[f'{city}_{condition}'] * 100) /
-                                                        (counter_1[f'{city}_{condition}'] +
-                                                        counter_2[f'{city}_{condition}']))
+                    if f'{city}_{state}_{condition}' in ratio:
+                        ratio[f'{city}_{state}_{condition}'] = ((counter_2[f'{city}_{state}_{condition}'] * 100) /
+                                                                (counter_1[f'{city}_{state}_{condition}'] +
+                                                                counter_2[f'{city}_{state}_{condition}']))
                         continue
                     # If already present, the array below will be filled multiple times
                     else:
-                        ratio[f'{city}_{condition}'] = ((counter_2[f'{city}_{condition}'] * 100) /
-                                                        (counter_1[f'{city}_{condition}'] +
-                                                        counter_2[f'{city}_{condition}']))
+                        ratio[f'{city}_{state}_{condition}'] = ((counter_2[f'{city}_{state}_{condition}'] * 100) /
+                                                                (counter_1[f'{city}_{state}_{condition}'] +
+                                                                counter_2[f'{city}_{state}_{condition}']))
         return ratio
 
     @staticmethod
@@ -1029,11 +1080,11 @@ class Analysis():
             result = Analysis.find_values_with_video_id(df_mapping, key)
 
             if result is not None:
-                (_, start, end, time_of_day, city, country, gdp_, population, population_country, traffic_mortality_,
-                 continent, literacy_rate, avg_height, iso_country, fps) = result
+                (_, start, end, time_of_day, city, state, country, gdp_, population, population_country,
+                 traffic_mortality_, continent, literacy_rate, avg_height, iso_country, fps) = result
 
                 # Create the city_time_key (city + time_of_day)
-                city_time_key = f'{city}_{time_of_day}'
+                city_time_key = f'{city}_{state}_{time_of_day}'
 
                 # Add the count to the corresponding city_time_key in the final dict
                 if city_time_key in final:
@@ -1067,26 +1118,26 @@ class Analysis():
 
         # Now populate the final_dict with city-wise data
         for city_condition, speed in avg_speed.items():
-            city, condition = city_condition.split('_')
+            city, state, condition = city_condition.split('_')
 
             # Get the country from the previously stored city_country_map
-            country = Analysis.get_value(df_mapping, "city", city, "country")
-            iso_code = Analysis.get_value(df_mapping, "city", city, "ISO_country")
+            country = Analysis.get_value(df_mapping, "city", city, "state", state, "country")
+            iso_code = Analysis.get_value(df_mapping, "city", city, "state", state, "ISO_country")
             if country or iso_code is not None:
 
                 # Initialize the city's dictionary if not already present
-                if city not in final_dict:
-                    final_dict[city] = {
+                if f'{city}_{state}' not in final_dict:
+                    final_dict[f"{city}_{state}"] = {
                         "speed_0": None, "speed_1": None, "time_0": None, "time_1": None,
-                        "country": country, "iso": iso_code
-                    }
+                        "country": country, "iso": iso_code}
+
                 # Populate the corresponding speed and time based on the condition
-                final_dict[city][f"speed_{condition}"] = speed
-                if f'{city}_{condition}' in avg_time:
-                    final_dict[city][f"time_{condition}"] = avg_time[f'{city}_{condition}']
+                final_dict[f"{city}_{state}"][f"speed_{condition}"] = speed
+                if f'{city}_{state}_{condition}' in avg_time:
+                    final_dict[f"{city}_{state}"][f"time_{condition}"] = avg_time[f'{city}_{state}_{condition}']
 
         # Extract all valid speed_0 and speed_1 values along with their corresponding cities
-        diff_speed_values = [(city, abs(data['speed_0'] - data['speed_1']))
+        diff_speed_values = [(f'{city}', abs(data['speed_0'] - data['speed_1']))
                              for city, data in final_dict.items()
                              if data['speed_0'] is not None and data['speed_1'] is not None]
 
@@ -1099,11 +1150,11 @@ class Analysis():
 
             logger.info("\n\nTop 5 cities with max |speed_0 - speed_1| differences:")
             for city, diff in top_5_max_speed:
-                logger.info(f"{city}: {diff}")
+                logger.info(f"{Analysis.format_city_state(city)}: {diff}")
 
             logger.info("\n\nTop 5 cities with min |speed_0 - speed_1| differences:")
             for city, diff in top_5_min_speed:
-                logger.info(f"{city}: {diff}")
+                logger.info(f"{Analysis.format_city_state(city)}: {diff}")
         else:
             logger.info("\n\nNo valid speed_0 and speed_1 values found for comparison.")
 
@@ -1120,11 +1171,11 @@ class Analysis():
 
             logger.info("\n\nTop 5 cities with max |time_0 - time_1| differences:")
             for city, diff in top_5_max:
-                logger.info(f"{city}: {diff}")
+                logger.info(f"{Analysis.format_city_state(city)}: {diff}")
 
             logger.info("\n\nTop 5 cities with min |time_0 - time_1| differences:")
             for city, diff in top_5_min:
-                logger.info(f"{city}: {diff}")
+                logger.info(f"{Analysis.format_city_state(city)}: {diff}")
         else:
             logger.info("\n\nNo valid time_0 and time_1 values found for comparison.")
 
@@ -1141,8 +1192,8 @@ class Analysis():
             max_speed_value_0 = filtered_dict_s_0[max_speed_city_0]["speed_0"]
             min_speed_value_0 = filtered_dict_s_0[min_speed_city_0]["speed_0"]
 
-            logger.info(f"\n\nCity with max speed at day: {max_speed_city_0} with speed is {max_speed_value_0}m/s")
-            logger.info(f"\nCity with min speed at day: {min_speed_city_0} with speed is {min_speed_value_0}m/s")
+            logger.info(f"\n\nCity with max speed at day: {Analysis.format_city_state(max_speed_city_0)} with speed is {max_speed_value_0}m/s")  # noqa:E501
+            logger.info(f"\nCity with min speed at day: {Analysis.format_city_state(min_speed_city_0)} with speed is {min_speed_value_0}m/s")  # noqa:E501
 
         if filtered_dict_s_1:
             max_speed_city_1 = max(filtered_dict_s_1, key=lambda city: filtered_dict_s_1[city]["speed_1"])
@@ -1150,8 +1201,8 @@ class Analysis():
             max_speed_value_1 = filtered_dict_s_1[max_speed_city_1]["speed_1"]
             min_speed_value_1 = filtered_dict_s_1[min_speed_city_1]["speed_1"]
 
-            logger.info(f"\n\nCity with max speed at night: {max_speed_city_1} with speed is {max_speed_value_1}m/s")
-            logger.info(f"\nCity with min speed at night: {min_speed_city_1} with speed is {min_speed_value_1}m/s")
+            logger.info(f"\n\nCity with max speed at night: {Analysis.format_city_state(max_speed_city_1)} with speed is {max_speed_value_1}m/s")  # noqa:E501
+            logger.info(f"\nCity with min speed at night: {Analysis.format_city_state(min_speed_city_1)} with speed is {min_speed_value_1}m/s")  # noqa:E501
 
         # Find city with max and min time_0 and time_1
         if filtered_dict_t_0:
@@ -1160,8 +1211,8 @@ class Analysis():
             max_time_value_0 = filtered_dict_t_0[max_time_city_0]["time_0"]
             min_time_value_0 = filtered_dict_t_0[min_time_city_0]["time_0"]
 
-            logger.info(f"\n\nCity with max time at day: {max_time_city_0} with time is {max_time_value_0}s")
-            logger.info(f"\nCity with min time at day: {min_time_city_0} with time_0 is {min_time_value_0}s")
+            logger.info(f"\n\nCity with max time at day: {Analysis.format_city_state(max_time_city_0)} with time is {max_time_value_0}s")  # noqa:E501
+            logger.info(f"\nCity with min time at day: {Analysis.format_city_state(min_time_city_0)} with time_0 is {min_time_value_0}s")  # noqa:E501
 
         if filtered_dict_t_1:
             max_time_city_1 = max(filtered_dict_t_1, key=lambda city: filtered_dict_t_1[city]["time_1"])
@@ -1169,8 +1220,8 @@ class Analysis():
             max_time_value_1 = filtered_dict_t_1[max_time_city_1]["time_1"]
             min_time_value_1 = filtered_dict_t_1[min_time_city_1]["time_1"]
 
-            logger.info(f"\n\nCity with max time at night: {max_time_city_1} with time is {max_time_value_1}s")
-            logger.info(f"\nCity with min time at night: {min_time_city_1} with time_1 is {min_time_value_1}s")
+            logger.info(f"\n\nCity with max time at night: {Analysis.format_city_state(max_time_city_1)} with time is {max_time_value_1}s")  # noqa:E501
+            logger.info(f"\nCity with min time at night: {Analysis.format_city_state(min_time_city_1)} with time_1 is {min_time_value_1}s")  # noqa:E501
 
         # Extract valid speed and time values and calculate statistics
         speed_0_values = [data['speed_0'] for data in final_dict.values() if pd.notna(data['speed_0'])]
@@ -1213,8 +1264,8 @@ class Analysis():
         # Extract city, condition, and count_ from the info dictionary
         cities, conditions_, counts = [], [], []
         for key, value in avg_time.items():
-            city, condition = key.split('_')
-            cities.append(city)
+            city, state, condition = key.split('_')
+            cities.append(f'{city}_{state}')
             conditions_.append(condition)
             counts.append(value)
 
@@ -1222,14 +1273,14 @@ class Analysis():
         all_keys = set(avg_speed.keys()).union(set(avg_time.keys()))
 
         # Extract unique cities
-        cities = list(set([key.split('_')[0] for key in all_keys]))
+        cities = list(set(["_".join(key.split('_')[:2]) for key in all_keys]))
 
         country_city_map = {}
-        for city, info in final_dict.items():
+        for city_state, info in final_dict.items():
             country = info['iso']
             if country not in country_city_map:
                 country_city_map[country] = []
-            country_city_map[country].append(city)
+            country_city_map[country].append(city_state)
 
         # Flatten the city list based on country groupings
         cities_ordered = []
@@ -1267,26 +1318,26 @@ class Analysis():
             row = 2 * i + 1
             if day_avg_speed[i] is not None and night_avg_speed[i] is not None:
                 fig.add_trace(go.Bar(
-                    x=[day_avg_speed[i]], y=[city], orientation='h',
+                    x=[day_avg_speed[i]], y=[f'{Analysis.format_city_state(city)}'], orientation='h',
                     name=f"{city} speed during day", marker=dict(color=common.get_configs('bar_colour_1')), text=[''],
                     textposition='auto', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=28, color='white')), row=row, col=1)
                 fig.add_trace(go.Bar(
-                    x=[night_avg_speed[i]], y=[city], orientation='h',
+                    x=[night_avg_speed[i]], y=[f'{Analysis.format_city_state(city)}'], orientation='h',
                     name=f"{city} speed during night",
                     marker=dict(color=common.get_configs('bar_colour_2')),
                     text=[''], textposition='auto', showlegend=False), row=row, col=1)
 
             elif day_avg_speed[i] is not None:  # Only day data available
                 fig.add_trace(go.Bar(
-                    x=[day_avg_speed[i]], y=[city], orientation='h',
+                    x=[day_avg_speed[i]], y=[f'{Analysis.format_city_state(city)}'], orientation='h',
                     name=f"{city} speed during day", marker=dict(color=common.get_configs('bar_colour_1')), text=[''],
                     textposition='auto', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=28, color='white')), row=row, col=1)
 
             elif night_avg_speed[i] is not None:  # Only night data available
                 fig.add_trace(go.Bar(
-                    x=[night_avg_speed[i]], y=[city], orientation='h',
+                    x=[night_avg_speed[i]], y=[f'{Analysis.format_city_state(city)}'], orientation='h',
                     name=f"{city} speed during night",
                     marker=dict(color=common.get_configs('bar_colour_2')), text=[''],
                     textposition='auto', insidetextanchor='start', showlegend=False,
@@ -1296,25 +1347,25 @@ class Analysis():
             row = 2 * i + 2
             if day_time_dict[i] is not None and night_time_dict[i] is not None:
                 fig.add_trace(go.Bar(
-                    x=[day_time_dict[i]], y=[city], orientation='h',
+                    x=[day_time_dict[i]], y=[f'{Analysis.format_city_state(city)}'], orientation='h',
                     name=f"{city} time during day", marker=dict(color=common.get_configs('bar_colour_3')),
                     text=[''], textposition='auto', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=28, color='white')), row=row, col=1)
                 fig.add_trace(go.Bar(
-                    x=[night_time_dict[i]], y=[city], orientation='h',
+                    x=[night_time_dict[i]], y=[f'{Analysis.format_city_state(city)}'], orientation='h',
                     name=f"{city} time during night", marker=dict(color=common.get_configs('bar_colour_4')), text=[''],
                     textposition='auto', showlegend=False), row=row, col=1)
 
             elif day_time_dict[i] is not None:  # Only day time data available
                 fig.add_trace(go.Bar(
-                    x=[day_time_dict[i]], y=[city], orientation='h',
+                    x=[day_time_dict[i]], y=[f'{Analysis.format_city_state(city)}'], orientation='h',
                     name=f"{city} time during day", marker=dict(color=common.get_configs('bar_colour_3')),
                     text=[''], textposition='auto', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=28, color='white')), row=row, col=1)
 
             elif night_time_dict[i] is not None:  # Only night time data available
                 fig.add_trace(go.Bar(
-                    x=[night_time_dict[i]], y=[city], orientation='h',
+                    x=[night_time_dict[i]], y=[f'{Analysis.format_city_state(city)}'], orientation='h',
                     name=f"{city} time during night", marker=dict(color=common.get_configs('bar_colour_4')),
                     text=[''], textposition='auto', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=28, color='white')), row=row, col=1)
@@ -1325,25 +1376,25 @@ class Analysis():
             idx = num_cities_per_col + i
             if day_avg_speed[idx] is not None and night_avg_speed[idx] is not None:
                 fig.add_trace(go.Bar(
-                    x=[day_avg_speed[idx]], y=[city], orientation='h',
+                    x=[day_avg_speed[idx]], y=[f'{Analysis.format_city_state(city)}'], orientation='h',
                     name=f"{city} speed during day", marker=dict(color=common.get_configs('bar_colour_1')), text=[''],
                     textposition='inside', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=28, color='white')), row=row, col=2)
                 fig.add_trace(go.Bar(
-                    x=[night_avg_speed[idx]], y=[city], orientation='h',
+                    x=[night_avg_speed[idx]], y=[f'{Analysis.format_city_state(city)}'], orientation='h',
                     name=f"{city} speed during night", marker=dict(color=common.get_configs('bar_colour_2')),
                     text=[''], textposition='inside', showlegend=False), row=row, col=2)
 
             elif day_avg_speed[idx] is not None:
                 fig.add_trace(go.Bar(
-                    x=[day_avg_speed[idx]], y=[city], orientation='h',
+                    x=[day_avg_speed[idx]], y=[f'{Analysis.format_city_state(city)}'], orientation='h',
                     name=f"{city} speed during day", marker=dict(color=common.get_configs('bar_colour_1')), text=[''],
                     textposition='inside', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=28, color='white')), row=row, col=2)
 
             elif night_avg_speed[idx] is not None:
                 fig.add_trace(go.Bar(
-                    x=[night_avg_speed[idx]], y=[city], orientation='h',
+                    x=[night_avg_speed[idx]], y=[f'{Analysis.format_city_state(city)}'], orientation='h',
                     name=f"{city} speed during night", marker=dict(color=common.get_configs('bar_colour_2')),
                     text=[''], textposition='inside', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=28, color='white')), row=row, col=2)
@@ -1351,25 +1402,25 @@ class Analysis():
             row = 2 * i + 2
             if day_time_dict[idx] is not None and night_time_dict[idx] is not None:
                 fig.add_trace(go.Bar(
-                    x=[day_time_dict[idx]], y=[city], orientation='h',
+                    x=[day_time_dict[idx]], y=[f'{Analysis.format_city_state(city)}'], orientation='h',
                     name=f"{city} time during day", marker=dict(color=common.get_configs('bar_colour_3')),
                     text=[''], textposition='inside', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=28, color='white')), row=row, col=2)
                 fig.add_trace(go.Bar(
-                    x=[night_time_dict[idx]], y=[city], orientation='h',
+                    x=[night_time_dict[idx]], y=[f'{Analysis.format_city_state(city)}'], orientation='h',
                     name=f"{city} time during night", marker=dict(color=common.get_configs('bar_colour_4')), text=[''],
                     textposition='inside', showlegend=False), row=row, col=2)
 
             elif day_time_dict[idx] is not None:  # Only day time data available
                 fig.add_trace(go.Bar(
-                    x=[day_time_dict[idx]], y=[city], orientation='h',
+                    x=[day_time_dict[idx]], y=[f'{Analysis.format_city_state(city)}'], orientation='h',
                     name=f"{city} time during day", marker=dict(color=common.get_configs('bar_colour_3')),
                     text=[''], textposition='inside', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=28, color='white')), row=row, col=2)
 
             elif night_time_dict[idx] is not None:  # Only night time data available
                 fig.add_trace(go.Bar(
-                    x=[night_time_dict[idx]], y=[city], orientation='h',
+                    x=[night_time_dict[idx]], y=[f'{Analysis.format_city_state(city)}'], orientation='h',
                     name=f"{city} time during night", marker=dict(color=common.get_configs('bar_colour_4')),
                     text=[''], textposition='inside', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=28, color='white')), row=row, col=2)
@@ -1622,18 +1673,22 @@ class Analysis():
         time = data_tuple[-2]
 
         for key, value in time.items():
-            city, condition = key.split('_')
+            city, state, condition = key.split('_')
             if need_annotations:
-                cities.append(city)
+                cities.append(f'{city}_{state}')
             else:
                 cities.append("")
             conditions.append(condition)
             counts.append(value)
-            literacy.append(float(Analysis.get_value(df_mapping, "city", city, "literacy_rate")))  # type: ignore
-            continents.append(Analysis.get_value(df_mapping, "city", city, "continent"))
-            gdp.append(float(Analysis.get_value(df_mapping, "city", city,
-                                                "gdp_city_(billion_US)"))/float(Analysis.get_value(  # type: ignore
-                                                    df_mapping, "city", city, "population_city")))  # type: ignore
+            literacy.append(float(Analysis.get_value(df_mapping, "city", city,
+                                                     "state", state, "literacy_rate")))  # type: ignore
+            continents.append(Analysis.get_value(df_mapping, "city", city, "state", state, "continent"))
+            population_city = float(Analysis.get_value(df_mapping, "city", city,
+                                                       "state", state, "population_city"))  # type: ignore
+
+            gdp.append(float(Analysis.get_value(df_mapping, "city",
+                                                city, "state", state,
+                                                "gdp_city_(billion_US)"))/population_city)  # type: ignore
 
         # Plot the scatter diagram
         Analysis.plot_scatter_diag(x=literacy, y=time, size=gdp, color=continents, symbol=conditions,
@@ -1654,18 +1709,21 @@ class Analysis():
         time = data_tuple[-2]
 
         for key, value in time.items():
-            city, condition = key.split('_')
+            city, state, condition = key.split('_')
             if need_annotations:
-                cities.append(city)
+                cities.append(f'{city}_{state}')
             else:
                 cities.append("")
             conditions.append(condition)
             counts.append(value)
-            traffic_deaths.append(float(Analysis.get_value(df_mapping, "city", city, "literacy_rate")))  # type: ignore
-            continents.append(Analysis.get_value(df_mapping, "city", city, "continent"))
-            gdp.append(float(Analysis.get_value(df_mapping, "city", city,
-                                                "gdp_city_(billion_US)"))/float(Analysis.get_value(  # type: ignore
-                                                    df_mapping, "city", city, "population_city")))  # type: ignore
+            traffic_deaths.append(float(Analysis.get_value(df_mapping, "city", city,
+                                                           "state", state, "literacy_rate")))  # type: ignore
+            continents.append(Analysis.get_value(df_mapping, "city", city, "state", state, "continent"))
+            population_city = float(Analysis.get_value(df_mapping, "city", city,
+                                                       "state", state, "population_city"))  # type: ignore
+            gdp.append(float(Analysis.get_value(df_mapping,
+                                                "city", city, "state", state,
+                                                "gdp_city_(billion_US)"))/population_city)  # type: ignore
 
         # Plot the scatter diagram
         Analysis.plot_scatter_diag(x=traffic_deaths, y=time, size=gdp, color=continents, symbol=conditions,
@@ -1680,7 +1738,6 @@ class Analysis():
 
         Args:
             df_mapping (dict): Mapping of video keys to relevant information.
-            dfs (dict): Dictionary of DataFrames containing pedestrian data.
         """
         literacy, continents, gdp = [], [], []  # Lists for literacy, continents, and GDP
         conditions = []  # Lists for conditions, time, and city
@@ -1691,23 +1748,25 @@ class Analysis():
         info = data_tuple[-5]
 
         for key, value in info.items():
-            city, condition = key.split('_')
+            city, state, condition = key.split('_')
             if need_annotations:
-                cities.append(city)
+                cities.append(f'{city}_{condition}')
             else:
                 cities.append("")
             conditions.append(condition)
             counts.append(value)
-            literacy.append(float(Analysis.get_value(
-                df_mapping, "city", city, "traffic_mortality")))  # type: ignore
-            continents.append(Analysis.get_value(df_mapping, "city", city, "continent"))
-            gdp.append(float(Analysis.get_value(df_mapping, "city", city,
-                                                "gdp_city_(billion_US)"))/float(Analysis.get_value(  # type: ignore
-                                                    df_mapping, "city", city, "population_city")))  # type: ignore
+            literacy.append(float(Analysis.get_value(df_mapping, "city",
+                                                     city, "state", state, "traffic_mortality")))  # type: ignore
+            continents.append(Analysis.get_value(df_mapping, "city", city, "state", state, "continent"))
+            population_city = float(Analysis.get_value(df_mapping, "city", city,
+                                                       "state", state, "population_city"))  # type: ignore
+            gdp.append(float(Analysis.get_value(df_mapping,
+                                                "city", city, "state", state,
+                                                "gdp_city_(billion_US)"))/population_city)  # type: ignore
 
         # Plot the scatter diagram
         Analysis.plot_scatter_diag(x=literacy, y=info, size=gdp, color=continents, symbol=conditions,
-                                   city=cities, plot_name="time_to_start_crossing_vs_literacy",
+                                   city=cities, plot_name="traffic_safety_equip_vs_literacy",
                                    x_label="Traffic mortality rate (per 100,000 population)",
                                    y_label="Time taken by pedestrian to start crossing the road (in seconds)",
                                    legend_x=0.07, legend_y=0.96)
@@ -1730,19 +1789,21 @@ class Analysis():
         info = data_tuple[-6]
 
         for key, value in info.items():
-            city, condition = key.split('_')
+            city, state, condition = key.split('_')
             if need_annotations:
-                cities.append(city)
+                cities.append(f'{city}_{state}')
             else:
                 cities.append("")
             conditions.append(condition)
             counts.append(value)
-            traffic_deaths.append(float(Analysis.get_value(
-                df_mapping, "city", city, "traffic_mortality")))  # type: ignore
-            continents.append(Analysis.get_value(df_mapping, "city", city, "continent"))
-            gdp.append(float(Analysis.get_value(df_mapping, "city", city,
-                                                "gdp_city_(billion_US)"))/float(Analysis.get_value(  # type: ignore
-                                                    df_mapping, "city", city, "population_city")))  # type: ignore
+            traffic_deaths.append(float(Analysis.get_value(df_mapping, "city", city,
+                                                           "state", state, "traffic_mortality")))  # type: ignore
+            continents.append(Analysis.get_value(df_mapping, "city", city, "state", state, "continent"))
+            population_city = float(Analysis.get_value(df_mapping, "city", city,
+                                                       "state", state, "population_city"))  # type: ignore
+            gdp.append(float(Analysis.get_value(df_mapping,
+                                                "city", city, "state", state,
+                                                "gdp_city_(billion_US)"))/population_city)  # type: ignore
 
         # Plot the scatter diagram
         Analysis.plot_scatter_diag(x=traffic_deaths, y=info, size=gdp, color=continents, symbol=conditions,
@@ -1772,18 +1833,20 @@ class Analysis():
         info = data_tuple[-7]
 
         for key, value in info.items():
-            city, condition = key.split('_')
+            city, state, condition = key.split('_')
             if need_annotations:
-                cities.append(city)
+                cities.append(f'{city}_{state}')
             else:
                 cities.append("")
             conditions.append(condition)
             time_cal.append(time.get(key))
             counts.append(value)
-            continents.append(Analysis.get_value(df_mapping, "city", city, "continent"))
-            gdp.append(float(Analysis.get_value(df_mapping, "city", city,
-                                                "gdp_city_(billion_US)"))/float(Analysis.get_value(  # type: ignore
-                                                    df_mapping, "city", city, "population_city")))  # type: ignore
+            continents.append(Analysis.get_value(df_mapping, "city", city, "state", state, "continent"))
+            population_city = float(Analysis.get_value(df_mapping, "city", city,
+                                                       "state", state, "population_city"))  # type: ignore
+            gdp.append(float(Analysis.get_value(df_mapping,
+                                                "city", city, "state", state,
+                                                "gdp_city_(billion_US)"))/population_city)  # type: ignore
 
         # Plot the scatter diagram
         Analysis.plot_scatter_diag(x=time_cal, y=info, size=gdp, color=continents, symbol=conditions,
@@ -1791,6 +1854,51 @@ class Analysis():
                                    x_label="Traffic mortality rate (per 100,000 population)",
                                    y_label="Number of Mobile detected in the video (normalised)",
                                    legend_x=0.07, legend_y=0.96)
+
+    @staticmethod
+    def gmp_vs_cross_time(df_mapping, need_annotations=True):
+        """Plots the relationship between vehicle detection and crossing time.
+
+        Args:
+            df_mapping (DataFrame): DataFrame containing mapping information.
+            dfs (dict): Dictionary of DataFrames containing video data.
+            data (dict): Dictionary containing information about which object is crossing.
+        """
+        continents, gdp = [], []  # Lists for traffic related deaths, continents, and GDP
+        conditions = []  # Lists for conditions, time, and city
+        cities, counts, time_cal = [], [], []
+        gmp = {}
+
+        with open(pickle_file_path, 'rb') as file:
+            data_tuple = pickle.load(file)
+
+        time = data_tuple[-2]
+
+        for key, value in time.items():
+            city, state, condition = key.split('_')
+            if need_annotations:
+                cities.append(f'{city}_{state}')
+            else:
+                cities.append("")
+            conditions.append(condition)
+            time_cal.append(time.get(key))
+            counts.append(value)
+            continents.append(Analysis.get_value(df_mapping, "city", city, "state", state, "continent"))
+            population_city = float(Analysis.get_value(df_mapping, "city", city,
+                                                       "state", state, "population_city"))  # type: ignore
+            gdp.append(float(Analysis.get_value(df_mapping, "city", city, "state", state,
+                                                "gdp_city_(billion_US)"))/population_city)  # type: ignore
+            gmp[f'{city}_{state}_{condition}'] = float(Analysis.get_value(df_mapping,
+                                                                          "city", city, "state", state,
+                                                                          "gdp_city_(billion_US)"
+                                                                          ))/population_city  # type: ignore
+
+        # Plot the scatter diagram
+        Analysis.plot_scatter_diag(x=time_cal, y=gmp, size=[0.01]*len(gmp), color=continents, symbol=conditions,
+                                   city=cities, plot_name="gmp_vs_cross_time",
+                                   x_label="Time for crossing the road",
+                                   y_label="Gross Metropolitan product (GMP)",
+                                   legend_x=0.97, legend_y=0.96, need_annotations=False)
 
     @staticmethod
     def traffic_mortality_vs_crossing_event_wt_traffic_light(df_mapping, need_annotations=True):
@@ -1811,18 +1919,21 @@ class Analysis():
         info = data_tuple[-8]
 
         for key, value in info.items():
-            city, condition = key.split('_')
+            city, state, condition = key.split('_')
             if need_annotations:
-                cities.append(city)
+                cities.append(f'{city}_{condition}')
             else:
                 cities.append("")
             conditions.append(condition)
             counts.append(value)
-            traffic_deaths.append(float(Analysis.get_value(df_mapping, "city", city, "literacy_rate")))  # type: ignore
-            continents.append(Analysis.get_value(df_mapping, "city", city, "continent"))
-            gdp.append(float(Analysis.get_value(df_mapping, "city", city,
-                                                "gdp_city_(billion_US)"))/float(Analysis.get_value(  # type: ignore
-                                                    df_mapping, "city", city, "population_city")))  # type: ignore
+            traffic_deaths.append(float(Analysis.get_value(df_mapping, "city",
+                                                           city, "state", state, "literacy_rate")))  # type: ignore
+            continents.append(Analysis.get_value(df_mapping, "city", city, "state", state, "continent"))
+            population_city = float(Analysis.get_value(df_mapping, "city", city,
+                                                       "state", state, "population_city"))  # type: ignore
+            gdp.append(float(Analysis.get_value(df_mapping,
+                                                "city", city, "state", state,
+                                                "gdp_city_(billion_US)"))/population_city)  # type: ignore
 
         # Plot the scatter diagram
         Analysis.plot_scatter_diag(x=traffic_deaths, y=info, size=gdp, color=continents, symbol=conditions,
@@ -1837,7 +1948,6 @@ class Analysis():
 
         Args:
             df_mapping (dict): Mapping of video keys to relevant information.
-            dfs (dict): Dictionary of DataFrames containing pedestrian data.
         """
         traffic_deaths, continents, gdp = [], [], []  # Lists for literacy, continents, and GDP
         conditions = []  # Lists for conditions, time, and city
@@ -1848,20 +1958,22 @@ class Analysis():
         info = data_tuple[-5]
 
         for key, value in info.items():
-            city, condition = key.split('_')
-            cities.append(city)
+            city, state, condition = key.split('_')
+            cities.append(f'{city}_{state}')
             conditions.append(condition)
             counts.append(value)
-            traffic_deaths.append(float(Analysis.get_value(
-                df_mapping, "city", city, "traffic_mortality")))  # type: ignore
-            continents.append(Analysis.get_value(df_mapping, "city", city, "continent"))
-            gdp.append(float(Analysis.get_value(df_mapping, "city", city,
-                                                "gdp_city_(billion_US)"))/float(Analysis.get_value(  # type: ignore
-                                                    df_mapping, "city", city, "population_city")))  # type: ignore
+            traffic_deaths.append(float(Analysis.get_value(df_mapping, "city", city,
+                                                           "state", state, "traffic_mortality")))  # type: ignore
+            continents.append(Analysis.get_value(df_mapping, "city", city, "state", state, "continent"))
+            population_city = float(Analysis.get_value(df_mapping, "city", city,
+                                                       "state", state, "population_city"))  # type: ignore
+            gdp.append(float(Analysis.get_value(df_mapping,
+                                                "city", city, "state", state,
+                                                "gdp_city_(billion_US)"))/population_city)  # type: ignore
 
         # Plot the scatter diagram
         Analysis.plot_scatter_diag(x=traffic_deaths, y=info, size=gdp, color=continents, symbol=conditions,
-                                   city=cities, plot_name="time_to_start_crossing_vs_literacy",
+                                   city=cities, plot_name="traffic_safety_equip_vs_traffic_mortality",
                                    x_label="Traffic mortality rate (per 100,000 population)",
                                    y_label="Number of traffic instruments detected (normalised)",
                                    legend_x=0.887, legend_y=0.96)
@@ -1884,17 +1996,18 @@ class Analysis():
 
         # Now populate the final_dict with city-wise speed data
         for city_condition, speed in avg_speed.items():
-            city, condition = city_condition.split('_')
+            city, state, condition = city_condition.split('_')
 
             # Get the country from the previously stored city_country_map
-            country = Analysis.get_value(df_mapping, "city", city, "country")
-            iso_code = Analysis.get_value(df_mapping, "city", city, "ISO_country")
+            country = Analysis.get_value(df_mapping, "city", city, "state", state, "country")
+            iso_code = Analysis.get_value(df_mapping, "city", city, "state", state, "ISO_country")
             if country or iso_code is not None:
                 # Initialize the city's dictionary if not already present
-                if city not in final_dict:
-                    final_dict[city] = {"speed_0": None, "speed_1": None, "country": country, "iso": iso_code}
+                if f'{city}_{state}' not in final_dict:
+                    final_dict[f'{city}_{state}'] = {"speed_0": None, "speed_1": None,
+                                                     "country": country, "iso": iso_code}
                 # Populate the corresponding speed based on the condition
-                final_dict[city][f"speed_{condition}"] = speed
+                final_dict[f'{city}_{state}'][f"speed_{condition}"] = speed
 
         # Extract unique cities
         cities = list(set([key.split('_')[0] for key in final_dict.keys()]))
@@ -1931,25 +2044,25 @@ class Analysis():
             row = i + 1
             if day_avg_speed[i] is not None and night_avg_speed[i] is not None:
                 fig.add_trace(go.Bar(
-                    x=[day_avg_speed[i]], y=[city], orientation='h',
+                    x=[day_avg_speed[i]], y=[Analysis.format_city_state(city)], orientation='h',
                     name=f"{city} speed during day", marker=dict(color=common.get_configs('bar_colour_1')), text=[''],
                     textposition='auto', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=1)
                 fig.add_trace(go.Bar(
-                    x=[night_avg_speed[i]], y=[city], orientation='h',
+                    x=[night_avg_speed[i]], y=[Analysis.format_city_state(city)], orientation='h',
                     name=f"{city} speed during night", marker=dict(color=common.get_configs('bar_colour_2')),
                     text=[''], textposition='auto', showlegend=False), row=row, col=1)
 
             elif day_avg_speed[i] is not None:  # Only day data available
                 fig.add_trace(go.Bar(
-                    x=[day_avg_speed[i]], y=[city], orientation='h',
+                    x=[day_avg_speed[i]], y=[Analysis.format_city_state(city)], orientation='h',
                     name=f"{city} speed during day", marker=dict(color=common.get_configs('bar_colour_1')), text=[''],
                     textposition='auto', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=1)
 
             elif night_avg_speed[i] is not None:  # Only night data available
                 fig.add_trace(go.Bar(
-                    x=[night_avg_speed[i]], y=[city], orientation='h',
+                    x=[night_avg_speed[i]], y=[Analysis.format_city_state(city)], orientation='h',
                     name=f"{city} speed during night", marker=dict(color=common.get_configs('bar_colour_2')),
                     text=[''], textposition='auto', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=1)
@@ -1959,25 +2072,25 @@ class Analysis():
             idx = num_cities_per_col + i
             if day_avg_speed[idx] is not None and night_avg_speed[idx] is not None:
                 fig.add_trace(go.Bar(
-                    x=[day_avg_speed[idx]], y=[city], orientation='h',
+                    x=[day_avg_speed[idx]], y=[Analysis.format_city_state(city)], orientation='h',
                     name=f"{city} speed during day", marker=dict(color=common.get_configs('bar_colour_1')), text=[''],
                     textposition='inside', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=2)
                 fig.add_trace(go.Bar(
-                    x=[night_avg_speed[idx]], y=[city], orientation='h',
+                    x=[night_avg_speed[idx]], y=[Analysis.format_city_state(city)], orientation='h',
                     name=f"{city} speed during night", marker=dict(color=common.get_configs('bar_colour_2')),
                     text=[''], textposition='inside', showlegend=False), row=row, col=2)
 
             elif day_avg_speed[idx] is not None:
                 fig.add_trace(go.Bar(
-                    x=[day_avg_speed[idx]], y=[city], orientation='h',
+                    x=[day_avg_speed[idx]], y=[Analysis.format_city_state(city)], orientation='h',
                     name=f"{city} speed during day", marker=dict(color=common.get_configs('bar_colour_1')), text=[''],
                     textposition='inside', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=2)
 
             elif night_avg_speed[idx] is not None:
                 fig.add_trace(go.Bar(
-                    x=[night_avg_speed[idx]], y=[city], orientation='h',
+                    x=[night_avg_speed[idx]], y=[Analysis.format_city_state(city)], orientation='h',
                     name=f"{city} speed during night", marker=dict(color=common.get_configs('bar_colour_2')),
                     text=[''], textposition='inside', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=2)
@@ -2132,8 +2245,8 @@ class Analysis():
         right_column_cities = cities_ordered[num_cities_per_col:]
 
         # Adjust x positioning for the left and right columns
-        x_position_left = -0.01  # Position for the left column
-        x_position_right = 1.02  # Position for the right column
+        x_position_left = 0.0  # Position for the left column
+        x_position_right = 1.0  # Position for the right column
         font_size = 20  # Font size for visibility
 
         # Initialize variables for dynamic y positioning for both columns
@@ -2162,6 +2275,8 @@ class Analysis():
 
         # Add annotations for country names dynamically for the left column
         for country, y_position in y_position_map_left.items():
+            iso2 = Analysis.iso3_to_iso2(country)
+            country = country + Analysis.iso2_to_flag(iso2)
             fig.add_annotation(
                 x=x_position_left,  # Left column x position
                 y=y_position,  # Calculated y position based on the city order
@@ -2177,6 +2292,8 @@ class Analysis():
 
         # Add annotations for country names dynamically for the right column
         for country, y_position in y_position_map_right.items():
+            iso2 = Analysis.iso3_to_iso2(country)
+            country = country + Analysis.iso2_to_flag(iso2)
             fig.add_annotation(
                 x=x_position_right,  # Right column x position
                 y=y_position,  # Calculated y position based on the city order
@@ -2203,7 +2320,7 @@ class Analysis():
 
         # Final adjustments and display
         fig.update_layout(margin=dict(l=80, r=100, t=150, b=180))
-        Analysis.save_plotly_figure(fig, "speed_of_crossing", width=2400, height=3200, scale=3)
+        Analysis.save_plotly_figure(fig, "speed_of_crossing_by_alphabetical_order", width=2400, height=3200, scale=3)
         # fig.show()
 
     @staticmethod
@@ -2220,22 +2337,22 @@ class Analysis():
 
         # Now populate the final_dict with city-wise data
         for city_condition, speed in avg_time.items():
-            city, condition = city_condition.split('_')
+            city, state, condition = city_condition.split('_')
 
             # Get the country from the previously stored city_country_map
-            country = Analysis.get_value(df_mapping, "city", city, "country")
-            iso_code = Analysis.get_value(df_mapping, "city", city, "ISO_country")
+            country = Analysis.get_value(df_mapping, "city", city, "state", state, "country")
+            iso_code = Analysis.get_value(df_mapping, "city", city, "state", state, "ISO_country")
             if country or iso_code is not None:
 
                 # Initialize the city's dictionary if not already present
-                if city not in final_dict:
-                    final_dict[city] = {
+                if f'{city}_{state}' not in final_dict:
+                    final_dict[f'{city}_{state}'] = {
                         "time_0": None, "time_1": None, "country": country, "iso": iso_code
                     }
                 # Populate the corresponding speed and time based on the condition
-                final_dict[city][f"speed_{condition}"] = speed
-                if f'{city}_{condition}' in avg_time:
-                    final_dict[city][f"time_{condition}"] = avg_time[f'{city}_{condition}']
+                final_dict[f"{city}_{state}"][f"speed_{condition}"] = speed
+                if f'{city}_{state}_{condition}' in avg_time:
+                    final_dict[f"{city}_{state}"][f"time_{condition}"] = avg_time[f'{city}_{state}_{condition}']
 
         # Extract unique cities
         cities = list(set([key.split('_')[0] for key in final_dict.keys()]))
@@ -2273,25 +2390,25 @@ class Analysis():
             row = i + 1
             if day_time_dict[i] is not None and night_time_dict[i] is not None:
                 fig.add_trace(go.Bar(
-                    x=[day_time_dict[i]], y=[city], orientation='h',
+                    x=[day_time_dict[i]], y=[Analysis.format_city_state(city)], orientation='h',
                     name=f"{city} time during day", marker=dict(color=common.get_configs('bar_colour_1')),
                     text=[''], textposition='auto', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=1)
                 fig.add_trace(go.Bar(
-                    x=[night_time_dict[i]], y=[city], orientation='h',
+                    x=[night_time_dict[i]], y=[Analysis.format_city_state(city)], orientation='h',
                     name=f"{city} time during night", marker=dict(color=common.get_configs('bar_colour_2')), text=[''],
                     textposition='auto', showlegend=False), row=row, col=1)
 
             elif day_time_dict[i] is not None:  # Only day time data available
                 fig.add_trace(go.Bar(
-                    x=[day_time_dict[i]], y=[city], orientation='h',
+                    x=[day_time_dict[i]], y=[Analysis.format_city_state(city)], orientation='h',
                     name=f"{city} time during day", marker=dict(color=common.get_configs('bar_colour_1')),
                     text=[''], textposition='auto', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=1)
 
             elif night_time_dict[i] is not None:  # Only night time data available
                 fig.add_trace(go.Bar(
-                    x=[night_time_dict[i]], y=[city], orientation='h',
+                    x=[night_time_dict[i]], y=[Analysis.format_city_state(city)], orientation='h',
                     name=f"{city} time during night", marker=dict(color=common.get_configs('bar_colour_2')),
                     text=[''], textposition='auto', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=1)
@@ -2302,25 +2419,25 @@ class Analysis():
             idx = num_cities_per_col + i
             if day_time_dict[idx] is not None and night_time_dict[idx] is not None:
                 fig.add_trace(go.Bar(
-                    x=[day_time_dict[idx]], y=[city], orientation='h',
+                    x=[day_time_dict[idx]], y=[Analysis.format_city_state(city)], orientation='h',
                     name=f"{city} time during day", marker=dict(color=common.get_configs('bar_colour_1')),
                     text=[''], textposition='inside', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=2)
                 fig.add_trace(go.Bar(
-                    x=[night_time_dict[idx]], y=[city], orientation='h',
+                    x=[night_time_dict[idx]], y=[Analysis.format_city_state(city)], orientation='h',
                     name=f"{city} time during night", marker=dict(color=common.get_configs('bar_colour_2')), text=[''],
                     textposition='inside', showlegend=False), row=row, col=2)
 
             elif day_time_dict[idx] is not None:  # Only day time data available
                 fig.add_trace(go.Bar(
-                    x=[day_time_dict[idx]], y=[city], orientation='h',
+                    x=[day_time_dict[idx]], y=[Analysis.format_city_state(city)], orientation='h',
                     name=f"{city} time during day", marker=dict(color=common.get_configs('bar_colour_1')),
                     text=[''], textposition='inside', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=2)
 
             elif night_time_dict[idx] is not None:  # Only night time data available
                 fig.add_trace(go.Bar(
-                    x=[night_time_dict[idx]], y=[city], orientation='h',
+                    x=[night_time_dict[idx]], y=[Analysis.format_city_state(city)], orientation='h',
                     name=f"{city} time during night", marker=dict(color=common.get_configs('bar_colour_2')),
                     text=[''], textposition='inside', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=2)
@@ -2475,8 +2592,8 @@ class Analysis():
         right_column_cities = cities_ordered[num_cities_per_col:]
 
         # Adjust x positioning for the left and right columns
-        x_position_left = -0.01  # Position for the left column
-        x_position_right = 1.02  # Position for the right column
+        x_position_left = 0.0  # Position for the left column
+        x_position_right = 1.0  # Position for the right column
         font_size = 20  # Font size for visibility
 
         # Initialize variables for dynamic y positioning for both columns
@@ -2505,6 +2622,8 @@ class Analysis():
 
         # Add annotations for country names dynamically for the left column
         for country, y_position in y_position_map_left.items():
+            iso2 = Analysis.iso3_to_iso2(country)
+            country = country + Analysis.iso2_to_flag(iso2)
             fig.add_annotation(
                 x=x_position_left,  # Left column x position
                 y=y_position,  # Calculated y position based on the city order
@@ -2520,6 +2639,8 @@ class Analysis():
 
         # Add annotations for country names dynamically for the right column
         for country, y_position in y_position_map_right.items():
+            iso2 = Analysis.iso3_to_iso2(country)
+            country = country + Analysis.iso2_to_flag(iso2)
             fig.add_annotation(
                 x=x_position_right,  # Right column x position
                 y=y_position,  # Calculated y position based on the city order
@@ -2567,24 +2688,24 @@ class Analysis():
 
         # Now populate the final_dict with city-wise speed data
         for city_condition, speed in avg_speed.items():
-            city, condition = city_condition.split('_')
+            city, state, condition = city_condition.split('_')
 
             # Get the country from the previously stored city_country_map
-            country = Analysis.get_value(df_mapping, "city", city, "country")
-            iso_code = Analysis.get_value(df_mapping, "city", city, "ISO_country")
+            country = Analysis.get_value(df_mapping, "city", city, "state", state, "country")
+            iso_code = Analysis.get_value(df_mapping, "city", city, "state", state, "ISO_country")
             if country or iso_code is not None:
                 # Initialize the city's dictionary if not already present
-                if city not in final_dict:
-                    final_dict[city] = {"speed_0": None, "speed_1": None, "country": country, "iso": iso_code}
+                if f"{city}_{state}" not in final_dict:
+                    final_dict[f"{city}_{state}"] = {"speed_0": None, "speed_1": None,
+                                                     "country": country, "iso": iso_code}
                 # Populate the corresponding speed based on the condition
-                final_dict[city][f"speed_{condition}"] = speed
+                final_dict[f"{city}_{state}"][f"speed_{condition}"] = speed
 
         # Sort cities by the sum of speed_0 and speed_1 values
         cities_ordered = sorted(
             final_dict.keys(),
-            key=lambda city: (final_dict[city]["speed_0"] or 0) + (final_dict[city]["speed_1"] or 0),
-            reverse=True
-        )
+            key=lambda city: (final_dict[city]["speed_0"] or 0) + (
+                final_dict[city]["speed_1"] or 0), reverse=True)
         # Extract unique cities
         cities = list(set([key.split('_')[0] for key in final_dict.keys()]))
 
@@ -2604,56 +2725,68 @@ class Analysis():
 
         # Plot left column (first half of cities)
         for i, city in enumerate(cities_ordered[:num_cities_per_col]):
+            city_new, state = city.split('_')
+            iso_code = Analysis.get_value(df_mapping, "city", city_new, "state", state, "ISO_country")
+            city = Analysis.format_city_state(city) + " " + Analysis.iso2_to_flag(Analysis.iso3_to_iso2(iso_code))  # type: ignore
             row = i + 1
             if day_avg_speed[i] is not None and night_avg_speed[i] is not None:
+                value = (day_avg_speed[i] + night_avg_speed[i])/2
                 fig.add_trace(go.Bar(
-                    x=[day_avg_speed[i]], y=[city], orientation='h',
+                    x=[day_avg_speed[i]], y=[f'{city} {value:.2f}'], orientation='h',
                     name=f"{city} speed during day", marker=dict(color=common.get_configs('bar_colour_1')), text=[''],
                     textposition='auto', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=1)
                 fig.add_trace(go.Bar(
-                    x=[night_avg_speed[i]], y=[city], orientation='h',
+                    x=[night_avg_speed[i]], y=[f'{city} {value:.2f}'], orientation='h',
                     name=f"{city} speed during night", marker=dict(color=common.get_configs('bar_colour_2')),
                     text=[''], textposition='auto', showlegend=False), row=row, col=1)
 
             elif day_avg_speed[i] is not None:  # Only day data available
+                value = (day_avg_speed[i])/2
                 fig.add_trace(go.Bar(
-                    x=[day_avg_speed[i]], y=[city], orientation='h',
+                    x=[day_avg_speed[i]], y=[f'{city} {value:.2f}'], orientation='h',
                     name=f"{city} speed during day", marker=dict(color=common.get_configs('bar_colour_1')), text=[''],
                     textposition='auto', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=1)
 
             elif night_avg_speed[i] is not None:  # Only night data available
+                value = (night_avg_speed[i])/2
                 fig.add_trace(go.Bar(
-                    x=[night_avg_speed[i]], y=[city], orientation='h',
+                    x=[night_avg_speed[i]], y=[f'{city} {value:.2f}'], orientation='h',
                     name=f"{city} speed during night", marker=dict(color=common.get_configs('bar_colour_2')),
                     textposition='auto', insidetextanchor='start', showlegend=False,
                     text=[''], textfont=dict(size=14, color='white')), row=row, col=1)
 
         for i, city in enumerate(cities_ordered[num_cities_per_col:]):
+            city_new, state = city.split('_')
+            iso_code = Analysis.get_value(df_mapping, "city", city_new, "state", state, "ISO_country")
+            city = Analysis.format_city_state(city) + " " + Analysis.iso2_to_flag(Analysis.iso3_to_iso2(iso_code))  # type: ignore
             row = i + 1
             idx = num_cities_per_col + i
             if day_avg_speed[idx] is not None and night_avg_speed[idx] is not None:
+                value = (day_avg_speed[idx] + night_avg_speed[idx])/2
                 fig.add_trace(go.Bar(
-                    x=[day_avg_speed[idx]], y=[city], orientation='h',
+                    x=[day_avg_speed[idx]], y=[f'{city} {value:.2f}'], orientation='h',
                     name=f"{city} speed during day", marker=dict(color=common.get_configs('bar_colour_1')), text=[''],
                     textposition='inside', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=2)
                 fig.add_trace(go.Bar(
-                    x=[night_avg_speed[idx]], y=[city], orientation='h',
+                    x=[night_avg_speed[idx]], y=[f'{city} {value:.2f}'], orientation='h',
                     name=f"{city} speed during night", marker=dict(color=common.get_configs('bar_colour_2')),
                     text=[''], textposition='inside', showlegend=False), row=row, col=2)
 
             elif day_avg_speed[idx] is not None:
+                value = (day_avg_speed[idx])/2
                 fig.add_trace(go.Bar(
-                    x=[day_avg_speed[idx]], y=[city], orientation='h',
+                    x=[day_avg_speed[idx]], y=[f'{city} {value:.2f}'], orientation='h',
                     name=f"{city} speed during day", marker=dict(color=common.get_configs('bar_colour_1')), text=[''],
                     textposition='inside', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=2)
 
             elif night_avg_speed[idx] is not None:
+                value = (night_avg_speed[idx])/2
                 fig.add_trace(go.Bar(
-                    x=[night_avg_speed[idx]], y=[city], orientation='h',
+                    x=[night_avg_speed[idx]], y=[f'{city} {value:.2f}'], orientation='h',
                     name=f"{city} speed during night", marker=dict(color=common.get_configs('bar_colour_2')),
                     textposition='inside', insidetextanchor='start', showlegend=False,
                     text=[''], textfont=dict(size=14, color='white')), row=row, col=2)
@@ -2862,17 +2995,17 @@ class Analysis():
 
         # Now populate the final_dict with city-wise speed data
         for city_condition, time in avg_time.items():
-            city, condition = city_condition.split('_')
+            city, state, condition = city_condition.split('_')
 
             # Get the country from the previously stored city_country_map
-            country = Analysis.get_value(df_mapping, "city", city, "country")
-            iso_code = Analysis.get_value(df_mapping, "city", city, "ISO_country")
+            country = Analysis.get_value(df_mapping, "city", city, "state", state, "country")
+            iso_code = Analysis.get_value(df_mapping, "city", city, "state", state, "ISO_country")
             if country or iso_code is not None:
                 # Initialize the city's dictionary if not already present
-                if city not in final_dict:
-                    final_dict[city] = {"time_0": None, "time_1": None, "country": country, "iso": iso_code}
+                if f"{city}_{state}" not in final_dict:
+                    final_dict[f"{city}_{state}"] = {"time_0": None, "time_1": None, "country": country, "iso": iso_code}
                 # Populate the corresponding speed based on the condition
-                final_dict[city][f"time_{condition}"] = time
+                final_dict[f"{city}_{state}"][f"time_{condition}"] = time
 
         # Sort cities by the sum of speed_0 and speed_1 values
         cities_ordered = sorted(
@@ -2900,31 +3033,37 @@ class Analysis():
         # Plot left column (first half of cities)
         for i, city in enumerate(cities_ordered[:num_cities_per_col]):
             # Row for speed (Day and Night)
+            city_new, state = city.split('_')
+            iso_code = Analysis.get_value(df_mapping, "city", city_new, "state", state, "ISO_country")
+            city = Analysis.format_city_state(city) + " " + Analysis.iso2_to_flag(Analysis.iso3_to_iso2(iso_code))  # type: ignore
             row = i + 1
             if day_time_dict[i] is not None and night_time_dict[i] is not None:
+                value = (day_time_dict[i] + night_time_dict[i])/2
                 fig.add_trace(go.Bar(
-                    x=[day_time_dict[i]], y=[city], orientation='h',
+                    x=[day_time_dict[i]], y=[f'{city} {value:.2f}'], orientation='h',
                     # name=f"{city} time during day", marker=dict(color='#FF6692'),
                     name=f"{city} time during day", marker=dict(color=common.get_configs('bar_colour_1')),
                     text=[''], textposition='auto', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=1)
                 fig.add_trace(go.Bar(
-                    x=[night_time_dict[i]], y=[city], orientation='h',
+                    x=[night_time_dict[i]], y=[f'{city} {value:.2f}'], orientation='h',
                     name=f"{city} time during night", marker=dict(color=common.get_configs('bar_colour_2')),
                     # name=f"{city} time during night", marker=dict(color='#B6E880'), text=[''],
                     textposition='auto', showlegend=False), row=row, col=1)
 
             elif day_time_dict[i] is not None:  # Only day time data available
+                value = (day_time_dict[i])/2
                 fig.add_trace(go.Bar(
-                    x=[day_time_dict[i]], y=[city], orientation='h',
+                    x=[day_time_dict[i]], y=[f'{city} {value:.2f}'], orientation='h',
                     name=f"{city} time during day", marker=dict(color=common.get_configs('bar_colour_1')),
                     # name=f"{city} time during day", marker=dict(color='#FF6692'),
                     text=[''], textposition='auto', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=1)
 
             elif night_time_dict[i] is not None:  # Only night time data available
+                value = (night_time_dict[i])/2
                 fig.add_trace(go.Bar(
-                    x=[night_time_dict[i]], y=[city], orientation='h',
+                    x=[night_time_dict[i]], y=[f'{city} {value:.2f}'], orientation='h',
                     name=f"{city} time during night", marker=dict(color=common.get_configs('bar_colour_2')),
                     # name=f"{city} time during night", marker=dict(color='#B6E880'),
                     text=[''], textposition='auto', insidetextanchor='start', showlegend=False,
@@ -2932,29 +3071,35 @@ class Analysis():
 
         # Similarly for the right column
         for i, city in enumerate(cities_ordered[num_cities_per_col:]):
+            city_new, state = city.split('_')
+            iso_code = Analysis.get_value(df_mapping, "city", city_new, "state", state, "ISO_country")
+            city = Analysis.format_city_state(city) + " " + Analysis.iso2_to_flag(Analysis.iso3_to_iso2(iso_code))  # type: ignore
             row = i + 1
             idx = num_cities_per_col + i
             if day_time_dict[idx] is not None and night_time_dict[idx] is not None:
+                value = (day_time_dict[idx] + night_time_dict[idx])/2
                 fig.add_trace(go.Bar(
-                    x=[day_time_dict[idx]], y=[city], orientation='h',
+                    x=[day_time_dict[idx]], y=[f'{city} {value:.2f}'], orientation='h',
                     name=f"{city} time during day", marker=dict(color=common.get_configs('bar_colour_1')),
                     text=[''], textposition='inside', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=2)
                 fig.add_trace(go.Bar(
-                    x=[night_time_dict[idx]], y=[city], orientation='h',
+                    x=[night_time_dict[idx]], y=[f'{city} {value:.2f}'], orientation='h',
                     name=f"{city} time during night", marker=dict(color=common.get_configs('bar_colour_2')), text=[''],
                     textposition='inside', showlegend=False), row=row, col=2)
 
             elif day_time_dict[idx] is not None:  # Only day time data available
+                value = (day_time_dict[idx])/2
                 fig.add_trace(go.Bar(
-                    x=[day_time_dict[idx]], y=[city], orientation='h',
+                    x=[day_time_dict[idx]], y=[f'{city} {value:.2f}'], orientation='h',
                     name=f"{city} time during day", marker=dict(color=common.get_configs('bar_colour_1')),
                     text=[''], textposition='inside', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=2)
 
             elif night_time_dict[idx] is not None:  # Only night time data available
+                value = (night_time_dict[idx])/2
                 fig.add_trace(go.Bar(
-                    x=[night_time_dict[idx]], y=[city], orientation='h',
+                    x=[night_time_dict[idx]], y=[f'{city} {value:.2f}'], orientation='h',
                     name=f"{city} time during night", marker=dict(color=common.get_configs('bar_colour_2')),
                     text=[''], textposition='inside', insidetextanchor='start', showlegend=False,
                     textfont=dict(size=14, color='white')), row=row, col=2)
@@ -3499,6 +3644,9 @@ class Analysis():
 
     @staticmethod
     def iso2_to_flag(iso2):
+        if iso2 is None:
+            # Return a placeholder or an empty string if the ISO-2 code is not available
+            return "🇽🇰"
         return chr(ord('🇦') + (ord(iso2[0]) - ord('A'))) + chr(ord('🇦') + (ord(iso2[1]) - ord('A')))
 
     @staticmethod
@@ -3527,7 +3675,7 @@ if __name__ == "__main__":
     logger.info("Total number of videos: {}", Analysis.calculate_total_videos(df_mapping))
     country, number = Analysis.get_unique_values(df_mapping, "country")
     logger.info("Total number of countries: {}", number)
-    Analysis.get_world_plot(df_mapping)
+    # Analysis.get_world_plot(df_mapping)
 
     if os.path.exists(pickle_file_path):
         # Load the data from the pickle file
@@ -3595,18 +3743,19 @@ if __name__ == "__main__":
     logger.info(f"motorcycle: {motorcycle_counter} ; bus: {bus_counter} ; truck: {truck_counter}")
     logger.info(f"cellphone: {cellphone_counter}; traffic light: {traffic_light_counter}; sign: {stop_sign_counter}")
 
-    Analysis.speed_and_time_to_start_cross(df_mapping)
-    Analysis.time_to_start_crossing_vs_literacy(df_mapping)
-    Analysis.time_to_start_crossing_vs_traffic_mortality(df_mapping)
-    Analysis.traffic_safety_vs_literacy(df_mapping)
-    Analysis.plot_cell_phone_vs_traffic_mortality(df_mapping)
-    Analysis.vehicle_vs_cross_time(df_mapping)
-    Analysis.traffic_mortality_vs_crossing_event_wt_traffic_light(df_mapping)
-    Analysis.plot_traffic_safety_vs_traffic_mortality(df_mapping)
-    Analysis.plot_speed_to_cross_by_alphabetical_order(df_mapping)
-    Analysis.plot_time_to_start_cross_by_alphabetical_order(df_mapping)
-    Analysis.plot_speed_to_cross_by_average(df_mapping)
+    # Analysis.speed_and_time_to_start_cross(df_mapping)
+    # Analysis.time_to_start_crossing_vs_literacy(df_mapping)
+    # Analysis.time_to_start_crossing_vs_traffic_mortality(df_mapping)
+    # Analysis.traffic_safety_vs_literacy(df_mapping)
+    # Analysis.plot_cell_phone_vs_traffic_mortality(df_mapping)
+    # Analysis.vehicle_vs_cross_time(df_mapping)
+    # Analysis.traffic_mortality_vs_crossing_event_wt_traffic_light(df_mapping)
+    # Analysis.plot_traffic_safety_vs_traffic_mortality(df_mapping)
+    # Analysis.gmp_vs_cross_time(df_mapping)
+    # Analysis.plot_speed_to_cross_by_alphabetical_order(df_mapping)
+    # Analysis.plot_time_to_start_cross_by_alphabetical_order(df_mapping)
+    # Analysis.plot_speed_to_cross_by_average(df_mapping)
     Analysis.plot_time_to_start_cross_by_average(df_mapping)
-    Analysis.correlation_matrix(df_mapping)
+    # Analysis.correlation_matrix(df_mapping)
 
     logger.info("Analysis completed.")
