@@ -83,6 +83,15 @@ Speed of crossing(sorted by average of day and night)
 Merged figure of the speed of crossing and time to start crossing(sorted by countries)
 [![Merged figure of speed of crossing ad time to start crossing(sorted by coutries)](figures/consolidated.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/consolidated.html)
 
+Speed of crossing vs. time to start crossing
+[![Speed of crossing vs. time to start crossing)](figures/speed_vs_time.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/speed_vs_time.html)
+
+Speed of crossing vs. Gross Metropolitan Product
+[![Speed of crossing vs. Gross Metropolitan Product)](figures/gmp_vs_speed.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/gmp_vs_speed.html)
+
+Time to start crossing vs. Gross Metropolitan Product
+[![Time to start crossing vs. Gross Metropolitan Product)](figures/gmp_vs_cross_time.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/gmp_vs_cross_time.html)
+
 Correlation Matrix
 [![Correlation Matrix based on average speed and time to start cross](figures/correlation_matrix_heatmap_averaged.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/correlation_matrix_heatmap_averaged.html)
 
@@ -98,7 +107,7 @@ Correlation Matrix of Africa
 Correlation Matrix of Asia
 [![Correlation Matrix of Asia](figures/correlation_matrix_heatmap_Asia.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/correlation_matrix_heatmap_Asia.html)
 
-Correlation Matrix of Australia
+Correlation Matrix of Oceania
 [![Correlation Matrix of Australia](figures/correlation_matrix_heatmap_Oceania.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/correlation_matrix_heatmap_Oceania.html)
 
 Correlation Matrix of Europe
