@@ -58,7 +58,7 @@ def logs(
 
     if show_level and show_color:
         try:
-            import coloredlogs
+            import coloredlogs  # type: ignore
         except ImportError:
             show_color = False
         else:

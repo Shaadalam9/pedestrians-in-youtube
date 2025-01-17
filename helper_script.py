@@ -51,7 +51,7 @@ class youtube_helper:
         except FileExistsError:
             logger.error(f"Error: Folder '{new_name}' already exists.")
 
-    def download_video_with_resolution(self, video_id, resolutions=["720p", "480p", "144p"], output_path="."):
+    def download_video_with_resolution(self, video_id, resolutions=["720p", "480p", "360p", "144p"], output_path="."):
         try:
             youtube_url = f'https://www.youtube.com/watch?v={video_id}'
             youtube_object = YouTube(youtube_url, on_progress_callback=on_progress)
