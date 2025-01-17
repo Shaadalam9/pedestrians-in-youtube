@@ -14,6 +14,7 @@ import pycountry
 from pycountry_convert import country_name_to_country_alpha2, country_alpha2_to_continent_code
 from custom_logger import CustomLogger
 import common
+import ast
 
 logger = CustomLogger(__name__)  # use custom logger
 
@@ -155,6 +156,21 @@ class youtube_helper:
             df.to_csv(output_csv, index=False, mode='w')  # If the CSV does not exist, create it
         else:
             df.to_csv(output_csv, index=False, mode='a', header=False)  # If it exists, append without header
+
+    @staticmethod
+    def check_for_download_csv_file(mapping):
+        for index, row in mapping.iterrows():
+            video_ids = [id.strip() for id in row["videos"].strip("[]").split(',')]
+            start_times = ast.literal_eval(row["start_time"])
+            for vid_index, (vid, start_times_list) in enumerate(zip(video_ids, start_times)):
+                for start_time in start_times_list:
+                    file_name = f'{vid}_{start_time}.csv'
+                    file_path = os.path.join(common.get_configs("data"), file_name)
+                    # Check if the file exists
+                    if os.path.isfile(file_path):
+                        pass
+                    else:
+                        logger.info(f"The file '{file_name}' does not exist.")
 
     @staticmethod
     def get_iso_alpha_3(country_name, existing_iso):
