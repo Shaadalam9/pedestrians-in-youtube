@@ -47,7 +47,7 @@ def download_video_with_resolution(video_ids, resolutions=["2160p", "1440p", "10
 if __name__ == "__main__":
     logger.info("Download of videos started.")
     df_mapping = pd.read_csv("mapping.csv")
-    source_videos = common.get_configs('source_videos')  # folder for output of videos
+    source_videos = common.get_configs('save_download_videos')  # folder for output of videos
     # Create folder for output
     if not os.path.exists(source_videos):
         os.makedirs(source_videos)

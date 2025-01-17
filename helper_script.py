@@ -481,7 +481,7 @@ class youtube_helper:
         frames_output_path = os.path.join("runs", "detect", "frames")
         annotated_frame_output_path = os.path.join("runs", "detect", "annotated_frames")
         txt_output_path = os.path.join("runs", "detect", "labels")
-        text_filename = os.path.join("runs", "detect", "predict", "labels", "image0.txt")
+        text_filename = os.path.join("runs", "detect", "track", "labels", "image0.txt")
         display_video_output_path = os.path.join("runs", "detect", "display_video.mp4")
 
         # Create directories if they don't exist
@@ -551,7 +551,7 @@ class youtube_helper:
 
                 # save the labelled image
                 if delete_frames is False:
-                    image_filename = os.path.join("runs", "detect", "predict", "image0.jpg")
+                    image_filename = os.path.join("runs", "detect", "track", "image0.jpg")
                     new_img_file_name = os.path.join("runs", "detect", "frames", f"frame_{frame_count}.jpg")
                     shutil.move(image_filename, new_img_file_name)
 

@@ -1,0 +1,9 @@
+id,city,country,ISO_country,state,videos,time_of_day,gdp_city_(billion_US),population_city,population_country,traffic_mortality,start_time,end_time,continent,literacy_rate,avg_height,upload_date,fps_list,geni,traffic_index
+278,Hama,Syria,SYR,,"[4xUxRv8ZAl4,ivYoHNpbeFs]","[[0],[0]]",23622.83,23594.623,23594.623,14.9,"[[2],[0]]","[[708],[1185]]",Asia,86.4,165.5,"[26022022,17012022]","[30.0, 30.0]",26.6,
+279,Tartus,Syria,SYR,,"[aGuIh68N2l0,trefTmZwvFo,LvA7aHJLJ14]","[[0],[0],[0]]",23622.83,23594.623,23594.623,14.9,"[[4],[0],[7]]","[[654],[725],[810]]",Asia,86.4,165.5,"[09112021,02112021,23112021]","[60.0, 30.0, 30.0]",26.6,
+280,Havana,Cuba,CUB,,[vCywf9saDlY],[[0]],107351.8,11019.931,11019.931,8.9,[[0]],[[3202]],North America,99.8,166.8,[11082023],[60.0],,
+281,Yerevan,Armenia,ARM,,[kHWh0KgQqAc],[[0]],5.23,1500.0,2990.9,20.0,[[0]],[[1560]],Asia,99.8,166.8,[01012024],[60.0],27.9,99.6
+282,Gyumri,Armenia,ARM,,[ROpZcgEsI7A],[[0]],24085.75,2990.9,2990.9,20.0,[[0]],[[1283]],Asia,99.8,166.8,[04012024],[60.0],27.9,99.6
+283,Caracas,Venezuela,VEN,,"[KmoJzIu0tq8,kG-DUv2IjD0,h5foQ470048,bHLOnAS4DiE,HUtLMMim_V0]","[[0],[0,1],[0],[0],[0]]",70.0,1942.652,28300.854,39.0,"[[530],[13,7128],[0],[0],[0]]","[[2575],[7128,8658],[3688],[3089],[5493]]",South America,97.1,166.7,"[08022023,22012019,08112018,06112018,01052019]","[30.0, 30.0, 30.0, 30.0, 30.0]",44.7,141.6
+284,Barranquilla,Colombia,COL,,[vA_wopwxHHA],[[0]],363493.84,52321.152,52321.152,15.4,[[271]],[[2390]],South America,95.6,164.9,[08022023],[60.0],54.8,199.9
+285,Panama City,Panama,PAN,,"[38bWKtCoF0k,ba_6eSH0JVw]","[[0],[0]]",83318.18,4458.759,4458.759,13.9,"[[0],[0]]","[[1384],[972]]",North America,95.7,164.2,"[19082020,02052020]","[30.0, 30.0]",48.9,156.4

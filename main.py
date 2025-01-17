@@ -7,6 +7,8 @@ from custom_logger import CustomLogger
 from logmod import logs
 import ast
 import common
+from check_temp import TemperatureMonitor
+import time
 
 logs(show_level='info', show_color=True)
 logger = CustomLogger(__name__)  # use custom logger
@@ -81,6 +83,18 @@ if common.get_configs("update_upload_date"):
     mapping.to_csv(common.get_configs("mapping"), index=False)
     logger.info("Mapping file updated successfully with upload dates.")
 
+if common.get_configs("monitor_temp"):
+    monitor = TemperatureMonitor(interval_minutes=5, temp_threshold=80)
+    monitor.start()  # Start the monitoring thread
+
+    # Your main program logic here
+    try:
+        while True:
+            print("Main script is running...")
+            time.sleep(10)
+    except KeyboardInterrupt:
+        monitor.stop()
+        monitor.join()
 
 for index, row in mapping.iterrows():
     video_ids = [id.strip() for id in row["videos"].strip("[]").split(',')]
@@ -159,13 +173,10 @@ for index, row in mapping.iterrows():
                 os.rename(old_file_path, new_file_path)
                 # Construct the paths dynamically
                 source_file = os.path.join("runs", "detect", f"{vid}_{start_time}.csv")
-                predict_folder = os.path.join("runs", "detect", "predict")
+                predict_folder = os.path.join("runs", "detect")
 
                 # Move the file to the data_folder
                 shutil.move(source_file, data_folder)
-
-                # Remove the predict folder
-                shutil.rmtree(predict_folder)
 
                 if delete_runs_files:
                     shutil.rmtree(os.path.join("runs", "detect"))
