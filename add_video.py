@@ -42,6 +42,7 @@ def form():
     time_of_day = []
     start_time = []
     end_time = []
+    end_time_input = 0
     gdp_city = ''
     population_city = ''
     population_country = ''
@@ -49,7 +50,6 @@ def form():
     continent = ''
     literacy_rate = ''
     avg_height = ''
-    upload_date = ''
     fps_list = ''
     geni = ''
     traffic_index = ''
@@ -126,6 +126,7 @@ def form():
             time_of_day = request.form.getlist('time_of_day')
             start_time = request.form.getlist('start_time')
             end_time = request.form.getlist('end_time')
+            end_time_input = int(end_time[0])  # for starting video at the last end time
             gdp_city = request.form.get('gdp_city')
             population_city = request.form.get('population_city')
             population_country = request.form.get('population_country')
@@ -258,7 +259,8 @@ def form():
 
     return render_template(
         "add_video.html", message=message, df=df, city=city, country=country, state=state, video_url=video_url,
-        video_id=video_id, existing_data=existing_data_row, fps_video=fps_video, upload_date_video=upload_date_video
+        video_id=video_id, existing_data=existing_data_row, fps_video=fps_video, upload_date_video=upload_date_video,
+        timestamp=end_time_input
     )
 
 
