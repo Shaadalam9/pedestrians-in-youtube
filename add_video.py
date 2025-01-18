@@ -1,8 +1,13 @@
-from flask import Flask, request, render_template_string
+from flask import Flask, request, render_template
 import pandas as pd
 import os
 import common
 from pytube import YouTube
+import webbrowser
+from threading import Timer
+import random
+import pycountry
+
 
 app = Flask(__name__)
 
@@ -48,6 +53,8 @@ def form():
     fps_list = ''
     geni = ''
     traffic_index = ''
+    upload_date_video = ''
+    fps_video = 0.0
 
     if request.method == 'POST':
         if 'fetch_data' in request.form:
@@ -55,6 +62,17 @@ def form():
             country = request.form.get('country')
             state = request.form.get('state')
             video_url = request.form.get('video_url')
+
+            # Extract video ID from YouTube URL
+            try:
+                yt = YouTube(video_url)
+                video_url_id = yt.video_id
+            except Exception as e:
+                return render_template(
+                    "add_video.html", message=f"Invalid YouTube URL: {e}", df=df, city=city, country=country,
+                    state=state, video_url=video_url, video_id=video_url_id, existing_data=existing_data_row,
+                    fps_video=fps_video, upload_date_video=upload_date_video
+                )
 
             # Check if city, state and country exist in the CSV
             if state:    
@@ -65,8 +83,40 @@ def form():
                 existing_data_row = existing_data.iloc[0].to_dict()  # Convert to dictionary
                 state = existing_data_row.get('state', '')
                 video_id = existing_data_row.get('videos', '').split(',')[0] if pd.notna(existing_data_row.get('videos', '')) else ''  # noqa: E501
+            
+                # Get the list of videos for the city and country
+                videos_list = existing_data_row.get('videos', '').split(',')
+                videos_list = [video.strip('[]') for video in videos_list]
+                fps_list = existing_data_row.get('fps_list', '').split(',')
+                fps_list = [fps.strip('[]') for fps in fps_list]
+                upload_date_list = existing_data_row.get('upload_date', '').split(',')
+                upload_date_list = [update_date.strip('[]') for update_date in upload_date_list]
+                if video_url_id in videos_list:
+                    position = videos_list.index(video_url_id)
+                    fps_video = fps_list[position].strip()
+                    upload_date_video = upload_date_list[position].strip()
             else:
                 message = "No existing entry found for this city (state) and country. You can add new data."
+                existing_data_row = {'city': city,
+                                     'country': country,
+                                     'ISO_country': get_iso3_country_code(country),
+                                     'state': city,
+                                     'videos': [],
+                                     'time_of_day': [],
+                                     'gdp_city_(billion_US)': 0.0,
+                                     'population_city': 0.0,
+                                     'population_country': 0.0,
+                                     'traffic_mortality': 0.0,
+                                     'start_time': [],
+                                     'end_time': [],
+                                     'continent': '',
+                                     'literacy_rate': 0.0,
+                                     'avg_height': 0.0,
+                                     'upload_date': [],
+                                     'fps_list': [],
+                                     'geni': 0.0,
+                                     'traffic_index': 0.0}
+                video_id = video_url_id
 
         elif 'submit_data' in request.form:
             city = request.form.get('city')
@@ -88,32 +138,33 @@ def form():
             geni = request.form.get('geni')
             traffic_index = request.form.get('traffic_index')
 
+            # Extract video ID from YouTube URL
+            try:
+                yt = YouTube(video_url)
+                video_id = yt.video_id
+            except Exception as e:
+                return render_template(
+                    "add_video.html", message=f"Invalid YouTube URL: {e}", df=df, city=city, country=country,
+                    state=state, video_url=video_url, video_id=video_id, existing_data=existing_data_row,
+                    fps_video=fps_video, upload_date_video=upload_date_video
+                )
+
             # Validate Time of Day and End Time > Start Time
             if any(t not in ['0', '1'] for t in time_of_day):
                 message = "Time of Day must be either 0 or 1."
             elif any(int(et) <= int(st) for st, et in zip(start_time, end_time)):
                 message = "End Time must be larger than Start Time."
             else:
-                # Extract ISO Country code (dummy logic here, replace with actual mapping if available)
-                ISO_country = country[:3].upper()
-
-                # Extract video ID from YouTube URL
-                try:
-                    yt = YouTube(video_url)
-                    video_id = yt.video_id
-                except Exception as e:
-                    return render_template_string(
-                        template, message=f"Invalid YouTube URL: {e}", df=df, city=city, country=country, state=state,
-                        video_url=video_url, video_id=video_id, existing_data=existing_data_row
-                    )
-
                 # Check if the city is already present in the CSV
                 if state:    
-                    check_existing = city in df['city'].values and state in df['state'].values and country in df['country'].values
+                    check_existing = city in df['city'].values and state in df['state'].values and country in df['country'].values  # noqa: E501
                 else:
                     check_existing = city in df['city'].values and country in df['country'].values
                 if check_existing:
-                    idx = df[(df['city'] == city) & (df['country'] == country)].index[0]
+                    if state:
+                        idx = df[(df['city'] == city) & (df['state'] == state) & (df['country'] == country)].index[0]
+                    else:
+                        idx = df[(df['city'] == city) & (df['country'] == country)].index[0]
                     # Get the list of videos for the city and country
                     videos_list = df.at[idx, 'videos'].split(',') if pd.notna(df.at[idx, 'videos']) else []
                     # Clean the individual video IDs by stripping any leading or trailing brackets
@@ -123,7 +174,7 @@ def form():
                     end_time_list = eval(df.at[idx, 'end_time']) if pd.notna(df.at[idx, 'end_time']) else []
                     fps_list = df.at[idx, 'fps_list'].split(',') if pd.notna(df.at[idx, 'fps_list']) else []
                     fps_list = [fps.strip('[]') for fps in fps_list]
-                    upload_date_list = df.at[idx, 'upload_date'].split(',') if pd.notna(df.at[idx, 'upload_date']) else []
+                    upload_date_list = df.at[idx, 'upload_date'].split(',') if pd.notna(df.at[idx, 'upload_date']) else []  # noqa: E501
                     upload_date_list = [upload_date.strip('[]') for upload_date in upload_date_list]
 
                     # Check if the video_id already exists in the list
@@ -166,11 +217,12 @@ def form():
                 else:
                     # Add new row if city and country are not found in the CSV
                     new_row = {
+                        'id': int(df.iloc[-1]['id']+1),
                         'city': city,
                         'state': state,
                         'country': country,
-                        'ISO_country': ISO_country,
-                        'videos': video_id,
+                        'ISO_country': get_iso3_country_code(country),
+                        'videos': '[' + video_id + ']',
                         'time_of_day': str([[int(x) for x in time_of_day]]),  # Store as stringified list of integers
                         'start_time': str([[int(x) for x in start_time]]),    # Store as stringified list of integers
                         'end_time': str([[int(x) for x in end_time]]),        # Store as stringified list of integers
@@ -181,8 +233,8 @@ def form():
                         'continent': continent,
                         'literacy_rate': literacy_rate,
                         'avg_height': avg_height,
-                        'upload_date': upload_date,
-                        'fps_list': fps_list,
+                        'upload_date': '[' + upload_date_video.strip() + ']',
+                        'fps_list': '[' + fps_video.strip() + ']',
                         'geni': geni,
                         'traffic_index': traffic_index,
                     }
@@ -190,7 +242,7 @@ def form():
 
                 # Save to CSV
                 save_csv(df, FILE_PATH)
-                message = "Data added/updated successfully!"
+                message = "Video added/updated successfully."
 
     # Fetch the existing data after submit to display for the city
     if state:
@@ -204,184 +256,25 @@ def form():
             if not existing_data.empty:
                 existing_data_row = existing_data.iloc[0].to_dict()  # Convert to dictionary
 
-    return render_template_string(
-        template, message=message, df=df, city=city, country=country, state=state, video_url=video_url,
-        video_id=video_id, existing_data=existing_data_row
+    return render_template(
+        "add_video.html", message=message, df=df, city=city, country=country, state=state, video_url=video_url,
+        video_id=video_id, existing_data=existing_data_row, fps_video=fps_video, upload_date_video=upload_date_video
     )
 
 
-# HTML Template
-template = """
-<!doctype html>
-<html lang="en">
-<head>
-    <title>Extend Mapping CSV</title>
-    <style>
-        .container {
-            display: flex;
-            justify-content: space-between;
-        }
-        .left, .right {
-            width: 48%;
-        }
-        .left {
-            padding: 15px;
-            height: 90vh;
-            overflow-y: auto;
-        }
-        .right {
-            width: 48%;
-        }
-        .videos-text {
-            word-wrap: break-word;
-            white-space: normal;
-        }
-        .message {
-            color: green;
-            margin-top: 20px;
-        }
-    </style>
-    <script src="https://www.youtube.com/iframe_api"></script>
-    <script>
-        // Declare the YouTube player variable
-        let player;
+def get_iso3_country_code(country_name):
+    try:
+        country = pycountry.countries.get(name=country_name)
+        if country:
+            return country.alpha_3  # ISO3 code
+        else:
+            return "Country not found"
+    except KeyError:
+        return "Country not found"
 
-        // This function will be called once the API is ready
-        function onYouTubeIframeAPIReady() {
-            player = new YT.Player('embeddedVideo', {
-                events: {
-                    'onStateChange': onPlayerStateChange
-                }
-            });
-        }
-
-        // This function will be triggered whenever the state of the video changes
-        function onPlayerStateChange(event) {
-            // Check if the video is playing
-            if (event.data == YT.PlayerState.PLAYING) {
-                updateCurrentTime(); // Update the time while video is playing
-            }
-        }
-
-        // Function to update the current time displayed
-        function updateCurrentTime() {
-            // Get the current time from the YouTube player
-            const currentTime = player.getCurrentTime();
-            
-            // Update the current time displayed on the page
-            document.getElementById('currentTime').textContent = Math.floor(currentTime);
-            
-            // Continuously update the time every second while the video is playing
-            setTimeout(updateCurrentTime, 1000);
-        }
-    </script>
-</head>
-<body>
-    <h1>Extend Mapping CSV</h1>
-    <div class="container">
-        <div class="left">
-            <form method="POST" onsubmit="return validateTimes()">
-                <label for="city">City:</label>
-                <input type="text" id="city" name="city" value="{{ city }}" required size="30"><br>
-
-                <label for="state">State (optional):</label>
-                <input type="text" id="state" name="state" value="{{ state }}" size="20"><br>
-
-                <label for="country">Country:</label>
-                <input type="text" id="country" name="country" value="{{ country }}" required size="30"><br>
-
-                <label for="video_url">YouTube video URL:</label>
-                <input type="url" id="video_url" name="video_url" value="{{ video_url }}" required size="50"><br>
-
-                <button type="submit" name="fetch_data">Fetch Data</button>
-            </form>
-
-            {% if existing_data %}
-            <h3>Existing data:</h3>
-            <p class="videos-text">Videos: {{ existing_data['videos'] }}</p>
-            <p class="videos-text">Time of day: {{ existing_data['time_of_day'] }}</p>
-            <p class="videos-text">Start time: {{ existing_data['start_time'] }}</p>
-            <p class="videos-text">End time: {{ existing_data['end_time'] }}</p>
-            <p class="videos-text">Upload date: {{ existing_data['upload_date'] }}</p>
-            <p class="videos-text">FPS list: {{ existing_data['fps_list'] }}</p>
-
-            <!-- Form for submitting additional data -->
-            <form method="POST" onsubmit="return validateTimes()">
-                <input type="hidden" name="city" value="{{ city }}">
-                <input type="hidden" name="country" value="{{ country }}">
-                <input type="hidden" name="video_url" value="{{ video_url }}">
-
-                <label for="time_of_day">Time of day:</label>
-                <select id="time_of_day" name="time_of_day">
-                    <option value="0">0 (day)</option>
-                    <option value="1">1 (night)</option>
-                </select><br>
-
-                <label for="start_time">Start time (seconds):</label>
-                <input type="text" id="start_time" name="start_time" required><br>
-
-                <label for="end_time">End time (seconds):</label>
-                <input type="text" id="end_time" name="end_time" required><br>
-
-                <label for="upload_date_video">Upload date:</label>
-                <input type="text" id="upload_date_video" name="upload_date_video" value="{{ upload_date_video }}"><br>
-
-                <label for="fps_video">FPS:</label>
-                <select id="fps_video" name="fps_video">
-                    <option value="30.0" {% if fps_video == '30.0' %}selected{% endif %}>30.0</option>
-                    <option value="60.0" {% if fps_video == '60.0' %}selected{% endif %}>60.0</option>
-                </select><br>
-
-                <!-- Fields for additional data -->
-                <label for="gdp_city">GDP city (billion USD):</label>
-                <input type="text" id="gdp_city" name="gdp_city" value="{{ existing_data['gdp_city_(billion_US)'] }}"><br>
-
-                <label for="population_city">Population city:</label>
-                <input type="text" id="population_city" name="population_city" value="{{ existing_data['population_city'] }}"><br>
-
-                <label for="population_country">Population country:</label>
-                <input type="text" id="population_country" name="population_country" value="{{ existing_data['population_country'] }}"><br>
-
-                <label for="traffic_mortality">Traffic mortality:</label>
-                <input type="text" id="traffic_mortality" name="traffic_mortality" value="{{ existing_data['traffic_mortality'] }}"><br>
-
-                <label for="continent">Continent:</label>
-                <select id="continent" name="continent">
-                    <option value="Africa" {% if existing_data['continent'] == 'Africa' %}selected{% endif %}>Africa</option>
-                    <option value="Asia" {% if existing_data['continent'] == 'Asia' %}selected{% endif %}>Asia</option>
-                    <option value="Europe" {% if existing_data['continent'] == 'Europe' %}selected{% endif %}>Europe</option>
-                    <option value="South America" {% if existing_data['continent'] == 'South America' %}selected{% endif %}>South America</option>
-                    <option value="North America" {% if existing_data['continent'] == 'North America' %}selected{% endif %}>North America</option>
-                    <option value="Oceania" {% if existing_data['continent'] == 'Oceania' %}selected{% endif %}>Oceania</option>
-                </select><br>
-
-                <label for="literacy_rate">Literacy rate:</label>
-                <input type="text" id="literacy_rate" name="literacy_rate" value="{{ existing_data['literacy_rate'] }}"><br>
-
-                <label for="avg_height">Average height:</label>
-                <input type="text" id="avg_height" name="avg_height" value="{{ existing_data['avg_height'] }}"><br>
-
-                <label for="geni">Genetic index:</label>
-                <input type="text" id="geni" name="geni" value="{{ existing_data['geni'] }}"><br>
-
-                <label for="traffic_index">Traffic index:</label>
-                <input type="text" id="traffic_index" name="traffic_index" value="{{ existing_data['traffic_index'] }}"><br>
-
-                <button type="submit" name="submit_data">Submit</button>
-            </form>
-            {% endif %}
-        </div>
-
-        <div class="right">
-            {% if video_id %}
-            <iframe id="embeddedVideo" width="100%" height="50%" src="https://www.youtube.com/embed/{{ video_id }}?enablejsapi=1" frameborder="0" allowfullscreen></iframe>
-            <p>Current time: <span id="currentTime">0</span> seconds</p>
-            {% endif %}
-        </div>
-    </div>
-</body>
-</html>
-"""
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = 5000 + random.randint(0, 999)
+    url = "http://127.0.0.1:{0}".format(port)
+    Timer(1.25, lambda: webbrowser.open(url)).start()
+    app.run(port=port, debug=False)
