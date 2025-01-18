@@ -87,3 +87,4 @@ wbgapi==1.0.12
 world-bank-data==0.1.4
 yt-dlp==2024.12.13
 zipp==3.17.0
+Flask==3.1.0
