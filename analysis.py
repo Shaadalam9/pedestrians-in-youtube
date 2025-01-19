@@ -12,12 +12,14 @@ from custom_logger import CustomLogger
 from logmod import logs
 import statistics
 import ast
+from collections import defaultdict
 from geopy.exc import GeocoderTimedOut
 from geopy.geocoders import Nominatim
 import pickle
 from datetime import datetime
 import plotly as py
 import pycountry
+import random
 
 logs(show_level='info', show_color=True)
 logger = CustomLogger(__name__)  # use custom logger
@@ -151,8 +153,8 @@ class Analysis():
 
             # Adjust x and y coordinates to avoid overlap with other annotations
             for other_ann in adjusted_annotations:
-                if (abs(ann['x'] - other_ann['x']) < 0) and (abs(ann['y'] - other_ann['y']) < 0):
-                    adjusted_ann['y'] += 0  # Adjust y-coordinate (can be modified as needed)
+                if (abs(ann['x'] - other_ann['x']) < 0.2) and (abs(ann['y'] - other_ann['y']) < 0.2):
+                    adjusted_ann['y'] += 0.01  # Adjust y-coordinate (can be modified as needed)
 
             # Append the adjusted annotation to the list
             adjusted_annotations.append(adjusted_ann)
@@ -162,7 +164,7 @@ class Analysis():
     @staticmethod
     def plot_scatter_diag(x, y, size, color, symbol, city, plot_name, x_label, y_label,
                           legend_x=0.887, legend_y=0.986, legend_font_size=24, tick_font_size=24,
-                          label_font_size=24, need_annotations=False):
+                          label_font_size=24, need_annotations=False, density_threshold=1):
         """Plots a scatter plot with diagonal markers and annotations for city locations.
 
         Args:
@@ -212,19 +214,36 @@ class Analysis():
                                          marker=dict(color=color_), name=continent))
 
         # Adding manual legend for symbols
-        symbols_legend = {'diamond': 'Night', 'circle': 'Day'}
-        for symbol, description in symbols_legend.items():
-            fig.add_trace(go.Scatter(x=[None], y=[None], mode='markers',
-                                     marker=dict(symbol=symbol, color='rgba(0,0,0,0)',
-                                                 line=dict(color='black', width=2)), name=description))
+        # symbols_legend = {'diamond': 'Night', 'circle': 'Day'}
+        # for symbol, description in symbols_legend.items():
+        #     fig.add_trace(go.Scatter(x=[None], y=[None], mode='markers',
+        #                              marker=dict(symbol=symbol, color='rgba(0,0,0,0)',
+        #                                          line=dict(color='black', width=2)), name=description))
 
         # Adding annotations for locations
+        def custom_round(value, base):
+            return round(value / base) * base
+
         annotations = []
         if need_annotations:
+            point_counts = {}
             for i, key in enumerate(y.keys()):
-                annotations.append(
-                    dict(x=x[i], y=list(y.values())[i], text=Analysis.format_city_state(city[i]), showarrow=False)
-                )
+                grid_x = custom_round(x[i], 0.1)  # Define a grid resolution for density calculation
+                grid_y = custom_round(list(y.values())[i], 0.15)
+                grid_point = (grid_x, grid_y)
+                point_counts[grid_point] = point_counts.get(grid_point, 0) + 1
+
+                # Show annotations for isolated points
+                if point_counts[grid_point] == 1:
+                    annotations.append(
+                        dict(x=x[i], y=list(y.values())[i] + 0.2, text=Analysis.format_city_state(city[i]),
+                             showarrow=False)
+                    )
+                # For dense regions, show only a fraction of the annotations
+                elif point_counts[grid_point] <= density_threshold and random.random() > 0.5:
+                    annotations.append(
+                        dict(x=x[i], y=list(y.values())[i], text=Analysis.format_city_state(city[i]), showarrow=False)
+                    )
 
         # Adjust annotation positions to avoid overlap
         adjusted_annotations = Analysis.adjust_annotation_positions(annotations)
@@ -1989,6 +2008,53 @@ class Analysis():
                                    legend_x=0.97, legend_y=0.96, need_annotations=False)
 
     @staticmethod
+    def speed_vs_cross_time_avg(df_mapping, need_annotations=True):
+        continents, conditions, cities, counts, time_cal = [], [], [], [], []
+        y_axis = {}
+
+        with open(pickle_file_path, 'rb') as file:
+            data_tuple = pickle.load(file)
+
+        avg_speed = data_tuple[-1]
+        time = data_tuple[-2]
+
+        # Group data by city and state
+        grouped_data = defaultdict(lambda: {"avg_speed": [], "time": []})
+
+        for key, value in avg_speed.items():
+            if key in time:
+                city, state, condition = key.split('_')
+                grouped_key = f"{city}_{state}"
+                grouped_data[grouped_key]["avg_speed"].append(value)
+                grouped_data[grouped_key]["time"].append(time[key])
+
+        # Compute averages
+        averaged_data = {}
+        for key, values in grouped_data.items():
+            avg_speed_avg = sum(values["avg_speed"]) / len(values["avg_speed"])
+            time_avg = sum(values["time"]) / len(values["time"])
+            averaged_data[key] = (avg_speed_avg, time_avg)
+
+        for key, (avg_speed_val, time_val) in averaged_data.items():
+            city, state = key.split('_')
+            if need_annotations:
+                cities.append(key)
+            else:
+                cities.append("")
+            conditions.append(condition)  # Use a placeholder since conditions are averaged
+            time_cal.append(avg_speed_val)
+            y_axis[key] = time_val
+            counts.append(avg_speed_val)  # Alternatively, use a relevant count if needed
+            continents.append(Analysis.get_value(df_mapping, "city", city, "state", state, "continent"))
+
+        # Plot the scatter diagram
+        Analysis.plot_scatter_diag(x=time_cal, y=y_axis, size=[0.01]*len(y_axis), color=continents, symbol=conditions,
+                                   city=cities, plot_name="speed_vs_time_avg",
+                                   x_label="Speed of crossing (in m/s)",
+                                   y_label="Time taken for starting to crossing the road (in s)",
+                                   legend_x=0.83, legend_y=0.96, need_annotations=True)
+
+    @staticmethod
     def traffic_mortality_vs_crossing_event_wt_traffic_light(df_mapping, need_annotations=True):
         """Plots traffic mortality rate vs percentage of crossing events without traffic light.
 
@@ -3418,7 +3484,7 @@ class Analysis():
             gdp_city = Analysis.get_value(df_mapping, "city", city, "state", state, "gdp_city_(billion_US)")
             traffic_mortality = Analysis.get_value(df_mapping, "city", city, "state", state, "traffic_mortality")
             literacy_rate = Analysis.get_value(df_mapping, "city", city, "state", state, "literacy_rate")
-            geni = Analysis.get_value(df_mapping, "city", city, "state", state, "geni")
+            gini = Analysis.get_value(df_mapping, "city", city, "state", state, "gini")
             traffic_index = Analysis.get_value(df_mapping, "city", city, "state", state, "traffic_index")
 
             if country or iso_code is not None:
@@ -3473,7 +3539,7 @@ class Analysis():
                         f'{city}_{state}_{condition}', 0)
                     final_dict[f'{city}_{state}'][f"traffic_mortality_{condition}"] = traffic_mortality
                     final_dict[f'{city}_{state}'][f"literacy_rate_{condition}"] = literacy_rate
-                    final_dict[f'{city}_{state}'][f"geni_{condition}"] = geni
+                    final_dict[f'{city}_{state}'][f"gini_{condition}"] = gini
                     final_dict[f'{city}_{state}'][f"traffic_index_{condition}"] = traffic_index
                     final_dict[f'{city}_{state}'][f"continent_{condition}"] = continent
                     if gdp_city is not None:
@@ -3532,7 +3598,7 @@ class Analysis():
             'gmp_0': 'GMP', 'gmp_1': 'GMP',
             'traffic_mortality_0': 'Traffic mortality', 'traffic_mortality_1': 'Traffic mortality',
             'literacy_rate_0': 'Literacy rate', 'literacy_rate_1': 'Literacy rate',
-            'geni_0': 'GENI', 'geni_1': 'GENI', 'traffic_index_0': 'Traffic index',
+            'gini_0': 'Gini', 'gini_1': 'Gini', 'traffic_index_0': 'Traffic index',
             'traffic_index_1': 'Traffic index',
 
             }
@@ -3580,7 +3646,7 @@ class Analysis():
                 # For each variable (exclude avg_speed and avg_time)
                 for var in ['ped_cross_city', 'person_city', 'bicycle_city', 'car_city', 'motorcycle_city', 'bus_city',
                             'truck_city', 'cross_evnt_city', 'vehicle_city', 'cellphone_city', 'trf_sign_city',
-                            'gmp', 'traffic_mortality', 'literacy_rate', 'geni', 'traffic_index']:
+                            'gmp', 'traffic_mortality', 'literacy_rate', 'gini', 'traffic_index']:
                     # Populate each variable in the row_data dictionary
                     row_data[f"{var}_{condition}"] = final_dict[city].get(f"{var}_{condition}", 0)
 
@@ -3631,7 +3697,7 @@ class Analysis():
             'truck_city': 'Detected truck', 'cross_evnt_city': 'Crossing without traffic light',
             'vehicle_city': 'Detected total number of motor vehicle', 'cellphone_city': 'Detected cellphone',
             'trf_sign_city': 'Detected traffic signs', 'gmp_city': 'GMP',
-            'traffic_mortality_city': 'Traffic mortality', 'literacy_rate_city': 'Literacy rate', 'geni': 'GENI',
+            'traffic_mortality_city': 'Traffic mortality', 'literacy_rate_city': 'Literacy rate', 'gini': 'Gini',
             'traffic_index': 'Traffic Index'
             }
 
@@ -3669,7 +3735,7 @@ class Analysis():
                 # For each variable (exclude avg_speed and avg_time)
                 for var in ['ped_cross_city', 'person_city', 'bicycle_city', 'car_city', 'motorcycle_city', 'bus_city',
                             'truck_city', 'cross_evnt_city', 'vehicle_city', 'cellphone_city', 'trf_sign_city',
-                            'gmp', 'traffic_mortality', 'literacy_rate', 'continent', 'geni', 'traffic_index']:
+                            'gmp', 'traffic_mortality', 'literacy_rate', 'continent', 'gini', 'traffic_index']:
                     # Populate each variable in the row_data dictionary
                     row_data[f"{var}_{condition}"] = final_dict[city].get(f"{var}_{condition}", 0)
 
@@ -3726,7 +3792,7 @@ class Analysis():
                 'truck_city': 'Detected truck', 'cross_evnt_city': 'Crossing without traffic light',
                 'vehicle_city': 'Detected total number of motor vehicle', 'cellphone_city': 'Detected cellphone',
                 'trf_sign_city': 'Detected traffic signs', 'gmp': 'GMP',
-                'traffic_mortality': 'Traffic mortality', 'literacy_rate': 'Literacy rate', 'geni': 'GENI',
+                'traffic_mortality': 'Traffic mortality', 'literacy_rate': 'Literacy rate', 'gini': 'Gini',
                 'traffic_index': 'Traffic Index'
                 }
 
@@ -3778,7 +3844,6 @@ if __name__ == "__main__":
     logger.info("Total number of videos: {}", Analysis.calculate_total_videos(df_mapping))
     country, number = Analysis.get_unique_values(df_mapping, "country")
     logger.info("Total number of countries: {}", number)
-    Analysis.get_world_plot(df_mapping)
 
     if os.path.exists(pickle_file_path):
         # Load the data from the pickle file
@@ -3846,21 +3911,23 @@ if __name__ == "__main__":
     logger.info(f"motorcycle: {motorcycle_counter} ; bus: {bus_counter} ; truck: {truck_counter}")
     logger.info(f"cellphone: {cellphone_counter}; traffic light: {traffic_light_counter}; sign: {stop_sign_counter}")
 
-    Analysis.speed_and_time_to_start_cross(df_mapping)
-    Analysis.time_to_start_crossing_vs_literacy(df_mapping)
-    Analysis.time_to_start_crossing_vs_traffic_mortality(df_mapping)
-    Analysis.traffic_safety_vs_literacy(df_mapping)
-    Analysis.plot_cell_phone_vs_traffic_mortality(df_mapping)
-    Analysis.vehicle_vs_cross_time(df_mapping)
-    Analysis.traffic_mortality_vs_crossing_event_wt_traffic_light(df_mapping)
-    Analysis.plot_traffic_safety_vs_traffic_mortality(df_mapping)
-    Analysis.gmp_vs_cross_time(df_mapping)
-    Analysis.gmp_vs_speed(df_mapping)
-    Analysis.speed_vs_cross_time(df_mapping)
-    Analysis.plot_speed_to_cross_by_alphabetical_order(df_mapping)
-    Analysis.plot_time_to_start_cross_by_alphabetical_order(df_mapping)
-    Analysis.plot_speed_to_cross_by_average(df_mapping)
-    Analysis.plot_time_to_start_cross_by_average(df_mapping)
-    Analysis.correlation_matrix(df_mapping)
+    # Analysis.get_world_plot(df_mapping)
+    # Analysis.speed_and_time_to_start_cross(df_mapping)
+    # Analysis.time_to_start_crossing_vs_literacy(df_mapping)
+    # Analysis.time_to_start_crossing_vs_traffic_mortality(df_mapping)
+    # Analysis.traffic_safety_vs_literacy(df_mapping)
+    # Analysis.plot_cell_phone_vs_traffic_mortality(df_mapping)
+    # Analysis.vehicle_vs_cross_time(df_mapping)
+    # Analysis.traffic_mortality_vs_crossing_event_wt_traffic_light(df_mapping)
+    # Analysis.plot_traffic_safety_vs_traffic_mortality(df_mapping)
+    # Analysis.gmp_vs_cross_time(df_mapping)
+    # Analysis.gmp_vs_speed(df_mapping)
+    # Analysis.speed_vs_cross_time(df_mapping)
+    Analysis.speed_vs_cross_time_avg(df_mapping)
+    # Analysis.plot_speed_to_cross_by_alphabetical_order(df_mapping)
+    # Analysis.plot_time_to_start_cross_by_alphabetical_order(df_mapping)
+    # Analysis.plot_speed_to_cross_by_average(df_mapping)
+    # Analysis.plot_time_to_start_cross_by_average(df_mapping)
+    # Analysis.correlation_matrix(df_mapping)
 
     logger.info("Analysis completed.")
