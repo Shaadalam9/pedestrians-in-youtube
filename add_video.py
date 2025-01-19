@@ -22,7 +22,7 @@ def load_csv(file_path):
         return pd.DataFrame(columns=['city', 'state', 'country', 'ISO_country', 'videos', 'time_of_day', 'start_time',
                                      'end_time', 'gdp_city_(billion_US)', 'population_city', 'population_country',
                                      'traffic_mortality', 'continent', 'literacy_rate', 'avg_height', 'upload_date',
-                                     'fps_list', 'geni', 'traffic_index'])
+                                     'fps_list', 'gini', 'traffic_index'])
 
 
 def save_csv(df, file_path):
@@ -51,7 +51,7 @@ def form():
     literacy_rate = ''
     avg_height = ''
     fps_list = ''
-    geni = ''
+    gini = ''
     traffic_index = ''
     upload_date_video = ''
     fps_video = 0.0
@@ -132,7 +132,7 @@ def form():
                                      'avg_height': 0.0,
                                      'upload_date': [],
                                      'fps_list': [],
-                                     'geni': 0.0,
+                                     'gini': 0.0,
                                      'traffic_index': 0.0}
                 video_id = video_url_id
 
@@ -154,7 +154,7 @@ def form():
             avg_height = request.form.get('avg_height')
             upload_date_video = request.form.get('upload_date_video')
             fps_video = request.form.get('fps_video')
-            geni = request.form.get('geni')
+            gini = request.form.get('gini')
             traffic_index = request.form.get('traffic_index')
 
             # Extract video ID from YouTube URL
@@ -235,19 +235,44 @@ def form():
                     df.at[idx, 'time_of_day'] = str(time_of_day_list)  # Store as string representation
                     df.at[idx, 'start_time'] = str(start_time_list)    # Store as string representation
                     df.at[idx, 'end_time'] = str(end_time_list)        # Store as string representation
-                    df.at[idx, 'gdp_city_(billion_US)'] = float(gdp_city)
-                    df.at[idx, 'population_city'] = float(population_city)
-                    df.at[idx, 'population_country'] = float(population_country)
-                    df.at[idx, 'traffic_mortality'] = float(traffic_mortality)
+                    if gdp_city:
+                        df.at[idx, 'gdp_city_(billion_US)'] = float(gdp_city)
+                    else:
+                        df.at[idx, 'gdp_city_(billion_US)'] = 0.0
+                    if population_city:
+                        df.at[idx, 'population_city'] = float(population_city)
+                    else:
+                        df.at[idx, 'population_city'] = 0.0
+                    if population_country:
+                        df.at[idx, 'population_country'] = float(population_country)
+                    else:
+                        df.at[idx, 'population_country'] = 0.0
+                    if traffic_mortality:
+                        df.at[idx, 'traffic_mortality'] = float(traffic_mortality)
+                    else:
+                        df.at[idx, 'traffic_mortality'] = 0.0
                     df.at[idx, 'continent'] = continent
-                    df.at[idx, 'literacy_rate'] = float(literacy_rate)
-                    df.at[idx, 'avg_height'] = float(avg_height)
+                    if literacy_rate:
+                        df.at[idx, 'literacy_rate'] = float(literacy_rate)
+                    else:
+                        df.at[idx, 'literacy_rate'] = 0.0
+                    if avg_height:
+                        df.at[idx, 'avg_height'] = float(avg_height)
+                    else:
+                        df.at[idx, 'avg_height'] = 0.0
                     upload_date_list = [int(x) for x in upload_date_list]
                     df.at[idx, 'upload_date'] = str(upload_date_list)
                     fps_list = [float(x) for x in fps_list]
                     df.at[idx, 'fps_list'] = str(fps_list)
-                    df.at[idx, 'geni'] = float(geni)
-                    df.at[idx, 'traffic_index'] = float(traffic_index)
+                    print(gini)
+                    if gini:
+                        df.at[idx, 'gini'] = float(gini)
+                    else:
+                        df.at[idx, 'gini'] = 0.0
+                    if traffic_index:
+                        df.at[idx, 'traffic_index'] = float(traffic_index)
+                    else:
+                        df.at[idx, 'traffic_index'] = 0.0
 
                 else:
                     # Add new row if city and country are not found in the CSV
@@ -270,7 +295,7 @@ def form():
                         'avg_height': avg_height,
                         'upload_date': '[' + upload_date_video.strip() + ']',
                         'fps_list': '[' + fps_video.strip() + ']',
-                        'geni': geni,
+                        'gini': gini,
                         'traffic_index': traffic_index,
                     }
                     df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
