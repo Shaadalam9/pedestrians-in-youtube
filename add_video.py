@@ -1,3 +1,5 @@
+"""Adding new data to the mapping file."""
+# by Pavlo Bazilinskyy <pavlo.bazilinskyy@gmail.com>
 from flask import Flask, request, render_template
 import pandas as pd
 import os
@@ -64,7 +66,7 @@ def form():
             city = request.form.get('city')
             country = request.form.get('country')
             state = request.form.get('state')
-            video_url = request.form.get('video_url')            
+            video_url = request.form.get('video_url')
 
             # Extract video ID from YouTube URL
             try:
@@ -93,7 +95,7 @@ def form():
                 )
 
             # Check if city, state and country exist in the CSV
-            if state:    
+            if state:
                 existing_data = df[(df['city'] == city) & (df['country'] == country)]
             else:
                 existing_data = df[(df['city'] == city) & (df['city'] == city) & (df['country'] == country)]
@@ -101,7 +103,7 @@ def form():
                 existing_data_row = existing_data.iloc[0].to_dict()  # Convert to dictionary
                 state = existing_data_row.get('state', '')
                 video_id = existing_data_row.get('videos', '').split(',')[0] if pd.notna(existing_data_row.get('videos', '')) else ''  # noqa: E501
-            
+
                 # Get the list of videos for the city and country
                 videos_list = existing_data_row.get('videos', '').split(',')
                 videos_list = [video.strip('[]') for video in videos_list]
@@ -191,7 +193,7 @@ def form():
                 message = "End Time must be larger than Start Time."
             else:
                 # Check if the city is already present in the CSV
-                if state:    
+                if state:
                     check_existing = city in df['city'].values and state in df['state'].values and country in df['country'].values  # noqa: E501
                 else:
                     check_existing = city in df['city'].values and country in df['country'].values
