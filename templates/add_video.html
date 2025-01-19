@@ -21,10 +21,71 @@
         .videos-text {
             word-wrap: break-word;
             white-space: normal;
+            flex: 1;
+            font-size: 14px;
+            margin-right: 10px;
         }
         .message {
             color: green;
             margin-top: 20px;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f9f9f9;
+        }
+        .form-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        .form-container h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+        .form-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 2px;
+        }
+        .form-group label {
+            flex: 1;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+        .form-group input,
+        .form-group select {
+            flex: 2;
+            padding: 8px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .form-group input[type="text"] {
+            text-align: left;
+        }
+        .form-group select {
+            background-color: #fff;
+        }
+        .form-group button {
+            padding: 10px 20px;
+            font-size: 16px;
+            color: white;
+            background-color: #007bff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .form-group button:hover {
+            background-color: #0056b3;
         }
     </style>
     <script src="https://www.youtube.com/iframe_api"></script>
@@ -97,23 +158,32 @@
     <div class="container">
         <div class="left">
             <form method="POST">
-                <label for="city">City:</label>
-                <input type="text" id="city" name="city" value="{{ city }}" required size="30"><br>
+                <div class="form-group">
+                    <label for="city">City:</label>
+                    <input type="text" id="city" name="city" value="{{ city }}" required>
+                </div>
 
-                <label for="state">State (optional):</label>
-                <input type="text" id="state" name="state" value="{{ state }}" size="20"><br>
+                <div class="form-group">
+                    <label for="state">State (optional):</label>
+                    <input type="text" id="state" name="state" value="{{ state }}">
+                </div>
 
-                <label for="country">Country:</label>
-                <input type="text" id="country" name="country" value="{{ country }}" required size="30"><br>
+                <div class="form-group">
+                    <label for="country">Country:</label>
+                    <input type="text" id="country" name="country" value="{{ country }}" required>
+                </div>
 
-                <label for="video_url">YouTube video URL:</label>
-                <input type="url" id="video_url" name="video_url" value="{{ video_url }}" required size="50"><br>
+                <div class="form-group">
+                    <label for="video_url">YouTube video URL:</label>
+                    <input type="url" id="video_url" name="video_url" value="{{ video_url }}" required>
+                </div>
 
-                <button type="submit" name="fetch_data" id="fetchDataButton">Fetch data</button>
+                <div class="form-group">
+                    <button type="submit" name="fetch_data" id="fetchDataButton">Fetch data</button>
+                </div>
             </form>
 
             {% if existing_data %}
-            <h3>Existing data:</h3>
             <p class="videos-text">Videos: {{ existing_data['videos'] }}</p>
             <p class="videos-text">Time of day: {{ existing_data['time_of_day'] }}</p>
             <p class="videos-text">Start time: {{ existing_data['start_time'] }}</p>
@@ -127,75 +197,94 @@
                 <input type="hidden" name="country" value="{{ country }}">
                 <input type="hidden" name="video_url" value="{{ video_url }}">
 
-                <label for="time_of_day">Time of day:</label>
-                <select id="time_of_day" name="time_of_day">
-                    <option value="0">0 (day)</option>
-                    <option value="1">1 (night)</option>
-                </select><br>
+                <div class="form-group">
+                    <label for="time_of_day">Time of day:</label>
+                    <select id="time_of_day" name="time_of_day">
+                        <option value="0">0 (day)</option>
+                        <option value="1">1 (night)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="start_time">Start time (seconds):</label>
+                    <input type="text" id="start_time" name="start_time" required>
+                </div>
+                <div class="form-group">
+                    <label for="end_time">End time (seconds):</label>
+                    <input type="text" id="end_time" name="end_time" required>
+                </div>
+                <div class="form-group">
+                    <label for="upload_date_video">Upload date:</label>
+                    <input type="text" id="upload_date_video" name="upload_date_video" value="{{ upload_date_video }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="fps_video">FPS:</label>
+                    <select id="fps_video" name="fps_video">
+                        <option value="30.0" {% if fps_video == '30.0' %}selected{% endif %}>30.0</option>
+                        <option value="60.0" {% if fps_video == '60.0' %}selected{% endif %}>60.0</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="gdp_city">GDP city (billion USD):</label>
+                    <input type="text" id="gdp_city" name="gdp_city" value="{{ existing_data['gdp_city_(billion_US)'] }}">
+                </div>
+                <div class="form-group">
+                    <label for="population_city">Population city:</label>
+                    <input type="text" id="population_city" name="population_city" value="{{ existing_data['population_city'] }}">
+                </div>
+                <div class="form-group">
+                    <label for="population_country">Population country:</label>
+                    <input type="text" id="population_country" name="population_country" value="{{ existing_data['population_country'] }}">
+                </div>
+                <div class="form-group">
+                    <label for="traffic_mortality">Traffic mortality:</label>
+                    <input type="text" id="traffic_mortality" name="traffic_mortality" value="{{ existing_data['traffic_mortality'] }}">
+                </div>
+                <div class="form-group">
+                    <label for="continent">Continent:</label>
+                    <select id="continent" name="continent">
+                        <option value="Africa" {% if existing_data['continent'] == 'Africa' %}selected{% endif %}>Africa</option>
+                        <option value="Asia" {% if existing_data['continent'] == 'Asia' %}selected{% endif %}>Asia</option>
+                        <option value="Europe" {% if existing_data['continent'] == 'Europe' %}selected{% endif %}>Europe</option>
+                        <option value="South America" {% if existing_data['continent'] == 'South America' %}selected{% endif %}>South America</option>
+                        <option value="North America" {% if existing_data['continent'] == 'North America' %}selected{% endif %}>North America</option>
+                        <option value="Oceania" {% if existing_data['continent'] == 'Oceania' %}selected{% endif %}>Oceania</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="literacy_rate">Literacy rate:</label>
+                    <input type="text" id="literacy_rate" name="literacy_rate" value="{{ existing_data['literacy_rate'] }}">
+                </div>
+                <div class="form-group">
+                    <label for="avg_height">Average height:</label>
+                    <input type="text" id="avg_height" name="avg_height" value="{{ existing_data['avg_height'] }}">
+                </div>
+                <div class="form-group">
+                    <label for="geni">Genetic index:</label>
+                    <input type="text" id="geni" name="geni" value="{{ existing_data['geni'] }}">
+                </div>
+                <div class="form-group">
+                    <label for="traffic_index">Traffic index:</label>
+                    <input type="text" id="traffic_index" name="traffic_index" value="{{ existing_data['traffic_index'] }}">
+                </div>
 
-                <label for="start_time">Start time (seconds):</label>
-                <input type="text" id="start_time" name="start_time" required><br>
-
-                <label for="end_time">End time (seconds):</label>
-                <input type="text" id="end_time" name="end_time" required><br>
-
-                <label for="upload_date_video">Upload date:</label>
-                <input type="text" id="upload_date_video" name="upload_date_video" value="{{ upload_date_video }}" required><br>
-
-                <label for="fps_video">FPS:</label>
-                <select id="fps_video" name="fps_video">
-                    <option value="30.0" {% if fps_video == '30.0' %}selected{% endif %}>30.0</option>
-                    <option value="60.0" {% if fps_video == '60.0' %}selected{% endif %}>60.0</option>
-                </select><br>
-
-                <!-- Fields for additional data -->
-                <label for="gdp_city">GDP city (billion USD):</label>
-                <input type="text" id="gdp_city" name="gdp_city" value="{{ existing_data['gdp_city_(billion_US)'] }}"><br>
-
-                <label for="population_city">Population city:</label>
-                <input type="text" id="population_city" name="population_city" value="{{ existing_data['population_city'] }}"><br>
-
-                <label for="population_country">Population country:</label>
-                <input type="text" id="population_country" name="population_country" value="{{ existing_data['population_country'] }}"><br>
-
-                <label for="traffic_mortality">Traffic mortality:</label>
-                <input type="text" id="traffic_mortality" name="traffic_mortality" value="{{ existing_data['traffic_mortality'] }}"><br>
-
-                <label for="continent">Continent:</label>
-                <select id="continent" name="continent">
-                    <option value="Africa" {% if existing_data['continent'] == 'Africa' %}selected{% endif %}>Africa</option>
-                    <option value="Asia" {% if existing_data['continent'] == 'Asia' %}selected{% endif %}>Asia</option>
-                    <option value="Europe" {% if existing_data['continent'] == 'Europe' %}selected{% endif %}>Europe</option>
-                    <option value="South America" {% if existing_data['continent'] == 'South America' %}selected{% endif %}>South America</option>
-                    <option value="North America" {% if existing_data['continent'] == 'North America' %}selected{% endif %}>North America</option>
-                    <option value="Oceania" {% if existing_data['continent'] == 'Oceania' %}selected{% endif %}>Oceania</option>
-                </select><br>
-
-                <label for="literacy_rate">Literacy rate:</label>
-                <input type="text" id="literacy_rate" name="literacy_rate" value="{{ existing_data['literacy_rate'] }}"><br>
-
-                <label for="avg_height">Average height:</label>
-                <input type="text" id="avg_height" name="avg_height" value="{{ existing_data['avg_height'] }}"><br>
-
-                <label for="geni">Genetic index:</label>
-                <input type="text" id="geni" name="geni" value="{{ existing_data['geni'] }}"><br>
-
-                <label for="traffic_index">Traffic index:</label>
-                <input type="text" id="traffic_index" name="traffic_index" value="{{ existing_data['traffic_index'] }}"><br>
-
-                <button type="submit" name="submit_data">Submit</button>
+                <div class="form-group">
+                    <button type="submit" name="submit_data">Submit</button>
+                </div>
             </form>
             {% endif %}
         </div>
 
         <div class="right">
             {% if video_id %}
-            <!-- Embed the YouTube video only if a valid video ID is available -->
-            <iframe id="embeddedVideo" width="100%" height="50%" src="https://www.youtube.com/embed/{{ video_id }}?start={{ timestamp }}&enablejsapi=1&autoplay=1" frameborder="0" allowfullscreen></iframe>
-            <p>Current time: <span id="currentTime">0</span> seconds</p>
+                <!-- Embed the YouTube video only if a valid video ID is available -->
+                <iframe id="embeddedVideo" width="100%" height="50%" src="https://www.youtube.com/embed/{{ video_id }}?start={{ timestamp }}&enablejsapi=1&autoplay=1" frameborder="0" allowfullscreen></iframe>
+                <p>Current time: <span id="currentTime">0</span> s.</p>
+                <p><strong>Title:</strong> <span id="videoTitle">{{ yt_title }}</span>.</p>
+                <p><strong>Upload date:</strong> <span id="videoUploadDate">{{ yt_upload_date }}</span>.</p>
+                <p><strong>Description:</strong> <span id="videoDescription">{{ yt_description }}</span></p>
             {% endif %}
 
-            <h2>{{ message }}</h2>
+            <h3>{{ message }}</h3>
         </div>
     </div>
 </body>
