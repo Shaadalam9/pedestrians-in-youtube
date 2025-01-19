@@ -55,23 +55,41 @@ def form():
     traffic_index = ''
     upload_date_video = ''
     fps_video = 0.0
+    yt_title = ''
+    yt_upload_date = ''
+    yt_description = ''
 
     if request.method == 'POST':
         if 'fetch_data' in request.form:
             city = request.form.get('city')
             country = request.form.get('country')
             state = request.form.get('state')
-            video_url = request.form.get('video_url')
+            video_url = request.form.get('video_url')            
 
             # Extract video ID from YouTube URL
             try:
                 yt = YouTube(video_url)
                 video_url_id = yt.video_id
+                # get info of video
+                yt_upload_date = yt.publish_date
+                for n in range(6):
+                    try:
+                        yt_stream = yt.streams.filter(only_audio=True).first()
+                        yt_stream.download(output_path='_output')
+                        yt_title = yt.title
+                    except:  # noqa: E722
+                        continue
+                for n in range(6):
+                    try:
+                        yt_description = yt.initial_data["engagementPanels"][n]["engagementPanelSectionListRenderer"]["content"]["structuredDescriptionContentRenderer"]["items"][1]["expandableVideoDescriptionBodyRenderer"]["attributedDescriptionBodyText"]["content"]  # noqa: E501
+                    except:  # noqa: E722
+                        continue
             except Exception as e:
                 return render_template(
                     "add_video.html", message=f"Invalid YouTube URL: {e}", df=df, city=city, country=country,
                     state=state, video_url=video_url, video_id=video_url_id, existing_data=existing_data_row,
-                    fps_video=fps_video, upload_date_video=upload_date_video
+                    fps_video=fps_video, upload_date_video=upload_date_video, yt_title=yt_title,
+                    yt_description=yt_description, yt_upload_date=yt_upload_date
                 )
 
             # Check if city, state and country exist in the CSV
@@ -143,11 +161,27 @@ def form():
             try:
                 yt = YouTube(video_url)
                 video_id = yt.video_id
+                # get info of video
+                yt_upload_date = yt.publish_date
+                for n in range(6):
+                    try:
+                        yt_stream = yt.streams.filter(only_audio=True).first()
+                        yt_stream.download(output_path='_output')
+                        # getting title is not stable
+                        yt_title = yt.title
+                    except:  # noqa: E722
+                        continue
+                for n in range(6):
+                    try:
+                        yt_description = yt.initial_data["engagementPanels"][n]["engagementPanelSectionListRenderer"]["content"]["structuredDescriptionContentRenderer"]["items"][1]["expandableVideoDescriptionBodyRenderer"]["attributedDescriptionBodyText"]["content"]  # noqa: E501
+                    except:  # noqa: E722
+                        continue
             except Exception as e:
                 return render_template(
                     "add_video.html", message=f"Invalid YouTube URL: {e}", df=df, city=city, country=country,
                     state=state, video_url=video_url, video_id=video_id, existing_data=existing_data_row,
-                    fps_video=fps_video, upload_date_video=upload_date_video
+                    fps_video=fps_video, upload_date_video=upload_date_video, yt_title=yt_title,
+                    yt_description=yt_description, yt_upload_date=yt_upload_date
                 )
 
             # Validate Time of Day and End Time > Start Time
@@ -257,10 +291,13 @@ def form():
             if not existing_data.empty:
                 existing_data_row = existing_data.iloc[0].to_dict()  # Convert to dictionary
 
+    if not upload_date_video and yt_upload_date:
+        upload_date_video = yt_upload_date.strftime('%d%m%Y')
     return render_template(
         "add_video.html", message=message, df=df, city=city, country=country, state=state, video_url=video_url,
         video_id=video_id, existing_data=existing_data_row, fps_video=fps_video, upload_date_video=upload_date_video,
-        timestamp=end_time_input
+        timestamp=end_time_input, yt_title=yt_title, yt_description=yt_description,
+        yt_upload_date=yt_upload_date
     )
 
 
