@@ -144,7 +144,7 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.video_id) {
-                        embeddedVideo.src = `https://www.youtube.com/embed/${data.video_id}`;
+                        embeddedVideo.src = `https://www.youtube.com/embed/${data.video_id}&enablejsapi=1&autoplay=1&mute=1`;
                     } else {
                         alert('Failed to fetch video.');
                     }
@@ -277,7 +277,7 @@
         <div class="right">
             {% if video_id %}
                 <!-- Embed the YouTube video only if a valid video ID is available -->
-                <iframe id="embeddedVideo" width="100%" height="50%" src="https://www.youtube.com/embed/{{ video_id }}?start={{ timestamp }}&enablejsapi=1&autoplay=1" frameborder="0" allowfullscreen></iframe>
+                <iframe id="embeddedVideo" width="100%" height="50%" src="https://www.youtube.com/embed/{{ video_id }}?start={{ timestamp }}&enablejsapi=1&autoplay=1&mute=1" frameborder="0" allowfullscreen allow="autoplay"></iframe>
                 <p>Current time: <span id="currentTime">0</span> s.</p>
                 <p><strong>Title:</strong> <span id="videoTitle">{{ yt_title }}</span>.</p>
                 <p><strong>Upload date:</strong> <span id="videoUploadDate">{{ yt_upload_date }}</span>.</p>
