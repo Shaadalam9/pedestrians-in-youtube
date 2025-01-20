@@ -93,7 +93,7 @@ class Analysis():
         return num_groups
 
     @staticmethod
-    def save_plotly_figure(fig, filename, scatter_plot_flag=False, width=1600, height=900, scale=3, save_final=False):
+    def save_plotly_figure(fig, filename, scatter_plot_flag=False, width=1600, height=900, scale=3, save_final=True):
         """Saves a Plotly figure as HTML, PNG, SVG, and EPS formats.
 
         Args:
@@ -1024,12 +1024,13 @@ class Analysis():
         var_exist, var_nt_exist, ratio = {}, {}, {}
         time_ = []
 
+        counter_1, counter_2 = {}, {}
+
         # For a specific id of a person search for the first and last occurrence of that id and see if the traffic
         # light was present between it or not. Only getting those unique_id of the person who crosses the road.
 
         # Loop through each video data
         for key, df in data.items():
-            counter_1, counter_2 = {}, {}
             counter_exists, counter_nt_exists = 0, 0
 
             # Extract relevant information using the find_values function
@@ -3911,23 +3912,23 @@ if __name__ == "__main__":
     logger.info(f"motorcycle: {motorcycle_counter} ; bus: {bus_counter} ; truck: {truck_counter}")
     logger.info(f"cellphone: {cellphone_counter}; traffic light: {traffic_light_counter}; sign: {stop_sign_counter}")
 
-    # Analysis.get_world_plot(df_mapping)
-    # Analysis.speed_and_time_to_start_cross(df_mapping)
-    # Analysis.time_to_start_crossing_vs_literacy(df_mapping)
-    # Analysis.time_to_start_crossing_vs_traffic_mortality(df_mapping)
-    # Analysis.traffic_safety_vs_literacy(df_mapping)
-    # Analysis.plot_cell_phone_vs_traffic_mortality(df_mapping)
-    # Analysis.vehicle_vs_cross_time(df_mapping)
-    # Analysis.traffic_mortality_vs_crossing_event_wt_traffic_light(df_mapping)
-    # Analysis.plot_traffic_safety_vs_traffic_mortality(df_mapping)
-    # Analysis.gmp_vs_cross_time(df_mapping)
-    # Analysis.gmp_vs_speed(df_mapping)
-    # Analysis.speed_vs_cross_time(df_mapping)
+    Analysis.get_world_plot(df_mapping)
+    Analysis.speed_and_time_to_start_cross(df_mapping)
+    Analysis.time_to_start_crossing_vs_literacy(df_mapping)
+    Analysis.time_to_start_crossing_vs_traffic_mortality(df_mapping)
+    Analysis.traffic_safety_vs_literacy(df_mapping)
+    Analysis.plot_cell_phone_vs_traffic_mortality(df_mapping)
+    Analysis.vehicle_vs_cross_time(df_mapping)
+    Analysis.traffic_mortality_vs_crossing_event_wt_traffic_light(df_mapping)
+    Analysis.plot_traffic_safety_vs_traffic_mortality(df_mapping)
+    Analysis.gmp_vs_cross_time(df_mapping)
+    Analysis.gmp_vs_speed(df_mapping)
+    Analysis.speed_vs_cross_time(df_mapping)
     Analysis.speed_vs_cross_time_avg(df_mapping)
-    # Analysis.plot_speed_to_cross_by_alphabetical_order(df_mapping)
-    # Analysis.plot_time_to_start_cross_by_alphabetical_order(df_mapping)
-    # Analysis.plot_speed_to_cross_by_average(df_mapping)
-    # Analysis.plot_time_to_start_cross_by_average(df_mapping)
-    # Analysis.correlation_matrix(df_mapping)
+    Analysis.plot_speed_to_cross_by_alphabetical_order(df_mapping)
+    Analysis.plot_time_to_start_cross_by_alphabetical_order(df_mapping)
+    Analysis.plot_speed_to_cross_by_average(df_mapping)
+    Analysis.plot_time_to_start_cross_by_average(df_mapping)
+    Analysis.correlation_matrix(df_mapping)
 
     logger.info("Analysis completed.")
