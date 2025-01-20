@@ -17,7 +17,7 @@ app = Flask(__name__)
 
 FILE_PATH = common.get_configs("mapping")     # mapping file
 
-height_data = pd.read_csv('height_data.csv')  # average height data
+height_data = pd.read_csv(os.path.join(common.root_dir, 'height_data.csv'))  # average height data
 
 
 def load_csv(file_path):
@@ -133,7 +133,7 @@ def form():
                                      'videos': [],
                                      'time_of_day': [],
                                      'gdp_city_(billion_US)': 0.0,
-                                     'population_city': 0.0,
+                                     'population_city': get_city_population(city_data),
                                      'population_country': get_country_population(country_data),
                                      'traffic_mortality': get_country_traffic_mortality(iso3_code),
                                      'start_time': [],
@@ -463,13 +463,27 @@ def get_city_data(city_name, country_code):
     :param country_code: 2-letter ISO code of the country
     :return: City data
     """
-    url = f"http://api.geonames.org/searchJSON?q={city_name}&country={country_code}&username=your_geonames_username"
+    url = f"http://api.geonames.org/searchJSON?q={city_name}&country={country_code}&username={common.get_secrets('geonames_username')}"  # noqa: E501
     response = requests.get(url)
     
     if response.status_code == 200:
         return response.json()
     else:
         return None
+
+
+def get_city_population(city_data):
+    """
+    Get economic or city-related data from the Geonames API
+    
+    :param city_name: Name of the city
+    :param country_code: 2-letter ISO code of the country
+    :return: City data
+    """
+    if 'geonames' in city_data and len(city_data['geonames']) > 0:
+        return city_data['geonames'][0].get('population', None)
+    else:
+        return 0.0
 
 
 # Fetch average height by ISO-3 code

@@ -1,5 +1,6 @@
 """Contains various function used throughout this project."""
 # by Pavlo Bazilinskyy <pavlo.bazilinskyy@gmail.com>
+from typing import Dict
 import os
 import json
 import pickle
@@ -12,6 +13,14 @@ log_dir = os.path.join(root_dir, '_logs')
 output_dir = os.path.join(root_dir, '_output')
 
 logger = CustomLogger(__name__)  # use custom logger
+
+
+def get_secrets(entry_name: str, secret_file_name: str = 'secret') -> Dict[str, str]:
+    """
+    Open the secrets file and return the requested entry.
+    """
+    with open(os.path.join(root_dir, secret_file_name)) as f:
+        return json.load(f)[entry_name]
 
 
 def get_configs(entry_name: str, config_file_name: str = 'config', config_default_file_name: str = 'default.config'):
