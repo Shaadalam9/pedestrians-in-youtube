@@ -169,7 +169,7 @@ def form():
             avg_height = request.form.get('avg_height')
             upload_date_video = request.form.get('upload_date_video')
             fps_video = request.form.get('fps_video')
-            vehicle_type_video = request.form.getlist('vehicle_type')
+            vehicle_type_video = request.form.get('vehicle_type')
             gini = request.form.get('gini')
             traffic_index = request.form.get('traffic_index')
 
@@ -241,7 +241,7 @@ def form():
                         end_time_list.append([int(end_time[-1])])          # Append end time as integer
                         upload_date_list.append(int(upload_date_video))    # Append upload time as integer
                         fps_list.append(float(fps_video))                  # Append fps list as integer
-                        vehicle_type_list.append(float(vehicle_type_video))                  # Append fps list as integer
+                        vehicle_type_list.append(int(vehicle_type_video))                  # Append fps list as integer
                     else:
                         # If the video already exists, update the corresponding lists with the new data
                         video_index = videos_list.index(video_id)  # Find the index of the existing video ID
@@ -250,7 +250,7 @@ def form():
                         end_time_list[video_index].append(int(end_time[-1]))        # Append new end time
                         upload_date_list[video_index] = int(upload_date_video)
                         fps_list[video_index] = float(fps_video)
-                        vehicle_type_list[video_index] = float(vehicle_type_video)
+                        vehicle_type_list[video_index] = int(vehicle_type_video)
 
                     # Update the DataFrame row with the modified lists and new data
                     df.at[idx, 'videos'] = '[' + ','.join(videos_list) + ']'  # Join the list as a string
@@ -295,7 +295,7 @@ def form():
                     fps_list = fps_list.replace('\'', '')
                     fps_list = fps_list.replace(' ', '')
                     df.at[idx, 'fps_list'] = fps_list
-                    vehicle_type_list = [float(x) for x in vehicle_type_list]
+                    vehicle_type_list = [int(x) for x in vehicle_type_list]
                     vehicle_type_list = str(vehicle_type_list)
                     vehicle_type_list = vehicle_type_list.replace('\'', '')
                     vehicle_type_list = vehicle_type_list.replace(' ', '')
