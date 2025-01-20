@@ -58,7 +58,7 @@ def form():
     avg_height = ''
     upload_date_list = ''
     fps_list = ''
-    vehicle_type = ''
+    vehicle_type_list = ''
     gini = ''
     traffic_index = ''
     upload_date_video = ''
@@ -241,7 +241,7 @@ def form():
                         end_time_list.append([int(end_time[-1])])          # Append end time as integer
                         upload_date_list.append(int(upload_date_video))    # Append upload time as integer
                         fps_list.append(float(fps_video))                  # Append fps list as integer
-                        vehicle_type_list.append(int(vehicle_type_video))                  # Append fps list as integer
+                        vehicle_type_list.append(int(vehicle_type_video))  # Append fps list as integer
                     else:
                         # If the video already exists, update the corresponding lists with the new data
                         video_index = videos_list.index(video_id)  # Find the index of the existing video ID
@@ -282,7 +282,6 @@ def form():
                         df.at[idx, 'avg_height'] = float(avg_height)
                     else:
                         df.at[idx, 'avg_height'] = 0.0
-                    # upload_date_list = [int(x) for x in upload_date_list]
                     for i in range(len(upload_date_list)):
                         if upload_date_list[i] != 'None':
                             upload_date_list[i] = int(upload_date_list[i])
@@ -481,14 +480,14 @@ def get_country_traffic_mortality(iso3_code):
 def get_city_data(city_name, country_code):
     """
     Get economic or city-related data from the Geonames API
-    
+
     :param city_name: Name of the city
     :param country_code: 2-letter ISO code of the country
     :return: City data
     """
     url = f"http://api.geonames.org/searchJSON?q={city_name}&country={country_code}&username={common.get_secrets('geonames_username')}"  # noqa: E501
     response = requests.get(url)
-    
+
     if response.status_code == 200:
         return response.json()
     else:
@@ -498,7 +497,7 @@ def get_city_data(city_name, country_code):
 def get_city_population(city_data):
     """
     Get economic or city-related data from the Geonames API
-    
+
     :param city_name: Name of the city
     :param country_code: 2-letter ISO code of the country
     :return: City data
