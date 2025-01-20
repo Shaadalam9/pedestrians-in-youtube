@@ -24,10 +24,11 @@ def load_csv(file_path):
     if os.path.exists(file_path):
         return pd.read_csv(file_path)
     else:
-        return pd.DataFrame(columns=['city', 'state', 'country', 'ISO_country', 'videos', 'time_of_day', 'start_time',
-                                     'end_time', 'gdp_city_(billion_US)', 'population_city', 'population_country',
-                                     'traffic_mortality', 'continent', 'literacy_rate', 'avg_height', 'upload_date',
-                                     'fps_list', 'gini', 'traffic_index'])
+        return pd.DataFrame(columns=['city', 'state', 'country', 'ISO_country', 'videos', 'time_of_day',
+                                     'vehicle_type', 'start_time', 'end_time', 'gdp_city_(billion_US)',
+                                     'population_city', 'population_country', 'traffic_mortality', 'continent',
+                                     'literacy_rate', 'avg_height', 'upload_date', 'fps_list', 'gini',
+                                     'traffic_index'])
 
 
 def save_csv(df, file_path):
@@ -45,6 +46,7 @@ def form():
     existing_data_row = None
     video_id = ''
     time_of_day = []
+    vehicle_type = []
     start_time = []
     end_time = []
     end_time_input = 0
@@ -124,14 +126,13 @@ def form():
                 iso3_code = get_iso3_country_code(country)
                 country_data = get_country_data(iso3_code)
                 city_data = get_city_data(city, iso2_code)
-                print(city, iso2_code)
-                print(city_data)
                 existing_data_row = {'city': city,
                                      'country': country,
                                      'ISO_country': iso3_code,
                                      'state': city,
                                      'videos': [],
                                      'time_of_day': [],
+                                     'vehicle_type': [],
                                      'gdp_city_(billion_US)': 0.0,
                                      'population_city': get_city_population(city_data),
                                      'population_country': get_country_population(country_data),
@@ -153,6 +154,7 @@ def form():
             state = request.form.get('state')
             video_url = request.form.get('video_url')
             time_of_day = request.form.getlist('time_of_day')
+            vehicle_type = request.form.getlist('vehicle_type')
             start_time = request.form.getlist('start_time')
             end_time = request.form.getlist('end_time')
             end_time_input = int(end_time[0])  # for starting video at the last end time
@@ -197,9 +199,11 @@ def form():
 
             # Validate Time of Day and End Time > Start Time
             if any(t not in ['0', '1'] for t in time_of_day):
-                message = "Time of Day must be either 0 or 1."
+                message = "Time of day must be either 0 or 1."
+            elif any(v not in ['0', '1', '2', '3'] for v in vehicle_type):
+                message = "Type of vehicle must be one of: 0, 1, 2, 3."
             elif any(int(et) <= int(st) for st, et in zip(start_time, end_time)):
-                message = "End Time must be larger than Start Time."
+                message = "End time must be larger than start time."
             else:
                 # Check if the city is already present in the CSV
                 if state:
@@ -216,6 +220,7 @@ def form():
                     # Clean the individual video IDs by stripping any leading or trailing brackets
                     videos_list = [video.strip('[]') for video in videos_list]
                     time_of_day_list = eval(df.at[idx, 'time_of_day']) if pd.notna(df.at[idx, 'time_of_day']) else []
+                    vehicle_type_list = eval(df.at[idx, 'vehicle_type']) if pd.notna(df.at[idx, 'vehicle_type']) else []  # noqa: E501
                     start_time_list = eval(df.at[idx, 'start_time']) if pd.notna(df.at[idx, 'start_time']) else []
                     end_time_list = eval(df.at[idx, 'end_time']) if pd.notna(df.at[idx, 'end_time']) else []
                     fps_list = df.at[idx, 'fps_list'].split(',') if pd.notna(df.at[idx, 'fps_list']) else []
@@ -227,15 +232,17 @@ def form():
                     if video_id not in videos_list:
                         # If the video doesn't exist, append it to the list
                         videos_list.append(video_id)
-                        time_of_day_list.append([int(time_of_day[-1])])  # Append Time of Day as integer
-                        start_time_list.append([int(start_time[-1])])    # Append Start Time as integer
-                        end_time_list.append([int(end_time[-1])])        # Append End Time as integer
-                        upload_date_list.append(int(upload_date_video))
-                        fps_list.append(float(fps_video))
+                        time_of_day_list.append([int(time_of_day[-1])])    # Append time of day as integer
+                        vehicle_type_list.append([int(vehicle_type[-1])])  # Append vehicle type as integer
+                        start_time_list.append([int(start_time[-1])])      # Append start time as integer
+                        end_time_list.append([int(end_time[-1])])          # Append end time as integer
+                        upload_date_list.append(int(upload_date_video))    # Append upload time as integer
+                        fps_list.append(float(fps_video))                  # Append fps list as integer
                     else:
                         # If the video already exists, update the corresponding lists with the new data
                         video_index = videos_list.index(video_id)  # Find the index of the existing video ID
                         time_of_day_list[video_index].append(int(time_of_day[-1]))  # Append new time of day
+                        vehicle_type_list[video_index].append(int(vehicle_type[-1]))  # Append new vehicle type
                         start_time_list[video_index].append(int(start_time[-1]))    # Append new start time
                         end_time_list[video_index].append(int(end_time[-1]))        # Append new end time
                         upload_date_list[video_index] = int(upload_date_video)
@@ -244,6 +251,7 @@ def form():
                     # Update the DataFrame row with the modified lists and new data
                     df.at[idx, 'videos'] = '[' + ','.join(videos_list) + ']'  # Join the list as a string
                     df.at[idx, 'time_of_day'] = str(time_of_day_list)  # Store as string representation
+                    df.at[idx, 'vehicle_type'] = str(vehicle_type_list)  # Store as string representation
                     df.at[idx, 'start_time'] = str(start_time_list)    # Store as string representation
                     df.at[idx, 'end_time'] = str(end_time_list)        # Store as string representation
                     if gdp_city:
@@ -303,6 +311,7 @@ def form():
                         'ISO_country': get_iso3_country_code(country),
                         'videos': '[' + video_id + ']',
                         'time_of_day': str([[int(x) for x in time_of_day]]),  # Store as stringified list of integers
+                        'vehicle_type': str([[int(x) for x in vehicle_type]]),  # Store as stringified list of integers
                         'start_time': str([[int(x) for x in start_time]]),    # Store as stringified list of integers
                         'end_time': str([[int(x) for x in end_time]]),        # Store as stringified list of integers
                         'gdp_city_(billion_US)': gdp_city,
