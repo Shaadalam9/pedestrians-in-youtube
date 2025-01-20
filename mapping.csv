@@ -98,7 +98,7 @@ id,city,country,ISO_country,state,videos,time_of_day,gdp_city_(billion_US),popul
 97,Anyang,China,CHN,,[Mpa_W1x__Dk],[[0]],17794.782,1412175.0,1410710.0,17.4,[[50]],[[3336]],Asia,97.0,169.6,[None],[60.0],35.7,146.7,[0]
 98,Lanzhou,China,CHN,,[TQ3FhZriHVs],[[0]],17794.782,1412175.0,1410710.0,17.4,[[58]],[[7628]],Asia,97.0,169.6,[None],[60.0],35.7,146.7,[0]
 99,Anshan,China,CHN,,[f_mzzHRtAjw],[[0]],80.968,2625.0,1410710.0,17.4,[[52]],[[3781]],Asia,97.0,169.6,[None],[60.0],35.7,146.7,[0]
-100,Guangyuan City,China,CHN,,[qVU2ryVnM9s],[[0]],17794.782,1412175.0,1410710.0,17.4,[[52]],[[3412]],Asia,97.0,169.6,[None],[60.0],35.7,146.7,[0]
+100,Guangyuan,China,CHN,,[qVU2ryVnM9s],[[0]],17794.782,1412175.0,1410710.0,17.4,[[52]],[[3412]],Asia,97.0,169.6,[None],[60.0],35.7,146.7,[0]
 101,Wanzhou,China,CHN,,[ArC_vEqSyX4],[[0]],17794.782,1412175.0,1410710.0,17.4,[[58]],[[5590]],Asia,97.0,169.6,[01102023],[60.0],35.7,146.7,[0]
 102,Fengjie,China,CHN,,[_FNUeJX4zMc],[[0]],17794.782,1412175.0,1410710.0,17.4,[[85]],[[2710]],Asia,97.0,169.6,[None],[60.0],35.7,146.7,[0]
 103,Ankang,China,CHN,,[F2rBHrBbNFM],[[0]],17794.782,1412175.0,1410710.0,17.4,[[102]],[[2820]],Asia,97.0,169.6,[None],[60.0],35.7,146.7,[0]
@@ -119,7 +119,7 @@ id,city,country,ISO_country,state,videos,time_of_day,gdp_city_(billion_US),popul
 118,Nanning,China,CHN,,[rSqSgrCGwRA],[[0]],54.299,7765.411,1410710.0,17.4,[[123]],[[9701]],Asia,97.0,169.6,[26112022],[60],35.7,146.7,[60]
 119,San Francisco,United States,USA,CA,"[QmAvjLceVIY,6F6YWRjHD0Y,fGXu8iFd-z8,smY9YV8s-K0,7__WPREFla4,hF_Rm05wbrw,zlgbs0tD4lE,hnmgDMxa41c,8rdViaLaJjc,BHYLlnt7cTA]","[[0,1],[0],[0],[0],[0],[0],[0],[0],[0],[0]]",1383.0,9007.337,334914.895,12.7,"[[139,4060],[26],[25],[25],[25],[25],[0],[52],[66],[0]]","[[4061,5532],[2863],[2048],[2046],[1843],[2393],[3367],[2679],[1475],[4368]]",North America,86.0,170.1,"[None,None,None,None,None,None,None,None,None,13012019]","[60.0, 60.0, 60.0, 60.0, 60.0, 60.0, 30.0, 60.0, 60.0, 30]",41.3,151.1,"[0, 0, 0, 0, 0, 0, 0, 0, 0, 30]"
 120,Shiodome,Japan,JPN,,[hG-Jwim47Kc],[[0]],4212.945,125125.0,124516.65,3.6,[[0]],[[2138]],Asia,99.0,165.3,[None],[60.0],32.9,143.7,[0]
-121,Fukuoka City,Japan,JPN,,"[ZCwxNS3Cu7A,m21k7xn34pA]","[[0],[0,0]]",182.952,4750.0,124516.65,3.6,"[[51],[51,2700]]","[[4489],[1324,3660]]",Asia,99.0,158.5,"[None,None]","[60.0, 60.0]",32.9,143.7,"[0, 0]"
+121,Fukuoka,Japan,JPN,,"[ZCwxNS3Cu7A,m21k7xn34pA]","[[0],[0,0]]",182.952,4750.0,124516.65,3.6,"[[51],[51,2700]]","[[4489],[1324,3660]]",Asia,99.0,158.5,"[None,None]","[60.0, 60.0]",32.9,143.7,"[0, 0]"
 122,Raleigh,United States,USA,NC,"[sCnUGYzmCOs,yFv6B4gsKYs,ALME_u2ZvbU,cTMJuhuZ80w,5codUqWaxFU,NSH7pJx2mNA]","[[0],[0],[0],[0],[0],[0]]",119.675,1484.338,334914.895,12.7,"[[0],[0],[0],[0],[25],[25]]","[[2867],[2493],[2340],[1241],[2739],[2189]]",North America,86.0,170.1,"[None,None,None,None,None,None]","[60.0, 60.0, 60.0, 60.0, 60.0, 60.0]",41.3,151.1,"[0, 0, 0, 0, 0, 0]"
 123,Durham,United States,USA,NC,[ofD2_9vH0r0],[[0]],63.95,664.31,334914.895,12.7,[[0]],[[3401]],North America,86.0,170.1,[None],[60.0],41.3,151.1,[0]
 124,Chapel Hill,United States,USA,NC,[37tgbFYzZao],[[0]],63.95,664.31,334914.895,12.7,[[0]],[[2261]],North America,86.0,170.1,[None],[60.0],41.3,151.1,[0]
@@ -147,7 +147,7 @@ id,city,country,ISO_country,state,videos,time_of_day,gdp_city_(billion_US),popul
 146,Dallas,United States,USA,TX,"[o7PEqqe9avE,XkguuPohDFg,h9K5CYwujhM]","[[0],[0],[0]]",688.928,7943.685,334914.895,12.7,"[[25],[25],[25]]","[[2727],[2727],[2425]]",North America,86.0,170.1,"[None,None,None]","[60.0, 60.0, 60.0]",41.3,151.1,"[0, 0, 0]"
 147,Denver,United States,USA,CO,[yx2KheG5Oc4],[[0]],288.8,2985.871,334914.895,12.7,[[25]],[[2363]],North America,86.0,170.1,[None],[60.0],41.3,151.1,[0]
 148,Bozeman,United States,USA,MT,[JGkzIqWO-YI],[[0]],23360.935,333287.0,334914.895,12.7,[[6450]],[[8357]],North America,86.0,170.1,[None],[60.0],41.3,151.1,[0]
-149,Washington DC,United States,USA,DC,"[sY7ufpPpGhE,dIHYeTVklu4,D00S7Tp3ljE,2K_mb4efhTQ,tktbSxxXwc4]","[[1],[0],[0],[0,0],[0]]",660.626,6373.756,334914.895,12.7,"[[26],[68],[65],[0,2280],[0]]","[[2130],[4224],[6900],[2160,5202],[3705]]",North America,86.0,170.1,"[24012024,None,None,None,None]","[60.0, 60.0, 60.0, 30.0, 30.0]",41.3,151.1,"[0, 0, 0, 0, 0]"
+149,Washington,United States,USA,DC,"[sY7ufpPpGhE,dIHYeTVklu4,D00S7Tp3ljE,2K_mb4efhTQ,tktbSxxXwc4]","[[1],[0],[0],[0,0],[0]]",660.626,6373.756,334914.895,12.7,"[[26],[68],[65],[0,2280],[0]]","[[2130],[4224],[6900],[2160,5202],[3705]]",North America,86.0,170.1,"[24012024,None,None,None,None]","[60.0, 60.0, 60.0, 30.0, 30.0]",41.3,151.1,"[0, 0, 0, 0, 0]"
 150,Pittsburgh,United States,USA,PA,[U3Zxe80ysd4],[[1]],181.485,2349.172,334914.895,12.7,[[65]],[[3690]],North America,86.0,170.1,[17092023],[60],41.3,151.1,[60]
 151,Gold Coast,Australia,AUS,,[aLXit3vUmHs],[[0]],26.669,679.127,26658.948,4.9,[[30]],[[2237]],Oceania,99.0,171.7,[None],[60.0],34.3,163.0,[0]
 152,Baltimore,United States,USA,MD,[4tj9t_g1pHo],[[0]],241.399,2835.672,334914.895,12.7,[[98]],[[3956]],North America,86.0,170.1,[None],[60.0],41.3,151.1,[0]
@@ -165,7 +165,7 @@ id,city,country,ISO_country,state,videos,time_of_day,gdp_city_(billion_US),popul
 164,Antalya,Turkiye,TUR,,"[0XZ1xZjEMq4,xEzsSPPSLgU]","[[1],[0]]",1108.022,84979.0,,12.3,"[[150],[37]]","[[3140],[4922]]",Asia,97.0,169.1,"[None,None]","[30.0, 60.0]",44.4,,"[0, 0]"
 165,Salamanca,Spain,ESP,,[mdwPideZJKw],[[0]],1580.694,47778.34,48347.91,3.9,[[240]],[[2760]],Europe,99.0,169.0,[None],[30.0],33.9,96.5,[0]
 166,Porto,Portugal,PRT,,"[VIWikUUl5YQ,HU0zSmvftHM,oFgzHy5Bs-Q,wVLsrjAIhCQ]","[[0],[0],[0],[0]]",40.868,1550.0,10578.174,8.2,"[[0],[0],[135],[70]]","[[1740],[630],[3567],[4002]]",Europe,96.1,167.8,"[None,None,None,None]","[30.0, 30.0, 24.0, 24.0]",34.6,106.8,"[0, 0, 0, 0]"
-167,Manchester City,United Kingdom,GBR,,[F39i-uhMJtQ],[[0]],122.876,2911.698,68350.0,3.2,[[0]],[[810]],Europe,99.0,171.0,[None],[60.0],32.4,134.2,[0]
+167,Manchester,United Kingdom,GBR,,[F39i-uhMJtQ],[[0]],122.876,2911.698,68350.0,3.2,[[0]],[[810]],Europe,99.0,171.0,[None],[60.0],32.4,134.2,[0]
 168,Reykjavík,Iceland,ISL,,"[0LoZ97w9Sxs,Jf3UPRDYl0Q]","[[0],[0]]",31.02,393.6,393.349,2.0,"[[40],[0]]","[[1425],[4160]]",Europe,99.0,175.5,"[None,None]","[30.0, 30.0]",26.1,93.1,"[0, 0]"
 169,Athens,Greece,GRC,,"[UzmCmQ1-Rlg,GZ_rV35M460,QhvVnvECnn8,1VAtLYqE3Sg]","[[0],[0],[0],[0]]",85.809,3350.0,10405.588,8.3,"[[0],[0],[70],[70]]","[[1424],[1673],[3311],[3000]]",Europe,97.9,172.5,"[None,None,None,None]","[60.0, 50.0, 24.0, 30.0]",32.9,128.1,"[0, 50.0, 0, 0]"
 170,Prague,Czechia,CZE,,"[cmnzgeXDReU,jeS5VPBrXLo,UUVcQTMtKlo,gAH3yvalKx8,OSpHJ4Ap7J8]","[[0],[0],[0],[0],[0]]",130.085,1470.0,10864.042,5.9,"[[76],[55],[230],[0],[0]]","[[5220],[2445],[1300],[2793],[18000]]",Europe,99.0,174.6,"[None,None,None,None,29012019]","[24.0, 24.0, 60.0, 24.0, 30.0]",26.2,,"[0, 0, 0, 0, 0]"
