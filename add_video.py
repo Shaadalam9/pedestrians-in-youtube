@@ -9,12 +9,15 @@ import webbrowser
 from threading import Timer
 import random
 import pycountry
+import requests
 
 
 app = Flask(__name__)
 
-# Get the file path using common module
-FILE_PATH = common.get_configs("mapping")
+
+FILE_PATH = common.get_configs("mapping")     # mapping file
+
+height_data = pd.read_csv('height_data.csv')  # average height data
 
 
 def load_csv(file_path):
@@ -117,24 +120,30 @@ def form():
                     upload_date_video = upload_date_list[position].strip()
             else:
                 message = "No existing entry found for this city (state) and country. You can add new data."
+                iso2_code = get_iso2_country_code(country)
+                iso3_code = get_iso3_country_code(country)
+                country_data = get_country_data(iso3_code)
+                city_data = get_city_data(city, iso2_code)
+                print(city, iso2_code)
+                print(city_data)
                 existing_data_row = {'city': city,
                                      'country': country,
-                                     'ISO_country': get_iso3_country_code(country),
+                                     'ISO_country': iso3_code,
                                      'state': city,
                                      'videos': [],
                                      'time_of_day': [],
                                      'gdp_city_(billion_US)': 0.0,
                                      'population_city': 0.0,
-                                     'population_country': 0.0,
-                                     'traffic_mortality': 0.0,
+                                     'population_country': get_country_population(country_data),
+                                     'traffic_mortality': get_country_traffic_mortality(iso3_code),
                                      'start_time': [],
                                      'end_time': [],
-                                     'continent': '',
-                                     'literacy_rate': 0.0,
-                                     'avg_height': 0.0,
+                                     'continent': get_country_continent(country_data),
+                                     'literacy_rate': get_country_literacy_rate(iso3_code),
+                                     'avg_height': get_country_average_height(iso3_code),
                                      'upload_date': [],
                                      'fps_list': [],
-                                     'gini': 0.0,
+                                     'gini': get_country_gini(country_data),
                                      'traffic_index': 0.0}
                 video_id = video_url_id
 
@@ -328,15 +337,149 @@ def form():
     )
 
 
+# Fetch ISO-3 country data
 def get_iso3_country_code(country_name):
     try:
         country = pycountry.countries.get(name=country_name)
         if country:
-            return country.alpha_3  # ISO3 code
+            return country.alpha_3  # ISO-3 code
         else:
             return "Country not found"
     except KeyError:
         return "Country not found"
+
+
+# Fetch ISO-2 country data
+def get_iso2_country_code(country_name):
+    try:
+        country = pycountry.countries.get(name=country_name)
+        if country:
+            return country.alpha_2  # ISO-2 code
+        else:
+            return "Country not found"
+    except KeyError:
+        return "Country not found"
+
+
+# Fetch country data based on its ISO-3 code
+def get_country_data(iso3_code):
+    try:
+        # REST Countries API URL
+        api_url = f"https://restcountries.com/v3.1/alpha/{iso3_code}"
+        response = requests.get(api_url)
+        if response.status_code == 200:
+            country_data = response.json()
+            # Extract population from the API response
+            return country_data
+        else:
+            return None
+    except Exception as e:
+        print(f"Error fetching country data: {e}")
+        return None
+
+
+# Fetch continents (first in the list) by ISO-3 code
+def get_country_continent(country_data):
+    if country_data:
+        return country_data[0]['continents'][0]
+    else:
+        return ''
+
+
+# Fetch population by ISO-3 code
+def get_country_population(country_data):
+    if country_data:
+        return country_data[0]['population']
+    else:
+        return 0.0
+
+
+# Fetch population by ISO-3 code
+def get_country_gini(country_data):
+    if country_data:
+        # Extract Gini coefficient (use first key in Gini dict if available)
+        gini_data = country_data[0].get('gini', {})
+        if gini_data:
+            return list(gini_data.values())[0]  # Use the first available Gini value
+        else:
+            return 0.0
+    else:
+        return 0.0
+
+
+# Fetch literacy rate by ISO-3 code
+def get_country_literacy_rate(iso3_code):
+    try:
+        # World Bank API URL for literacy rate
+        api_url = f"http://api.worldbank.org/v2/country/{iso3_code}/indicator/SE.ADT.LITR.ZS?format=json"
+        response = requests.get(api_url)
+        if response.status_code == 200:
+            data = response.json()
+            if data and len(data) > 1 and data[1]:
+                # Extract the most recent literacy rate
+                for entry in data[1]:
+                    if entry['value'] is not None:
+                        return round(entry['value'], 2)
+            return 0.0
+        else:
+            return 0.0
+    except Exception as e:
+        print(f"Error fetching literacy rate: {e}")
+        return 0.0
+
+
+# Function to fetch traffic mortality data
+def get_country_traffic_mortality(iso3_code):
+    try:
+        # World Bank API URL for literacy rate
+        api_url = f"http://api.worldbank.org/v2/country/{iso3_code}/indicator/SH.STA.TRAF.P5?format=json"
+        response = requests.get(api_url)
+        if response.status_code == 200:
+            data = response.json()
+            if data and len(data) > 1 and data[1]:
+                # Extract the most recent literacy rate
+                for entry in data[1]:
+                    if entry['value'] is not None:
+                        return round(entry['value'], 2)
+            return 0.0
+    except Exception as e:
+        print(f"Error fetching traffic mortality rate: {e}")
+        return 0.0
+
+
+def get_city_data(city_name, country_code):
+    """
+    Get economic or city-related data from the Geonames API
+    
+    :param city_name: Name of the city
+    :param country_code: 2-letter ISO code of the country
+    :return: City data
+    """
+    url = f"http://api.geonames.org/searchJSON?q={city_name}&country={country_code}&username=your_geonames_username"
+    response = requests.get(url)
+    
+    if response.status_code == 200:
+        return response.json()
+    else:
+        return None
+
+
+# Fetch average height by ISO-3 code
+def get_country_average_height(iso3_code):
+    try:
+        # Filter the dataset by country name
+        row = height_data[height_data['cca3'].str.lower() == iso3_code.lower()]
+        if not row.empty:
+            # Return average male and female height
+            male_height = row.iloc[0]['meanHeightMale']
+            female_height = row.iloc[0]['meanHeightFemale']
+            avg_height = (male_height + female_height) / 2
+            return round(avg_height)  # return rounded average height
+        else:
+            return 0.0
+    except Exception as e:
+        print(f"Error fetching height data: {e}")
+        return 0.0
 
 
 if __name__ == "__main__":
