@@ -219,8 +219,9 @@
                 <div class="form-group">
                     <label for="fps_video">FPS:</label>
                     <select id="fps_video" name="fps_video">
-                        <option value="30.0" {% if fps_video == '30.0' %}selected{% endif %}>30.0</option>
-                        <option value="60.0" {% if fps_video == '60.0' %}selected{% endif %}>60.0</option>
+                        <option value="60.0" {% if fps_video == '60.0' %}selected{% endif %}>60</option>
+                        <option value="30.0" {% if fps_video == '30.0' %}selected{% endif %}>30</option>
+                        <option value="24.0" {% if fps_video == '24.0' %}selected{% endif %}>24</option>
                     </select>
                 </div>
                 <div class="form-group">

@@ -271,11 +271,19 @@ def form():
                         df.at[idx, 'avg_height'] = float(avg_height)
                     else:
                         df.at[idx, 'avg_height'] = 0.0
-                    upload_date_list = [int(x) for x in upload_date_list]
-                    df.at[idx, 'upload_date'] = str(upload_date_list)
+                    # upload_date_list = [int(x) for x in upload_date_list]
+                    for i in range(len(upload_date_list)):
+                        if upload_date_list[i] != 'None':
+                            upload_date_list[i] = int(upload_date_list[i])
+                    upload_date_list = str(upload_date_list)
+                    upload_date_list = upload_date_list.replace('\'', '')
+                    upload_date_list = upload_date_list.replace(' ', '')
+                    df.at[idx, 'upload_date'] = upload_date_list
                     fps_list = [float(x) for x in fps_list]
-                    df.at[idx, 'fps_list'] = str(fps_list)
-                    print(gini)
+                    fps_list = str(fps_list)
+                    fps_list = fps_list.replace('\'', '')
+                    fps_list = fps_list.replace(' ', '')
+                    df.at[idx, 'fps_list'] = fps_list
                     if gini:
                         df.at[idx, 'gini'] = float(gini)
                     else:
