@@ -62,7 +62,7 @@ def form():
     gini = ''
     traffic_index = ''
     upload_date_video = ''
-    fps_video = 0.0
+    fps_video = 0
     yt_title = ''
     yt_upload_date = ''
     yt_description = ''
@@ -102,9 +102,9 @@ def form():
 
             # Check if city, state and country exist in the CSV
             if state:
-                existing_data = df[(df['city'] == city) & (df['country'] == country)]
+                existing_data = df[(df['city'] == city) & (df['state'] == state) & (df['country'] == country)]
             else:
-                existing_data = df[(df['city'] == city) & (df['city'] == city) & (df['country'] == country)]
+                existing_data = df[(df['city'] == city) & (df['country'] == country)]
             if not existing_data.empty:
                 existing_data_row = existing_data.iloc[0].to_dict()  # Convert to dictionary
                 state = existing_data_row.get('state', '')
@@ -240,7 +240,7 @@ def form():
                         start_time_list.append([int(start_time[-1])])      # Append start time as integer
                         end_time_list.append([int(end_time[-1])])          # Append end time as integer
                         upload_date_list.append(int(upload_date_video))    # Append upload time as integer
-                        fps_list.append(float(fps_video))                  # Append fps list as integer
+                        fps_list.append(int(fps_video))                  # Append fps list as integer
                         vehicle_type_list.append(int(vehicle_type_video))  # Append fps list as integer
                     else:
                         # If the video already exists, update the corresponding lists with the new data
