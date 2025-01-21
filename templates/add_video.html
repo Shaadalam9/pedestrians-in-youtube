@@ -216,11 +216,11 @@
                 </div>
                 <div class="form-group">
                     <label for="start_time">Start time (seconds):</label>
-                    <input type="text" id="start_time" name="start_time" required>
+                    <input type="text" id="start_time" name="start_time" required type="number">
                 </div>
                 <div class="form-group">
                     <label for="end_time">End time (seconds):</label>
-                    <input type="text" id="end_time" name="end_time" required>
+                    <input type="text" id="end_time" name="end_time" required type="number">
                 </div>
                 <div class="form-group">
                     <label for="upload_date_video">Upload date:</label>
@@ -228,29 +228,23 @@
                 </div>
                 <div class="form-group">
                     <label for="fps_video">FPS:</label>
-                    <select id="fps_video" name="fps_video">
-                        <option value="24.0" {% if fps_video == '24.0' %}selected{% endif %}>24</option>
-                        <option value="25.0" {% if fps_video == '25.0' %}selected{% endif %}>25</option>
-                        <option value="30.0" {% if fps_video == '30.0' %}selected{% endif %}>30</option>
-                        <option value="50.0" {% if fps_video == '50.0' %}selected{% endif %}>50</option>
-                        <option value="60.0" {% if fps_video == '60.0' %}selected{% endif %}>60</option>
-                    </select>
+                    <input type="text" id="fps_video" name="fps_video" value="{{ fps_video }}" required min="1" step="1" type="number" pattern="[0-9.]*">
                 </div>
                 <div class="form-group">
                     <label for="gdp_city">GDP city (billion USD):</label>
-                    <input type="text" id="gdp_city" name="gdp_city" value="{{ existing_data['gdp_city_(billion_US)'] }}">
+                    <input type="text" id="gdp_city" name="gdp_city" value="{{ existing_data['gdp_city_(billion_US)'] }}" type="number" pattern="[0-9.]*">
                 </div>
                 <div class="form-group">
                     <label for="population_city">Population city:</label>
-                    <input type="text" id="population_city" name="population_city" value="{{ existing_data['population_city'] }}">
+                    <input type="text" id="population_city" name="population_city" value="{{ existing_data['population_city'] }}" type="number" pattern="[0-9.]*">
                 </div>
                 <div class="form-group">
                     <label for="population_country">Population country:</label>
-                    <input type="text" id="population_country" name="population_country" value="{{ existing_data['population_country'] }}">
+                    <input type="text" id="population_country" name="population_country" value="{{ existing_data['population_country'] }}" type="number" pattern="[0-9.]*">
                 </div>
                 <div class="form-group">
                     <label for="traffic_mortality">Traffic mortality:</label>
-                    <input type="text" id="traffic_mortality" name="traffic_mortality" value="{{ existing_data['traffic_mortality'] }}">
+                    <input type="text" id="traffic_mortality" name="traffic_mortality" value="{{ existing_data['traffic_mortality'] }}" type="number" pattern="[0-9.]*">
                 </div>
                 <div class="form-group">
                     <label for="continent">Continent:</label>
@@ -265,19 +259,19 @@
                 </div>
                 <div class="form-group">
                     <label for="literacy_rate">Literacy rate:</label>
-                    <input type="text" id="literacy_rate" name="literacy_rate" value="{{ existing_data['literacy_rate'] }}">
+                    <input type="text" id="literacy_rate" name="literacy_rate" value="{{ existing_data['literacy_rate'] }}" type="number" pattern="[0-9.]*">
                 </div>
                 <div class="form-group">
                     <label for="avg_height">Average height:</label>
-                    <input type="text" id="avg_height" name="avg_height" value="{{ existing_data['avg_height'] }}">
+                    <input type="text" id="avg_height" name="avg_height" value="{{ existing_data['avg_height'] }}" type="number" pattern="[0-9.]*">
                 </div>
                 <div class="form-group">
                     <label for="gini">Gini index:</label>
-                    <input type="text" id="gini" name="gini" value="{{ existing_data['gini'] }}">
+                    <input type="text" id="gini" name="gini" value="{{ existing_data['gini'] }}" type="number" pattern="[0-9.]*">
                 </div>
                 <div class="form-group">
                     <label for="traffic_index">Traffic index:</label>
-                    <input type="text" id="traffic_index" name="traffic_index" value="{{ existing_data['traffic_index'] }}">
+                    <input type="text" id="traffic_index" name="traffic_index" value="{{ existing_data['traffic_index'] }}" type="number" pattern="[0-9.]*">
                 </div>
 
                 <div class="form-group">
