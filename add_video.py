@@ -420,7 +420,7 @@ def get_country_data(iso3_code):
         response = requests.get(api_url)
         if response.status_code == 200:
             country_data = response.json()
-            # Extract population from the API response
+            # return country data
             return country_data
         else:
             return None
