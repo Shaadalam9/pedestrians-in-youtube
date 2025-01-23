@@ -12,5 +12,6 @@ pytube==15.0.0
 pytubefix==8.10.2
 Requests==2.32.3
 ultralytics==8.0.227
+urllib3==2.3.0
 world_bank_data==0.1.4
 yt_dlp==2025.1.15
