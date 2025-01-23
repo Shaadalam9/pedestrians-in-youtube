@@ -70,8 +70,17 @@ def form():
     if request.method == 'POST':
         if 'fetch_data' in request.form:
             city = request.form.get('city')
+            # check for missing data
+            if city == 'None' or city == 'nan':
+                city = None
             country = request.form.get('country')
+            # check for missing data
+            if country == 'None' or country == 'nan':
+                country = None
             state = request.form.get('state')
+            # check for missing data
+            if state == 'None' or state == 'nan':
+                state = None
             video_url = request.form.get('video_url')
 
             # Extract video ID from YouTube URL
@@ -153,8 +162,17 @@ def form():
 
         elif 'submit_data' in request.form:
             city = request.form.get('city')
+            # check for missing data
+            if city == 'None' or city == 'nan':
+                city = None
             country = request.form.get('country')
+            # check for missing data
+            if country == 'None' or country == 'nan':
+                country = None
             state = request.form.get('state')
+            # check for missing data
+            if state == 'None' or state == 'nan':
+                state = None
             video_url = request.form.get('video_url')
             time_of_day = request.form.getlist('time_of_day')
             start_time = request.form.getlist('start_time')
@@ -218,7 +236,7 @@ def form():
                         idx = df[(df['city'] == city) & (df['state'] == state) & (df['country'] == country)].index[0]
                     else:
                         idx = df[(df['city'] == city) & (df['country'] == country)].index[0]
-                    # Get the list of videos for the city and country
+                    # Get the list of videos for the city (and state) and country
                     videos_list = df.at[idx, 'videos'].split(',') if pd.notna(df.at[idx, 'videos']) else []
                     # Clean the individual video IDs by stripping any leading or trailing brackets
                     videos_list = [video.strip('[]') for video in videos_list]
@@ -248,7 +266,10 @@ def form():
                         time_of_day_list[video_index].append(int(time_of_day[-1]))  # Append new time of day
                         start_time_list[video_index].append(int(start_time[-1]))    # Append new start time
                         end_time_list[video_index].append(int(end_time[-1]))        # Append new end time
-                        upload_date_list[video_index] = int(upload_date_video)
+                        if upload_date_video != 'None':
+                            upload_date_list[video_index] = int(upload_date_video)
+                        else:
+                            upload_date_list[video_index] = upload_date_video
                         fps_list[video_index] = float(fps_video)
                         vehicle_type_list[video_index] = int(vehicle_type_video)
 
