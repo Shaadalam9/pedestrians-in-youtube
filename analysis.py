@@ -3845,6 +3845,8 @@ if __name__ == "__main__":
     logger.info("Total number of videos: {}", Analysis.calculate_total_videos(df_mapping))
     country, number = Analysis.get_unique_values(df_mapping, "country")
     logger.info("Total number of countries: {}", number)
+    city, number = Analysis.get_unique_values(df_mapping, "city")
+    logger.info("Total number of cities: {}", number)
 
     if os.path.exists(pickle_file_path):
         # Load the data from the pickle file
