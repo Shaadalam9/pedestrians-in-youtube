@@ -10,6 +10,7 @@ from threading import Timer
 import random
 import pycountry
 import requests
+import ast
 
 
 app = Flask(__name__)
@@ -66,6 +67,11 @@ def form():
     yt_title = ''
     yt_upload_date = ''
     yt_description = ''
+    vehicle_type_video = 0
+    start_time_video = []
+    end_time_video = []
+    time_of_day_video = 0
+    vehicle_type_video = 0
 
     if request.method == 'POST':
         if 'fetch_data' in request.form:
@@ -118,8 +124,9 @@ def form():
                 existing_data_row = existing_data.iloc[0].to_dict()  # Convert to dictionary
                 state = existing_data_row.get('state', '')
                 video_id = existing_data_row.get('videos', '').split(',')[0] if pd.notna(existing_data_row.get('videos', '')) else ''  # noqa: E501
+                video_id = video_id.strip('[]')
 
-                # Get the list of videos for the city and country
+                # Get the list of videos for the city (state) and country
                 videos_list = existing_data_row.get('videos', '').split(',')
                 videos_list = [video.strip('[]') for video in videos_list]
                 fps_list = existing_data_row.get('fps_list', '').split(',')
@@ -132,6 +139,10 @@ def form():
                     position = videos_list.index(video_url_id)
                     fps_video = fps_list[position].strip()
                     upload_date_video = upload_date_list[position].strip()
+                    start_time_list = ast.literal_eval(existing_data_row.get('start_time', ''))
+                    start_time_video = start_time_list[position]
+                    end_time_list = ast.literal_eval(existing_data_row.get('end_time', ''))
+                    end_time_video = end_time_list[position]
             else:
                 message = "No existing entry found for this city (state) and country. You can add new data."
                 iso2_code = get_iso2_country_code(country)
@@ -377,8 +388,9 @@ def form():
     return render_template(
         "add_video.html", message=message, df=df, city=city, country=country, state=state, video_url=video_url,
         video_id=video_id, existing_data=existing_data_row, fps_video=fps_video, upload_date_video=upload_date_video,
-        timestamp=end_time_input, yt_title=yt_title, yt_description=yt_description,
-        yt_upload_date=yt_upload_date
+        timestamp=end_time_input, yt_title=yt_title, yt_description=yt_description, yt_upload_date=yt_upload_date,
+        start_time_video=start_time_video, end_time_video=end_time_video, time_of_day_video=time_of_day_video,
+        vehicle_type_video=vehicle_type_video
     )
 
 
