@@ -92,7 +92,7 @@ def form():
             # Extract video ID from YouTube URL
             try:
                 yt = YouTube(video_url)
-                video_url_id = yt.video_id
+                video_id = yt.video_id
                 # get info of video
                 yt_upload_date = yt.publish_date
                 for n in range(6):
@@ -110,7 +110,7 @@ def form():
             except Exception as e:
                 return render_template(
                     "add_video.html", message=f"Invalid YouTube URL: {e}", df=df, city=city, country=country,
-                    state=state, video_url=video_url, video_id=video_url_id, existing_data=existing_data_row,
+                    state=state, video_url=video_url, video_id=video_id, existing_data=existing_data_row,
                     fps_video=fps_video, upload_date_video=upload_date_video, yt_title=yt_title,
                     yt_description=yt_description, yt_upload_date=yt_upload_date
                 )
@@ -123,8 +123,8 @@ def form():
             if not existing_data.empty:
                 existing_data_row = existing_data.iloc[0].to_dict()  # Convert to dictionary
                 state = existing_data_row.get('state', '')
-                video_id = existing_data_row.get('videos', '').split(',')[0] if pd.notna(existing_data_row.get('videos', '')) else ''  # noqa: E501
-                video_id = video_id.strip('[]')
+                # video_id = existing_data_row.get('videos', '').split(',')[0] if pd.notna(existing_data_row.get('videos', '')) else ''  # noqa: E501
+                # video_id = video_id.strip('[]')
 
                 # Get the list of videos for the city (state) and country
                 videos_list = existing_data_row.get('videos', '').split(',')
@@ -135,8 +135,8 @@ def form():
                 upload_date_list = [upload_date.strip('[]') for upload_date in upload_date_list]
                 vehicle_type_list = existing_data_row.get('vehicle_type', '').split(',')
                 vehicle_type_list = [vehicle_type.strip('[]') for vehicle_type in vehicle_type_list]
-                if video_url_id in videos_list:
-                    position = videos_list.index(video_url_id)
+                if video_id in videos_list:
+                    position = videos_list.index(video_id)
                     fps_video = fps_list[position].strip()
                     upload_date_video = upload_date_list[position].strip()
                     start_time_list = ast.literal_eval(existing_data_row.get('start_time', ''))
@@ -169,7 +169,6 @@ def form():
                                      'vehicle_type': [],
                                      'gini': get_country_gini(country_data),
                                      'traffic_index': 0.0}
-                video_id = video_url_id
 
         elif 'submit_data' in request.form:
             city = request.form.get('city')
@@ -385,6 +384,7 @@ def form():
 
     if not upload_date_video and yt_upload_date:
         upload_date_video = yt_upload_date.strftime('%d%m%Y')
+    print(video_url, video_id)
     return render_template(
         "add_video.html", message=message, df=df, city=city, country=country, state=state, video_url=video_url,
         video_id=video_id, existing_data=existing_data_row, fps_video=fps_video, upload_date_video=upload_date_video,
