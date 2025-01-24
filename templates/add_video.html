@@ -183,6 +183,8 @@
                 </div>
             </form>
 
+            <h3>{{ message }}</h3>
+
             {% if existing_data %}
             <p class="videos-text">Videos: {{ existing_data['videos'] }}</p>
             <p class="videos-text">Time of day: {{ existing_data['time_of_day'] }}</p>
@@ -294,8 +296,6 @@
                 <p><strong>Upload date:</strong> <span id="videoUploadDate">{{ yt_upload_date }}</span>.</p>
                 <p><strong>Description:</strong> <span id="videoDescription">{{ yt_description }}</span></p>
             {% endif %}
-
-            <h3>{{ message }}</h3>
         </div>
     </div>
 </body>
