@@ -9,6 +9,7 @@ source_videos/
 
 # Model files
 yolov8x.pt
+yolo11x.pt
 
 # Python environment files
 .vscode/

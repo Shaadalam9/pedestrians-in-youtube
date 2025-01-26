@@ -7,8 +7,6 @@ from custom_logger import CustomLogger
 from logmod import logs
 import ast
 import common
-from check_temp import TemperatureMonitor
-import time
 
 logs(show_level='info', show_color=True)
 logger = CustomLogger(__name__)  # use custom logger
@@ -100,7 +98,6 @@ for index, row in mapping.iterrows():
     for vid_index, (vid, start_times_list, end_times_list, time_of_day_list) in enumerate(zip(
             video_ids, start_times, end_times, time_of_day)):
         for start_time, end_time, time_of_day_value in zip(start_times_list, end_times_list, time_of_day_list):
-            logger.info(vid, start_time, end_time, time_of_day_value)
             file_name = f'{vid}_{start_time}.csv'
             file_path = os.path.join(common.get_configs("data"), file_name)
             # Check if the file exists

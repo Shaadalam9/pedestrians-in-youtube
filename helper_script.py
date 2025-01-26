@@ -150,6 +150,7 @@ class youtube_helper:
         # Read the newly created text file into a DataFrame
         df = pd.read_csv(new_txt_file_name, delimiter=" ", header=None,
                          names=["YOLO_id", "X-center", "Y-center", "Width", "Height", "Unique Id"])
+        df['Frame Count'] = frame_count
 
         # Append the DataFrame to the CSV file
         if not os.path.exists(output_csv):
@@ -591,7 +592,7 @@ class youtube_helper:
                 # Display the annotated frame
                 if display_frame_tracking:
 
-                    cv2.imshow("YOLOv8 Tracking", annotated_frame)
+                    cv2.imshow("YOLOv11 Tracking", annotated_frame)
                     display_video_writer.write(annotated_frame)
 
                 # Break the loop if 'q' is pressed
