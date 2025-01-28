@@ -91,7 +91,7 @@ for index, row in mapping.iterrows():
     start_times = ast.literal_eval(row["start_time"])
     end_times = ast.literal_eval(row["end_time"])
     time_of_day = ast.literal_eval(row["time_of_day"])
-    iso_country = row["ISO_country"]
+    iso_country = str(row["ISO_country"])
     if pd.isna(row["fps_list"]) or row["fps_list"] == '[]':
         fps_values = [60 for _ in range(len(video_ids))]
     else:
@@ -104,7 +104,7 @@ for index, row in mapping.iterrows():
             file_path = os.path.join(common.get_configs("data"), file_name)
             # Check if countries is in the list to be analysed
             if countries_analyse and iso_country not in countries_analyse:
-                pass
+                continue
             # Check if the file exists
             if os.path.isfile(file_path):
                 pass
