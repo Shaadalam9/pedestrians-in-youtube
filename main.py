@@ -91,7 +91,7 @@ for index, row in mapping.iterrows():
     start_times = ast.literal_eval(row["start_time"])
     end_times = ast.literal_eval(row["end_time"])
     time_of_day = ast.literal_eval(row["time_of_day"])
-    iso_country = ast.literal_eval(row["ISO_country"])
+    iso_country = row["ISO_country"]
     if pd.isna(row["fps_list"]) or row["fps_list"] == '[]':
         fps_values = [60 for _ in range(len(video_ids))]
     else:
