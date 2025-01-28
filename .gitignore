@@ -37,3 +37,6 @@ mapping_queue.csv
 # Pickle files
 city_coordinates.pkl
 analysis_results.pkl
+
+# venv
+/yt
