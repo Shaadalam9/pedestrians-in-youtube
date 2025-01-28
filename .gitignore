@@ -37,3 +37,9 @@ mapping_queue.csv
 # Pickle files
 city_coordinates.pkl
 analysis_results.pkl
+
+# Docker files
+docker-compose.debug.yml
+docker-compose.yml
+Dockerfile
+.dockerignore
