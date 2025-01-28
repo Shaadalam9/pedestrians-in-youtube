@@ -54,7 +54,7 @@ class youtube_helper:
     def download_video_with_resolution(self, video_id, resolutions=["720p", "480p", "360p", "144p"], output_path="."):
         try:
             youtube_url = f'https://www.youtube.com/watch?v={video_id}'
-            youtube_object = YouTube(youtube_url, on_progress_callback=on_progress)
+            youtube_object = YouTube(youtube_url, on_progress_callback=on_progress, use_po_token=True)
             for resolution in resolutions:
                 video_streams = youtube_object.streams.filter(res=f"{resolution}").all()
                 if video_streams:
@@ -457,25 +457,31 @@ class youtube_helper:
         """
         try:
             # Ensure the required column exists
-            if 'geni' not in df.columns:
-                logger.error("The required columns 'ISO_country' and 'geni' are missing from the file.")
+            if 'ISO_country' not in df.columns:
+                logger.error("The required column 'ISO_country' is missing from the file.")
                 return
 
             # Get the latest GINI index data
             geni_df = youtube_helper.get_latest_geni_values()
 
+            # Verify required columns exist in geni_df
+            if 'ISO_country' not in geni_df.columns or 'geni' not in geni_df.columns:
+                logger.error("The required columns 'ISO_country' and 'geni' are missing from the source data.")
+                return
+
             # Merge the GINI index data with the existing DataFrame
             updated_df = pd.merge(df, geni_df, on='ISO_country', how='left', suffixes=('', '_new'))
 
-            # Update the geni column with the new data
-            updated_df['geni'] = updated_df['geni_new'].combine_first(updated_df['geni'])
+            # Check if 'geni_new' column exists before updating
+            if 'geni_new' in updated_df.columns:
+                updated_df['geni'] = updated_df['geni_new'].combine_first(updated_df['geni'])
+                updated_df.drop(columns=['geni_new'], inplace=True)
+            else:
+                logger.warning("No new GINI data found to update.")
 
-            # Drop the temporary column
-            updated_df = updated_df.drop(columns=['geni_new'])
-
-            # Save the updated DataFrame back to the same CSV file
+            # Save the updated DataFrame back to the original CSV file
             updated_df.to_csv(common.get_configs("mapping"), index=False)
-            logger.info("Mapping file updated successfully with GINI value.")
+            logger.info("Mapping file updated successfully with GINI values.")
 
         except Exception as e:
             logger.error(f"An error occurred: {e}")
@@ -531,13 +537,13 @@ class youtube_helper:
                                       show_conf=show_labels, show=render)
 
                 # Get the boxes and track IDs
-                boxes = results[0].boxes.xywh.cpu()
+                boxes = results[0].boxes.xywh.cpu()  # type: ignore
                 if boxes.size(0) == 0:
                     with open(text_filename, 'w') as file:   # noqa: F841
                         pass
 
                 try:
-                    track_ids = results[0].boxes.id.int().cpu().tolist()
+                    track_ids = results[0].boxes.id.int().cpu().tolist()  # type: ignore
 
                     # Visualize the results on the frame
                     annotated_frame = results[0].plot()
