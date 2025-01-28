@@ -1,29 +1,21 @@
-# Use an official Python image as a base
-FROM python:3.9.19-slim
+# Use an official Python runtime as a parent image
+FROM python:3.9-slim
 
-# Set the working directory
+# Set the working directory in the container
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    gcc \
-    libgl1-mesa-glx \
-    libglib2.0-0 \
-    && rm -rf /var/lib/apt/lists/*
+# Copy the current directory contents into the container at /app
+COPY . /app
 
-# Install pip dependencies manually (excluding torch first)
-COPY requirements.txt .
-RUN pip install --upgrade pip
-RUN pip install --no-cache-dir -r requirements.txt || true
+# Install any needed dependencies specified in requirements.txt
+COPY requirements.txt /app/requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Install torch manually from PyTorch repository
-RUN pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+# Make port 80 available to the world outside this container
+EXPOSE 80
 
-# Copy the rest of the application
-COPY . .
+# Define environment variable to avoid issues with Python buffering
+ENV PYTHONUNBUFFERED 1
 
-# Expose the application port (if needed)
-EXPOSE 8000
-
-# Start the application
+# Run the application when the container launches
 CMD ["python", "main.py"]

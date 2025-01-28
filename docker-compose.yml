@@ -1,8 +1,0 @@
-version: '3.4'
-
-services:
-  youtubepedestrian:
-    image: youtubepedestrian
-    build:
-      context: .
-      dockerfile: ./Dockerfile
