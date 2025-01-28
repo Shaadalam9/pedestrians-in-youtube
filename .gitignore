@@ -43,3 +43,5 @@ docker-compose.debug.yml
 docker-compose.yml
 Dockerfile
 .dockerignore
+# venv
+/yt

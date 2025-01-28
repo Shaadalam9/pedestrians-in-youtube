@@ -13,7 +13,7 @@ torch==2.1.1
 pytube
 pytubefix
 Requests==2.32.3
-ultralytics==8.0.227
+ultralytics==8.3.67
 urllib3==2.3.0
 world_bank_data==0.1.4
 yt_dlp==2025.1.15
