@@ -102,8 +102,6 @@ for index, row in mapping.iterrows():
         for start_time, end_time, time_of_day_value in zip(start_times_list, end_times_list, time_of_day_list):
             file_name = f'{vid}_{start_time}.csv'
             file_path = os.path.join(common.get_configs("data"), file_name)
-            print(common.get_configs("countries_analyse"))
-            print(iso_country)
             # Check if countries is in the list to be analysed
             if countries_analyse and iso_country not in countries_analyse:
                 pass
