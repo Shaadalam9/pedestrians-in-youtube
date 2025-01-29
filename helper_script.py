@@ -18,6 +18,7 @@ import ast
 import subprocess
 import json
 import re
+import sys
 
 logger = CustomLogger(__name__)  # use custom logger
 
@@ -70,7 +71,19 @@ class youtube_helper:
         except json.JSONDecodeError:
             raise ValueError("Invalid JSON format returned from script.js")
 
+    @staticmethod
+    def upgrade_package(package_name):
+        """Upgrades a given package using pip."""
+        try:
+            print(f"Upgrading {package_name}...")
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", package_name])
+            print(f"{package_name} upgraded successfully!")
+        except subprocess.CalledProcessError as e:
+            print(f"Failed to upgrade {package_name}: {e}")
+
     def download_video_with_resolution(self, video_id, resolutions=["720p", "480p", "360p", "144p"], output_path="."):
+        if common.get_configs("update_pytubefix"):
+            youtube_helper.upgrade_package("pytubefix")
         try:
             youtube_url = f'https://www.youtube.com/watch?v={video_id}'
             po_token_data = self.PO_token_generator()
