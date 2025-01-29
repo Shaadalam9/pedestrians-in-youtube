@@ -1,0 +1,38 @@
+{
+  "name": "youtube-po-token-generator",
+  "version": "0.4.0",
+  "author": "Yunzhe <yunzhe@zju.edu.cn>",
+  "description": "It generates a valid poToken with visitorData fetched from YouTube.",
+  "keywords": [
+    "youtube",
+    "session",
+    "poToken",
+    "visitorData",
+    "po_token",
+    "visitor_data",
+    "invidious"
+  ],
+  "repository": "https://github.com/YunzheZJU/youtube-po-token-generator.git",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "global-agent": "^3.0.0",
+    "jsdom": "^26.0.0"
+  },
+  "scripts": {
+    "prepublishOnly": "npx synp --source-file yarn.lock -f && npm shrinkwrap && git checkout yarn.lock"
+  },
+  "bin": {
+    "youtube-po-token-generator": "./bin/cli.mjs"
+  },
+  "engines": {
+    "node": ">=18.0"
+  },
+  "files": [
+    "vendor/",
+    "lib/",
+    "index.js",
+    "index.d.ts",
+    "npm-shrinkwrap.json"
+  ]
+}

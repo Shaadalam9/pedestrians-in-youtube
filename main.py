@@ -7,8 +7,6 @@ from custom_logger import CustomLogger
 from logmod import logs
 import ast
 import common
-from check_temp import TemperatureMonitor
-import time
 
 logs(show_level='info', show_color=True)
 logger = CustomLogger(__name__)  # use custom logger
@@ -23,6 +21,7 @@ final_video_output_path = common.get_configs("final_video_output_path")
 delete_runs_files = common.get_configs("delete_runs_files")
 delete_youtube_video = common.get_configs("delete_youtube_video")
 data_folder = common.get_configs("data")
+countries_analyse = common.get_configs("countries_analyse")
 
 if common.get_configs("check_for_download_csv_file"):
     helper.check_for_download_csv_file(mapping)
@@ -92,6 +91,7 @@ for index, row in mapping.iterrows():
     start_times = ast.literal_eval(row["start_time"])
     end_times = ast.literal_eval(row["end_time"])
     time_of_day = ast.literal_eval(row["time_of_day"])
+    iso_country = str(row["ISO_country"])
     if pd.isna(row["fps_list"]) or row["fps_list"] == '[]':
         fps_values = [60 for _ in range(len(video_ids))]
     else:
@@ -100,9 +100,11 @@ for index, row in mapping.iterrows():
     for vid_index, (vid, start_times_list, end_times_list, time_of_day_list) in enumerate(zip(
             video_ids, start_times, end_times, time_of_day)):
         for start_time, end_time, time_of_day_value in zip(start_times_list, end_times_list, time_of_day_list):
-            logger.info(vid, start_time, end_time, time_of_day_value)
             file_name = f'{vid}_{start_time}.csv'
             file_path = os.path.join(common.get_configs("data"), file_name)
+            # Check if countries is in the list to be analysed
+            if countries_analyse and iso_country not in countries_analyse:
+                continue
             # Check if the file exists
             if os.path.isfile(file_path):
                 pass

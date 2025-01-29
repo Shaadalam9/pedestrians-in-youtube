@@ -15,6 +15,10 @@ from pycountry_convert import country_name_to_country_alpha2, country_alpha2_to_
 from custom_logger import CustomLogger
 import common
 import ast
+import subprocess
+import json
+import re
+import sys
 
 logger = CustomLogger(__name__)  # use custom logger
 
@@ -51,10 +55,45 @@ class youtube_helper:
         except FileExistsError:
             logger.error(f"Error: Folder '{new_name}' already exists.")
 
+    def PO_token_generator(self):
+        """Runs the Node.js script and returns a dictionary containing visitorData and poToken."""
+        result = subprocess.run(["node", "script.js"], capture_output=True, text=True)
+        output = result.stdout.strip()
+
+        # Convert JavaScript-like object notation to valid JSON
+        output = re.sub(r"(\w+):\s*", r'"\1": ', output)  # Add double quotes around keys
+        output = output.replace("'", '"')  # Convert single quotes to double quotes
+
+        # Convert the output to a dictionary (assuming JSON format)
+        try:
+            po_token = json.loads(output)  # Safely parse JSON output
+            return po_token
+        except json.JSONDecodeError:
+            raise ValueError("Invalid JSON format returned from script.js")
+
+    @staticmethod
+    def upgrade_package(package_name):
+        """Upgrades a given package using pip."""
+        try:
+            print(f"Upgrading {package_name}...")
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", package_name])
+            print(f"{package_name} upgraded successfully!")
+        except subprocess.CalledProcessError as e:
+            print(f"Failed to upgrade {package_name}: {e}")
+
     def download_video_with_resolution(self, video_id, resolutions=["720p", "480p", "360p", "144p"], output_path="."):
+        if common.get_configs("update_pytubefix"):
+            youtube_helper.upgrade_package("pytubefix")
         try:
             youtube_url = f'https://www.youtube.com/watch?v={video_id}'
-            youtube_object = YouTube(youtube_url, on_progress_callback=on_progress)
+            po_token_data = self.PO_token_generator()
+
+            # Define the token verifier function with an explicit parameter
+            def token_verifier(_=None):  # Accepts `None` as per expected function signature
+                return po_token_data["visitorData"], po_token_data["poToken"]
+
+            youtube_object = YouTube(youtube_url, on_progress_callback=on_progress, use_po_token=True,
+                                     po_token_verifier=token_verifier)  # Passing a function, not a string
             for resolution in resolutions:
                 video_streams = youtube_object.streams.filter(res=f"{resolution}").all()
                 if video_streams:
@@ -150,6 +189,7 @@ class youtube_helper:
         # Read the newly created text file into a DataFrame
         df = pd.read_csv(new_txt_file_name, delimiter=" ", header=None,
                          names=["YOLO_id", "X-center", "Y-center", "Width", "Height", "Unique Id"])
+        df['Frame Count'] = frame_count
 
         # Append the DataFrame to the CSV file
         if not os.path.exists(output_csv):
@@ -591,7 +631,7 @@ class youtube_helper:
                 # Display the annotated frame
                 if display_frame_tracking:
 
-                    cv2.imshow("YOLOv8 Tracking", annotated_frame)
+                    cv2.imshow("YOLOv11 Tracking", annotated_frame)
                     display_video_writer.write(annotated_frame)
 
                 # Break the loop if 'q' is pressed
