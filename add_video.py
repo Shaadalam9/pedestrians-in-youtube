@@ -228,8 +228,8 @@ def form():
             # Validate Time of Day and End Time > Start Time
             if any(t not in ['0', '1'] for t in time_of_day):
                 message = "Time of day must be either 0 or 1."
-            elif any(v not in ['0', '1', '2', '3'] for v in vehicle_type_video):
-                message = "Type of vehicle must be one of: 0, 1, 2, 3."
+            elif any(v not in ['0', '1', '2', '3', '4'] for v in vehicle_type_video):
+                message = "Type of vehicle must be one of: 0, 1, 2, 3, 4."
             elif any(int(et) <= int(st) for st, et in zip(start_time, end_time)):
                 message = "End time must be larger than start time."
             else:
