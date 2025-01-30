@@ -339,4 +339,4 @@ id,city,country,ISO_country,state,videos,time_of_day,gdp_city_(billion_US),popul
 338,Murmansk,Russia,Country not found,,[GRXPi_jZ5rI],"[[0, 1]]",0.0,0.0,0.0,0.0,"[[1, 770]]","[[731, 1095]]",Europe,0.0,0.0,[9012025],[29.0],0.0,0.0,[0]
 339,Rostov-on-Don,Russia,Country not found,,[FV_xB23NaAw],[[0]],0.0,0.0,0.0,0.0,[[24]],[[1601]],Europe,0.0,0.0,[20092024],[30],0.0,0.0,[0]
 340,Tyumen,Russia,Country not found,,"[IknPmOLkeWM,yabNKZfH4ow]","[[0], [0]]",0.0,0.0,0.0,0.0,"[[1], [1]]","[[1643], [1699]]",Europe,0.0,0.0,"[10082023,3102024]","[30.0,30.0]",0.0,0.0,"[0,0]"
-341,Omsk,Russia,Country not found,,[eH0Rw3f2LOc],[[0]],0.0,0.0,0.0,0.0,[[1]],[[2381]],Europe,0.0,0.0,[02092024],[30],0.0,0.0,[0]
+341,Omsk,Russia,Country not found,,"[eH0Rw3f2LOc,nS1dKcFT4N8]","[[0], [0]]",0.0,0.0,0.0,0.0,"[[1], [23]]","[[2381], [1764]]",Europe,0.0,0.0,"[2092024,18082023]","[30.0,30.0]",0.0,0.0,"[0,0]"
