@@ -71,7 +71,7 @@ class youtube_helper:
         try:
             youtube_url = f'https://www.youtube.com/watch?v={video_id}'
 
-            youtube_object = YouTube(youtube_url, 'WEB')
+            youtube_object = YouTube(youtube_url, common.get_configs('client'))
             for resolution in resolutions:
                 video_streams = youtube_object.streams.filter(res=f"{resolution}").all()
                 if video_streams:
