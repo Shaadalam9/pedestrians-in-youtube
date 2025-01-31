@@ -142,6 +142,9 @@ for index, row in mapping.iterrows():
                         continue
 
                 input_video_path = video_file_path
+                # compress downloaded video for archiving
+                if compress_youtube_video:
+                    helper.compress_video(input_video_path, common.get_configs("save_download_videos"))
                 output_video_path = os.path.join(output_path, f"{video_title}_mod.mp4")
 
                 if start_time is None and end_time is None:
@@ -150,10 +153,9 @@ for index, row in mapping.iterrows():
                     logger.info("Trimming in progress.......")
                     # Some frames are missing in the last seconds
                     end_time = end_time - 1
+
+                    # Start trimming of the video
                     helper.trim_video(input_video_path, output_video_path, start_time, end_time)
-                    # compress downloaded video for archiving
-                    if compress_youtube_video:
-                        helper.compress_video(input_video_path)
                     if delete_youtube_video:
                         os.remove(input_video_path)
                         logger.info("Deleted the untrimmed video")
@@ -162,6 +164,7 @@ for index, row in mapping.iterrows():
                 if common.get_configs("prediction_mode"):
                     helper.prediction_mode()
 
+                # Tracking mode
                 if common.get_configs("tracking_mode"):
                     if fps_values[vid_index]:  # Get the last FPS value
                         tracking_fps = fps_values[vid_index]
