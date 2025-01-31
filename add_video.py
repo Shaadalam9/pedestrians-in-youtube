@@ -418,6 +418,8 @@ def get_iso2_country_code(country_name):
         if country:
             if country == 'Kosovo':
                 return 'XK'
+            elif country == 'Russia' or country == 'Russian Federation':
+                return 'RU'
             else:
                 return country.alpha_2  # ISO-2 code
         else:
