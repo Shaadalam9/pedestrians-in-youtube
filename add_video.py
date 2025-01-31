@@ -397,12 +397,12 @@ def form():
 # Fetch ISO-3 country data
 def get_iso3_country_code(country_name):
     try:
+        if country_name == 'Russia':
+            country_name = 'Russian Federation'
         country = pycountry.countries.get(name=country_name)
         if country:
             if country == 'Kosovo':
                 return 'XKX'
-            elif country == 'Russia' or country == 'Russian Federation':
-                return 'RUS'
             else:
                 return country.alpha_3  # ISO-3 code
         else:
@@ -414,6 +414,8 @@ def get_iso3_country_code(country_name):
 # Fetch ISO-2 country data
 def get_iso2_country_code(country_name):
     try:
+        if country_name == 'Russia':
+            country_name = 'Russian Federation'
         country = pycountry.countries.get(name=country_name)
         if country:
             if country == 'Kosovo':
