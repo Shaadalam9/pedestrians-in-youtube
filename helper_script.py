@@ -1,6 +1,5 @@
 import os
 from pytubefix import YouTube
-from pytubefix.cli import on_progress
 from moviepy.video.io.VideoFileClip import VideoFileClip
 import cv2
 from ultralytics import YOLO
@@ -16,8 +15,6 @@ from custom_logger import CustomLogger
 import common
 import ast
 import subprocess
-import json
-import re
 import sys
 
 logger = CustomLogger(__name__)  # use custom logger
@@ -71,7 +68,7 @@ class youtube_helper:
         try:
             youtube_url = f'https://www.youtube.com/watch?v={video_id}'
 
-            youtube_object = YouTube(youtube_url, 'WEB')
+            youtube_object = YouTube(youtube_url, common.get_configs('client'))
             for resolution in resolutions:
                 video_streams = youtube_object.streams.filter(res=f"{resolution}").all()
                 if video_streams:
