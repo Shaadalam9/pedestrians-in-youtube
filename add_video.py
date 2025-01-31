@@ -401,6 +401,8 @@ def get_iso3_country_code(country_name):
         if country:
             if country == 'Kosovo':
                 return 'XKX'
+            elif country == 'Russia' or country == 'Russian Federation':
+                return 'RUS'
             else:
                 return country.alpha_3  # ISO-3 code
         else:
