@@ -1,6 +1,5 @@
 import os
 from pytubefix import YouTube
-from pytubefix.cli import on_progress
 from moviepy.video.io.VideoFileClip import VideoFileClip
 import cv2
 from ultralytics import YOLO
@@ -16,8 +15,6 @@ from custom_logger import CustomLogger
 import common
 import ast
 import subprocess
-import json
-import re
 import sys
 
 logger = CustomLogger(__name__)  # use custom logger
