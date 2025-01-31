@@ -435,7 +435,7 @@ class youtube_helper:
             logger.error(f"An error occurred: {e}")
 
     @staticmethod
-    def get_latest_geni_values():
+    def get_latest_gini_values():
         """
         Fetch the latest GINI index data from the World Bank.
 
@@ -455,14 +455,14 @@ class youtube_helper:
         geni_df = geni_df.rename(columns={
             geni_df.columns[0]: 'ISO_country',
             geni_df.columns[2]: 'Year',
-            geni_df.columns[3]: 'geni'
+            geni_df.columns[3]: 'gini'
         })
 
         # Keep only the latest value for each country
         geni_df = geni_df.sort_values(by=['ISO_country', 'Year'],
                                       ascending=[True, False]).drop_duplicates(subset=['ISO_country'])
 
-        return geni_df[['ISO_country', 'geni']]
+        return geni_df[['ISO_country', 'gini']]
 
     @staticmethod
     def fill_gini_data(df):
@@ -474,21 +474,21 @@ class youtube_helper:
         """
         try:
             # Ensure the required column exists
-            if 'geni' not in df.columns:
-                logger.error("The required columns 'ISO_country' and 'geni' are missing from the file.")
+            if 'gini' not in df.columns:
+                logger.error("The required columns 'ISO_country' and/or 'gini' are missing from the file.")
                 return
 
             # Get the latest GINI index data
-            geni_df = youtube_helper.get_latest_geni_values()
+            geni_df = youtube_helper.get_latest_gini_values()
 
             # Merge the GINI index data with the existing DataFrame
             updated_df = pd.merge(df, geni_df, on='ISO_country', how='left', suffixes=('', '_new'))
 
             # Update the geni column with the new data
-            updated_df['geni'] = updated_df['geni_new'].combine_first(updated_df['geni'])
+            updated_df['gini'] = updated_df['gini_new'].combine_first(updated_df['gini'])
 
             # Drop the temporary column
-            updated_df = updated_df.drop(columns=['geni_new'])
+            updated_df = updated_df.drop(columns=['gini_new'])
 
             # Save the updated DataFrame back to the same CSV file
             updated_df.to_csv(common.get_configs("mapping"), index=False)
