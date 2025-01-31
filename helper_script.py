@@ -120,6 +120,56 @@ class youtube_helper:
         video_clip.close()
 
     @staticmethod
+    def compress_video(input_path):
+        """
+        Compresses a video using the H.265 codec.
+
+        Args:
+            input_path (str): Path to the input video file.
+
+        Returns:
+            str: Path to the compressed video.
+
+        Raises:
+            FileNotFoundError: If the input video file does not exist.
+            RuntimeError: If the compression process fails.
+        """
+        import os
+
+        if not os.path.exists(input_path):
+            raise FileNotFoundError(f"Input file not found: {input_path}")
+
+        # Temporary output path
+        base, ext = os.path.splitext(input_path)
+        temp_output_path = f"{base}_temp{ext}"
+
+        # Construct ffmpeg command
+        command = [
+            "ffmpeg",
+            "-i", input_path,  # Input file
+            "-c:v", "libx265",  # Use H.265 codec
+            "-preset", "medium",  # Compression speed/efficiency tradeoff
+            "-crf", "28",  # Constant Rate Factor (lower = better quality, larger file)
+            temp_output_path  # Temporary output file
+        ]
+
+        try:
+            # Run ffmpeg command
+            subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+            # Replace the original file with the compressed file
+            os.replace(temp_output_path, input_path)
+        except subprocess.CalledProcessError as e:
+            raise RuntimeError(f"Video compression failed: {e.stderr.decode()}")
+        except Exception as e:
+            # Clean up temporary file in case of unexpected errors
+            if os.path.exists(temp_output_path):
+                os.remove(temp_output_path)
+            raise e
+
+        return input_path
+
+    @staticmethod
     def create_video_from_images(image_folder, output_video_path, frame_rate):
         images = [img for img in os.listdir(image_folder) if img.endswith(".jpg")]
 

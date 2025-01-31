@@ -19,6 +19,7 @@ output_path = common.get_configs("output_path")
 frames_output_path = common.get_configs("frames_output_path")
 final_video_output_path = common.get_configs("final_video_output_path")
 delete_runs_files = common.get_configs("delete_runs_files")
+compress_youtube_video = common.get_configs("compress_youtube_video")
 delete_youtube_video = common.get_configs("delete_youtube_video")
 data_folder = common.get_configs("data")
 countries_analyse = common.get_configs("countries_analyse")
@@ -150,8 +151,12 @@ for index, row in mapping.iterrows():
                     # Some frames are missing in the last seconds
                     end_time = end_time - 1
                     helper.trim_video(input_video_path, output_video_path, start_time, end_time)
-                    os.remove(input_video_path)
-                    logger.info("Deleted the untrimmed video")
+                    # compress downloaded video for archiving
+                    if compress_youtube_video:
+                        helper.compress_video(input_video_path)
+                    if delete_youtube_video:
+                        os.remove(input_video_path)
+                        logger.info("Deleted the untrimmed video")
                     os.rename(output_video_path, input_video_path)
 
                 if common.get_configs("prediction_mode"):
@@ -184,6 +189,3 @@ for index, row in mapping.iterrows():
 
                         helper.rename_folder(source_folder, destination_folder)
                     counter += 1
-
-                if delete_youtube_video:
-                    os.remove(input_video_path)
