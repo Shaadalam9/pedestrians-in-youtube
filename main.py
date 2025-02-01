@@ -139,7 +139,7 @@ for index, row in tqdm(mapping.iterrows(), total=mapping.shape[0]):
 
                 # Optionally compress the video if required
                 if common.get_configs("compress_youtube_video"):
-                    helper.compress_video(base_video_path, common.root_dir)
+                    helper.compress_video(base_video_path)
             else:
                 # If download fails, check if the video already exists
                 if os.path.exists(base_video_path):
