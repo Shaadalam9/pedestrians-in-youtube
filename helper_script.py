@@ -310,9 +310,10 @@ class Youtube_Helper:
 
         try:
             # Run ffmpeg command
-            logger.info(f"Started compression of '{input_path}' with {codec} codec. Current file size={os.path.getsize(input_path)}.")  # noqa: E501
+            video_id = Youtube_Helper.extract_youtube_id(input_path)
+            logger.info(f"Started compression of '{video_id}' with {codec} codec. Current size={os.path.getsize(input_path)}.")  # noqa: E501
             subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            logger.info(f"Finished compression of '{input_path}' with {codec} codec. New file size={os.path.getsize(output_path)}.")  # noqa: E501
+            logger.info(f"Finished compression of '{video_id}' with {codec} codec. New size={os.path.getsize(output_path)}.")  # noqa: E501
             # Replace the original file with the compressed file
             os.replace(output_path, input_path)
         except subprocess.CalledProcessError as e:
@@ -322,6 +323,29 @@ class Youtube_Helper:
             if os.path.exists(output_path):
                 os.remove(output_path)
             raise e
+
+    @staticmethod
+    def extract_youtube_id(file_path):
+        """
+        Extracts the YouTube video ID from a given file path.
+        
+        Args:
+            file_path (str): The full path of the video file.
+        
+        Returns:
+            str: The extracted YouTube ID.
+        
+        Raises:
+            ValueError: If no valid YouTube ID is found.
+        """
+        filename = os.path.basename(file_path)  # Get only the filename
+        youtube_id, ext = os.path.splitext(filename)  # Remove the file extension
+
+        if not youtube_id or len(youtube_id) < 5:  # Basic validation
+            raise ValueError("Invalid YouTube ID extracted.")
+
+        return youtube_id
+
 
     @staticmethod
     def create_video_from_images(image_folder, output_video_path, frame_rate):
