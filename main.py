@@ -97,6 +97,9 @@ for index, row in tqdm(mapping.iterrows(), total=mapping.shape[0]):
     end_times = ast.literal_eval(row["end_time"])
     time_of_day = ast.literal_eval(row["time_of_day"])
     iso_country = str(row["ISO_country"])
+    # Check if countries is in the list to be analysed
+    if countries_analyse and iso_country not in countries_analyse:
+        continue
     city = str(row["city"])
     state = str(row["state"])
     country = str(row["country"])
@@ -108,10 +111,6 @@ for index, row in tqdm(mapping.iterrows(), total=mapping.shape[0]):
 
     for vid_index, (vid, start_times_list, end_times_list, time_of_day_list) in enumerate(zip(
             video_ids, start_times, end_times, time_of_day)):
-
-        # Check if countries is in the list to be analysed
-        if countries_analyse and iso_country not in countries_analyse:
-            continue
 
         # Define a base video file path for the downloaded original video
         base_video_path = os.path.join(output_path, f"{vid}.mp4")
