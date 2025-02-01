@@ -83,7 +83,7 @@ if common.get_configs("update_upload_date"):
     mapping.to_csv(common.get_configs("mapping"), index=False)
     logger.info("Mapping file updated successfully with upload dates.")
 
-# Delete the runs folder (if exist)
+# Delete the runs folder (if it exists)
 helper.delete_folder(folder_path="runs")
 
 for index, row in mapping.iterrows():
@@ -174,6 +174,10 @@ for index, row in mapping.iterrows():
             if common.get_configs("tracking_mode"):
                 if fps_values[vid_index]:
                     tracking_fps = fps_values[vid_index]
+                    # Check if YOLO output for segment is already present
+                    if os.path.exists(trimmed_video_path):
+                        print("skipped segment ", trimmed_video_path)
+                        continue
                     helper.tracking_mode(trimmed_video_path, trimmed_video_path, tracking_fps)
                 else:
                     logger.warning(f"FPS not found for video ID: {vid}. Skipping tracking mode.")
