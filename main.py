@@ -142,6 +142,7 @@ for index, row in mapping.iterrows():
                     continue
         else:
             logger.info(f"Using already downloaded video: {base_video_path}")
+            video_title = vid  # or any fallback title
 
         for start_time, end_time, time_of_day_value in zip(start_times_list, end_times_list, time_of_day_list):
             # Construct a unique file name for the trimmed segment
