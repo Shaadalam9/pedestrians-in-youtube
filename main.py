@@ -176,7 +176,7 @@ for index, row in mapping.iterrows():
                     tracking_fps = fps_values[vid_index]
                     # Check if YOLO output for segment is already present
                     if os.path.exists(trimmed_video_path):
-                        print("skipped segment ", trimmed_video_path)
+                        logger.info(f"Skipped processing of segment {trimmed_video_path} as output file already exists")
                         continue
                     helper.tracking_mode(trimmed_video_path, trimmed_video_path, tracking_fps)
                 else:
