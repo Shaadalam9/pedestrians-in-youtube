@@ -156,6 +156,12 @@ for index, row in mapping.iterrows():
 
             # Define a temporary path for the trimmed video segment
             trimmed_video_path = os.path.join(output_path, f"{video_title}_mod.mp4")
+
+            # If the YOLO output file already exists, skip processing for this segment
+            if os.path.exists(trimmed_video_path):
+                logger.info(f"Skipped processing of segment {trimmed_video_path} as output file already exists.")
+                continue
+
             if start_time is None and end_time is None:
                 logger.info("No trimming required for this segment.")
             else:
@@ -174,10 +180,6 @@ for index, row in mapping.iterrows():
             if common.get_configs("tracking_mode"):
                 if fps_values[vid_index]:
                     tracking_fps = fps_values[vid_index]
-                    # Check if YOLO output for segment is already present
-                    if os.path.exists(trimmed_video_path):
-                        logger.info(f"Skipped processing of segment {trimmed_video_path} as output file already exists")  # noqa: E501
-                        continue
                     helper.tracking_mode(trimmed_video_path, trimmed_video_path, tracking_fps)
                 else:
                     logger.warning(f"FPS not found for video ID: {vid}. Skipping tracking mode.")
