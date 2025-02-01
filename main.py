@@ -149,7 +149,7 @@ for index, row in tqdm(mapping.iterrows(), total=mapping.shape[0]):
                     logger.error(f"Video {vid} not found and download failed. Skipping this video.")
                     continue
         else:
-            logger.info(f"Using already downloaded video: {base_video_path}")
+            logger.info(f"Using already downloaded video: {vid}")
             video_title = vid  # or any fallback title
 
         for start_time, end_time, time_of_day_value in zip(start_times_list, end_times_list, time_of_day_list):
@@ -158,7 +158,7 @@ for index, row in tqdm(mapping.iterrows(), total=mapping.shape[0]):
 
             # If the YOLO output file already exists, skip processing for this segment
             if os.path.isfile(trimmed_file_path):
-                logger.info(f"YOLO output file already exists: {trimmed_file_path}. Skipping processing of segment.")
+                logger.info(f"YOLO output file already exists: {vid}_{start_time}.csv. Skipping processing of segment.")
                 continue
 
             # Define a temporary path for the trimmed video segment
