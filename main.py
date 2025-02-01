@@ -92,12 +92,15 @@ os.makedirs(data_folder, exist_ok=True)
 
 # Go over rows. Add progress bar.
 for index, row in tqdm(mapping.iterrows(), total=mapping.shape[0]):
-    logger.info(f"Processing videos for city={row["city"]}, state={row["city"]}, country={row["country"]}.")
     video_ids = [id.strip() for id in row["videos"].strip("[]").split(',')]
     start_times = ast.literal_eval(row["start_time"])
     end_times = ast.literal_eval(row["end_time"])
     time_of_day = ast.literal_eval(row["time_of_day"])
     iso_country = str(row["ISO_country"])
+    city = str(row["city"])
+    state = str(row["state"])
+    country = str(row["country"])
+    logger.info(f"Processing videos for city={city}, state={state}, country={country}.")
     if pd.isna(row["fps_list"]) or row["fps_list"] == '[]':
         fps_values = [0 for _ in range(len(video_ids))]
     else:
