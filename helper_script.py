@@ -18,8 +18,11 @@ import ast
 import subprocess
 import sys
 import datetime
+import logging
+
 
 logger = CustomLogger(__name__)  # use custom logger
+logging.getLogger("ultralytics").setLevel(logging.ERROR)  # Show only errors
 
 mapping = pd.read_csv(common.get_configs("mapping"))
 confidence = common.get_configs("confidence")
