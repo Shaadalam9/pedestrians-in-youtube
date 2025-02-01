@@ -120,17 +120,21 @@ class youtube_helper:
         video_clip.close()
 
     @staticmethod
-    def compress_video(input_path):
+    def compress_video(input_path, codec="libx265", preset="veryslow", crf=17):
         """
         Compresses a video using the H.265 codec.
 
         Args:
             input_path (str): Path to the input video file.
+            codec (str, optional): Codec to use. Use H.265 by default.
+            preset (str, optional): Value for preset.
+            crf (int, optional): Value for crf. 17 is supposed to keep good quality with high level of compression.
 
         Returns:
             str: Path to the compressed video.
 
         Raises:
+            e: Description
             FileNotFoundError: If the input video file does not exist.
             RuntimeError: If the compression process fails.
         """
@@ -147,16 +151,17 @@ class youtube_helper:
         command = [
             "ffmpeg",
             "-i", input_path,  # Input file
-            "-c:v", "libx265",  # Use H.265 codec
-            "-preset", "medium",  # Compression speed/efficiency tradeoff
-            "-crf", "28",  # Constant Rate Factor (lower = better quality, larger file)
+            "-c:v", codec,  # Use H.265 codec
+            "-preset", preset,  # Compression speed/efficiency tradeoff
+            "-crf", str(crf),  # Constant Rate Factor (lower = better quality, larger file)
             temp_output_path  # Temporary output file
         ]
 
         try:
             # Run ffmpeg command
+            logger.info(f"Started compression of '{input_path}' with h255 coded.")
             subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
+            logger.info(f"Finished compression of '{input_path}' with h255 coded.")
             # Replace the original file with the compressed file
             os.replace(temp_output_path, input_path)
         except subprocess.CalledProcessError as e:
