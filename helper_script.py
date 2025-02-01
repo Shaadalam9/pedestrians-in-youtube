@@ -314,7 +314,7 @@ class Youtube_Helper:
             # Run ffmpeg command
             video_id = Youtube_Helper.extract_youtube_id(input_path)
             logger.info(f"Started compression of {video_id} with {codec} codec. Current size={os.path.getsize(input_path)}.")  # noqa: E501
-            subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1)
             logger.info(f"Finished compression of {video_id} with {codec} codec. New size={os.path.getsize(output_path)}.")  # noqa: E501
             # Replace the original file with the compressed file
             os.replace(output_path, input_path)
