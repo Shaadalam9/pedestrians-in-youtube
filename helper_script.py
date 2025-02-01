@@ -318,7 +318,7 @@ class Youtube_Helper:
             subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1)
             logger.info(f"Finished compression of {video_id} with {codec} codec. New size={os.path.getsize(output_path)}.")  # noqa: E501
             # Replace the original file with the compressed file
-            os.replace(output_path, input_path)
+            shutil.move(output_path, input_path)
         except subprocess.CalledProcessError as e:
             raise RuntimeError(f"Video compression failed: {e.stderr.decode()}")
         except Exception as e:
