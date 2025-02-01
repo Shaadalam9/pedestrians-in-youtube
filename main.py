@@ -89,7 +89,14 @@ if common.get_configs("update_upload_date"):
 # Delete the runs folder (if it exists)
 helper.delete_folder(folder_path="runs")
 
+# create required directories
 os.makedirs(data_folder, exist_ok=True)
+os.makedirs("runs", exist_ok=True)
+os.makedirs(os.path.join("runs", "detect"), exist_ok=True)
+os.makedirs(os.path.join("runs", "detect", "frames"), exist_ok=True)
+os.makedirs(os.path.join("runs", "detect", "annotated_frames"), exist_ok=True)
+os.makedirs(os.path.join("runs", "detect", "labels"), exist_ok=True)
+os.makedirs(os.path.join("runs", "detect", "track", "labels"), exist_ok=True)
 
 # Go over rows. Add progress bar.
 for index, row in tqdm(mapping.iterrows(), total=mapping.shape[0]):
@@ -179,6 +186,7 @@ for index, row in tqdm(mapping.iterrows(), total=mapping.shape[0]):
             if common.get_configs("tracking_mode"):
                 if fps_values[vid_index]:
                     tracking_fps = fps_values[vid_index]
+                    logger.info("Started YOLO analysis for this segment.")
                     helper.tracking_mode(trimmed_video_path, trimmed_video_path, tracking_fps)
                 else:
                     logger.warning(f"FPS not found for video ID: {vid}. Skipping tracking mode.")

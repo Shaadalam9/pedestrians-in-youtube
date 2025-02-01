@@ -19,6 +19,7 @@ import subprocess
 import sys
 import datetime
 import logging
+from tqdm import tqdm
 
 
 logger = CustomLogger(__name__)  # use custom logger
@@ -773,6 +774,17 @@ class Youtube_Helper:
             display_video_writer = cv2.VideoWriter(display_video_output_path,
                                                    fourcc, video_fps, (int(cap.get(3)), int(cap.get(4))))
 
+        # Open video and get total frames
+        cap = cv2.VideoCapture(input_video_path)
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+        if total_frames == 0:
+            print("Warning: Could not determine total frames. Progress bar may not work correctly.")
+            total_frames = None  # Prevent tqdm from setting a fixed length
+
+        # Setup progress bar
+        progress_bar = tqdm(total=total_frames, unit="frame", desc="Tracking", dynamic_ncols=True)
+
         # Loop through the video frames
         frame_count = 0  # Variable to track the frame number
         while cap.isOpened():
@@ -794,6 +806,9 @@ class Youtube_Helper:
                                       show_conf=False,
                                       show=False,
                                       verbose=False)
+
+                # Update progress bar
+                progress_bar.update(1)
 
                 # Get the boxes and track IDs
                 boxes = results[0].boxes.xywh.cpu()  # type: ignore
@@ -869,3 +884,4 @@ class Youtube_Helper:
         # Release the video capture object and close the display window
         cap.release()
         cv2.destroyAllWindows()
+        progress_bar.close()
