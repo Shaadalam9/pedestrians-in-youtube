@@ -159,7 +159,7 @@ for index, row in mapping.iterrows():
             if start_time is None and end_time is None:
                 logger.info("No trimming required for this segment.")
             else:
-                logger.info("Trimming in progress for segment starting at %s and ending at %s..", start_time, end_time)
+                logger.info(f"Trimming in progress for segment starting at {start_time} and ending at {end_time}.")
                 # Adjust end_time if needed (e.g., to account for missing frames)
                 end_time_adj = end_time - 1
                 helper.trim_video(base_video_path, trimmed_video_path, start_time, end_time_adj)
