@@ -19,7 +19,6 @@ output_path = common.get_configs("output_path")
 frames_output_path = common.get_configs("frames_output_path")
 final_video_output_path = common.get_configs("final_video_output_path")
 delete_runs_files = common.get_configs("delete_runs_files")
-compress_youtube_video = common.get_configs("compress_youtube_video")
 delete_youtube_video = common.get_configs("delete_youtube_video")
 data_folder = common.get_configs("data")
 countries_analyse = common.get_configs("countries_analyse")
@@ -86,6 +85,8 @@ if common.get_configs("update_upload_date"):
     mapping.to_csv(common.get_configs("mapping"), index=False)
     logger.info("Mapping file updated successfully with upload dates.")
 
+# Delete the runs folder (if exist)
+helper.delete_folder(folder_path="runs")
 
 for index, row in mapping.iterrows():
     video_ids = [id.strip() for id in row["videos"].strip("[]").split(',')]
@@ -94,98 +95,106 @@ for index, row in mapping.iterrows():
     time_of_day = ast.literal_eval(row["time_of_day"])
     iso_country = str(row["ISO_country"])
     if pd.isna(row["fps_list"]) or row["fps_list"] == '[]':
-        fps_values = [60 for _ in range(len(video_ids))]
+        fps_values = [0 for _ in range(len(video_ids))]
     else:
         fps_values = ast.literal_eval(row["fps_list"])
 
     for vid_index, (vid, start_times_list, end_times_list, time_of_day_list) in enumerate(zip(
             video_ids, start_times, end_times, time_of_day)):
-        for start_time, end_time, time_of_day_value in zip(start_times_list, end_times_list, time_of_day_list):
-            file_name = f'{vid}_{start_time}.csv'
-            file_path = os.path.join(common.get_configs("data"), file_name)
-            # Check if countries is in the list to be analysed
-            if countries_analyse and iso_country not in countries_analyse:
-                continue
-            # Check if the file exists
-            if os.path.isfile(file_path):
-                pass
+
+        # Check if countries is in the list to be analysed
+        if countries_analyse and iso_country not in countries_analyse:
+            continue
+
+        # Define a base video file path for the downloaded original video
+        base_video_path = os.path.join(output_path, f"{vid}.mp4")
+
+        # If the base video does not exist, attempt to download it
+        if not os.path.exists(base_video_path):
+            result = helper.download_video_with_resolution(video_id=vid, output_path=output_path)
+            if result:
+                video_file_path, video_title, resolution, fps = result
+                # Set the base video path to the downloaded video
+                base_video_path = video_file_path
+
+                # Update the FPS information for the current video
+                if len(fps_values) <= vid_index:
+                    fps_values.extend([60] * (vid_index - len(fps_values) + 1))
+                fps_values[vid_index] = fps  # type: ignore
+
+                # Update the DataFrame mapping and write to CSV
+                mapping.at[index, 'fps_list'] = str(fps_values)
+                mapping.to_csv(common.get_configs("mapping"), index=False)
+
+                logger.info(f"Downloaded video: {video_file_path}")
+                helper.set_video_title(video_title)
             else:
-                # Attempt to download the video
-                result = helper.download_video_with_resolution(video_id=vid, output_path=output_path)
-                # result = None
-                if result:
-                    video_file_path, video_title, resolution, fps = result
-                    # Update the fps value for the current video
-                    if len(fps_values) <= vid_index:
-                        # Extend the list if the index doesn't exist yet
-                        fps_values.extend([60 for _ in range(vid_index - len(fps_values) + 1)])  # type: ignore
-
-                    # Update the specific FPS value for the current video and index
-                    fps_values[vid_index] = fps  # type: ignore # Replace the list with the new FPS value
-
-                    # Dynamically update the 'fps_list' column for the current row
-                    mapping.at[index, 'fps_list'] = str(fps_values)
-
-                    # Write the updated DataFrame back to the CSV file after every update
-                    mapping.to_csv(common.get_configs("mapping"), index=False)
-                    logger.info(f"Downloaded video: {video_file_path}")
+                # If download fails, check if the video already exists
+                if os.path.exists(base_video_path):
+                    video_title = vid  # or any fallback title
+                    logger.info(f"Video found: {base_video_path}")
                     helper.set_video_title(video_title)
                 else:
-                    # If download fails, check if the video already exists in the folder
-                    video_file_path = os.path.join(output_path, f"{vid}.mp4")
-                    if os.path.exists(video_file_path):
-                        video_title = vid  # Assuming the video ID is the title for simplicity
-                        logger.info(f"Video found: {video_file_path}")
-                        helper.set_video_title(video_title)
-                    else:
-                        logger.error(f"Video {vid} not found and download failed. Skipping this video.")
-                        continue
+                    logger.error(f"Video {vid} not found and download failed. Skipping this video.")
+                    continue
+        else:
+            logger.info(f"Using already downloaded video: {base_video_path}")
 
-                input_video_path = video_file_path
-                output_video_path = os.path.join(output_path, f"{video_title}_mod.mp4")
+        # Optionally compress the video if required
+        if common.get_configs("compress_youtube_video"):
+            helper.compress_video(base_video_path, common.get_configs("save_download_videos"))
 
-                if start_time is None and end_time is None:
-                    logger.info("No trimming required")
+        for start_time, end_time, time_of_day_value in zip(start_times_list, end_times_list, time_of_day_list):
+            # Construct a unique file name for the trimmed segment
+            trimmed_file_name = f'{vid}_{start_time}.csv'
+            trimmed_file_path = os.path.join(common.get_configs("data"), trimmed_file_name)
+
+            # If the trimmed file already exists, skip processing for this segment
+            if os.path.isfile(trimmed_file_path):
+                logger.info(f"Trimmed file already exists: {trimmed_file_path}. Skipping trimming.")
+                continue
+
+            # Define a temporary path for the trimmed video segment
+            trimmed_video_path = os.path.join(output_path, f"{video_title}_mod.mp4")
+            if start_time is None and end_time is None:
+                logger.info("No trimming required for this segment.")
+            else:
+                logger.info("Trimming in progress for segment starting at %s and ending at %s..", start_time, end_time)
+                # Adjust end_time if needed (e.g., to account for missing frames)
+                end_time_adj = end_time - 1
+                helper.trim_video(base_video_path, trimmed_video_path, start_time, end_time_adj)
+
+                logger.info("Trimming completed for this segment.")
+
+            # Prediction mode
+            if common.get_configs("prediction_mode"):
+                helper.prediction_mode()
+
+            # Tracking mode: process the trimmed segment
+            if common.get_configs("tracking_mode"):
+                if fps_values[vid_index]:
+                    tracking_fps = fps_values[vid_index]
+                    helper.tracking_mode(trimmed_video_path, trimmed_video_path, tracking_fps)
                 else:
-                    logger.info("Trimming in progress.......")
-                    # Some frames are missing in the last seconds
-                    end_time = end_time - 1
-                    helper.trim_video(input_video_path, output_video_path, start_time, end_time)
-                    # compress downloaded video for archiving
-                    if compress_youtube_video:
-                        helper.compress_video(input_video_path)
-                    if delete_youtube_video:
-                        os.remove(input_video_path)
-                        logger.info("Deleted the untrimmed video")
-                    os.rename(output_video_path, input_video_path)
+                    logger.warning(f"FPS not found for video ID: {vid}. Skipping tracking mode.")
 
-                if common.get_configs("prediction_mode"):
-                    helper.prediction_mode()
+                # Move and rename the generated CSV file from tracking mode
+                os.makedirs(data_folder, exist_ok=True)
+                old_file_path = os.path.join("runs", "detect", f"{vid}.csv")
+                new_file_path = os.path.join("runs", "detect", f"{vid}_{start_time}.csv")
+                os.rename(old_file_path, new_file_path)
 
-                if common.get_configs("tracking_mode"):
-                    if fps_values[vid_index]:  # Get the last FPS value
-                        tracking_fps = fps_values[vid_index]
-                        helper.tracking_mode(input_video_path, output_video_path, tracking_fps)
-                    else:
-                        logger.warning(f"FPS not found for video ID: {vid}. Skipping tracking mode.")
+                # Move the CSV file to the desired folder
+                shutil.move(new_file_path, data_folder)
 
-                    os.makedirs(data_folder, exist_ok=True)
-                    old_file_path = os.path.join("runs", "detect", f"{vid}.csv")
-                    new_file_path = os.path.join("runs", "detect", f"{vid}_{start_time}.csv")
+                if delete_runs_files:
+                    shutil.rmtree(os.path.join("runs", "detect"))
+                else:
+                    source_folder = os.path.join("runs", "detect")
+                    destination_folder = os.path.join("runs", f"{video_title}_{resolution}_{datetime.now()}")
+                    helper.rename_folder(source_folder, destination_folder)
+            os.remove(trimmed_video_path)
 
-                    os.rename(old_file_path, new_file_path)
-                    # Construct the paths dynamically
-                    source_file = os.path.join("runs", "detect", f"{vid}_{start_time}.csv")
-                    predict_folder = os.path.join("runs", "detect")
-
-                    # Move the file to the data_folder
-                    shutil.move(source_file, data_folder)
-
-                    if delete_runs_files:
-                        shutil.rmtree(os.path.join("runs", "detect"))
-                    else:
-                        source_folder = os.path.join("runs", "detect")
-                        destination_folder = os.path.join("runs", f"{video_title}_{resolution}_{datetime.now()}")
-
-                        helper.rename_folder(source_folder, destination_folder)
-                    counter += 1
+        # Optionally delete the original video after processing if needed
+        if delete_youtube_video:
+            os.remove(base_video_path)

@@ -11,7 +11,7 @@ logs(show_level='info', show_color=True)
 logger = CustomLogger(__name__)  # use custom logger
 
 
-def download_video_with_resolution(video_ids, resolutions=["2160p", "1440p", "1080p", "720p", "480p", "360p"],
+def download_video_with_resolution(video_ids, resolutions=["720p", "480p", "360p"],
                                    output_path="."):
     try:
         video_id = [id.strip() for id in video_ids.strip("[]").split(',')]
