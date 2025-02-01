@@ -151,7 +151,7 @@ for index, row in mapping.iterrows():
 
             # If the trimmed file already exists, skip processing for this segment
             if os.path.isfile(trimmed_file_path):
-                logger.info(f"Trimmed file already exists: {trimmed_file_path}. Skipping trimming.")
+                logger.info(f"Trimmed file already exists: {trimmed_file_path}. Skipping processing of segment.")
                 continue
 
             # Define a temporary path for the trimmed video segment
