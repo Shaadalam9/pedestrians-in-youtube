@@ -91,12 +91,6 @@ helper.delete_folder(folder_path="runs")
 
 # create required directories
 os.makedirs(data_folder, exist_ok=True)
-os.makedirs("runs", exist_ok=True)
-os.makedirs(os.path.join("runs", "detect"), exist_ok=True)
-os.makedirs(os.path.join("runs", "detect", "frames"), exist_ok=True)
-os.makedirs(os.path.join("runs", "detect", "annotated_frames"), exist_ok=True)
-os.makedirs(os.path.join("runs", "detect", "labels"), exist_ok=True)
-os.makedirs(os.path.join("runs", "detect", "track", "labels"), exist_ok=True)
 
 # Go over rows. Add progress bar.
 for index, row in tqdm(mapping.iterrows(), total=mapping.shape[0]):
@@ -181,6 +175,9 @@ for index, row in tqdm(mapping.iterrows(), total=mapping.shape[0]):
                 helper.trim_video(base_video_path, trimmed_video_path, start_time, end_time_adj)
 
                 logger.info("Trimming completed for this segment.")
+
+            if common.get_configs("prediction_mode"):
+                helper.prediction_mode()
 
             # Tracking mode: process the trimmed segment
             if common.get_configs("tracking_mode"):

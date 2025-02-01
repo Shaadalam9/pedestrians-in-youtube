@@ -36,6 +36,9 @@ delete_frames = common.get_configs("delete_frames")
 
 # Consts
 LINE_TICKNESS = 1
+RENDER = False
+SHOW_LABELS = False
+SHOW_CONF = False
 
 
 class Youtube_Helper:
@@ -748,6 +751,17 @@ class Youtube_Helper:
         except Exception as e:
             logger.error(f"An error occurred: {e}")
 
+    def prediction_mode(self):
+        model = YOLO(self.model)
+        model.predict(source=os.path.join(output_path, f"{self.video_title}.mp4"),
+                      save=True,
+                      conf=confidence, 
+                      ave_txt=True,
+                      show=RENDER,
+                      line_width=1,
+                      show_labels=SHOW_LABELS,
+                      show_conf=SHOW_CONF)
+
     def tracking_mode(self, input_video_path, output_video_path, video_fps=25):
         model = YOLO(self.model)
         cap = cv2.VideoCapture(input_video_path)
@@ -802,9 +816,9 @@ class Youtube_Helper:
                                       save=True,
                                       save_txt=True,
                                       line_width=LINE_TICKNESS,
-                                      show_labels=False,
-                                      show_conf=False,
-                                      show=False,
+                                      show_labels=SHOW_LABELS,
+                                      show_conf=SHOW_CONF,
+                                      show=RENDER,
                                       verbose=False)
 
                 # Update progress bar
