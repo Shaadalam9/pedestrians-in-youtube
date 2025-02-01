@@ -296,8 +296,8 @@ class Youtube_Helper:
         # Detect available GPU and set appropriate encoder
         codec_hw = Youtube_Helper.detect_gpu()
         print(codec_hw)
-        if not codec_hw:
-            codec = codec_hw  # Fallback to CPU-based H.265 encoding
+        if codec_hw:
+            codec = codec_hw  # Use detected hardware
 
         # Construct ffmpeg command
         command = [
