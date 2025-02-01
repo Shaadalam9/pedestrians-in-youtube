@@ -79,8 +79,8 @@ Configuration of the project needs to be defined in `config`. Please use the `de
 * `update_pytubefix`: update pytubefix library every time analysis stars.
 * `font_family`: font family in outputs,
 * `plotly_template`: template for plotly figures.
-## Example
 
+## Example
 https://github.com/Shaadalam9/youtube-pedestrian/assets/88769183/5303f4a5-52a2-4230-bd05-89a53927a5be
 
 
