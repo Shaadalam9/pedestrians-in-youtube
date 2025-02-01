@@ -153,6 +153,7 @@ for index, row in tqdm(mapping.iterrows(), total=mapping.shape[0]):
         else:
             logger.info(f"Using already downloaded video: {vid}")
             video_title = vid  # or any fallback title
+            helper.set_video_title(video_title)
 
         for start_time, end_time, time_of_day_value in zip(start_times_list, end_times_list, time_of_day_list):
             # Construct a unique file name for the trimmed segment
