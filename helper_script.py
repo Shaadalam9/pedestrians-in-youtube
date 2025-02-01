@@ -789,13 +789,18 @@ class Youtube_Helper:
             if success:
 
                 frame_count += 1  # Increment frame count
-                # Run YOLOv8 tracking on the frame, persisting tracks between frames
-                results = model.track(frame, tracker='bytetrack.yaml',
-                                      persist=True, conf=confidence,
-                                      save=True, save_txt=True,
+                # Run YOLO tracking on the frame, persisting tracks between frames
+                results = model.track(frame,
+                                      tracker='bytetrack.yaml',
+                                      persist=True,
+                                      conf=confidence,
+                                      save=True,
+                                      save_txt=True,
                                       line_width=LINE_TICKNESS,
                                       show_labels=SHOW_LABELS,
-                                      show_conf=SHOW_CONF, show=RENDER)
+                                      show_conf=SHOW_CONF,
+                                      show=RENDER,
+                                      verbose=False)
 
                 # Get the boxes and track IDs
                 boxes = results[0].boxes.xywh.cpu()  # type: ignore
