@@ -30,8 +30,8 @@ delete_labels = common.get_configs("delete_labels")
 delete_frames = common.get_configs("delete_frames")
 
 # Consts
-RENDER = True
 LINE_TICKNESS = 1
+RENDER = False
 SHOW_LABELS = False
 SHOW_CONF = False
 
