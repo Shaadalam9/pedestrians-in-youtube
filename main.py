@@ -183,7 +183,7 @@ for index, row in tqdm(mapping.iterrows(), total=mapping.shape[0]):
             if common.get_configs("tracking_mode"):
                 if fps_values[vid_index]:
                     tracking_fps = fps_values[vid_index]
-                    logger.info("Started YOLO analysis for this segment.")
+                    logger.info(f"Started YOLO analysis for segment {start_time}-{end_time} s.")
                     helper.tracking_mode(trimmed_video_path, trimmed_video_path, tracking_fps)
                 else:
                     logger.warning(f"FPS not found for video ID: {vid}. Skipping tracking mode.")
