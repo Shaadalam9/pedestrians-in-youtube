@@ -17,7 +17,6 @@ counter = 0
 mapping = pd.read_csv(common.get_configs("mapping"))
 output_path = common.get_configs("output_path")
 frames_output_path = common.get_configs("frames_output_path")
-final_video_output_path = common.get_configs("final_video_output_path")
 delete_runs_files = common.get_configs("delete_runs_files")
 delete_youtube_video = common.get_configs("delete_youtube_video")
 data_folder = common.get_configs("data")
