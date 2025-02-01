@@ -791,7 +791,7 @@ class Youtube_Helper:
             total_frames = None  # Prevent tqdm from setting a fixed length
 
         # Setup progress bar
-        progress_bar = tqdm(total=total_frames, unit="frame", desc="Tracking", dynamic_ncols=True)
+        progress_bar = tqdm(total=total_frames, unit="frames", dynamic_ncols=True)
 
         # Loop through the video frames
         frame_count = 0  # Variable to track the frame number
