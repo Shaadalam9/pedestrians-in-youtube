@@ -800,7 +800,8 @@ class Youtube_Helper:
                                       show_labels=SHOW_LABELS,
                                       show_conf=SHOW_CONF,
                                       show=RENDER,
-                                      verbose=False)
+                                      verbose=False,
+                                      hide_conf=True)
 
                 # Get the boxes and track IDs
                 boxes = results[0].boxes.xywh.cpu()  # type: ignore
