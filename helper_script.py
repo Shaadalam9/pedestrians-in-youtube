@@ -295,6 +295,7 @@ class Youtube_Helper:
 
         # Detect available GPU and set appropriate encoder
         codec_hw = Youtube_Helper.detect_gpu()
+        print(codec_hw)
         if not codec_hw:
             codec = codec_hw  # Fallback to CPU-based H.265 encoding
 
@@ -310,9 +311,9 @@ class Youtube_Helper:
 
         try:
             # Run ffmpeg command
-            logger.info(f"Started compression of '{input_path}' with {codec} codec.")
+            logger.info(f"Started compression of '{input_path}' with {codec} codec. Current file size={os.path.getsize(input_path)}.")  # noqa: E501
             subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            logger.info(f"Finished compression of '{input_path}' with {codec} codec.")
+            logger.info(f"Finished compression of '{input_path}' with {codec} codec. New file size={os.path.getsize(output_path)}.")  # noqa: E501
             # Replace the original file with the compressed file
             os.replace(output_path, input_path)
         except subprocess.CalledProcessError as e:
