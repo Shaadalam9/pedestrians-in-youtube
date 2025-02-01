@@ -168,14 +168,14 @@ for index, row in tqdm(mapping.iterrows(), total=mapping.shape[0]):
             trimmed_video_path = os.path.join(output_path, f"{video_title}_mod.mp4")
 
             if start_time is None and end_time is None:
-                logger.info("No trimming required for this segment.")
+                logger.info("No trimming required for this video.")
             else:
                 logger.info(f"Trimming in progress for segment {start_time}-{end_time} s.")
                 # Adjust end_time if needed (e.g., to account for missing frames)
                 end_time_adj = end_time - 1
                 helper.trim_video(base_video_path, trimmed_video_path, start_time, end_time_adj)
 
-                logger.info("Trimming completed for this segment.")
+                logger.info(f"Trimming completed for segment {start_time}-{end_time} s.")
 
             if common.get_configs("prediction_mode"):
                 helper.prediction_mode()
