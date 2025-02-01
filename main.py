@@ -128,6 +128,10 @@ for index, row in mapping.iterrows():
 
                 logger.info(f"Downloaded video: {video_file_path}")
                 helper.set_video_title(video_title)
+
+                # Optionally compress the video if required
+                if common.get_configs("compress_youtube_video"):
+                    helper.compress_video(base_video_path, common.get_configs("save_download_videos"))
             else:
                 # If download fails, check if the video already exists
                 if os.path.exists(base_video_path):
@@ -139,10 +143,6 @@ for index, row in mapping.iterrows():
                     continue
         else:
             logger.info(f"Using already downloaded video: {base_video_path}")
-
-        # Optionally compress the video if required
-        if common.get_configs("compress_youtube_video"):
-            helper.compress_video(base_video_path, common.get_configs("save_download_videos"))
 
         for start_time, end_time, time_of_day_value in zip(start_times_list, end_times_list, time_of_day_list):
             # Construct a unique file name for the trimmed segment
