@@ -36,15 +36,43 @@ display_frame_tracking = common.get_configs("display_frame_tracking")
 class youtube_helper:
 
     def __init__(self, video_title=None):
+        """
+        Initialises a new instance of the class.
+
+        Parameters:
+            video_title (str, optional): The title of the video. Defaults to None.
+
+        Instance Variables:
+            self.model (str): The model configuration loaded from common.get_configs("model").
+            self.resolution (str): The video resolution. Initialized as None and set later when needed.
+            self.video_title (str): The title of the video.
+        """
         self.model = common.get_configs("model")
         self.resolution = None
         self.video_title = video_title
 
     def set_video_title(self, title):
+        """
+        Sets the video title for the instance.
+
+        Parameters:
+            title (str): The new title for the video.
+        """
         self.video_title = title
 
     @staticmethod
     def rename_folder(old_name, new_name):
+        """
+        Renames a folder from old_name to new_name.
+
+        Parameters:
+            old_name (str): The current name (or path) of the folder.
+            new_name (str): The new name (or path) to assign to the folder.
+
+        Error Handling:
+            - Logs an error if the folder with old_name is not found.
+            - Logs an error if a folder with new_name already exists.
+        """
         try:
             os.rename(old_name, new_name)
         except FileNotFoundError:
@@ -54,7 +82,15 @@ class youtube_helper:
 
     @staticmethod
     def upgrade_package(package_name):
-        """Upgrades a given package using pip."""
+        """
+        Upgrades a given Python package using pip.
+
+        Parameters:
+            package_name (str): The name of the package to upgrade.
+
+        The method uses subprocess to call pip and upgrade the package.
+        If the upgrade fails, it prints an error message.
+        """
         try:
             print(f"Upgrading {package_name}...")
             subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", package_name])
@@ -63,60 +99,142 @@ class youtube_helper:
             print(f"Failed to upgrade {package_name}: {e}")
 
     def download_video_with_resolution(self, video_id, resolutions=["720p", "480p", "360p", "144p"], output_path="."):
+        """
+        Downloads a YouTube video in one of the specified resolutions and returns video details.
+
+        The function performs the following steps:
+        1. Optionally upgrades the 'pytubefix' package if configured.
+        2. Constructs the YouTube video URL using the provided video ID.
+        3. Creates a YouTube object using the specified client configuration.
+        4. Iterates over a list of preferred resolutions and selects the first available stream.
+        5. Downloads the video in the selected resolution to the specified output path.
+        6. Retrieves the video's FPS (frames per second) using the get_video_fps method.
+        7. Returns a tuple containing the video file path, video ID, resolution, and FPS.
+
+        Parameters:
+        video_id (str): The YouTube video ID to download.
+        resolutions (list of str, optional): A list of preferred video resolutions in descending order.
+        output_path (str, optional): The directory where the video will be downloaded. Defaults to the
+                                    current directory.
+
+        Returns:
+        tuple or None: A tuple (video_file_path, video_id, resolution, fps) if successful,
+                     or None if an error occurs or if the desired resolution is not available.
+        """
+        # Optionally upgrade the pytubefix package if the configuration requires it.
         if common.get_configs("update_pytubefix"):
             youtube_helper.upgrade_package("pytubefix")
+
         try:
+            # Construct the YouTube URL using the provided video ID.
             youtube_url = f'https://www.youtube.com/watch?v={video_id}'
 
+            # Create a YouTube object using the specified client configuration.
             youtube_object = YouTube(youtube_url, common.get_configs('client'))
+
+            # Iterate over the list of preferred resolutions to find a matching stream.
             for resolution in resolutions:
+                # Filter the streams for the current resolution.
                 video_streams = youtube_object.streams.filter(res=f"{resolution}").all()
                 if video_streams:
+                    # If a stream is found, store the resolution and log the result.
                     self.resolution = resolution
                     logger.info(f"Got the video in {resolution}")
                     break
 
+            # If no stream is found for any of the preferred resolutions, log an error and return None.
             if not video_streams:
                 logger.error(f"No {resolution} resolution available for '{youtube_object.title}'.")
                 return None
 
+            # Select the first available stream from the filtered list.
             selected_stream = video_streams[0]
 
+            # Construct the file path for the downloaded video.
             video_file_path = os.path.join(output_path, f"{video_id}.mp4")
             logger.info("Youtube video download in progress...")
-            # Comment the below line to automatically download with video in "video" folder
+
+            # Download the video stream to the specified output path with the given filename.
             selected_stream.download(output_path, filename=f"{video_id}.mp4")
 
             logger.info(f"Download of '{youtube_object.title}' in {resolution} completed successfully.")
             self.video_title = youtube_object.title
 
-            # Get the FPS of the video
+            # Retrieve the FPS (frames per second) of the downloaded video.
             fps = self.get_video_fps(video_file_path)
             logger.info(f"The fps of '{youtube_object.title}' is '{fps}'")
 
+            # Return the video file path, video ID, resolution, and FPS.
             return video_file_path, video_id, resolution, fps
 
         except Exception as e:
+            # Log an error message if any exception occurs during the process.
             logger.error(f"An error occurred: {e}")
             return None
 
     def get_video_fps(self, video_file_path):
+        """
+        Retrieves the frames per second (FPS) of a video file using OpenCV.
+
+        Parameters:
+            video_file_path (str): The file path to the video whose FPS is to be determined.
+
+        Returns:
+            int or None: The rounded FPS value of the video if successful; otherwise, returns None if an error occurs.
+
+        The function performs the following steps:
+            1. Opens the video file using OpenCV's VideoCapture.
+            2. Retrieves the FPS using the CAP_PROP_FPS property.
+            3. Rounds the FPS value to the nearest integer.
+            4. Releases the video resource.
+            5. Returns the rounded FPS value, or None if an exception is encountered.
+        """
         try:
             # Open the video file using OpenCV
             video = cv2.VideoCapture(video_file_path)
-            # Get FPS using OpenCV's `CAP_PROP_FPS` property
+
+            # Retrieve the FPS using OpenCV's CAP_PROP_FPS property
             fps = video.get(cv2.CAP_PROP_FPS)
+
+            # Release the video resource
             video.release()
+
+            # Return the FPS rounded to the nearest integer
             return round(fps, 0)
         except Exception as e:
+            # Log an error message if FPS retrieval fails
             logger.error(f"Failed to retrieve FPS: {e}")
             return None
 
     @staticmethod
     def trim_video(input_path, output_path, start_time, end_time):
+        """
+        Trims a segment from a video and saves the result to a specified file.
+
+        Parameters:
+            input_path (str): The file path to the original video.
+            output_path (str): The destination file path where the trimmed video will be saved.
+            start_time (float or str): The start time for the trimmed segment. This can be specified in seconds
+                                       or in a time format recognized by MoviePy.
+            end_time (float or str): The end time for the trimmed segment. Similar to start_time, it can be in seconds
+                                     or another supported time format.
+
+        Returns:
+            None
+
+        The function performs the following steps:
+            1. Loads the original video using MoviePy's VideoFileClip.
+            2. Creates a subclip from the original video based on the provided start_time and end_time.
+            3. Writes the subclip to the output_path using the H.264 video codec and AAC audio codec.
+            4. Closes the video file to free up resources.
+        """
+        # Load the video and create a subclip using the provided start and end times.
         video_clip = VideoFileClip(input_path).subclip(start_time, end_time)
 
+        # Write the subclip to the specified output file using the 'libx264' codec for video and 'aac' for audio.
         video_clip.write_videofile(output_path, codec="libx264", audio_codec="aac")
+
+        # Close the video clip to release any resources used.
         video_clip.close()
 
     @staticmethod
@@ -160,6 +278,7 @@ class youtube_helper:
         try:
             # Run ffmpeg command
             subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            logger.info(f"Video compressed successfully and save to {output_path} directory.")
             return output_path  # Return the path of the compressed video
         except subprocess.CalledProcessError as e:
             raise RuntimeError(f"Video compression failed: {e.stderr.decode()}")
@@ -221,6 +340,29 @@ class youtube_helper:
             df.to_csv(output_csv, index=False, mode='w')  # If the CSV does not exist, create it
         else:
             df.to_csv(output_csv, index=False, mode='a', header=False)  # If it exists, append without header
+
+    @staticmethod
+    def delete_folder(folder_path):
+        """
+        Deletes the folder and all its contents recursively.
+
+        Parameters:
+            folder_path (str): The path of the folder to delete.
+
+        Returns:
+            bool: True if the folder was successfully deleted, False otherwise.
+        """
+        if os.path.exists(folder_path) and os.path.isdir(folder_path):
+            try:
+                shutil.rmtree(folder_path)
+                logger.info(f"Folder '{folder_path}' deleted successfully.")
+                return True
+            except Exception as e:
+                logger.error(f"Failed to delete folder '{folder_path}': {e}")
+                return False
+        else:
+            logger.info(f"Folder '{folder_path}' does not exist.")
+            return False
 
     @staticmethod
     def check_for_download_csv_file(mapping):
