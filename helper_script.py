@@ -801,7 +801,7 @@ class Youtube_Helper:
                                       show_conf=SHOW_CONF,
                                       show=RENDER,
                                       verbose=False,
-                                      hide_conf=True)
+                                      show_conf=False)
 
                 # Get the boxes and track IDs
                 boxes = results[0].boxes.xywh.cpu()  # type: ignore
