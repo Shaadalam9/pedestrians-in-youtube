@@ -134,7 +134,7 @@ for index, row in tqdm(mapping.iterrows(), total=mapping.shape[0]):
                     mapping.at[index, 'fps_list'] = str(fps_values)
                     mapping.to_csv(common.get_configs("mapping"), index=False)
 
-                logger.info(f"Downloaded video: {video_file_path}")
+                logger.info(f"Downloaded video: {video_file_path}.")
                 helper.set_video_title(video_title)
 
                 # Optionally compress the video if required
@@ -144,13 +144,13 @@ for index, row in tqdm(mapping.iterrows(), total=mapping.shape[0]):
                 # If download fails, check if the video already exists
                 if os.path.exists(base_video_path):
                     video_title = vid  # or any fallback title
-                    logger.info(f"Download failed, but video found: {base_video_path}")
+                    logger.info(f"Download failed, but video found: {base_video_path}.")
                     helper.set_video_title(video_title)
                 else:
                     logger.error(f"Video {vid} not found and download failed. Skipping this video.")
                     continue
         else:
-            logger.info(f"Using already downloaded video: {vid}")
+            logger.info(f"Using already downloaded video: {vid}.")
             video_title = vid  # or any fallback title
             helper.set_video_title(video_title)
 
