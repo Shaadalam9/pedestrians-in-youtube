@@ -15,7 +15,7 @@ counter = 0
 
 # Load the config file
 mapping = pd.read_csv(common.get_configs("mapping"))
-output_path = common.get_configs("output_path")
+output_path = common.get_configs("videos")
 frames_output_path = common.get_configs("frames_output_path")
 delete_runs_files = common.get_configs("delete_runs_files")
 delete_youtube_video = common.get_configs("delete_youtube_video")
@@ -130,7 +130,7 @@ for index, row in mapping.iterrows():
 
                 # Optionally compress the video if required
                 if common.get_configs("compress_youtube_video"):
-                    helper.compress_video(base_video_path, common.get_configs("save_download_videos"))
+                    helper.compress_video(base_video_path, output_path)
             else:
                 # If download fails, check if the video already exists
                 if os.path.exists(base_video_path):

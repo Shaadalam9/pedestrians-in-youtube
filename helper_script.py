@@ -135,16 +135,16 @@ class youtube_helper:
             # Iterate over the list of preferred resolutions to find a matching stream.
             for resolution in resolutions:
                 # Filter the streams for the current resolution.
-                video_streams = youtube_object.streams.filter(res=f"{resolution}").all()
+                video_streams = youtube_object.streams.filter(res=f"{resolution}")
                 if video_streams:
                     # If a stream is found, store the resolution and log the result.
                     self.resolution = resolution
-                    logger.info(f"Got the video in {resolution}")
+                    logger.info(f"Found video {video_id} in {resolution}.")
                     break
 
             # If no stream is found for any of the preferred resolutions, log an error and return None.
             if not video_streams:
-                logger.error(f"No {resolution} resolution available for '{youtube_object.title}'.")
+                logger.error(f"No {resolution} resolution available for {video_id}.")
                 return None
 
             # Select the first available stream from the filtered list.
@@ -279,9 +279,9 @@ class youtube_helper:
 
         try:
             # Run ffmpeg command
-            logger.info(f"Started compression of '{input_path}' with h255 coded.")
+            logger.info(f"Started compression of '{input_path}' with h255 codec.")
             subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            logger.info(f"Finished compression of '{input_path}' with h255 coded.")
+            logger.info(f"Finished compression of '{input_path}' with h255 codec.")
             # Replace the original file with the compressed file
             os.replace(output_path, input_path)
         except subprocess.CalledProcessError as e:
