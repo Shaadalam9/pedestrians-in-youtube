@@ -305,7 +305,9 @@ class Youtube_Helper:
             "-c:v", codec,  # Use appropriate codec
             "-preset", preset,  # Compression speed/efficiency tradeoff
             "-crf", str(crf),  # Constant Rate Factor (lower = better quality, larger file)
-            output_path  # Temporary output file
+            output_path,  # Temporary output file
+            "-progress", "pipe:1",  # Enables real-time progress output
+            "-nostats"  # Suppresses extra logs
         ]
 
         try:
@@ -328,13 +330,13 @@ class Youtube_Helper:
     def extract_youtube_id(file_path):
         """
         Extracts the YouTube video ID from a given file path.
-        
+
         Args:
             file_path (str): The full path of the video file.
-        
+
         Returns:
             str: The extracted YouTube ID.
-        
+
         Raises:
             ValueError: If no valid YouTube ID is found.
         """
@@ -345,7 +347,6 @@ class Youtube_Helper:
             raise ValueError("Invalid YouTube ID extracted.")
 
         return youtube_id
-
 
     @staticmethod
     def create_video_from_images(image_folder, output_video_path, frame_rate):
