@@ -269,7 +269,7 @@ class Youtube_Helper:
         return None  # No compatible GPU found
 
     @staticmethod
-    def compress_video(input_path, codec="libx265", preset="veryslow", crf=17):
+    def compress_video(input_path, codec="libx265", preset="slow", crf=17):
         """
         Compresses a video using codec=codec.
 
@@ -319,13 +319,11 @@ class Youtube_Helper:
             logger.info(f"Finished compression of {video_id} with {codec} codec. New size={os.path.getsize(output_path)}.")  # noqa: E501
             # Replace the original file with the compressed file
             shutil.move(output_path, input_path)
-        except subprocess.CalledProcessError as e:
-            raise RuntimeError(f"Video compression failed: {e.stderr.decode()}")
         except Exception as e:
             # Clean up temporary file in case of unexpected errors
             if os.path.exists(output_path):
                 os.remove(output_path)
-            raise e
+            logger.error(f"Video compression failed: {e.stderr.decode()}. Using uncompressed file.")
 
     @staticmethod
     def extract_youtube_id(file_path):
