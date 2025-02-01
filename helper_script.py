@@ -16,6 +16,7 @@ import common
 import ast
 import subprocess
 import sys
+import datetime
 
 logger = CustomLogger(__name__)  # use custom logger
 
@@ -27,7 +28,6 @@ output_path = common.get_configs("videos")
 save_annoted_img = common.get_configs("save_annoted_img")
 delete_labels = common.get_configs("delete_labels")
 delete_frames = common.get_configs("delete_frames")
-display_frame_tracking = common.get_configs("display_frame_tracking")
 
 # Consts
 RENDER = True
@@ -124,8 +124,8 @@ class youtube_helper:
         tuple or None: A tuple (video_file_path, video_id, resolution, fps) if successful,
                      or None if an error occurs or if the desired resolution is not available.
         """
-        # Optionally upgrade the pytubefix package if the configuration requires it.
-        if common.get_configs("update_pytubefix"):
+        # Optionally upgrade the pytubefix package if the configuration requires it. Only run on Mondays.
+        if common.get_configs("update_pytubefix") and datetime.datetime.today().weekday() == 0:
             youtube_helper.upgrade_package("pytubefix")
 
         try:
