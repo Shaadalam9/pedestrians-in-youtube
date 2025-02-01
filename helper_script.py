@@ -295,7 +295,6 @@ class Youtube_Helper:
 
         # Detect available GPU and set appropriate encoder
         codec_hw = Youtube_Helper.detect_gpu()
-        print(codec_hw)
         if codec_hw:
             codec = codec_hw  # Use detected hardware
 
