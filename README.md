@@ -80,7 +80,7 @@ python3 analysis.py
 
 ## Example
 
-Example of YOLO running on dashcam video (full video:https://www.youtube.com/watch?v=_Wyg213IZDI)
+Example of YOLO running on dashcam video (original video: https://www.youtube.com/watch?v=_Wyg213IZDI)
 <a href="https://youtu.be/NipvoDg0Nyk">
   <img src="./ReadmeFiles/output_gif.gif" width="100%" />
 </a>
