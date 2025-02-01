@@ -86,6 +86,8 @@ if common.get_configs("update_upload_date"):
 # Delete the runs folder (if it exists)
 helper.delete_folder(folder_path="runs")
 
+os.makedirs(data_folder, exist_ok=True)
+
 for index, row in mapping.iterrows():
     video_ids = [id.strip() for id in row["videos"].strip("[]").split(',')]
     start_times = ast.literal_eval(row["start_time"])
@@ -157,14 +159,15 @@ for index, row in mapping.iterrows():
             # Define a temporary path for the trimmed video segment
             trimmed_video_path = os.path.join(output_path, f"{video_title}_mod.mp4")
 
-            # If the YOLO output file already exists, skip processing for this segment
-            if os.path.exists(trimmed_video_path):
-                logger.info(f"Skipped processing of segment {trimmed_video_path} as output file already exists.")
-                continue
-
             if start_time is None and end_time is None:
                 logger.info("No trimming required for this segment.")
             else:
+                # If the YOLO output file already exists, skip processing for this segment
+                file_output_segment = os.path.join(data_folder, f"{vid}_{start_time}.csv")
+                if os.path.exists(file_output_segment):
+                    logger.info(f"Skipped processing of segment {file_output_segment} as output file already exists.")
+                    continue
+
                 logger.info(f"Trimming in progress for segment starting at {start_time} and ending at {end_time}.")
                 # Adjust end_time if needed (e.g., to account for missing frames)
                 end_time_adj = end_time - 1
@@ -185,7 +188,6 @@ for index, row in mapping.iterrows():
                     logger.warning(f"FPS not found for video ID: {vid}. Skipping tracking mode.")
 
                 # Move and rename the generated CSV file from tracking mode
-                os.makedirs(data_folder, exist_ok=True)
                 old_file_path = os.path.join("runs", "detect", f"{vid}.csv")
                 new_file_path = os.path.join("runs", "detect", f"{vid}_{start_time}.csv")
                 os.rename(old_file_path, new_file_path)
