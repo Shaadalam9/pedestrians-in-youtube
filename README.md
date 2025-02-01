@@ -3,7 +3,7 @@
 ## Overview
 Welcome to the YOLOv8 YouTube Video Analysis project! This repository contains code that extracts YouTube videos based on a mapping.csv file and performs object detection using YOLOv8. The primary objective of this work is to evaluate pedestrian behavior in a cross-country or cross-cultural context using freely available YouTube videos.
 
-This study presents a comprehensive cross-cultural evaluation of pedestrian behavior during road crossings, examining variations between developed and developing states worldwide. As urban landscapes evolve and autonomous vehicles (AVs) become integral to future transportation, understanding pedestrian behavior becomes paramount for ensuring safe interactions between humans and AVs. Through an extensive review of global pedestrian studies, we analyze key factors influencing crossing behavior, such as cultural norms, socioeconomic factors, infrastructure development, and regulatory frameworks. Our findings reveal distinct patterns in pedestrian conduct across different regions. Developed states generally exhibit more structured and rule-oriented crossing behaviors, influenced by established traffic regulations and advanced infrastructure. In contrast, developing states often witness a higher degree of informal and adaptive behavior due to limited infrastructure and diverse cultural influences. These insights underscore the necessity for AVs to adapt to diverse pedestrian behaviors on a global scale, emphasizing the importance of incorporating cultural nuances into AV programming and decision-making algorithms. As the integration of AVs into urban environments accelerates, this research contributes valuable insights for enhancing the safety and efficiency of autonomous transportation systems. By recognizing and accommodating diverse pedestrian behaviors, AVs can navigate complex and dynamic urban settings, ensuring a harmonious coexistence with human road users across the globe.
+This study presents a comprehensive cross-cultural evaluation of pedestrian behavior during road crossings, examining variations between developed and developing states worldwide. As urban landscapes evolve and autonomous vehicles (AVs) become integral to future transportation, understanding pedestrian behavior becomes paramount for ensuring safe interactions between humans and AVs. Through an extensive review of global pedestrian studies, we analyse key factors influencing crossing behavior, such as cultural norms, socioeconomic factors, infrastructure development, and regulatory frameworks. Our findings reveal distinct patterns in pedestrian conduct across different regions. Developed states generally exhibit more structured and rule-oriented crossing behaviors, influenced by established traffic regulations and advanced infrastructure. In contrast, developing states often witness a higher degree of informal and adaptive behavior due to limited infrastructure and diverse cultural influences. These insights underscore the necessity for AVs to adapt to diverse pedestrian behaviors on a global scale, emphasising the importance of incorporating cultural nuances into AV programming and decision-making algorithms. As the integration of AVs into urban environments accelerates, this research contributes valuable insights for enhancing the safety and efficiency of autonomous transportation systems. By recognising and accommodating diverse pedestrian behaviors, AVs can navigate complex and dynamic urban settings, ensuring a harmonious coexistence with human road users across the globe.
 
 ## Usage of the code
 The code is open-source and free to use. It is aimed for, but not limited to, academic research. We welcome forking of this repository, pull requests, and any contributions in the spirit of open science and open-source code 😍😄 For inquiries about collaboration, you may contact Md Shadab Alam (md_shadab_alam@outlook.com) or Pavlo Bazilinskyy (pavlo.bazilinskyy@gmail.com).
@@ -49,40 +49,39 @@ Run the code:
 python3 analysis.py
 ```
 
-### Configuration of project
-Configuration of the project needs to be defined in `config`. Please use the `default.config` file for the required structure of the file. If no custom config file is provided, `default.config` is used. The config file has the following parameters:
-* `data`: folder with data (CSV output of YOLO).
-* `videos`: folder with videos that were used used to produce output in data.
-* `mapping`: CSV file that contains all data for the cities in data.
-* `prediction_mode`: 
-* `tracking_mode`: 
-* `display_frame_tracking`: 
-* `save_annoted_img`: 
-* `delete_labels`: delete labels from YOLO output.
-* `delete_frames`: delete frames from YOLO output.
-* `delete_youtube_video`: delete saved video.
-* `compress_youtube_video`: compress YouTube videos (with H.255 codec by default).
-* `delete_runs_files`: delete files with YOLO output after analysis.
-* `monitor_temp`: monitor temperature of device that is running analysis.
-* `check_for_download_csv_file`: 
-* `client`: type of client for downloading YouTube videos: "WEB" or "ANDREOID".
-* `model`: model of YOLO, supported/tested: v8 and v11.
-* `countries_analyse`: countries to analyse.
-* `confidence`: confidence parameter for YOLO.
-* `update_ISO_code`: update ISO code of country in mapping file during analysis.
-* `update_pop_country`: update population of country in mapping file during analysis.
-* `update_continent`: update continent of country in mapping file during analysis.
-* `update_mortality_rate`: update mortality rate of country in mapping file during analysis.
-* `update_gini_value`: update GINI value of country in mapping file during analysis.
-* `update_upload_date`: update upload date of videos in mapping file during analysis.
-* `update_fps_list`: update FPS of videos in mapping file during analysis.
-* `update_pytubefix`: update pytubefix library every time analysis stars.
-* `font_family`: font family in outputs,
-* `plotly_template`: template for plotly figures.
+- **`data`**: Directory containing data (CSV output from YOLO).
+- **`videos`**: Directory containing the videos used to generate the data.
+- **`mapping`**: CSV file that contains mapping data for the cities referenced in the data.
+- **`prediction_mode`**: Configures YOLO for object detection.
+- **`tracking_mode`**: Configures YOLO for object tracking.
+- **`display_frame_tracking`**: Displays the frame tracking during analysis.
+- **`save_annotated_img`**: Saves the annotated frames produced by YOLO.
+- **`delete_labels`**: Deletes label files from YOLO output.
+- **`delete_frames`**: Deletes frames from YOLO output.
+- **`delete_youtube_video`**: Deletes saved YouTube videos.
+- **`compress_youtube_video`**: Compresses YouTube videos (using the H.255 codec by default).
+- **`delete_runs_files`**: Deletes files containing YOLO output after analysis.
+- **`monitor_temp`**: Monitors the temperature of the device running the analysis.
+- **`check_for_download_csv_file`**: Flag indicating whether any video listed in the mapping file is pending analysis.
+- **`client`**: Specifies the client type for downloading YouTube videos; accepted values are `"WEB"`, `"ANDROID"` or `"ios"`.
+- **`model`**: Specifies the YOLO model to use; supported/tested versions include `v8x` and `v11x`.
+- **`countries_analyse`**: Lists the countries to be analysed.
+- **`confidence`**: Sets the confidence threshold parameter for YOLO.
+- **`update_ISO_code`**: Updates the ISO code of the country in the mapping file during analysis.
+- **`update_pop_country`**: Updates the country’s population in the mapping file during analysis.
+- **`update_continent`**: Updates the continent information in the mapping file during analysis.
+- **`update_mortality_rate`**: Updates the mortality rate of the country in the mapping file during analysis.
+- **`update_gini_value`**: Updates the GINI value of the country in the mapping file during analysis.
+- **`update_upload_date`**: Updates the upload date of videos in the mapping file during analysis.
+- **`update_fps_list`**: Updates the FPS (frames per second) information for videos in the mapping file during analysis.
+- **`update_pytubefix`**: Updates the `pytubefix` library each time analysis starts.
+- **`font_family`**: Specifies the font family to be used in outputs.
+- **`plotly_template`**: Defines the template for Plotly figures.
 
 ## Example
-https://github.com/Shaadalam9/youtube-pedestrian/assets/88769183/5303f4a5-52a2-4230-bd05-89a53927a5be
 
+Example of YOLO running on dashcam video (full video:https://www.youtube.com/watch?v=_Wyg213IZDI)
+[![Example of YOLO running on dashcam video](ReadmeFiles/output.mp4)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/ReadmeFiles/output.mp4)
 
 ## Results
 
