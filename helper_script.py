@@ -269,7 +269,7 @@ class Youtube_Helper:
         return None  # No compatible GPU found
 
     @staticmethod
-    def compress_video(input_path, codec="libx265", preset="medium", crf=17):
+    def compress_video(input_path, codec="libx265", preset="veryslow", crf=17):
         """
         Compresses a video using codec=codec.
 
