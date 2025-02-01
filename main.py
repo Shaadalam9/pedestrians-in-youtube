@@ -175,10 +175,6 @@ for index, row in tqdm(mapping.iterrows(), total=mapping.shape[0]):
 
                 logger.info("Trimming completed for this segment.")
 
-            # Prediction mode
-            if common.get_configs("prediction_mode"):
-                helper.prediction_mode()
-
             # Tracking mode: process the trimmed segment
             if common.get_configs("tracking_mode"):
                 if fps_values[vid_index]:
