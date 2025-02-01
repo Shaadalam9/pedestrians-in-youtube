@@ -86,6 +86,13 @@ Example of YOLO running on dashcam video (original video: https://www.youtube.co
 </a>
 
 
+## Selection procedure
+
+### Videos were not selected if it skips frames
+<a href="https://youtu.be/0K9vaQxKZ9k">
+  <img src="./ReadmeFiles/ghost.gif" width="100%" />
+</a>
+
 ## Results
 
 Countries where the study has been conducted
