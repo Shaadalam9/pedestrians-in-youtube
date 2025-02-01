@@ -1,5 +1,4 @@
-# by Shadab Alam <md_shadab_alam@outlook.com>
-
+# by Shadab Alam <md_shadab_alam@outlook.com> and Pavlo Bazilinskyy <pavlo.bazilinskyy@gmail.com>
 import math
 import pandas as pd
 import numpy as np

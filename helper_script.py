@@ -1,3 +1,4 @@
+# by Shadab Alam <md_shadab_alam@outlook.com> and Pavlo Bazilinskyy <pavlo.bazilinskyy@gmail.com>
 import os
 from pytubefix import YouTube
 from moviepy.video.io.VideoFileClip import VideoFileClip
