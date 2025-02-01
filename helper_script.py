@@ -152,17 +152,17 @@ class youtube_helper:
 
             # Construct the file path for the downloaded video.
             video_file_path = os.path.join(output_path, f"{video_id}.mp4")
-            logger.info("Youtube video download in progress...")
+            logger.info(f"Downloading of video {video_id} in resolution {resolution} started.")
 
             # Download the video stream to the specified output path with the given filename.
             selected_stream.download(output_path, filename=f"{video_id}.mp4")
 
-            logger.info(f"Download of '{youtube_object.title}' in {resolution} completed successfully.")
+            logger.info(f"Downloading of video {video_id} in resolution {resolution} finished.")
             self.video_title = youtube_object.title
 
             # Retrieve the FPS (frames per second) of the downloaded video.
             fps = self.get_video_fps(video_file_path)
-            logger.info(f"The fps of '{youtube_object.title}' is '{fps}'")
+            logger.info(f"FPS of {video_id}: {fps}.")
 
             # Return the video file path, video ID, resolution, and FPS.
             return video_file_path, video_id, resolution, fps
