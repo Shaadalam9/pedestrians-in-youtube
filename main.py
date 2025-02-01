@@ -1,7 +1,7 @@
 import shutil
 import os
 from datetime import datetime
-from helper_script import youtube_helper
+from helper_script import Youtube_Helper
 import pandas as pd
 from custom_logger import CustomLogger
 from logmod import logs
@@ -10,7 +10,7 @@ import common
 
 logs(show_level='info', show_color=True)
 logger = CustomLogger(__name__)  # use custom logger
-helper = youtube_helper()
+helper = Youtube_Helper()
 counter = 0
 
 # Load the config file

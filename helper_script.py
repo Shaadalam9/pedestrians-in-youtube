@@ -36,7 +36,7 @@ SHOW_LABELS = False
 SHOW_CONF = False
 
 
-class youtube_helper:
+class Youtube_Helper:
 
     def __init__(self, video_title=None):
         """
@@ -126,7 +126,7 @@ class youtube_helper:
         """
         # Optionally upgrade the pytubefix package if the configuration requires it. Only run on Mondays.
         if common.get_configs("update_pytubefix") and datetime.datetime.today().weekday() == 0:
-            youtube_helper.upgrade_package("pytubefix")
+            Youtube_Helper.upgrade_package("pytubefix")
 
         try:
             # Construct the YouTube URL using the provided video ID.
@@ -160,7 +160,6 @@ class youtube_helper:
             # Download the video stream to the specified output path with the given filename.
             selected_stream.download(output_path, filename=f"{video_id}.mp4")
 
-            logger.info(f"Downloading of video {video_id} in resolution {resolution} finished.")
             self.video_title = youtube_object.title
 
             # Retrieve the FPS (frames per second) of the downloaded video.
@@ -241,6 +240,30 @@ class youtube_helper:
         video_clip.close()
 
     @staticmethod
+    def detect_gpu():
+        """
+        Detects whether an NVIDIA or Intel GPU is available and returns the appropriate FFmpeg encoder.
+        
+        Returns:
+            str: 'hevc_nvenc' for NVIDIA, 'hevc_qsv' for Intel, or None if no compatible GPU is found.
+        """
+        try:
+            # Check for NVIDIA GPU
+            nvidia_check = subprocess.run(["nvidia-smi"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            if nvidia_check.returncode == 0:
+                return "hevc_nvenc"
+
+            # Check for Intel QuickSync GPU
+            intel_check = subprocess.run(["vainfo"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            if "Intel" in intel_check.stdout:
+                return "hevc_qsv"
+
+        except FileNotFoundError:
+            pass  # Command not found, meaning the hardware isn't available or the driver isn't installed
+
+        return None  # No compatible GPU found
+
+    @staticmethod
     def compress_video(input_path, output_dir, codec="libx265", preset="medium", crf=17):
         """
         Compresses a video using the H.265 codec.
@@ -270,11 +293,16 @@ class youtube_helper:
         filename = os.path.basename(input_path)
         output_path = os.path.join(output_dir, filename)
 
+        # Detect available GPU and set appropriate encoder
+        codec_hw = Youtube_Helper.detect_gpu()
+        if not codec_hw:
+            codec = codec_hw  # Fallback to CPU-based H.265 encoding
+
         # Construct ffmpeg command
         command = [
             "ffmpeg",
             "-i", input_path,  # Input file
-            "-c:v", codec,  # Use H.265 codec
+            "-c:v", codec,  # Use appropriate codec
             "-preset", preset,  # Compression speed/efficiency tradeoff
             "-crf", str(crf),  # Constant Rate Factor (lower = better quality, larger file)
             output_path  # Temporary output file
@@ -282,9 +310,9 @@ class youtube_helper:
 
         try:
             # Run ffmpeg command
-            logger.info(f"Started compression of '{input_path}' with h255 codec.")
+            logger.info(f"Started compression of '{input_path}' with {codec} codec.")
             subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            logger.info(f"Finished compression of '{input_path}' with h255 codec.")
+            logger.info(f"Finished compression of '{input_path}' with {codec} codec.")
             # Replace the original file with the compressed file
             os.replace(output_path, input_path)
         except subprocess.CalledProcessError as e:
@@ -429,7 +457,7 @@ class youtube_helper:
             data["population_country"] = None  # Initialize the column if it doesn't exist
 
         # Get the latest population data
-        latest_population = youtube_helper.get_latest_population()
+        latest_population = Youtube_Helper.get_latest_population()
 
         # Create a dictionary for quick lookup
         population_dict = dict(zip(latest_population['ISO_country'], latest_population['Population']))
@@ -611,7 +639,7 @@ class youtube_helper:
                 return
 
             # Get the latest traffic mortality data
-            traffic_df = youtube_helper.get_latest_traffic_mortality()
+            traffic_df = Youtube_Helper.get_latest_traffic_mortality()
 
             # Merge the traffic mortality data with the existing DataFrame
             updated_df = pd.merge(df, traffic_df, on='ISO_country', how='left', suffixes=('', '_new'))
@@ -675,7 +703,7 @@ class youtube_helper:
                 return
 
             # Get the latest GINI index data
-            geni_df = youtube_helper.get_latest_gini_values()
+            geni_df = Youtube_Helper.get_latest_gini_values()
 
             # Merge the GINI index data with the existing DataFrame
             updated_df = pd.merge(df, geni_df, on='ISO_country', how='left', suffixes=('', '_new'))
@@ -773,7 +801,7 @@ class youtube_helper:
                 labels_path = os.path.join("runs", "detect", "labels")
                 output_csv_path = os.path.join("runs", "detect", f"{self.video_title}.csv")
 
-                youtube_helper.merge_txt_to_csv_dynamically(labels_path, output_csv_path, frame_count)
+                Youtube_Helper.merge_txt_to_csv_dynamically(labels_path, output_csv_path, frame_count)
 
                 os.remove(text_filename)
                 if delete_labels is True:
