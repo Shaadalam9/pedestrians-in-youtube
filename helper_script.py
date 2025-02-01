@@ -269,13 +269,12 @@ class Youtube_Helper:
         return None  # No compatible GPU found
 
     @staticmethod
-    def compress_video(input_path, output_dir, codec="libx265", preset="medium", crf=17):
+    def compress_video(input_path, codec="libx265", preset="medium", crf=17):
         """
-        Compresses a video using the H.265 codec.
+        Compresses a video using codec=codec.
 
         Args:
             input_path (str): Path to the input video file.
-            output_dir (str): Folder for output.
             codec (str, optional): Codec to use. Use H.265 by default.
             preset (str, optional): Value for preset.
             crf (int, optional): Value for crf. 17 is supposed to keep good quality with high level of compression.
@@ -284,19 +283,16 @@ class Youtube_Helper:
             str: Path to the compressed video.
 
         Raises:
-            e: Description
+            e: error.
             FileNotFoundError: If the input video file does not exist.
             RuntimeError: If the compression process fails.
         """
         if not os.path.exists(input_path):
             raise FileNotFoundError(f"Input file not found: {input_path}")
 
-        # Ensure output directory exists
-        os.makedirs(output_dir, exist_ok=True)
-
         # Extract filename and create output path
         filename = os.path.basename(input_path)
-        output_path = os.path.join(output_dir, filename)
+        output_path = os.path.join(common.root_dir, filename)
 
         # Detect available GPU and set appropriate encoder
         codec_hw = Youtube_Helper.detect_gpu()
