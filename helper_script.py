@@ -241,7 +241,7 @@ class youtube_helper:
         video_clip.close()
 
     @staticmethod
-    def compress_video(input_path, output_dir, codec="libx265", preset="slow", crf=17):
+    def compress_video(input_path, output_dir, codec="libx265", preset="medium", crf=17):
         """
         Compresses a video using the H.265 codec.
 

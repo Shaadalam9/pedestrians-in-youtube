@@ -115,14 +115,15 @@ for index, row in mapping.iterrows():
                 # Set the base video path to the downloaded video
                 base_video_path = video_file_path
 
-                # Update the FPS information for the current video
-                if len(fps_values) <= vid_index:
-                    fps_values.extend([60] * (vid_index - len(fps_values) + 1))
-                fps_values[vid_index] = fps  # type: ignore
+                if common.get_configs("update_fps_list"):
+                    # Update the FPS information for the current video
+                    if len(fps_values) <= vid_index:
+                        fps_values.extend([60] * (vid_index - len(fps_values) + 1))
+                    fps_values[vid_index] = fps  # type: ignore
 
-                # Update the DataFrame mapping and write to CSV
-                mapping.at[index, 'fps_list'] = str(fps_values)
-                mapping.to_csv(common.get_configs("mapping"), index=False)
+                    # Update the DataFrame mapping and write to CSV
+                    mapping.at[index, 'fps_list'] = str(fps_values)
+                    mapping.to_csv(common.get_configs("mapping"), index=False)
 
                 logger.info(f"Downloaded video: {video_file_path}")
                 helper.set_video_title(video_title)
