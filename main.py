@@ -14,7 +14,6 @@ from tqdm import tqdm
 logs(show_level='info', show_color=True)
 logger = CustomLogger(__name__)  # use custom logger
 helper = Youtube_Helper()
-counter = 0
 
 # Load the config file
 mapping = pd.read_csv(common.get_configs("mapping"))
