@@ -296,6 +296,7 @@ class Youtube_Helper:
 
         # Extract filename and create output path
         filename = os.path.basename(input_path)
+        print(filename)
         output_path = os.path.join(output_dir, filename)
 
         # Detect available GPU and set appropriate encoder
