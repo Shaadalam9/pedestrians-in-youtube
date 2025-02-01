@@ -16,21 +16,24 @@ import common
 import ast
 import subprocess
 import sys
+import datetime
 
 logger = CustomLogger(__name__)  # use custom logger
 
 mapping = pd.read_csv(common.get_configs("mapping"))
 confidence = common.get_configs("confidence")
-render = common.get_configs("render")
-line_thickness = common.get_configs("line_thickness")
-show_labels = common.get_configs("show_labels")
-show_conf = common.get_configs("show_conf")
+
 display_frame_tracking = common.get_configs("display_frame_tracking")
 output_path = common.get_configs("videos")
 save_annoted_img = common.get_configs("save_annoted_img")
 delete_labels = common.get_configs("delete_labels")
 delete_frames = common.get_configs("delete_frames")
-display_frame_tracking = common.get_configs("display_frame_tracking")
+
+# Consts
+RENDER = True
+LINE_TICKNESS = 1
+SHOW_LABELS = False
+SHOW_CONF = False
 
 
 class youtube_helper:
@@ -121,8 +124,8 @@ class youtube_helper:
         tuple or None: A tuple (video_file_path, video_id, resolution, fps) if successful,
                      or None if an error occurs or if the desired resolution is not available.
         """
-        # Optionally upgrade the pytubefix package if the configuration requires it.
-        if common.get_configs("update_pytubefix"):
+        # Optionally upgrade the pytubefix package if the configuration requires it. Only run on Mondays.
+        if common.get_configs("update_pytubefix") and datetime.datetime.today().weekday() == 0:
             youtube_helper.upgrade_package("pytubefix")
 
         try:
@@ -694,8 +697,8 @@ class youtube_helper:
         model = YOLO(self.model)
         model.predict(source=os.path.join(output_path, f"{self.video_title}.mp4"),
                       save=True, conf=confidence, save_txt=True,
-                      show=render, line_width=line_thickness,
-                      show_labels=show_labels, show_conf=show_conf)
+                      show=RENDER, line_width=LINE_TICKNESS,
+                      show_labels=SHOW_LABELS, show_conf=SHOW_CONF)
 
     def tracking_mode(self, input_video_path, output_video_path, video_fps=25):
         model = YOLO(self.model)
@@ -736,9 +739,9 @@ class youtube_helper:
                 results = model.track(frame, tracker='bytetrack.yaml',
                                       persist=True, conf=confidence,
                                       save=True, save_txt=True,
-                                      line_width=line_thickness,
-                                      show_labels=show_labels,
-                                      show_conf=show_labels, show=render)
+                                      line_width=LINE_TICKNESS,
+                                      show_labels=SHOW_LABELS,
+                                      show_conf=SHOW_CONF, show=RENDER)
 
                 # Get the boxes and track IDs
                 boxes = results[0].boxes.xywh.cpu()  # type: ignore
@@ -794,7 +797,7 @@ class youtube_helper:
                     # Draw the tracking lines
                         points = np.hstack(track).astype(np.int32).reshape((-1, 1, 2))
                         cv2.polylines(annotated_frame, [points], isClosed=False, color=(230, 230, 230),
-                                      thickness=line_thickness*5)
+                                      thickness=LINE_TICKNESS*5)
 
                 except Exception:
                     pass
