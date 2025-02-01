@@ -148,12 +148,11 @@ for index, row in mapping.iterrows():
 
         for start_time, end_time, time_of_day_value in zip(start_times_list, end_times_list, time_of_day_list):
             # Construct a unique file name for the trimmed segment
-            trimmed_file_name = f'{vid}_{start_time}.csv'
-            trimmed_file_path = os.path.join(common.get_configs("data"), trimmed_file_name)
+            trimmed_file_path = os.path.join(data_folder, f'{vid}_{start_time}.csv')
 
-            # If the trimmed file already exists, skip processing for this segment
+            # If the YOLO output file already exists, skip processing for this segment
             if os.path.isfile(trimmed_file_path):
-                logger.info(f"Trimmed file already exists: {trimmed_file_path}. Skipping processing of segment.")
+                logger.info(f"YOLO output file already exists: {trimmed_file_path}. Skipping processing of segment.")
                 continue
 
             # Define a temporary path for the trimmed video segment
@@ -162,12 +161,6 @@ for index, row in mapping.iterrows():
             if start_time is None and end_time is None:
                 logger.info("No trimming required for this segment.")
             else:
-                # If the YOLO output file already exists, skip processing for this segment
-                file_output_segment = os.path.join(data_folder, f"{vid}_{start_time}.csv")
-                if os.path.exists(file_output_segment):
-                    logger.info(f"Skipped processing of segment {file_output_segment} as output file already exists.")
-                    continue
-
                 logger.info(f"Trimming in progress for segment starting at {start_time} and ending at {end_time}.")
                 # Adjust end_time if needed (e.g., to account for missing frames)
                 end_time_adj = end_time - 1
