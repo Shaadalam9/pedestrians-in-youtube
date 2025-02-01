@@ -10,6 +10,7 @@ pycountry==22.3.5
 pycountry_convert==0.7.2
 opencv-python==4.8.1.78
 torch==2.1.1
+tqdm==4.66.1
 pytube
 pytubefix
 Requests==2.32.3
