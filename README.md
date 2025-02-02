@@ -93,6 +93,11 @@ Example of YOLO running on dashcam video (original video: https://www.youtube.co
   <img src="./ReadmeFiles/ghost.gif" width="100%" />
 </a>
 
+### Snippets of videos are not analysed during the movement of camera
+<a href="https://youtu.be/3jVszt_78_k">
+  <img src="./ReadmeFiles/camera_mov.gif" width="100%" />
+</a>
+
 ## Results
 
 Countries where the study has been conducted
