@@ -169,12 +169,12 @@ for index, row in tqdm(mapping.iterrows(), total=mapping.shape[0]):
             if start_time is None and end_time is None:
                 logger.info("No trimming required for this video.")
             else:
-                logger.info(f"Trimming in progress for segment {start_time}-{end_time} s.")
+                logger.info(f"Trimming in progress for segment {start_time}-{end_time}s.")
                 # Adjust end_time if needed (e.g., to account for missing frames)
                 end_time_adj = end_time - 1
                 helper.trim_video(base_video_path, trimmed_video_path, start_time, end_time_adj)
 
-                logger.info(f"Trimming completed for segment {start_time}-{end_time} s.")
+                logger.info(f"Trimming completed for segment {start_time}-{end_time}s.")
 
             if common.get_configs("prediction_mode"):
                 helper.prediction_mode()
@@ -183,7 +183,7 @@ for index, row in tqdm(mapping.iterrows(), total=mapping.shape[0]):
             if common.get_configs("tracking_mode"):
                 if fps_values[vid_index]:
                     tracking_fps = fps_values[vid_index]
-                    logger.info(f"Started YOLO analysis for segment {start_time}-{end_time} s.")
+                    logger.info(f"Started YOLO analysis for segment {start_time}-{end_time}s.")
                     helper.tracking_mode(trimmed_video_path, trimmed_video_path, tracking_fps)
                 else:
                     logger.warning(f"FPS not found for video ID: {vid}. Skipping tracking mode.")
