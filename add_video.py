@@ -78,7 +78,7 @@ def form():
             # check for missing data
             if city == 'None' or city == 'nan':
                 city = None
-            country = request.form.get('country')
+            country = common.correct_country(request.form.get('country'))
             # check for missing data
             if country == 'None' or country == 'nan':
                 country = None
@@ -146,6 +146,10 @@ def form():
                 iso3_code = get_iso3_country_code(country)
                 country_data = get_country_data(iso3_code)
                 city_data = get_city_data(city, iso2_code)
+                if iso2_code == 'XK':
+                    country_population = 1578000
+                else:
+                    country_population = get_country_population(country_data)
                 existing_data_row = {'city': city,
                                      'country': country,
                                      'ISO_country': iso3_code,
@@ -154,7 +158,7 @@ def form():
                                      'time_of_day': [],
                                      'gdp_city_(billion_US)': 0.0,
                                      'population_city': get_city_population(city_data),
-                                     'population_country': get_country_population(country_data),
+                                     'population_country': country_population,
                                      'traffic_mortality': get_country_traffic_mortality(iso3_code),
                                      'start_time': [],
                                      'end_time': [],
@@ -172,7 +176,7 @@ def form():
             # check for missing data
             if city == 'None' or city == 'nan':
                 city = None
-            country = request.form.get('country')
+            country = common.correct_country(request.form.get('country'))
             # check for missing data
             if country == 'None' or country == 'nan':
                 country = None
@@ -396,15 +400,12 @@ def form():
 
 # Fetch ISO-3 country data
 def get_iso3_country_code(country_name):
+    if country_name == 'Kosovo':
+        return 'XKX'
     try:
-        if country_name == 'Russia':
-            country_name = 'Russian Federation'
         country = pycountry.countries.get(name=country_name)
         if country:
-            if country == 'Kosovo':
-                return 'XKX'
-            else:
-                return country.alpha_3  # ISO-3 code
+            return country.alpha_3  # ISO-3 code
         else:
             return "Country not found"
     except KeyError:
@@ -413,17 +414,12 @@ def get_iso3_country_code(country_name):
 
 # Fetch ISO-2 country data
 def get_iso2_country_code(country_name):
+    if country_name == 'Kosovo':
+        return 'XK'
     try:
-        if country_name == 'Russia':
-            country_name = 'Russian Federation'
         country = pycountry.countries.get(name=country_name)
         if country:
-            if country == 'Kosovo':
-                return 'XK'
-            elif country == 'Russia' or country == 'Russian Federation':
-                return 'RU'
-            else:
-                return country.alpha_2  # ISO-2 code
+            return country.alpha_2  # ISO-2 code
         else:
             return "Country not found"
     except KeyError:

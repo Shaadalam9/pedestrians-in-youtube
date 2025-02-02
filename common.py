@@ -119,3 +119,27 @@ def load_from_p(file, desription_data='data'):
     logger.info('Loaded ' + desription_data + ' from pickle file {}.',
                 file)
     return data
+
+
+def correct_country(country):
+    """
+    Get accurate country name.
+    """
+    if country == 'Russia':
+        return 'Russian Federation'
+    elif country == 'Syria':
+        return 'Syrian Arab Republic'
+    elif country == 'Korea' or country == 'South Korea':
+        return 'Korea, Republic of'
+    elif country == 'Taiwan':
+        return 'Taiwan, Province of China'
+    elif country == 'Turkey' or country == 'Turkiye':
+        return 'Turkey'
+    elif country == 'Vietnam':
+        return 'Viet Nam'
+    elif country == 'Moldova':
+        return 'Moldova, Republic of'
+    elif country == 'Venezuela':
+        return 'Venezuela, Bolivarian Republic of'
+    else:
+        return country

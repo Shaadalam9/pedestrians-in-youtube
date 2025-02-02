@@ -5,6 +5,7 @@ import pycountry
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 import urllib3
+import time
 
 
 # Suppress InsecureRequestWarning
@@ -23,45 +24,72 @@ session.mount('https://', HTTPAdapter(max_retries=retries))
 
 def get_city_data(city_name, country_code):
     """
-    Get economic or city-related data from the Geonames API
+    Get economic or city-related data from the Geonames API, handling pagination.
 
     :param city_name: Name of the city
     :param country_code: 2-letter ISO code of the country
-    :return: City data
+    :return: Complete city data (list of results)
     """
-    url = f"http://api.geonames.org/searchJSON?q={city_name}&country={country_code}&username={common.get_secrets('geonames_username')}"  # noqa: E501
-    response = requests.get(url)
+    base_url = "http://api.geonames.org/searchJSON"
+    username = common.get_secrets("geonames_username")  # API username
+    results = []
+    start_row = 0
+    max_rows = 100  # Fetch 100 results per request (max allowed)
+    
+    while True:
+        params = {
+            "q": city_name,
+            "country": country_code,
+            "username": username,
+            "maxRows": max_rows,
+            "startRow": start_row
+        }
+        
+        response = requests.get(base_url, params=params)
+        
+        if response.status_code != 200:
+            print(f"Error: {response.status_code} - {response.text}")
+            return None
+        
+        data = response.json()
+        
+        if "geonames" not in data or not data["geonames"]:
+            break  # No more results
+        
+        results.extend(data["geonames"])  # Append new data
+        
+        if len(data["geonames"]) < max_rows:
+            break  # No more pages
+        
+        start_row += max_rows  # Fetch the next page
+    
+        time.sleep(1)  # Avoid hitting rate limits
 
-    if response.status_code == 200:
-        return response.json()
-    else:
-        return None
+    return results
 
 
-# Fetch ISO-2 country data
-def get_iso2_country_code(country_name):
+# Fetch ISO-3 country data
+def get_iso3_country_code(country_name):
+    if country_name == 'Kosovo':
+        return 'XKX'
     try:
         country = pycountry.countries.get(name=country_name)
         if country:
-            if country == 'Kosovo':
-                return 'XK'
-            else:
-                return country.alpha_2  # ISO-2 code
+            return country.alpha_3  # ISO-3 code
         else:
             return "Country not found"
     except KeyError:
         return "Country not found"
 
 
-# Fetch ISO-3 country data
-def get_iso3_country_code(country_name):
+# Fetch ISO-2 country data
+def get_iso2_country_code(country_name):
+    if country_name == 'Kosovo':
+        return 'XK'
     try:
         country = pycountry.countries.get(name=country_name)
         if country:
-            if country == 'Kosovo':
-                return 'XKX'
-            else:
-                return country.alpha_3  # ISO-3 code
+            return country.alpha_2  # ISO-2 code
         else:
             return "Country not found"
     except KeyError:
@@ -72,8 +100,7 @@ def get_city_population(city_data):
     """
     Get economic or city-related data from the Geonames API
 
-    :param city_name: Name of the city
-    :param country_code: 2-letter ISO code of the country
+    :param city_data: city data object.
     :return: City data
     """
     if 'geonames' in city_data and len(city_data['geonames']) > 0:
@@ -111,19 +138,31 @@ def get_country_data(iso3_code):
 def fetch_population_data(city, iso2_code, iso3_code):
     city_data = get_city_data(city, iso2_code)
     country_data = get_country_data(iso3_code)
-    city_population = get_city_population(city_data)
-    country_population = get_country_population(country_data)
+    # Special cases for cities
+    if city == 'Boryspil':
+        city_population = 64117
+    elif city == 'Ibiza':
+        city_population = 48684
+    elif city == 'Luxembourg City':
+        city_population = 136208
+    else:
+        city_population = get_city_population(city_data)
+    # Special cases for countries
+    if iso2_code == 'XK':
+        country_population = 1578000
+    else:
+        country_population = get_country_population(country_data)
     return city_population, country_population
 
 
 # Iterate over rows and update population columns
 for index, row in data.iterrows():
     city = row['city']
-    country = row['country']
-    city_population, country_population = fetch_population_data(city,
-                                                                iso2_code=get_iso2_country_code(country),
-                                                                iso3_code=get_iso3_country_code(country))
-    print(city, country, city_population, country_population)
+    country = common.correct_country(row['country'])
+    iso2_code = get_iso2_country_code(country)
+    iso3_code = get_iso3_country_code(country)
+    city_population, country_population = fetch_population_data(city, iso2_code, iso3_code)
+    print(city, country, iso2_code, iso3_code, city_population, country_population)
     if city_population is not None:
         data.at[index, 'population_city'] = city_population
     if country_population is not None:
