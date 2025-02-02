@@ -5,6 +5,7 @@ import os
 import json
 import pickle
 import sys
+import pycountry
 from custom_logger import CustomLogger
 
 root_dir = os.path.dirname(__file__)
@@ -143,3 +144,31 @@ def correct_country(country):
         return 'Venezuela, Bolivarian Republic of'
     else:
         return country
+
+
+# Fetch ISO-3 country data
+def get_iso3_country_code(country_name):
+    if country_name == 'Kosovo':
+        return 'XKX'
+    try:
+        country = pycountry.countries.get(name=country_name)
+        if country:
+            return country.alpha_3  # ISO-3 code
+        else:
+            return "Country not found"
+    except KeyError:
+        return "Country not found"
+
+
+# Fetch ISO-2 country data
+def get_iso2_country_code(country_name):
+    if country_name == 'Kosovo':
+        return 'XK'
+    try:
+        country = pycountry.countries.get(name=country_name)
+        if country:
+            return country.alpha_2  # ISO-2 code
+        else:
+            return "Country not found"
+    except KeyError:
+        return "Country not found"

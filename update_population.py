@@ -1,7 +1,6 @@
 import pandas as pd
 import requests
 import common
-import pycountry
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 import urllib3
@@ -68,34 +67,6 @@ def get_city_data(city_name, country_code):
     return results
 
 
-# Fetch ISO-3 country data
-def get_iso3_country_code(country_name):
-    if country_name == 'Kosovo':
-        return 'XKX'
-    try:
-        country = pycountry.countries.get(name=country_name)
-        if country:
-            return country.alpha_3  # ISO-3 code
-        else:
-            return "Country not found"
-    except KeyError:
-        return "Country not found"
-
-
-# Fetch ISO-2 country data
-def get_iso2_country_code(country_name):
-    if country_name == 'Kosovo':
-        return 'XK'
-    try:
-        country = pycountry.countries.get(name=country_name)
-        if country:
-            return country.alpha_2  # ISO-2 code
-        else:
-            return "Country not found"
-    except KeyError:
-        return "Country not found"
-
-
 def get_city_population(city_data):
     """
     Get economic or city-related data from the Geonames API
@@ -135,7 +106,7 @@ def get_country_data(iso3_code):
         return None
 
 
-def fetch_population_data(city, iso2_code, iso3_code):
+def get_population_data(city, iso2_code, iso3_code):
     city_data = get_city_data(city, iso2_code)
     country_data = get_country_data(iso3_code)
     # Special cases for cities
@@ -155,20 +126,21 @@ def fetch_population_data(city, iso2_code, iso3_code):
     return city_population, country_population
 
 
-# Iterate over rows and update population columns
-for index, row in data.iterrows():
-    city = row['city']
-    country = common.correct_country(row['country'])
-    iso2_code = get_iso2_country_code(country)
-    iso3_code = get_iso3_country_code(country)
-    city_population, country_population = fetch_population_data(city, iso2_code, iso3_code)
-    print(city, country, iso2_code, iso3_code, city_population, country_population)
-    if city_population is not None:
-        data.at[index, 'population_city'] = city_population
-    if country_population is not None:
-        data.at[index, 'population_country'] = country_population
+if __name__ == "__main__":
+    # Iterate over rows and update population columns
+    for index, row in data.iterrows():
+        city = row['city']
+        country = common.correct_country(row['country'])
+        iso2_code = common.get_iso2_country_code(country)
+        iso3_code = common.get_iso3_country_code(country)
+        city_population, country_population = get_population_data(city, iso2_code, iso3_code)
+        print(city, country, iso2_code, iso3_code, city_population, country_population)
+        if city_population is not None:
+            data.at[index, 'population_city'] = city_population
+        if country_population is not None:
+            data.at[index, 'population_country'] = country_population
 
-# Save updated CSV
-updated_csv_file = 'mapping_updated.csv'
-data.to_csv(updated_csv_file, index=False)
-print(f"Updated data saved to {updated_csv_file}")
+    # Save updated CSV
+    updated_csv_file = 'mapping_updated.csv'
+    data.to_csv(updated_csv_file, index=False)
+    print(f"Updated data saved to {updated_csv_file}")

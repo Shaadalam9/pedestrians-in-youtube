@@ -8,7 +8,6 @@ from pytube import YouTube
 import webbrowser
 from threading import Timer
 import random
-import pycountry
 import requests
 import ast
 
@@ -142,8 +141,8 @@ def form():
                     end_time_video = end_time_list[position]
             else:
                 message = "No existing entry found. You can add new data."
-                iso2_code = get_iso2_country_code(common.correct_country(country))
-                iso3_code = get_iso3_country_code(common.correct_country(country))
+                iso2_code = common.get_iso2_country_code(common.correct_country(country))
+                iso3_code = common.get_iso3_country_code(common.correct_country(country))
                 country_data = get_country_data(iso3_code)
                 city_data = get_city_data(city, iso2_code)
                 if iso2_code == 'XK':
@@ -350,7 +349,7 @@ def form():
                         'city': city,
                         'state': state,
                         'country': country,
-                        'ISO_country': get_iso3_country_code(common.correct_country(country)),
+                        'ISO_country': common.get_iso3_country_code(common.correct_country(country)),
                         'videos': '[' + video_id + ']',
                         'time_of_day': str([[int(x) for x in time_of_day]]),  # Store as stringified list of integers
                         'start_time': str([[int(x) for x in start_time]]),    # Store as stringified list of integers
@@ -396,34 +395,6 @@ def form():
         timestamp=end_time_input, yt_title=yt_title, yt_description=yt_description, yt_upload_date=yt_upload_date,
         start_time_video=start_time_video, end_time_video=end_time_video
     )
-
-
-# Fetch ISO-3 country data
-def get_iso3_country_code(country_name):
-    if country_name == 'Kosovo':
-        return 'XKX'
-    try:
-        country = pycountry.countries.get(name=country_name)
-        if country:
-            return country.alpha_3  # ISO-3 code
-        else:
-            return "Country not found"
-    except KeyError:
-        return "Country not found"
-
-
-# Fetch ISO-2 country data
-def get_iso2_country_code(country_name):
-    if country_name == 'Kosovo':
-        return 'XK'
-    try:
-        country = pycountry.countries.get(name=country_name)
-        if country:
-            return country.alpha_2  # ISO-2 code
-        else:
-            return "Country not found"
-    except KeyError:
-        return "Country not found"
 
 
 # Fetch country data based on its ISO-3 code
