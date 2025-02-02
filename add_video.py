@@ -350,7 +350,7 @@ def form():
                         'city': city,
                         'state': state,
                         'country': country,
-                        'ISO_country': get_iso3_country_code(country),
+                        'ISO_country': get_iso3_country_code(common.correct_country(country)),
                         'videos': '[' + video_id + ']',
                         'time_of_day': str([[int(x) for x in time_of_day]]),  # Store as stringified list of integers
                         'start_time': str([[int(x) for x in start_time]]),    # Store as stringified list of integers
