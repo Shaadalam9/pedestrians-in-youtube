@@ -133,7 +133,7 @@ def correct_country(country):
         return 'Korea, Republic of'
     elif country == 'Taiwan':
         return 'Taiwan, Province of China'
-    elif country == 'Turkey' or country == 'Turkiye':
+    elif country == 'Turkiye' or country == 'Türkiye':
         return 'Turkey'
     elif country == 'Vietnam':
         return 'Viet Nam'
