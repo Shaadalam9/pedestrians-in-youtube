@@ -560,8 +560,8 @@ class Analysis():
                     'State': state,
                     'Country': countries[i],
                     'Continent': continent[i],
-                    'Latitude': lat,
-                    'Longitude': lon,
+                    'lat': lat,
+                    'lon': lon,
                     'GDP (Billion USD)': gdp_city[i],
                     'City population (thousands)': population_city[i] / 1000.0,
                     'Country population (thousands)': population_country[i] / 1000.0,
@@ -580,7 +580,7 @@ class Analysis():
             city_df = pd.DataFrame(city_coords)
             # city_df["City"] = city_df["city"]  # Format city name with "City:"
             city_trace = px.scatter_geo(
-                city_df, lat='Latitude', lon='Longitude',
+                city_df, lat='lat', lon='lon',
                 hover_data={
                     'City': True,
                     'State': True,
@@ -594,8 +594,8 @@ class Analysis():
                     'Average height (cm)': True,
                     'Gini coefficient': True,
                     'Traffic index': True,
-                    'Latitude': False,
-                    'Longitude': False  # Hide lat and lon
+                    'lat': False,
+                    'lon': False  # Hide lat and lon
                 }
             )
             # Update the city markers to be red and adjust size
