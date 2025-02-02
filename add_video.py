@@ -78,7 +78,7 @@ def form():
             # check for missing data
             if city == 'None' or city == 'nan':
                 city = None
-            country = common.correct_country(request.form.get('country'))
+            country = request.form.get('country')
             # check for missing data
             if country == 'None' or country == 'nan':
                 country = None
@@ -142,8 +142,8 @@ def form():
                     end_time_video = end_time_list[position]
             else:
                 message = "No existing entry found. You can add new data."
-                iso2_code = get_iso2_country_code(country)
-                iso3_code = get_iso3_country_code(country)
+                iso2_code = get_iso2_country_code(common.correct_country(country))
+                iso3_code = get_iso3_country_code(common.correct_country(country))
                 country_data = get_country_data(iso3_code)
                 city_data = get_city_data(city, iso2_code)
                 if iso2_code == 'XK':
@@ -176,7 +176,7 @@ def form():
             # check for missing data
             if city == 'None' or city == 'nan':
                 city = None
-            country = common.correct_country(request.form.get('country'))
+            country = request.form.get('country')
             # check for missing data
             if country == 'None' or country == 'nan':
                 country = None
