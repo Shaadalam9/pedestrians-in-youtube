@@ -19,6 +19,7 @@ from datetime import datetime
 import plotly as py
 import pycountry
 import random
+from tqdm import tqdm
 
 logs(show_level='info', show_color=True)
 logger = CustomLogger(__name__)  # use custom logger
@@ -489,7 +490,9 @@ class Analysis():
 
     @staticmethod
     def get_world_plot(df_mapping):
+        logger.info("Generating map.")
         cities = df_mapping["city"]
+        states = df_mapping["state"]
         countries = df_mapping["country"]
         gdp_city = df_mapping["gdp_city_(billion_US)"]
         population_city = df_mapping["population_city"]
@@ -498,6 +501,8 @@ class Analysis():
         continent = df_mapping["continent"]
         literacy_rate = df_mapping["literacy_rate"]
         avg_height = df_mapping["avg_height"]
+        gini = df_mapping["gini"]
+        traffic_index = df_mapping["traffic_index"]
 
         # Create the country list to highlight in the choropleth map
         countries_set = set(countries)  # Use set to avoid duplicates
@@ -542,22 +547,28 @@ class Analysis():
 
         # Process each city and its corresponding country
         city_coords = []
-        for i, city in enumerate(cities):
-            city_country = f"{city}, {countries[i]}"  # Combine city and country
+        for i, (city, state) in enumerate(tqdm(zip(cities, states), total=len(cities))):
+            if state and str(state).lower() != 'nan':
+                city_country = f"{city}, {state}, {countries[i]}"  # Combine city, state and country
+            else:
+                city_country = f"{city}, {countries[i]}"  # Combine city and country
             lat, lon = Analysis.get_coordinates(city_country, city_coordinates)  # type: ignore
             if lat and lon:
                 city_coords.append({
                     'City': city,
+                    'State': states[i],
                     'Country': countries[i],
                     'Continent': continent[i],
-                    'lat': lat,
-                    'lon': lon,
+                    'Latitude': lat,
+                    'Longitude': lon,
                     'GDP (Billion USD)': gdp_city[i],
-                    'City population (thousand)': population_city[i],
-                    'Country population (thousand)': population_country[i],
-                    'Traffic mortality rate (per 100k people)': traffic_mortality_rate[i],
+                    'City population (thousands)': population_city[i] / 1000.0,
+                    'Country population (thousands)': population_country[i] / 1000.0,
+                    'Traffic mortality rate (per 100,000)': traffic_mortality_rate[i],
                     'Literacy rate': literacy_rate[i],
-                    'Average height (cm)': avg_height[i]
+                    'Average height (cm)': avg_height[i],
+                    'Gini coefficient': gini[i],
+                    'Traffic index': traffic_index[i],
                 })
 
         # Save the updated city coordinates back to the pickle file
@@ -3890,6 +3901,7 @@ if __name__ == "__main__":
             traffic_light_counter += Analysis.count_object(dfs[key], 9)
             stop_sign_counter += Analysis.count_object(dfs[key], 11)
 
+        logger.info("Calculating aggregated values.")
         speed_values = Analysis.calculate_speed_of_crossing(df_mapping, dfs, data)
         time_values = Analysis.time_to_start_cross(df_mapping, dfs, data)
         avg_speed = Analysis.avg_speed_of_crossing(df_mapping, dfs, data)
@@ -3907,6 +3919,7 @@ if __name__ == "__main__":
         pedestrian_cross_city = Analysis.pedestrian_cross_per_city(pedestrian_crossing_count, df_mapping)
 
         # Save the results to a pickle file
+        logger.info("Saving results to a pickle file {}.", pickle_file_path)
         with open(pickle_file_path, 'wb') as file:
             pickle.dump((data, person_counter, bicycle_counter, car_counter, motorcycle_counter,
                          bus_counter, truck_counter, cellphone_counter, traffic_light_counter, stop_sign_counter,
@@ -3915,10 +3928,12 @@ if __name__ == "__main__":
                          cellphone_city, traffic_sign_city, speed_values, time_values, avg_time, avg_speed), file)
         logger.info("Analysis results saved to pickle file.")
 
+    logger.info("Detected:")
     logger.info(f"person: {person_counter} ; bicycle: {bicycle_counter} ; car: {car_counter}")
     logger.info(f"motorcycle: {motorcycle_counter} ; bus: {bus_counter} ; truck: {truck_counter}")
     logger.info(f"cellphone: {cellphone_counter}; traffic light: {traffic_light_counter}; sign: {stop_sign_counter}")
 
+    logger.info("Producing figures.")
     Analysis.get_world_plot(df_mapping)
     Analysis.speed_and_time_to_start_cross(df_mapping)
     Analysis.time_to_start_crossing_vs_literacy(df_mapping)
