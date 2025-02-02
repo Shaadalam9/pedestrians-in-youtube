@@ -45,6 +45,8 @@ docker-compose.yml
 Dockerfile
 .dockerignore
 
-
 # venv
 /yt
+
+# temp video file in root
+/*.mp4
