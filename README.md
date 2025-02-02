@@ -7,7 +7,7 @@ This study presents a comprehensive cross-cultural evaluation of pedestrian beha
 ## Citation
 If you use this work for academic work please cite the following paper:
 
-> Alam, Md. S., Martens, M. H., & Bazilinskyy, P. (2025). Understanding pedestrian behaviour in 361 cities with dashcam videos from YouTube. Under review. 
+> Alam, Md. S., Martens, M. H., & Bazilinskyy, P. (2025). Understanding global pedestrian behaviour in 361 cities with dashcam videos on YouTube. Under review. 
 
 ## Usage of the code
 The code is open-source and free to use. It is aimed for, but not limited to, academic research. We welcome forking of this repository, pull requests, and any contributions in the spirit of open science and open-source code 😍😄 For inquiries about collaboration, you may contact Md Shadab Alam (md_shadab_alam@outlook.com) or Pavlo Bazilinskyy (pavlo.bazilinskyy@gmail.com).
