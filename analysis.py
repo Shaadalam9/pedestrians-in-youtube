@@ -552,11 +552,12 @@ class Analysis():
                 city_country = f"{city}, {state}, {countries[i]}"  # Combine city, state and country
             else:
                 city_country = f"{city}, {countries[i]}"  # Combine city and country
+                state = 'N/A'
             lat, lon = Analysis.get_coordinates(city_country, city_coordinates)  # type: ignore
             if lat and lon:
                 city_coords.append({
                     'City': city,
-                    'State': states[i],
+                    'State': state,
                     'Country': countries[i],
                     'Continent': continent[i],
                     'Latitude': lat,
@@ -579,7 +580,7 @@ class Analysis():
             city_df = pd.DataFrame(city_coords)
             # city_df["City"] = city_df["city"]  # Format city name with "City:"
             city_trace = px.scatter_geo(
-                city_df, lat='lat', lon='lon',
+                city_df, lat='Latitude', lon='Longitude',
                 hover_data={
                     'City': True,
                     'State': True,
@@ -587,7 +588,7 @@ class Analysis():
                     'Continent': True,
                     'GDP (Billion USD)': True,
                     'City population (thousands)': True,
-                    'Country population (thousandы)': True,
+                    'Country population (thousands)': True,
                     'Traffic mortality rate (per 100,000)': True,
                     'Literacy rate': True,
                     'Average height (cm)': True,
