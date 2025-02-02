@@ -582,16 +582,19 @@ class Analysis():
                 city_df, lat='lat', lon='lon',
                 hover_data={
                     'City': True,
+                    'State': True,
                     'Country': True,
                     'Continent': True,
                     'GDP (Billion USD)': True,
-                    'City population (thousand)': True,
-                    'Country population (thousand)': True,
-                    'Traffic mortality rate (per 100k people)': True,
+                    'City population (thousands)': True,
+                    'Country population (thousandы)': True,
+                    'Traffic mortality rate (per 100,000)': True,
                     'Literacy rate': True,
                     'Average height (cm)': True,
-                    'lat': False,
-                    'lon': False  # Hide lat and lon
+                    'Gini coefficient': True,
+                    'Traffic index': True,
+                    'Latitude': False,
+                    'Longitude': False  # Hide lat and lon
                 }
             )
             # Update the city markers to be red and adjust size
