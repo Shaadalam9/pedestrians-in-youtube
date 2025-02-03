@@ -146,7 +146,7 @@ class Youtube_Helper:
                      or None if an error occurs or if the desired resolution is not available.
         """
         # Optionally upgrade the pytubefix package if the configuration requires it. Only run on Mondays.
-        if common.get_configs("update_pytubefix") and datetime.datetime.today().weekday() == 0 and not Youtube_Helper.has_run_today():  # noqa: E501
+        if common.get_configs("update_pytubefix") and not Youtube_Helper.has_run_today():
             Youtube_Helper.upgrade_package("pytubefix")
             Youtube_Helper.update_last_run_date()
         try:
