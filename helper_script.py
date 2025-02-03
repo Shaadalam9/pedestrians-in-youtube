@@ -39,6 +39,7 @@ LINE_TICKNESS = 1
 RENDER = False
 SHOW_LABELS = False
 SHOW_CONF = False
+PYTUBE_UPD_FILE = "last_updated_pytube.txt"
 
 
 class Youtube_Helper:
@@ -106,6 +107,21 @@ class Youtube_Helper:
         except subprocess.CalledProcessError as e:
             print(f"Failed to upgrade {package_name}: {e}")
 
+    @staticmethod
+    def has_run_today():
+        """Check if the script has already run today."""
+        if os.path.exists(PYTUBE_UPD_FILE):
+            with open(PYTUBE_UPD_FILE, "r") as f:
+                last_run_date = f.read().strip()
+                return last_run_date == str(datetime.date.today())
+        return False
+
+    @staticmethod
+    def update_last_run_date():
+        """Update the last run date to today."""
+        with open(PYTUBE_UPD_FILE, "w") as f:
+            f.write(str(datetime.date.today()))
+
     def download_video_with_resolution(self, video_id, resolutions=["720p", "480p", "360p", "144p"], output_path="."):
         """
         Downloads a YouTube video in one of the specified resolutions and returns video details.
@@ -130,7 +146,7 @@ class Youtube_Helper:
                      or None if an error occurs or if the desired resolution is not available.
         """
         # Optionally upgrade the pytubefix package if the configuration requires it. Only run on Mondays.
-        if common.get_configs("update_pytubefix") and datetime.datetime.today().weekday() == 0:
+        if common.get_configs("update_pytubefix") and datetime.datetime.today().weekday() == 0 and not Youtube_Helper.has_run_today():  # noqa: E501
             Youtube_Helper.upgrade_package("pytubefix")
 
         try:
