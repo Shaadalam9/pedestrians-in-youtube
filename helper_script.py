@@ -113,6 +113,7 @@ class Youtube_Helper:
         if os.path.exists(PYTUBE_UPD_FILE):
             with open(PYTUBE_UPD_FILE, "r") as f:
                 last_run_date = f.read().strip()
+                print(last_run_date, str(datetime.date.today()), last_run_date == str(datetime.date.today()))
                 return last_run_date == str(datetime.date.today())
         return False
 
