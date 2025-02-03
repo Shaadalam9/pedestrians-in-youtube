@@ -50,3 +50,7 @@ Dockerfile
 
 # temp video file in root
 /*.mp4
+
+# log files
+*.log
+*.out
