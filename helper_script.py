@@ -113,7 +113,6 @@ class Youtube_Helper:
         if os.path.exists(PYTUBE_UPD_FILE):
             with open(PYTUBE_UPD_FILE, "r") as f:
                 last_run_date = f.read().strip()
-                print(last_run_date, str(datetime.date.today()), last_run_date == str(datetime.date.today()))
                 return last_run_date == str(datetime.date.today())
         return False
 
@@ -149,7 +148,7 @@ class Youtube_Helper:
         # Optionally upgrade the pytubefix package if the configuration requires it. Only run on Mondays.
         if common.get_configs("update_pytubefix") and datetime.datetime.today().weekday() == 0 and not Youtube_Helper.has_run_today():  # noqa: E501
             Youtube_Helper.upgrade_package("pytubefix")
-
+            Youtube_Helper.update_last_run_date()
         try:
             # Construct the YouTube URL using the provided video ID.
             youtube_url = f'https://www.youtube.com/watch?v={video_id}'
