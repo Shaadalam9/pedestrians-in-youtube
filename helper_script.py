@@ -211,6 +211,7 @@ class Youtube_Helper:
         try:
             # Optionally upgrade pytubefix (if configured and it is Monday)
             if common.get_configs("update_pytubefix") and datetime.datetime.today().weekday() == 0:
+                Youtube_Helper.upgrade_package("pytube")
                 Youtube_Helper.upgrade_package("pytubefix")
 
             # Construct the YouTube URL.
