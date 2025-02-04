@@ -34,6 +34,7 @@ check.py
 config
 secret
 mapping_queue.csv
+last_updated_pytube.txt
 
 # Pickle files
 city_coordinates.pkl
