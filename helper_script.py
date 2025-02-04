@@ -126,7 +126,7 @@ class Youtube_Helper:
         # ----- First method: using yt_dlp -----
         try:
             # Optionally upgrade yt_dlp (if the configuration requires it and it is Monday)
-            if common.get_configs("update_pytubefix") and datetime.datetime.today().weekday() == 0:
+            if common.get_configs("update_package") and datetime.datetime.today().weekday() == 0:
                 Youtube_Helper.upgrade_package("yt_dlp")
 
             # Construct the YouTube URL.
@@ -177,7 +177,7 @@ class Youtube_Helper:
                 logger.error(f"No stream available for video {video_id} in the specified resolutions via yt_dlp.")
                 # Raise an exception to trigger the fallback method.
                 raise Exception("No stream available via yt_dlp")
-
+            po_token = common.get_secrets("po_token")
             # Set download options.
             download_opts = {
                 'format': selected_format_str,
@@ -187,8 +187,16 @@ class Youtube_Helper:
                     'key': 'FFmpegVideoConvertor',
                     'preferedformat': 'mp4'
                 }],
-                # Pass the "-an" argument to FFmpeg to strip any audio track.
-                'postprocessor_args': ['-an']
+                'postprocessor_args': ['-an'],
+                'http_headers': {
+                    'Cookie': f'pot={po_token}'
+                },
+                'extractor_args': {
+                    'youtube': {
+                        'po_token': f'web.gvs+{po_token}'
+                    }
+                },
+                'cookiesfrombrowser': ('chrome',)
             }
 
             logger.info(f"Downloading video {video_id} in resolution {selected_resolution} using yt_dlp started.")
@@ -210,7 +218,7 @@ class Youtube_Helper:
         # ----- Fallback method: using pytubefix (YouTube) -----
         try:
             # Optionally upgrade pytubefix (if configured and it is Monday)
-            if common.get_configs("update_pytubefix") and datetime.datetime.today().weekday() == 0:
+            if common.get_configs("update_package") and datetime.datetime.today().weekday() == 0:
                 Youtube_Helper.upgrade_package("pytube")
                 Youtube_Helper.upgrade_package("pytubefix")
 
@@ -218,7 +226,12 @@ class Youtube_Helper:
             youtube_url = f"https://www.youtube.com/watch?v={video_id}"
 
             # Create a YouTube object using the provided client configuration.
-            youtube_object = YouTube(youtube_url, common.get_configs('client'))
+            if common.get_configs("need_authentication"):
+                youtube_object = YouTube(youtube_url, common.get_configs('client'),
+                                         use_oauth=True, allow_oauth_cache=True)
+            else:
+                youtube_object = YouTube(youtube_url, common.get_configs('client'))
+
             selected_stream = None
             selected_resolution = None
 
