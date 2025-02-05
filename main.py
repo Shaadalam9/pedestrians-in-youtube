@@ -197,7 +197,10 @@ for index, row in tqdm(mapping.iterrows(), total=mapping.shape[0]):
                     logger.error(f"Error: {old_file_path} does not exist.")
 
                 # Move the CSV file to the desired folder
-                shutil.move(new_file_path, data_folder)
+                if os.path.exists(new_file_path):
+                    shutil.move(new_file_path, data_folder)
+                else:
+                    logger.error(f"Error: {new_file_path} does not exist.")
 
                 if delete_runs_files:
                     shutil.rmtree(os.path.join("runs", "detect"))
