@@ -23,6 +23,9 @@ from tqdm import tqdm
 import re
 import warnings
 
+# Suppress the specific FutureWarning
+warnings.filterwarnings("ignore", category=FutureWarning, module="plotly")
+
 logs(show_level='info', show_color=True)
 logger = CustomLogger(__name__)  # use custom logger
 
@@ -3886,7 +3889,8 @@ class Analysis():
     def scatter(df, x, y, color=None, symbol=None, size=None, text=None, trendline=None, hover_data=None,
                 marker_size=None, pretty_text=False, marginal_x='violin', marginal_y='violin', xaxis_title=None,
                 yaxis_title=None, xaxis_range=None, yaxis_range=None, name_file=None, save_file=False,
-                save_final=False, fig_save_width=1320, fig_save_height=680, font_family=None, font_size=None):
+                save_final=False, fig_save_width=1320, fig_save_height=680, font_family=None, font_size=None,
+                hover_name=None):
         """
         Output scatter plot of variables x and y with optional assignment of colour and size.
 
@@ -3915,6 +3919,7 @@ class Analysis():
             fig_save_height (int, optional): height of figures to be saved.
             font_family (str, optional): font family to be used across the figure. None = use config value.
             font_size (int, optional): font size to be used across the figure. None = use config value.
+            hover_name (list, optional): title on top of hover popup.
         """
         logger.info('Creating scatter plot for x={} and y={}.', x, y)
         # using size and marker_size is not supported
@@ -3968,6 +3973,7 @@ class Analysis():
                              text=text,
                              trendline=trendline,
                              hover_data=hover_data,
+                             hover_name=hover_name,
                              marginal_x=marginal_x,
                              marginal_y=marginal_y)
         # update layout
@@ -4000,7 +4006,7 @@ class Analysis():
                 name_file = 'scatter_' + x + '-' + y
             # Final adjustments and display
             fig.update_layout(margin=dict(l=80, r=100, t=150, b=180))
-            Analysis.save_plotly_figure(fig, name_file, scatter_plot_flag=True, save_final=True)
+            Analysis.save_plotly_figure(fig, name_file, scatter_plot_flag=False, save_final=True)
         # open it in localhost instead
         else:
             fig.show()
@@ -4126,7 +4132,6 @@ if __name__ == "__main__":
             city = parts[0]  # First part is always the city
             state = parts[1] if parts[1] != "unknown" else np.nan  # Second part is the state, unless it's "unknown"
             time_of_day = int(parts[2])  # Third part is the time-of-day
-            print("speed: ", city, state, country, time_of_day, value)
             if not time_of_day:  # day
                 df_mapping.loc[
                     (df_mapping["city"] == city) & 
@@ -4146,7 +4151,6 @@ if __name__ == "__main__":
             city = parts[0]  # First part is always the city
             state = parts[1] if parts[1] != "unknown" else np.nan  # Second part is the state, unless it's "unknown"
             time_of_day = int(parts[2])  # Third part is the time-of-day
-            print("time: ", city, state, country, time_of_day, value)
             if not time_of_day:  # day
                 df_mapping.loc[
                     (df_mapping["city"] == city) & 
@@ -4208,6 +4212,9 @@ if __name__ == "__main__":
     logger.info(f"cellphone: {cellphone_counter}; traffic light: {traffic_light_counter}; sign: {stop_sign_counter}")
 
     logger.info("Producing figures.")
+
+    # Set state to be NA
+    df_mapping['state'] = df_mapping['state'].fillna('NA')
     # Analysis.get_world_plot(df_mapping)
     # Analysis.speed_and_time_to_start_cross(df_mapping)
     # Analysis.time_to_start_crossing_vs_literacy(df_mapping)
@@ -4226,34 +4233,181 @@ if __name__ == "__main__":
     # Analysis.plot_speed_to_cross_by_average(df_mapping)
     # Analysis.plot_time_to_start_cross_by_average(df_mapping)
     # Analysis.correlation_matrix(df_mapping)
-    hover_data=["city", "state", "country", "speed_crossing_day", "speed_crossing_night",
-                "time_crossing_day", "time_crossing_night"]
-    Analysis.scatter(df=df_mapping,
+    hover_data = ["state", "country", "gdp_city_(billion_US)", "population_city", "population_country",
+                  "traffic_mortality", "literacy_rate", "person", "bicycle", "car", "motorcycle",
+                  "bus", "truck", "cellphone", "traffic_light", "stop_sign", "total_time", "speed_crossing",
+                  "speed_crossing_day", "speed_crossing_night", "time_crossing", "time_crossing_day", "time_crossing_night"]
+    
+    # Speed of crossing vs time to start crossing
+    df = df_mapping[df_mapping["speed_crossing"] != 0]
+    df = df[df["time_crossing"] != 0]
+    Analysis.scatter(df=df,
                      x="speed_crossing",
                      y="time_crossing",
                      color="continent",
                      xaxis_title='Pedestrian road crossing speed (in m/s)',
                      yaxis_title='Pedestrian crossing decision time (in s)',
-                     pretty_text=True,
+                     pretty_text=False,
                      save_file=True,
-                     hover_data=hover_data)
-    Analysis.scatter(df=df_mapping,
+                     hover_data=hover_data,
+                     hover_name="city")
+    # Speed of crossing during daytime vs time to start crossing during daytime
+    df = df_mapping[df_mapping["speed_crossing_day"] != 0]
+    df = df[df["time_crossing_day"] != 0]
+    Analysis.scatter(df=df,
                      x="speed_crossing_day",
                      y="time_crossing_day",
                      color="continent",
                      xaxis_title='Pedestrian road crossing speed during daytime (in m/s)',
                      yaxis_title='Pedestrian crossing decision time during daytime (in s)',
-                     pretty_text=True,
+                     pretty_text=False,
                      save_file=True,
-                     hover_data=hover_data)
-    Analysis.scatter(df=df_mapping,
+                     hover_data=hover_data,
+                     hover_name="city")
+    # Speed of crossing during night time vs time to start crossing during night time
+    df = df_mapping[df_mapping["speed_crossing_night"] != 0]
+    df = df[df["time_crossing_night"] != 0]
+    Analysis.scatter(df=df,
                      x="speed_crossing_night",
                      y="time_crossing_night",
                      color="continent",
                      xaxis_title='Pedestrian road crossing speed during night time (in m/s)',
                      yaxis_title='Pedestrian crossing decision time during night time (in s)',
-                     pretty_text=True,
+                     pretty_text=False,
                      save_file=True,
-                     hover_data=hover_data)
+                     hover_data=hover_data,
+                     hover_name="city")
+    # Speed of crossing vs population of city
+    df = df_mapping[df_mapping["speed_crossing"] != 0]
+    Analysis.scatter(df=df,
+                     x="speed_crossing",
+                     y="population_city",
+                     color="continent",
+                     xaxis_title='Pedestrian road crossing speed (in m/s)',
+                     yaxis_title='Population of city',
+                     pretty_text=False,
+                     save_file=True,
+                     hover_data=hover_data,
+                     hover_name="city")
+    # Time to start crossing vs population of city
+    df = df_mapping[df_mapping["time_crossing"] != 0]
+    Analysis.scatter(df=df,
+                     x="time_crossing",
+                     y="population_city",
+                     color="continent",
+                     xaxis_title='Pedestrian crossing decision time (in s)',
+                     yaxis_title='Population of city',
+                     pretty_text=False,
+                     save_file=True,
+                     hover_data=hover_data,
+                     hover_name="city")
+    # Speed of crossing vs population of city
+    df = df_mapping[df_mapping["speed_crossing"] != 0]
+    Analysis.scatter(df=df,
+                     x="speed_crossing",
+                     y="population_city",
+                     color="continent",
+                     xaxis_title='Pedestrian road crossing speed (in m/s)',
+                     yaxis_title='Population of city',
+                     pretty_text=False,
+                     save_file=True,
+                     hover_data=hover_data,
+                     hover_name="city")
+    # Time to start crossing vs population of city
+    df = df_mapping[df_mapping["time_crossing"] != 0]
+    Analysis.scatter(df=df,
+                     x="time_crossing",
+                     y="traffic_mortality",
+                     color="continent",
+                     xaxis_title='Pedestrian crossing decision time (in s)',
+                     yaxis_title='Traffic mortality',
+                     pretty_text=False,
+                     save_file=True,
+                     hover_data=hover_data,
+                     hover_name="city")
+    # Speed of crossing vs population of city
+    df = df_mapping[df_mapping["speed_crossing"] != 0]
+    Analysis.scatter(df=df,
+                     x="speed_crossing",
+                     y="traffic_mortality",
+                     color="continent",
+                     xaxis_title='Pedestrian road crossing speed (in m/s)',
+                     yaxis_title='Traffic mortality',
+                     pretty_text=False,
+                     save_file=True,
+                     hover_data=hover_data,
+                     hover_name="city")
+    # Time to start crossing vs population of city
+    df = df_mapping[df_mapping["time_crossing"] != 0]
+    Analysis.scatter(df=df,
+                     x="time_crossing",
+                     y="literacy_rate",
+                     color="continent",
+                     xaxis_title='Pedestrian crossing decision time (in s)',
+                     yaxis_title='Literacy rate',
+                     pretty_text=False,
+                     save_file=True,
+                     hover_data=hover_data,
+                     hover_name="city")
+    # Speed of crossing vs population of city
+    df = df_mapping[df_mapping["speed_crossing"] != 0]
+    Analysis.scatter(df=df,
+                     x="speed_crossing",
+                     y="literacy_rate",
+                     color="continent",
+                     xaxis_title='Pedestrian road crossing speed (in m/s)',
+                     yaxis_title='Literacy rate',
+                     pretty_text=False,
+                     save_file=True,
+                     hover_data=hover_data,
+                     hover_name="city")
+    # Time to start crossing vs population of city
+    df = df_mapping[df_mapping["time_crossing"] != 0]
+    Analysis.scatter(df=df,
+                     x="time_crossing",
+                     y="gini",
+                     color="continent",
+                     xaxis_title='Pedestrian crossing decision time (in s)',
+                     yaxis_title='Gini coefficient',
+                     pretty_text=False,
+                     save_file=True,
+                     hover_data=hover_data,
+                     hover_name="city")
+    # Speed of crossing vs population of city
+    df = df_mapping[df_mapping["speed_crossing"] != 0]
+    Analysis.scatter(df=df,
+                     x="speed_crossing",
+                     y="gini",
+                     color="continent",
+                     xaxis_title='Pedestrian road crossing speed (in m/s)',
+                     yaxis_title='Gini coefficient',
+                     pretty_text=False,
+                     save_file=True,
+                     hover_data=hover_data,
+                     hover_name="city")
+    # Time to start crossing vs population of city
+    df = df_mapping[df_mapping["time_crossing"] != 0]
+    Analysis.scatter(df=df,
+                     x="time_crossing",
+                     y="traffic_index",
+                     color="continent",
+                     xaxis_title='Pedestrian crossing decision time (in s)',
+                     yaxis_title='Traffic index',
+                     pretty_text=False,
+                     save_file=True,
+                     hover_data=hover_data,
+                     hover_name="city")
+    # Speed of crossing vs population of city
+    df = df_mapping[df_mapping["speed_crossing"] != 0]
+    Analysis.scatter(df=df,
+                     x="speed_crossing",
+                     y="traffic_index",
+                     color="continent",
+                     xaxis_title='Pedestrian road crossing speed (in m/s)',
+                     yaxis_title='Traffic index',
+                     pretty_text=False,
+                     save_file=True,
+                     hover_data=hover_data,
+                     hover_name="city")
 
     logger.info("Analysis completed.")
