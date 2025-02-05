@@ -191,7 +191,10 @@ for index, row in tqdm(mapping.iterrows(), total=mapping.shape[0]):
                 # Move and rename the generated CSV file from tracking mode
                 old_file_path = os.path.join("runs", "detect", f"{vid}.csv")
                 new_file_path = os.path.join("runs", "detect", f"{vid}_{start_time}.csv")
-                os.rename(old_file_path, new_file_path)
+                if os.path.exists(old_file_path):
+                    os.rename(old_file_path, new_file_path)
+                else:
+                    logger.error(f"Error: {old_file_path} does not exist.")
 
                 # Move the CSV file to the desired folder
                 shutil.move(new_file_path, data_folder)

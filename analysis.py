@@ -21,13 +21,15 @@ import pycountry
 import random
 from tqdm import tqdm
 import re
-import warnings
 
 logs(show_level='info', show_color=True)
 logger = CustomLogger(__name__)  # use custom logger
 
 # set template for plotly output
 template = common.get_configs('plotly_template')
+
+# Const
+ANALYSE = True
 
 # File to store the city coordinates
 pickle_file_coordinates = 'city_coordinates.pkl'
@@ -3876,6 +3878,7 @@ class Analysis():
                 index = videos.index(video_id)  # get the index of the video
                 if start_time in start_times[index]:  # check if start_time matches
                     # find end time that matches the start time
+                    print(end_times)
                     end_time = int(end_times[start_times[index].index(start_time)][0])
                     return end_time - start_time  # return duration of segment
     
@@ -4012,14 +4015,15 @@ class Analysis():
 if __name__ == "__main__":
     logger.info("Analysis started.")
 
-    if os.path.exists(pickle_file_path):
+    if os.path.exists(pickle_file_path) and not ANALYSE:
         # Load the data from the pickle file
         with open(pickle_file_path, 'rb') as file:
             (data, person_counter, bicycle_counter, car_counter, motorcycle_counter,
              bus_counter, truck_counter, cellphone_counter, traffic_light_counter, stop_sign_counter,
              pedestrian_cross_city, pedestrian_crossing_count, person_city, bicycle_city, car_city,
              motorcycle_city, bus_city, truck_city, cross_evnt_city, vehicle_city,
-             cellphone_city, traffic_sign_city, speed_values, time_values, avg_time, avg_speed, df_mapping) = pickle.load(file)
+             cellphone_city, traffic_sign_city, speed_values, time_values, avg_time, avg_speed,
+             df_mapping) = pickle.load(file)
 
         logger.info("Loaded analysis results from pickle file.")
     else:
@@ -4052,6 +4056,10 @@ if __name__ == "__main__":
         df_mapping['traffic_light'] = 0
         df_mapping['stop_sign'] = 0
         df_mapping['total_time'] = 0
+        df_mapping['speed_crossing_day'] = 0.0
+        df_mapping['speed_crossing_night'] = 0.0
+        df_mapping['time_crossing_day'] = 0.0
+        df_mapping['time_crossing_night'] = 0.0
         # Loop over rows of data
         for key, value in dfs.items():
             # extract information for the csv file from mapping
@@ -4115,7 +4123,44 @@ if __name__ == "__main__":
         speed_values = Analysis.calculate_speed_of_crossing(df_mapping, dfs, data)
         time_values = Analysis.time_to_start_cross(df_mapping, dfs, data)
         avg_speed = Analysis.avg_speed_of_crossing(df_mapping, dfs, data)
+        # add to mapping file
+        for key, value in avg_speed.items():
+            parts = key.split("_")
+            city = parts[0]  # First part is always the city
+            state = parts[1] if parts[1] != "unknown" else np.nan  # Second part is the state, unless it's "unknown"
+            time_of_day = int(parts[2])  # Third part is the time-of-day
+            if not time_of_day:  # day
+                df_mapping.loc[
+                    (df_mapping["city"] == city) & 
+                    ((df_mapping["state"] == state) | (pd.isna(df_mapping["state"]) & pd.isna(state))), 
+                    "speed_crossing_day"
+                ] = float(value)  # Explicitly cast speed to float
+            else:  # night
+                df_mapping.loc[
+                    (df_mapping["city"] == city) & 
+                    ((df_mapping["state"] == state) | (pd.isna(df_mapping["state"]) & pd.isna(state))), 
+                    "speed_crossing_night"
+                ] = float(value)  # Explicitly cast speed to float
+        df_mapping['speed_crossing_avg'] = 0
         avg_time = Analysis.avg_time_to_start_cross(df_mapping, dfs, data)
+        # add to mapping file
+        for key, value in avg_time.items():
+            parts = key.split("_")
+            city = parts[0]  # First part is always the city
+            state = parts[1] if parts[1] != "unknown" else np.nan  # Second part is the state, unless it's "unknown"
+            time_of_day = int(parts[2])  # Third part is the time-of-day
+            if not time_of_day:  # day
+                df_mapping.loc[
+                    (df_mapping["city"] == city) & 
+                    ((df_mapping["state"] == state) | (pd.isna(df_mapping["state"]) & pd.isna(state))), 
+                    "time_crossing_day"
+                ] = float(value)  # Explicitly cast speed to float
+            else:  # night
+                df_mapping.loc[
+                    (df_mapping["city"] == city) & 
+                    ((df_mapping["state"] == state) | (pd.isna(df_mapping["state"]) & pd.isna(state))), 
+                    "time_crossing_night"
+                ] = float(value)  # Explicitly cast speed to float
         traffic_sign_city = Analysis.traffic_signs(df_mapping, dfs)
         cellphone_city = Analysis.calculate_cell_phones(df_mapping, dfs)
         vehicle_city = Analysis.calculate_traffic(df_mapping, dfs, motorcycle=1, car=1, bus=1, truck=1)
@@ -4160,7 +4205,7 @@ if __name__ == "__main__":
     # Analysis.gmp_vs_cross_time(df_mapping)
     # Analysis.gmp_vs_speed(df_mapping)
     # Analysis.speed_vs_cross_time(df_mapping)
-    Analysis.speed_vs_cross_time_avg(df_mapping)
+    # Analysis.speed_vs_cross_time_avg(df_mapping)
     # Analysis.plot_speed_to_cross_by_alphabetical_order(df_mapping)
     # Analysis.plot_time_to_start_cross_by_alphabetical_order(df_mapping)
     # Analysis.plot_speed_to_cross_by_average(df_mapping)
