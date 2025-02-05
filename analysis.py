@@ -4209,6 +4209,10 @@ if __name__ == "__main__":
     # Analysis.plot_speed_to_cross_by_average(df_mapping)
     # Analysis.plot_time_to_start_cross_by_average(df_mapping)
     # Analysis.correlation_matrix(df_mapping)
-    Analysis.scatter(df_mapping, "speed_crossing_day", "time_crossing_day")
+    Analysis.scatter(df=df_mapping,
+                     x="speed_crossing_day",
+                     y="time_crossing_day",
+                     color="continent",
+                     hover_data=["city", "state", "country"])
 
     logger.info("Analysis completed.")
