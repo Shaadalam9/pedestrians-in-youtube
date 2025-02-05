@@ -21,6 +21,7 @@ import pycountry
 import random
 from tqdm import tqdm
 import re
+import warnings
 
 logs(show_level='info', show_color=True)
 logger = CustomLogger(__name__)  # use custom logger
@@ -29,7 +30,7 @@ logger = CustomLogger(__name__)  # use custom logger
 template = common.get_configs('plotly_template')
 
 # Const
-ANALYSE = True
+ANALYSE = False
 
 # File to store the city coordinates
 pickle_file_coordinates = 'city_coordinates.pkl'
@@ -3878,137 +3879,134 @@ class Analysis():
                 index = videos.index(video_id)  # get the index of the video
                 if start_time in start_times[index]:  # check if start_time matches
                     # find end time that matches the start time
-                    print(end_times)
-                    end_time = int(end_times[start_times[index].index(start_time)][0])
+                    index_start = start_times[index].index(start_time)
+                    end_time = end_times[index][index_start]
                     return end_time - start_time  # return duration of segment
     
         return None  # return none if no match is found
 
-    # @staticmethod
-    # def scatter(df, x, y, color=None, symbol=None, size=None, text=None, trendline=None, hover_data=None,
-    #             marker_size=None, pretty_text=False, marginal_x='violin', marginal_y='violin', xaxis_title=None,
-    #             yaxis_title=None, xaxis_range=None, yaxis_range=None, name_file=None, save_file=False,
-    #             save_final=False, fig_save_width=1320, fig_save_height=680, font_family=None, font_size=None):
-    #     """
-    #     Output scatter plot of variables x and y with optional assignment of colour and size.
+    @staticmethod
+    def scatter(df, x, y, color=None, symbol=None, size=None, text=None, trendline=None, hover_data=None,
+                marker_size=None, pretty_text=False, marginal_x='violin', marginal_y='violin', xaxis_title=None,
+                yaxis_title=None, xaxis_range=None, yaxis_range=None, name_file=None, save_file=False,
+                save_final=False, fig_save_width=1320, fig_save_height=680, font_family=None, font_size=None):
+        """
+        Output scatter plot of variables x and y with optional assignment of colour and size.
 
-    #     Args:
-    #         df (dataframe): dataframe with data from heroku.
-    #         x (str): dataframe column to plot on x axis.
-    #         y (str): dataframe column to plot on y axis.
-    #         color (str, optional): dataframe column to assign colour of points.
-    #         symbol (str, optional): dataframe column to assign symbol of points.
-    #         size (str, optional): dataframe column to assign doze of points.
-    #         text (str, optional): dataframe column to assign text labels.
-    #         trendline (str, optional): trendline. Can be 'ols', 'lowess'
-    #         hover_data (list, optional): dataframe columns to show on hover.
-    #         marker_size (int, optional): size of marker. Should not be used together with size argument.
-    #         pretty_text (bool, optional): prettify ticks by replacing _ with spaces and capitalising each value.
-    #         marginal_x (str, optional): type of marginal on x axis. Can be 'histogram', 'rug', 'box', or 'violin'.
-    #         marginal_y (str, optional): type of marginal on y axis. Can be 'histogram', 'rug', 'box', or 'violin'.
-    #         xaxis_title (str, optional): title for x axis.
-    #         yaxis_title (str, optional): title for y axis.
-    #         xaxis_range (list, optional): range of x axis in format [min, max].
-    #         yaxis_range (list, optional): range of y axis in format [min, max].
-    #         name_file (str, optional): name of file to save.
-    #         save_file (bool, optional): flag for saving an html file with plot.
-    #         save_final (bool, optional): flag for saving an a final figure to /figures.
-    #         fig_save_width (int, optional): width of figures to be saved.
-    #         fig_save_height (int, optional): height of figures to be saved.
-    #         font_family (str, optional): font family to be used across the figure. None = use config value.
-    #         font_size (int, optional): font size to be used across the figure. None = use config value.
-    #     """
-    #     logger.info('Creating scatter plot for x={} and y={}.', x, y)
-    #     # using size and marker_size is not supported
-    #     if marker_size and size:
-    #         logger.error('Arguments marker_size and size cannot be used together.')
-    #         return -1
-    #     # using marker_size with histogram marginal(s) is not supported
-    #     if (marker_size and (marginal_x == 'histogram' or marginal_y == 'histogram')):
-    #         logger.error('Argument marker_size cannot be used together with histogram marginal(s).')
-    #         return -1
-    #     # prettify text
-    #     if pretty_text:
-    #         if isinstance(df.iloc[0][x], str):  # check if string
-    #             # replace underscores with spaces
-    #             df[x] = df[x].str.replace('_', ' ')
-    #             # capitalise
-    #             df[x] = df[x].str.capitalize()
-    #         if isinstance(df.iloc[0][y], str):  # check if string
-    #             # replace underscores with spaces
-    #             df[y] = df[y].str.replace('_', ' ')
-    #             # capitalise
-    #             df[y] = df[y].str.capitalize()
-    #         if color and isinstance(df.iloc[0][color], str):  # check if string
-    #             # replace underscores with spaces
-    #             df[color] = df[color].str.replace('_', ' ')
-    #             # capitalise
-    #             df[color] = df[color].str.capitalize()
-    #         if size and isinstance(df.iloc[0][size], str):  # check if string
-    #             # replace underscores with spaces
-    #             df[size] = df[size].str.replace('_', ' ')
-    #             # capitalise
-    #             df[size] = df[size].str.capitalize()
-    #         try:
-    #             # check if string
-    #             if text and isinstance(df.iloc[0][text], str):
-    #                 # replace underscores with spaces
-    #                 df[text] = df[text].str.replace('_', ' ')
-    #                 # capitalise
-    #                 df[text] = df[text].str.capitalize()
-    #         except ValueError as e:
-    #             logger.debug('Tried to prettify {} with exception {}.', text, e)
-    #     # scatter plot with histograms
-    #     with warnings.catch_warnings():
-    #         warnings.simplefilter('ignore', category=RuntimeWarning)
-    #         fig = px.scatter(df,
-    #                          x=x,
-    #                          y=y,
-    #                          color=color,
-    #                          symbol=symbol,
-    #                          size=size,
-    #                          text=text,
-    #                          trendline=trendline,
-    #                          hover_data=hover_data,
-    #                          marginal_x=marginal_x,
-    #                          marginal_y=marginal_y)
-    #     # update layout
-    #     fig.update_layout(template=self.template,
-    #                       xaxis_title=xaxis_title,
-    #                       yaxis_title=yaxis_title,
-    #                       xaxis_range=xaxis_range,
-    #                       yaxis_range=yaxis_range)
-    #     # change marker size
-    #     if marker_size:
-    #         fig.update_traces(marker=dict(size=marker_size))
-    #     # update font family
-    #     if font_family:
-    #         # use given value
-    #         fig.update_layout(font=dict(family=font_family))
-    #     else:
-    #         # use value from config file
-    #         fig.update_layout(font=dict(family=common.get_configs('font_family')))
-    #     # update font size
-    #     if font_size:
-    #         # use given value
-    #         fig.update_layout(font=dict(size=font_size))
-    #     else:
-    #         # use value from config file
-    #         fig.update_layout(font=dict(size=common.get_configs('font_size')))
-    #     # save file to local output folder
-    #     if save_file:
-    #         # build filename
-    #         if not name_file:
-    #             name_file = 'scatter_' + x + '-' + y
-    #         self.save_plotly(fig=fig,
-    #                          name=name_file,
-    #                          remove_margins=True,
-    #                          width=fig_save_width,
-    #                          height=fig_save_height,
-    #                          save_final=save_final)  # also save as "final" figure
-    #     # open it in localhost instead
-    #     else:
-    #         fig.show()
+        Args:
+            df (dataframe): dataframe with data from heroku.
+            x (str): dataframe column to plot on x axis.
+            y (str): dataframe column to plot on y axis.
+            color (str, optional): dataframe column to assign colour of points.
+            symbol (str, optional): dataframe column to assign symbol of points.
+            size (str, optional): dataframe column to assign doze of points.
+            text (str, optional): dataframe column to assign text labels.
+            trendline (str, optional): trendline. Can be 'ols', 'lowess'
+            hover_data (list, optional): dataframe columns to show on hover.
+            marker_size (int, optional): size of marker. Should not be used together with size argument.
+            pretty_text (bool, optional): prettify ticks by replacing _ with spaces and capitalising each value.
+            marginal_x (str, optional): type of marginal on x axis. Can be 'histogram', 'rug', 'box', or 'violin'.
+            marginal_y (str, optional): type of marginal on y axis. Can be 'histogram', 'rug', 'box', or 'violin'.
+            xaxis_title (str, optional): title for x axis.
+            yaxis_title (str, optional): title for y axis.
+            xaxis_range (list, optional): range of x axis in format [min, max].
+            yaxis_range (list, optional): range of y axis in format [min, max].
+            name_file (str, optional): name of file to save.
+            save_file (bool, optional): flag for saving an html file with plot.
+            save_final (bool, optional): flag for saving an a final figure to /figures.
+            fig_save_width (int, optional): width of figures to be saved.
+            fig_save_height (int, optional): height of figures to be saved.
+            font_family (str, optional): font family to be used across the figure. None = use config value.
+            font_size (int, optional): font size to be used across the figure. None = use config value.
+        """
+        logger.info('Creating scatter plot for x={} and y={}.', x, y)
+        # using size and marker_size is not supported
+        if marker_size and size:
+            logger.error('Arguments marker_size and size cannot be used together.')
+            return -1
+        # using marker_size with histogram marginal(s) is not supported
+        if (marker_size and (marginal_x == 'histogram' or marginal_y == 'histogram')):
+            logger.error('Argument marker_size cannot be used together with histogram marginal(s).')
+            return -1
+        # prettify text
+        if pretty_text:
+            if isinstance(df.iloc[0][x], str):  # check if string
+                # replace underscores with spaces
+                df[x] = df[x].str.replace('_', ' ')
+                # capitalise
+                df[x] = df[x].str.capitalize()
+            if isinstance(df.iloc[0][y], str):  # check if string
+                # replace underscores with spaces
+                df[y] = df[y].str.replace('_', ' ')
+                # capitalise
+                df[y] = df[y].str.capitalize()
+            if color and isinstance(df.iloc[0][color], str):  # check if string
+                # replace underscores with spaces
+                df[color] = df[color].str.replace('_', ' ')
+                # capitalise
+                df[color] = df[color].str.capitalize()
+            if size and isinstance(df.iloc[0][size], str):  # check if string
+                # replace underscores with spaces
+                df[size] = df[size].str.replace('_', ' ')
+                # capitalise
+                df[size] = df[size].str.capitalize()
+            try:
+                # check if string
+                if text and isinstance(df.iloc[0][text], str):
+                    # replace underscores with spaces
+                    df[text] = df[text].str.replace('_', ' ')
+                    # capitalise
+                    df[text] = df[text].str.capitalize()
+            except ValueError as e:
+                logger.debug('Tried to prettify {} with exception {}.', text, e)
+        # scatter plot with histograms
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', category=RuntimeWarning)
+            fig = px.scatter(df,
+                             x=x,
+                             y=y,
+                             color=color,
+                             symbol=symbol,
+                             size=size,
+                             text=text,
+                             trendline=trendline,
+                             hover_data=hover_data,
+                             marginal_x=marginal_x,
+                             marginal_y=marginal_y)
+        # update layout
+        fig.update_layout(template=common.get_configs('plotly_template'),
+                          xaxis_title=xaxis_title,
+                          yaxis_title=yaxis_title,
+                          xaxis_range=xaxis_range,
+                          yaxis_range=yaxis_range)
+        # change marker size
+        if marker_size:
+            fig.update_traces(marker=dict(size=marker_size))
+        # update font family
+        if font_family:
+            # use given value
+            fig.update_layout(font=dict(family=font_family))
+        else:
+            # use value from config file
+            fig.update_layout(font=dict(family=common.get_configs('font_family')))
+        # update font size
+        if font_size:
+            # use given value
+            fig.update_layout(font=dict(size=font_size))
+        else:
+            # use value from config file
+            fig.update_layout(font=dict(size=common.get_configs('font_size')))
+        # save file to local output folder
+        if save_file:
+            # build filename
+            if not name_file:
+                name_file = 'scatter_' + x + '-' + y
+            # Final adjustments and display
+            fig.update_layout(margin=dict(l=80, r=100, t=150, b=180))
+            Analysis.save_plotly_figure(fig, name_file, width=2400, height=3200, scale=3, save_final=True)
+        # open it in localhost instead
+        else:
+            fig.show()
 
 
 # Execute analysis
@@ -4211,5 +4209,6 @@ if __name__ == "__main__":
     # Analysis.plot_speed_to_cross_by_average(df_mapping)
     # Analysis.plot_time_to_start_cross_by_average(df_mapping)
     # Analysis.correlation_matrix(df_mapping)
+    Analysis.scatter(df_mapping, "speed_crossing_day", "time_crossing_day")
 
     logger.info("Analysis completed.")
