@@ -56,6 +56,7 @@ python3 analysis.py
 - **`mapping`**: CSV file that contains mapping data for the cities referenced in the data.
 - **`prediction_mode`**: Configures YOLO for object detection.
 - **`tracking_mode`**: Configures YOLO for object tracking.
+- **`always_analyse`**: Always conduct analysis even when pickle files are present (good for testing).
 - **`display_frame_tracking`**: Displays the frame tracking during analysis.
 - **`save_annotated_img`**: Saves the annotated frames produced by YOLO.
 - **`delete_labels`**: Deletes label files from YOLO output.

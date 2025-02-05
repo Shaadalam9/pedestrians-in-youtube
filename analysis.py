@@ -29,9 +29,6 @@ logger = CustomLogger(__name__)  # use custom logger
 # set template for plotly output
 template = common.get_configs('plotly_template')
 
-# Const
-ANALYSE = False
-
 # File to store the city coordinates
 pickle_file_coordinates = 'city_coordinates.pkl'
 pickle_file_path = 'analysis_results.pkl'
@@ -4003,7 +4000,7 @@ class Analysis():
                 name_file = 'scatter_' + x + '-' + y
             # Final adjustments and display
             fig.update_layout(margin=dict(l=80, r=100, t=150, b=180))
-            Analysis.save_plotly_figure(fig, name_file, width=2400, height=3200, scale=3, save_final=True)
+            Analysis.save_plotly_figure(fig, name_file, scatter_plot_flag=True, save_final=True)
         # open it in localhost instead
         else:
             fig.show()
@@ -4013,7 +4010,7 @@ class Analysis():
 if __name__ == "__main__":
     logger.info("Analysis started.")
 
-    if os.path.exists(pickle_file_path) and not ANALYSE:
+    if os.path.exists(pickle_file_path) and not common.get_configs('always_analyse'):
         # Load the data from the pickle file
         with open(pickle_file_path, 'rb') as file:
             (data, person_counter, bicycle_counter, car_counter, motorcycle_counter,
@@ -4054,8 +4051,10 @@ if __name__ == "__main__":
         df_mapping['traffic_light'] = 0
         df_mapping['stop_sign'] = 0
         df_mapping['total_time'] = 0
+        df_mapping['speed_crossing'] = 0.0
         df_mapping['speed_crossing_day'] = 0.0
         df_mapping['speed_crossing_night'] = 0.0
+        df_mapping['time_crossing'] = 0.0
         df_mapping['time_crossing_day'] = 0.0
         df_mapping['time_crossing_night'] = 0.0
         # Loop over rows of data
@@ -4127,6 +4126,7 @@ if __name__ == "__main__":
             city = parts[0]  # First part is always the city
             state = parts[1] if parts[1] != "unknown" else np.nan  # Second part is the state, unless it's "unknown"
             time_of_day = int(parts[2])  # Third part is the time-of-day
+            print("speed: ", city, state, country, time_of_day, value)
             if not time_of_day:  # day
                 df_mapping.loc[
                     (df_mapping["city"] == city) & 
@@ -4139,7 +4139,6 @@ if __name__ == "__main__":
                     ((df_mapping["state"] == state) | (pd.isna(df_mapping["state"]) & pd.isna(state))), 
                     "speed_crossing_night"
                 ] = float(value)  # Explicitly cast speed to float
-        df_mapping['speed_crossing_avg'] = 0
         avg_time = Analysis.avg_time_to_start_cross(df_mapping, dfs, data)
         # add to mapping file
         for key, value in avg_time.items():
@@ -4147,6 +4146,7 @@ if __name__ == "__main__":
             city = parts[0]  # First part is always the city
             state = parts[1] if parts[1] != "unknown" else np.nan  # Second part is the state, unless it's "unknown"
             time_of_day = int(parts[2])  # Third part is the time-of-day
+            print("time: ", city, state, country, time_of_day, value)
             if not time_of_day:  # day
                 df_mapping.loc[
                     (df_mapping["city"] == city) & 
@@ -4159,6 +4159,23 @@ if __name__ == "__main__":
                     ((df_mapping["state"] == state) | (pd.isna(df_mapping["state"]) & pd.isna(state))), 
                     "time_crossing_night"
                 ] = float(value)  # Explicitly cast speed to float
+        # calculate average values
+        df_mapping["speed_crossing"] = np.where(
+            (df_mapping["speed_crossing_day"] > 0) & (df_mapping["speed_crossing_night"] > 0),  
+            df_mapping[["speed_crossing_day", "speed_crossing_night"]].mean(axis=1),  
+            np.where(
+                df_mapping["speed_crossing_day"] > 0, df_mapping["speed_crossing_day"],  
+                np.where(df_mapping["speed_crossing_night"] > 0, df_mapping["speed_crossing_night"], np.nan)
+            )
+        )
+        df_mapping["time_crossing"] = np.where(
+            (df_mapping["time_crossing_day"] > 0) & (df_mapping["time_crossing_night"] > 0),  
+            df_mapping[["time_crossing_day", "time_crossing_night"]].mean(axis=1),  
+            np.where(
+                df_mapping["time_crossing_day"] > 0, df_mapping["time_crossing_day"],  
+                np.where(df_mapping["time_crossing_night"] > 0, df_mapping["time_crossing_night"], np.nan)
+            )
+        )
         traffic_sign_city = Analysis.traffic_signs(df_mapping, dfs)
         cellphone_city = Analysis.calculate_cell_phones(df_mapping, dfs)
         vehicle_city = Analysis.calculate_traffic(df_mapping, dfs, motorcycle=1, car=1, bus=1, truck=1)
@@ -4181,7 +4198,7 @@ if __name__ == "__main__":
                          cellphone_city, traffic_sign_city, speed_values, time_values, avg_time, avg_speed,
                          df_mapping), file)
         logger.info("Analysis results saved to pickle file.")
-
+    
     # save updated mapping file in output
     df_mapping.to_csv(os.path.join(common.output_dir, "mapping_updated.csv"))
 
@@ -4209,10 +4226,34 @@ if __name__ == "__main__":
     # Analysis.plot_speed_to_cross_by_average(df_mapping)
     # Analysis.plot_time_to_start_cross_by_average(df_mapping)
     # Analysis.correlation_matrix(df_mapping)
+    hover_data=["city", "state", "country", "speed_crossing_day", "speed_crossing_night",
+                "time_crossing_day", "time_crossing_night"]
+    Analysis.scatter(df=df_mapping,
+                     x="speed_crossing",
+                     y="time_crossing",
+                     color="continent",
+                     xaxis_title='Pedestrian road crossing speed (in m/s)',
+                     yaxis_title='Pedestrian crossing decision time (in s)',
+                     pretty_text=True,
+                     save_file=True,
+                     hover_data=hover_data)
     Analysis.scatter(df=df_mapping,
                      x="speed_crossing_day",
                      y="time_crossing_day",
                      color="continent",
-                     hover_data=["city", "state", "country"])
+                     xaxis_title='Pedestrian road crossing speed during daytime (in m/s)',
+                     yaxis_title='Pedestrian crossing decision time during daytime (in s)',
+                     pretty_text=True,
+                     save_file=True,
+                     hover_data=hover_data)
+    Analysis.scatter(df=df_mapping,
+                     x="speed_crossing_night",
+                     y="time_crossing_night",
+                     color="continent",
+                     xaxis_title='Pedestrian road crossing speed during night time (in m/s)',
+                     yaxis_title='Pedestrian crossing decision time during night time (in s)',
+                     pretty_text=True,
+                     save_file=True,
+                     hover_data=hover_data)
 
     logger.info("Analysis completed.")
