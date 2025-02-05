@@ -20,6 +20,7 @@ import plotly as py
 import pycountry
 import random
 from tqdm import tqdm
+import re
 
 logs(show_level='info', show_color=True)
 logger = CustomLogger(__name__)  # use custom logger
@@ -2071,8 +2072,8 @@ class Analysis():
         # Plot the scatter diagram
         Analysis.plot_scatter_diag(x=time_cal, y=y_axis, size=[0.01]*len(y_axis), color=continents, symbol=conditions,
                                    city=cities, plot_name="speed_vs_time_avg",
-                                   x_label="Speed of crossing (in m/s)",
-                                   y_label="Time taken for starting to crossing the road (in s)",
+                                   x_label="Pedestrian road crossing speed (in m/s)",
+                                   y_label="Pedestrian crossing decision time (in s)",
                                    legend_x=0.83, legend_y=0.96, need_annotations=True)
 
     @staticmethod
@@ -3849,26 +3850,40 @@ class Analysis():
         except AttributeError:
             return None
 
+    @staticmethod
+    def find_city_id(df, video_id, start_time):
+        for _, row in df.iterrows():
+            videos = re.findall(r"[\w-]+", row["videos"])  # convert to list
+            start_times = ast.literal_eval(row["start_time"])  # convert to list
+            
+            if video_id in videos:
+                index = videos.index(video_id)  # get the index of the video
+                if start_time in start_times[index]:  # check if start_time matches
+                    return row["id"]  # return the matching city
+    
+        return None  # return none if no match is found
+
+    @staticmethod
+    def get_duration_segment(df, video_id, start_time):
+        """Get duration of segment."""
+        for _, row in df.iterrows():
+            videos = re.findall(r"[\w-]+", row["videos"])  # convert to list
+            start_times = ast.literal_eval(row["start_time"])  # convert to list
+            end_times = ast.literal_eval(row["end_time"])  # convert to list
+            
+            if video_id in videos:
+                index = videos.index(video_id)  # get the index of the video
+                if start_time in start_times[index]:  # check if start_time matches
+                    # find end time that matches the start time
+                    end_time = int(end_times[start_times[index].index(start_time)])
+                    return end_time - start_time  # return duration of segment
+    
+        return None  # return none if no match is found
+
 
 # Execute analysis
 if __name__ == "__main__":
     logger.info("Analysis started.")
-
-    # Stores the mapping file
-    df_mapping = pd.read_csv("mapping.csv")
-
-    pedestrian_crossing_count, data = {}, {}
-    person_counter, bicycle_counter, car_counter, motorcycle_counter = 0, 0, 0, 0
-    bus_counter, truck_counter, cellphone_counter, traffic_light_counter, stop_sign_counter = 0, 0, 0, 0, 0
-
-    total_duration = Analysis.calculate_total_seconds(df_mapping)
-    logger.info(f"Duration of videos in seconds: {total_duration}, in minutes: {total_duration/60:.2f}, in " +
-                f"hours: {total_duration/60/60:.2f}")
-    logger.info("Total number of videos: {}", Analysis.calculate_total_videos(df_mapping))
-    country, number = Analysis.get_unique_values(df_mapping, "country")
-    logger.info("Total number of countries: {}", number)
-    city, number = Analysis.get_unique_values(df_mapping, "city")
-    logger.info("Total number of cities: {}", number)
 
     if os.path.exists(pickle_file_path):
         # Load the data from the pickle file
@@ -3877,15 +3892,48 @@ if __name__ == "__main__":
              bus_counter, truck_counter, cellphone_counter, traffic_light_counter, stop_sign_counter,
              pedestrian_cross_city, pedestrian_crossing_count, person_city, bicycle_city, car_city,
              motorcycle_city, bus_city, truck_city, cross_evnt_city, vehicle_city,
-             cellphone_city, traffic_sign_city, speed_values, time_values, avg_time, avg_speed) = pickle.load(file)
+             cellphone_city, traffic_sign_city, speed_values, time_values, avg_time, avg_speed, df_mapping) = pickle.load(file)
 
         logger.info("Loaded analysis results from pickle file.")
     else:
+        # Stores the mapping file
+        df_mapping = pd.read_csv("mapping.csv")
+
+        pedestrian_crossing_count, data = {}, {}
+        person_counter, bicycle_counter, car_counter, motorcycle_counter = 0, 0, 0, 0
+        bus_counter, truck_counter, cellphone_counter, traffic_light_counter, stop_sign_counter = 0, 0, 0, 0, 0
+
+        total_duration = Analysis.calculate_total_seconds(df_mapping)
+        logger.info(f"Duration of videos in seconds: {total_duration}, in minutes: {total_duration/60:.2f}, in " +
+                    f"hours: {total_duration/60/60:.2f}")
+        logger.info("Total number of videos: {}", Analysis.calculate_total_videos(df_mapping))
+        country, number = Analysis.get_unique_values(df_mapping, "country")
+        logger.info("Total number of countries: {}", number)
+        city, number = Analysis.get_unique_values(df_mapping, "city")
+        logger.info("Total number of cities: {}", number)
+
         # Stores the content of the csv file in form of {name_time: content}
         dfs = Analysis.read_csv_files(common.get_configs('data'))
+        # add information for each city to then be appended to mapping
+        df_mapping['person'] = 0
+        df_mapping['bicycle'] = 0
+        df_mapping['car'] = 0
+        df_mapping['motorcycle'] = 0
+        df_mapping['bus'] = 0
+        df_mapping['truck'] = 0
+        df_mapping['cellphone'] = 0
+        df_mapping['traffic_light'] = 0
+        df_mapping['stop_sign'] = 0
+        df_mapping['total_time'] = 0
         # Loop over rows of data
         for key, value in dfs.items():
-            logger.info("Analysing data from {}.", key)
+            # extract information for the csv file from mapping
+            video_id, start_index = key.rsplit("_", 1)  # split to extract id and index
+            video_city_id = Analysis.find_city_id(df_mapping, video_id, int(start_index))
+            video_city = df_mapping.loc[df_mapping["id"] == video_city_id, "city"].values[0]
+            video_state = df_mapping.loc[df_mapping["id"] == video_city_id, "state"].values[0]
+            video_country = df_mapping.loc[df_mapping["id"] == video_city_id, "country"].values[0]
+            logger.info("Analysing data from {} from {}, {}, {}.", key, video_city, video_state, video_country)
 
             # Get the number of number and unique id of the object crossing the road
             count, ids = Analysis.pedestrian_crossing(dfs[key], 0.45, 0.55, 0)
@@ -3897,16 +3945,46 @@ if __name__ == "__main__":
             data[key] = Analysis.time_to_cross(dfs[key], pedestrian_crossing_count[key]["ids"], key)
 
             # Calculate the total number of different objects detected
-            person_counter += Analysis.count_object(dfs[key], 0)
-            bicycle_counter += Analysis.count_object(dfs[key], 1)
-            car_counter += Analysis.count_object(dfs[key], 2)
-            motorcycle_counter += Analysis.count_object(dfs[key], 3)
-            bus_counter += Analysis.count_object(dfs[key], 5)
-            truck_counter += Analysis.count_object(dfs[key], 7)
-            cellphone_counter += Analysis.count_object(dfs[key], 67)
-            traffic_light_counter += Analysis.count_object(dfs[key], 9)
-            stop_sign_counter += Analysis.count_object(dfs[key], 11)
+            person_video = Analysis.count_object(dfs[key], 0)
+            person_counter += person_video
+            df_mapping.loc[df_mapping["id"] == video_city_id, "person"] += person_video
+            
+            bicycle_video = Analysis.count_object(dfs[key], 1)
+            bicycle_counter += bicycle_video
+            df_mapping.loc[df_mapping["id"] == video_city_id, "bicycle"] += bicycle_video
+            
+            car_video = Analysis.count_object(dfs[key], 2)
+            car_counter += car_video
+            df_mapping.loc[df_mapping["id"] == video_city_id, "car"] += car_video
 
+            motorcycle_video = Analysis.count_object(dfs[key], 3)
+            motorcycle_counter += motorcycle_video
+            df_mapping.loc[df_mapping["id"] == video_city_id, "motorcycle"] += motorcycle_video
+
+            bus_video = Analysis.count_object(dfs[key], 5)
+            bus_counter += bus_video
+            df_mapping.loc[df_mapping["id"] == video_city_id, "bus"] += bus_video
+
+            truck_video = Analysis.count_object(dfs[key], 7)
+            truck_counter += truck_video
+            df_mapping.loc[df_mapping["id"] == video_city_id, "truck"] += truck_video
+
+            cellphone_video = Analysis.count_object(dfs[key], 67)
+            cellphone_counter += cellphone_video
+            df_mapping.loc[df_mapping["id"] == video_city_id, "cellphone"] += cellphone_video
+
+            traffic_light_video = Analysis.count_object(dfs[key], 9)
+            traffic_light_counter += traffic_light_video
+            df_mapping.loc[df_mapping["id"] == video_city_id, "traffic_light"] += traffic_light_video
+
+            stop_sign_video = Analysis.count_object(dfs[key], 11)
+            stop_sign_counter += stop_sign_video
+            df_mapping.loc[df_mapping["id"] == video_city_id, "stop_sign"] += stop_sign_video
+
+            # add duration of segment
+            time_video = Analysis.get_duration_segment(df_mapping, video_id, int(start_index))
+            print(time_video)
+            df_mapping.loc[df_mapping["id"] == video_city_id, "total_time"] += time_video
         logger.info("Calculating aggregated values.")
         speed_values = Analysis.calculate_speed_of_crossing(df_mapping, dfs, data)
         time_values = Analysis.time_to_start_cross(df_mapping, dfs, data)
@@ -3931,8 +4009,12 @@ if __name__ == "__main__":
                          bus_counter, truck_counter, cellphone_counter, traffic_light_counter, stop_sign_counter,
                          pedestrian_cross_city, pedestrian_crossing_count, person_city, bicycle_city, car_city,
                          motorcycle_city, bus_city, truck_city, cross_evnt_city, vehicle_city,
-                         cellphone_city, traffic_sign_city, speed_values, time_values, avg_time, avg_speed), file)
+                         cellphone_city, traffic_sign_city, speed_values, time_values, avg_time, avg_speed,
+                         df_mapping), file)
         logger.info("Analysis results saved to pickle file.")
+
+    # save updated mapping file in output
+    df_mapping.to_csv(os.path.join(common.output_dir, "mapping_updated.csv"))
 
     logger.info("Detected:")
     logger.info(f"person: {person_counter} ; bicycle: {bicycle_counter} ; car: {car_counter}")
@@ -3940,23 +4022,23 @@ if __name__ == "__main__":
     logger.info(f"cellphone: {cellphone_counter}; traffic light: {traffic_light_counter}; sign: {stop_sign_counter}")
 
     logger.info("Producing figures.")
-    Analysis.get_world_plot(df_mapping)
-    Analysis.speed_and_time_to_start_cross(df_mapping)
-    Analysis.time_to_start_crossing_vs_literacy(df_mapping)
-    Analysis.time_to_start_crossing_vs_traffic_mortality(df_mapping)
-    Analysis.traffic_safety_vs_literacy(df_mapping)
-    Analysis.plot_cell_phone_vs_traffic_mortality(df_mapping)
-    Analysis.vehicle_vs_cross_time(df_mapping)
-    Analysis.traffic_mortality_vs_crossing_event_wt_traffic_light(df_mapping)
-    Analysis.plot_traffic_safety_vs_traffic_mortality(df_mapping)
-    Analysis.gmp_vs_cross_time(df_mapping)
-    Analysis.gmp_vs_speed(df_mapping)
-    Analysis.speed_vs_cross_time(df_mapping)
+    # Analysis.get_world_plot(df_mapping)
+    # Analysis.speed_and_time_to_start_cross(df_mapping)
+    # Analysis.time_to_start_crossing_vs_literacy(df_mapping)
+    # Analysis.time_to_start_crossing_vs_traffic_mortality(df_mapping)
+    # Analysis.traffic_safety_vs_literacy(df_mapping)
+    # Analysis.plot_cell_phone_vs_traffic_mortality(df_mapping)
+    # Analysis.vehicle_vs_cross_time(df_mapping)
+    # Analysis.traffic_mortality_vs_crossing_event_wt_traffic_light(df_mapping)
+    # Analysis.plot_traffic_safety_vs_traffic_mortality(df_mapping)
+    # Analysis.gmp_vs_cross_time(df_mapping)
+    # Analysis.gmp_vs_speed(df_mapping)
+    # Analysis.speed_vs_cross_time(df_mapping)
     Analysis.speed_vs_cross_time_avg(df_mapping)
-    Analysis.plot_speed_to_cross_by_alphabetical_order(df_mapping)
-    Analysis.plot_time_to_start_cross_by_alphabetical_order(df_mapping)
-    Analysis.plot_speed_to_cross_by_average(df_mapping)
-    Analysis.plot_time_to_start_cross_by_average(df_mapping)
-    Analysis.correlation_matrix(df_mapping)
+    # Analysis.plot_speed_to_cross_by_alphabetical_order(df_mapping)
+    # Analysis.plot_time_to_start_cross_by_alphabetical_order(df_mapping)
+    # Analysis.plot_speed_to_cross_by_average(df_mapping)
+    # Analysis.plot_time_to_start_cross_by_average(df_mapping)
+    # Analysis.correlation_matrix(df_mapping)
 
     logger.info("Analysis completed.")
