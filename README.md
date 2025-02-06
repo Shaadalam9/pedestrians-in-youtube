@@ -79,6 +79,7 @@ python3 analysis.py
 - **`update_fps_list`**: Updates the FPS (frames per second) information for videos in the mapping file during analysis.
 - **`update_pytubefix`**: Updates the `pytubefix` library each time analysis starts.
 - **`font_family`**: Specifies the font family to be used in outputs.
+- **`font_size`**: Specifies the font size to be used in outputs.
 - **`plotly_template`**: Defines the template for Plotly figures.
 
 ## Example
@@ -102,64 +103,66 @@ Example of YOLO running on dashcam video (original video: https://www.youtube.co
 </a>
 
 ## Results
-[![Locations of cities with dashcam footage in dataset](figures/world_map.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/world_map.html)
-Locations of cities with dashcam footage in dataset.
+[![Locations of cities with footage in dataset](figures/world_map.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/world_map.html)
+Locations of cities with footage in dataset.
 
-Pedestrian crossing decision time (sorted by countries)
-[![Pedestrian crossing decision time (sorted by countries](figures/time_to_start_cross.png?raw=true)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/time_to_start_cross.html)
+<!-- [![Crossing decision time and crossing speed (sorted by countries)](figures/consolidated.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/consolidated.html)
+Crossing decision time and crossing speed (sorted by countries). -->
 
-Speed of crossing(sorted by countries)
-[![Speed of crossing(sorted by countries](figures/speed_of_crossing.png?raw=true)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/speed_of_crossing.html)
+[![Crossing decision time (sorted by countries](figures/time_crossing_alphabetical.png?raw=true)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/time_crossing_alphabetical.html)
+Crossing decision time (sorted by countries).
 
-Pedestrian crossing decision time (sorted by average of day and night)
-[![Pedestrian crossing decision time (sorted by average of day and night)](figures/time_to_start_cross_by_avg.png?raw=true)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/time_to_start_cross_by_avg.html)
+[![Crossing speed (sorted by countries](figures/crossing_speed_alphabetical.png?raw=true)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/crossing_speed_alphabetical.html)
+Crossing speed (sorted by countries).
 
-Speed of crossing(sorted by average of day and night)
-[![Speed of crossing(sorted by average of day and night)](figures/speed_of_crossing_by_avg.png?raw=true)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/speed_of_crossing_by_avg.html)
+[![Crossing decision time (sorted by average of day and night)](figures/time_crossing_avg.png?raw=true)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/time_crossing_avg.html)
+Crossing decision time (sorted by average of day and night).
 
-[![Pedestrian crossing decision time and crossing speed (sorted by countries)](figures/consolidated.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/consolidated.html)
-Pedestrian crossing decision time and crossing speed (sorted by countries).
+[![Crossing speed (sorted by average of day and night)](figures/crossing_speed_avg.png?raw=true)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/crossing_speed_avg.html)
+Crossing speed (sorted by average of day and night).
 
 ## Relationship between computed and statistical metrics
-[![Speed of crossing over Pedestrian crossing decision time)](figures//scatter_speed_crossing-time_crossing.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures//scatter_speed_crossing-time_crossing.html)
-Pedestrian crossing speed over pedestrian crossing decision time.
+[![Speed of crossing over Crossing decision time)](figures//scatter_speed_crossing-time_crossing.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures//scatter_speed_crossing-time_crossing.html)
+Crossing speed over Crossing decision time.
 
-[![Speed of crossing over Pedestrian crossing decision time daytime)](figures//scatter_speed_crossing_daytime_crossing_day.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures//scatter_speed_crossing_daytime_crossing_day.html)
-Pedestrian crossing speed over pedestrian crossing decision time, during daytime.
+[![Speed of crossing over Crossing decision time daytime)](figures//scatter_speed_crossing_daytime_crossing_day.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures//scatter_speed_crossing_daytime_crossing_day.html)
+Crossing speed over Crossing decision time, during daytime.
 
-[![Speed of crossing over Pedestrian crossing decision time night time)](figures//scatter_speed_crossing_night-time_crossing_night.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures//scatter_speed_crossing_night-time_crossing_night.html)
-Pedestrian crossing speed over pedestrian crossing decision time, during night time.
+[![Speed of crossing over Crossing decision time night time)](figures//scatter_speed_crossing_night-time_crossing_night.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures//scatter_speed_crossing_night-time_crossing_night.html)
+Crossing speed over Crossing decision time, during night time.
 
 [![Speed of crossing over population of city](figures//scatter_speed_crossing-population_city.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures//scatter_speed_crossing-population_city.html)
-Pedestrian crossing speed over population of city.
+Crossing speed over population of city.
 
-[![Pedestrian crossing decision time over population of city](figures//scatter_time_crossing-population_city.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures//scatter_time_crossing-population_city.html)
-Pedestrian crossing decision time over population of city.
+[![Crossing decision time over population of city](figures//scatter_time_crossing-population_city.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures//scatter_time_crossing-population_city.html)
+Crossing decision time over population of city.
 
 [![Speed of crossing over traffic mortality](figures//scatter_speed_crossing-traffic_mortality.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures//scatter_speed_crossing-traffic_mortality.html)
-Pedestrian crossing speed over traffic mortality.
+Crossing speed over traffic mortality.
 
-[![Pedestrian crossing decision time over traffic mortality](figures//scatter_time_crossing-traffic_mortality.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures//scatter_time_crossing-traffic_mortality.html)
-Pedestrian crossing decision time over traffic mortality.
+[![Crossing decision time over traffic mortality](figures//scatter_time_crossing-traffic_mortality.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures//scatter_time_crossing-traffic_mortality.html)
+Crossing decision time over traffic mortality.
 
 [![Speed of crossing over literacy rate](figures//scatter_speed_crossing-literacy_rate.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures//scatter_speed_crossing-literacy_rate.html)
-Pedestrian crossing speed over literacy rate.
+Crossing speed over literacy rate.
 
-[![Pedestrian crossing decision time over literacy rate](figures//scatter_time_crossing-literacy_rate.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures//scatter_time_crossing-literacy_rate.html)
-Pedestrian crossing decision time over literacy rate.
+[![Crossing decision time over literacy rate](figures//scatter_time_crossing-literacy_rate.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures//scatter_time_crossing-literacy_rate.html)
+Crossing decision time over literacy rate.
 
 [![Speed of crossing over Gini coefficient](figures//scatter_speed_crossing-gini.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures//scatter_speed_crossing-gini.html)
-Pedestrian crossing speed over Gini coefficient.
+Crossing speed over Gini coefficient.
 
-[![Pedestrian crossing decision time over Gini coefficient](figures//scatter_time_crossing-gini.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures//scatter_time_crossing-gini.html)
-Pedestrian crossing decision time over Gini coefficient.
+[![Crossing decision time over Gini coefficient](figures//scatter_time_crossing-gini.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures//scatter_time_crossing-gini.html)
+Crossing decision time over Gini coefficient.
 
 [![Speed of crossing over traffic index](figures//scatter_speed_crossing-traffic_index.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures//scatter_speed_crossing-traffic_index.html)
-Pedestrian crossing speed over traffic index.
+Crossing speed over traffic index.
 
-[![Pedestrian crossing decision time over traffic index](figures//scatter_time_crossing-traffic_index.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures//scatter_time_crossing-traffic_index.html)
-Pedestrian crossing decision time over traffic index.
+[![Crossing decision time over traffic index](figures//scatter_time_crossing-traffic_index.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures//scatter_time_crossing-traffic_index.html)
+Crossing decision time over traffic index.
 
+[![Crossing decision time over traffic index](figures//scatter_time_crossing-traffic_index.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures//scatter_time_crossing-traffic_index.html)
+Crossing decision time over traffic index.
 
 ## Correlation matrices
 [![Correlation matrix based on average speed and time to start cross](figures/correlation_matrix_heatmap_averaged.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/correlation_matrix_heatmap_averaged.html)
