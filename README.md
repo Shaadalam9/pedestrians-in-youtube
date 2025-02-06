@@ -125,10 +125,10 @@ Merged figure of the speed of crossing and Pedestrian crossing decision time(sor
 [![Speed of crossing over Pedestrian crossing decision time)](figures//scatter_speed_crossing-time_crossing.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures//scatter_speed_crossing-time_crossing.html)
 Pedestrian crossing speed over pedestrian crossing decision time.
 
-[![Speed of crossing over Pedestrian crossing decision time daytime)](figures//sscatter_speed_crossing_day-time_crossing_day.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures//sscatter_speed_crossing_day-time_crossing_day.html)
+[![Speed of crossing over Pedestrian crossing decision time daytime)](figures//scatter_speed_crossing_day-time_crossing_day.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures//scatter_speed_crossing_day-time_crossing_day.html)
 Pedestrian crossing speed over pedestrian crossing decision time, during daytime.
 
-[![Speed of crossing over Pedestrian crossing decision time night time)](figures//sscatter_speed_crossing_night-time_crossing_night.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures//sscatter_speed_crossing_night-time_crossing_night.html)
+[![Speed of crossing over Pedestrian crossing decision time night time)](figures//scatter_speed_crossing_night-time_crossing_night.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures//scatter_speed_crossing_night-time_crossing_night.html)
 Pedestrian crossing speed over pedestrian crossing decision time, during night time.
 
 [![Speed of crossing over population of city](figures//scatter_speed_crossing-population_city.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures//scatter_speed_crossing-population_city.html)
