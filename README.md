@@ -106,8 +106,8 @@ Example of YOLO running on dashcam video (original video: https://www.youtube.co
 Countries where the study has been conducted
 [![Countries where the study has been conducted](figures/world_map.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/world_map.html)
 
-Pedestrian crossing decision time(sorted by countries)
-[![Pedestrian crossing decision time(sorted by countries](figures/time_to_start_cross.png?raw=true)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/time_to_start_cross.html)
+Pedestrian crossing decision time (sorted by countries)
+[![Pedestrian crossing decision time (sorted by countries](figures/time_to_start_cross.png?raw=true)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/time_to_start_cross.html)
 
 Speed of crossing(sorted by countries)
 [![Speed of crossing(sorted by countries](figures/speed_of_crossing.png?raw=true)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/speed_of_crossing.html)

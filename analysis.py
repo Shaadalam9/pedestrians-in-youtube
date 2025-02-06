@@ -1629,27 +1629,27 @@ class Analysis():
 
         # Define the legend items
         legend_items = [
-            {"name": "Speed during day", "color": bar_colour_1},
-            {"name": "Speed during night", "color": bar_colour_2},
-            {"name": "Time during day", "color": bar_colour_3},
-            {"name": "Time during night", "color": bar_colour_4},
+            {"name": "Pedestrian crossing speed during daytime", "color": bar_colour_1},
+            {"name": "Pedestrian crossing speed during night time", "color": bar_colour_2},
+            {"name": "Pedestrian crossing decision time during daytime", "color": bar_colour_3},
+            {"name": "Pedestrian crossing decision time during night time", "color": bar_colour_4},
         ]
 
         # Add vertical legends with the positions you will provide
-        x_legend_position = 0.30  # Position close to the left edge
-        y_legend_start_bottom = 0.65  # Lower position to the bottom left corner
+        x_legend_position = 0.81  # Position close to the left edge
+        y_legend_start_bottom = 0.98  # Lower position to the bottom left corner
 
         # Add the vertical legends at the top and bottom
-        add_vertical_legend_annotations(fig, legend_items, x_position=x_legend_position,
-                                        y_start=y_legend_start_bottom, spacing=0.02, font_size=40)
+        add_vertical_legend_annotations(fig, legend_items, x_position=x_legend_position + 0.005,
+                                        y_start=y_legend_start_bottom + 0.02, spacing=0.007, font_size=40)
 
         # Add a box around the legend
         fig.add_shape(
             type="rect", xref="paper", yref="paper",
             x0=x_legend_position,  # Adjust x0 to control the left edge of the box
             y0=y_legend_start_bottom + 0.02,  # Adjust y0 to control the top of the box
-            x1=x_legend_position + 0.195,  # Adjust x1 to control the right edge of the box
-            y1=y_legend_start_bottom - len(legend_items) * 0.03 + 0.04,  # Adjust y1 to control the bottom of the box
+            x1=x_legend_position + 0.19,  # Adjust x1 to control the right edge of the box
+            y1=y_legend_start_bottom - len(legend_items) * 0.012 + 0.0395,  # Adjust y1 to control the bottom of the box
             line=dict(color="black", width=2),  # Black border for the box
             fillcolor="rgba(255,255,255,0.7)"  # White fill with transparency
         )
@@ -2352,12 +2352,27 @@ class Analysis():
                 )
 
         # Set the x-axis labels (title_text) only for the last row and the first row
-        fig.update_xaxes(title_text="Speed of crossing the road (m/s)", titlefont=dict(size=40),
-                         tickfont=dict(size=40), ticks='outside', ticklen=10, tickwidth=2,
-                         tickcolor='black', row=1, col=1)
-        fig.update_xaxes(title_text="Speed of crossing the road (m/s)", titlefont=dict(size=40),
-                         tickfont=dict(size=40), ticks='outside', ticklen=10, tickwidth=2,
-                         tickcolor='black', row=1, col=2)
+        fig.update_xaxes(
+            title=dict(text="Speed of crossing the road (m/s)", font=dict(size=40)),
+            tickfont=dict(size=40),
+            ticks='outside',
+            ticklen=10,
+            tickwidth=2,
+            tickcolor='black',
+            row=1,
+            col=1
+        )
+
+        fig.update_xaxes(
+            title=dict(text="Speed of crossing the road (m/s)", font=dict(size=40)),
+            tickfont=dict(size=40),
+            ticks='outside',
+            ticklen=10,
+            tickwidth=2,
+            tickcolor='black',
+            row=1,
+            col=2
+        )
 
         # Update both y-axes (for left and right columns) to hide the tick labels
         fig.update_yaxes(showticklabels=False)
@@ -2699,12 +2714,27 @@ class Analysis():
                 )
 
         # Set the x-axis labels (title_text) only for the last row and the first row
-        fig.update_xaxes(title_text="Time taken to start crossing the road (s)", titlefont=dict(size=40),
-                         tickfont=dict(size=40), ticks='outside', ticklen=10, tickwidth=2,
-                         tickcolor='black', row=1, col=1)
-        fig.update_xaxes(title_text="Time taken to start crossing the road (s)", titlefont=dict(size=40),
-                         tickfont=dict(size=40), ticks='outside', ticklen=10, tickwidth=2,
-                         tickcolor='black', row=1, col=2)
+        fig.update_xaxes(
+            title=dict(text="Time taken to start crossing the road (s)", font=dict(size=40)),
+            tickfont=dict(size=40),
+            ticks='outside',
+            ticklen=10,
+            tickwidth=2,
+            tickcolor='black',
+            row=1,
+            col=1
+        )
+
+        fig.update_xaxes(
+            title=dict(text="Time taken to start crossing the road (s)", font=dict(size=40)),
+            tickfont=dict(size=40),
+            ticks='outside',
+            ticklen=10,
+            tickwidth=2,
+            tickcolor='black',
+            row=1,
+            col=2
+        )
 
         # Update both y-axes (for left and right columns) to hide the tick labels
         fig.update_yaxes(showticklabels=False)
@@ -4292,7 +4322,6 @@ if __name__ == "__main__":
     logger.info("Producing figures.")
 
     # Set state to be NA
-    df_mapping['state'] = df_mapping['state'].fillna('NA')
     # Analysis.get_world_plot(df_mapping)
     Analysis.speed_and_time_to_start_cross(df_mapping)
     # Analysis.time_to_start_crossing_vs_literacy(df_mapping)
@@ -4321,6 +4350,7 @@ if __name__ == "__main__":
     # # Speed of crossing vs time to start crossing
     # df = df_mapping[df_mapping["speed_crossing"] != 0]
     # df = df[df["time_crossing"] != 0]
+    # df['state'] = df['state'].fillna('NA')
     # Analysis.scatter(df=df,
     #                  x="speed_crossing",
     #                  y="time_crossing",
@@ -4338,6 +4368,7 @@ if __name__ == "__main__":
     # # Speed of crossing during daytime vs time to start crossing during daytime
     # df = df_mapping[df_mapping["speed_crossing_day"] != 0]
     # df = df[df["time_crossing_day"] != 0]
+    # df['state'] = df['state'].fillna('NA')
     # Analysis.scatter(df=df,
     #                  x="speed_crossing_day",
     #                  y="time_crossing_day",
@@ -4355,6 +4386,7 @@ if __name__ == "__main__":
     # # Speed of crossing during night time vs time to start crossing during night time
     # df = df_mapping[df_mapping["speed_crossing_night"] != 0]
     # df = df[df["time_crossing_night"] != 0]
+    # df['state'] = df['state'].fillna('NA')
     # Analysis.scatter(df=df,
     #                  x="speed_crossing_night",
     #                  y="time_crossing_night",
@@ -4371,6 +4403,7 @@ if __name__ == "__main__":
     #                  marginal_y=None)
     # # Speed of crossing vs population of city
     # df = df_mapping[df_mapping["speed_crossing"] != 0]
+    # df['state'] = df['state'].fillna('NA')
     # Analysis.scatter(df=df,
     #                  x="speed_crossing",
     #                  y="population_city",
@@ -4387,6 +4420,7 @@ if __name__ == "__main__":
     #                  marginal_y=None)
     # # Time to start crossing vs population of city
     # df = df_mapping[df_mapping["time_crossing"] != 0]
+    # df['state'] = df['state'].fillna('NA')
     # Analysis.scatter(df=df,
     #                  x="time_crossing",
     #                  y="population_city",
@@ -4403,6 +4437,7 @@ if __name__ == "__main__":
     #                  marginal_y=None)
     # # Speed of crossing vs population of city
     # df = df_mapping[df_mapping["speed_crossing"] != 0]
+    # df['state'] = df['state'].fillna('NA')
     # Analysis.scatter(df=df,
     #                  x="speed_crossing",
     #                  y="population_city",
@@ -4419,6 +4454,7 @@ if __name__ == "__main__":
     #                  marginal_y=None)
     # # Time to start crossing vs population of city
     # df = df_mapping[df_mapping["time_crossing"] != 0]
+    # df['state'] = df['state'].fillna('NA')
     # Analysis.scatter(df=df,
     #                  x="time_crossing",
     #                  y="traffic_mortality",
@@ -4435,6 +4471,7 @@ if __name__ == "__main__":
     #                  marginal_y=None)
     # # Speed of crossing vs population of city
     # df = df_mapping[df_mapping["speed_crossing"] != 0]
+    # df['state'] = df['state'].fillna('NA')
     # Analysis.scatter(df=df,
     #                  x="speed_crossing",
     #                  y="traffic_mortality",
@@ -4451,6 +4488,7 @@ if __name__ == "__main__":
     #                  marginal_y=None)
     # # Time to start crossing vs population of city
     # df = df_mapping[df_mapping["time_crossing"] != 0]
+    # df['state'] = df['state'].fillna('NA')
     # Analysis.scatter(df=df,
     #                  x="time_crossing",
     #                  y="literacy_rate",
@@ -4467,6 +4505,7 @@ if __name__ == "__main__":
     #                  marginal_y=None)
     # # Speed of crossing vs population of city
     # df = df_mapping[df_mapping["speed_crossing"] != 0]
+    # df['state'] = df['state'].fillna('NA')
     # Analysis.scatter(df=df,
     #                  x="speed_crossing",
     #                  y="literacy_rate",
@@ -4483,6 +4522,7 @@ if __name__ == "__main__":
     #                  marginal_y=None)
     # # Time to start crossing vs population of city
     # df = df_mapping[df_mapping["time_crossing"] != 0]
+    # df['state'] = df['state'].fillna('NA')
     # Analysis.scatter(df=df,
     #                  x="time_crossing",
     #                  y="gini",
@@ -4499,6 +4539,7 @@ if __name__ == "__main__":
     #                  marginal_y=None)
     # # Speed of crossing vs population of city
     # df = df_mapping[df_mapping["speed_crossing"] != 0]
+    # df['state'] = df['state'].fillna('NA')
     # Analysis.scatter(df=df,
     #                  x="speed_crossing",
     #                  y="gini",
@@ -4515,6 +4556,7 @@ if __name__ == "__main__":
     #                  marginal_y=None)
     # # Time to start crossing vs population of city
     # df = df_mapping[df_mapping["time_crossing"] != 0]
+    # df['state'] = df['state'].fillna('NA')
     # Analysis.scatter(df=df,
     #                  x="time_crossing",
     #                  y="traffic_index",
@@ -4532,6 +4574,7 @@ if __name__ == "__main__":
     #                  marginal_y=None)
     # # Speed of crossing vs population of city
     # df = df_mapping[df_mapping["speed_crossing"] != 0]
+    # df['state'] = df['state'].fillna('NA')
     # Analysis.scatter(df=df,
     #                  x="speed_crossing",
     #                  y="traffic_index",
