@@ -123,7 +123,61 @@ class Youtube_Helper:
             tuple or None: A tuple (video_file_path, video_id, resolution, fps) if successful,
                             or None if both methods fail.
         """
-        # ----- First method: using yt_dlp -----
+        # ----- First method: using pytubefix (YouTube) -----
+        try:
+            # Optionally upgrade pytubefix (if configured and it is Monday)
+            if common.get_configs("update_package") and datetime.datetime.today().weekday() == 0:
+                Youtube_Helper.upgrade_package("pytube")
+                Youtube_Helper.upgrade_package("pytubefix")
+
+            # Construct the YouTube URL.
+            youtube_url = f"https://www.youtube.com/watch?v={video_id}"
+
+            # Create a YouTube object using the provided client configuration.
+            if common.get_configs("need_authentication"):
+                youtube_object = YouTube(youtube_url, common.get_configs('client'),
+                                         use_oauth=True, allow_oauth_cache=True)
+            else:
+                youtube_object = YouTube(youtube_url, common.get_configs('client'))
+
+            selected_stream = None
+            selected_resolution = None
+
+            # Iterate over the preferred resolutions to find a matching stream.
+            for resolution in resolutions:
+                # Filter the streams for the current resolution.
+                video_streams = youtube_object.streams.filter(res=resolution)
+                if video_streams:
+                    selected_resolution = resolution
+                    logger.info(f"Found video {video_id} in {resolution} using pytubefix.")
+                    # Use the first available stream.
+                    if hasattr(video_streams, 'first'):
+                        selected_stream = video_streams.first()
+                    else:
+                        selected_stream = video_streams[0]
+                    break
+
+            if not selected_stream:
+                logger.error(f"No stream available for video {video_id} in the specified resolutions via pytubefix.")
+                return None
+
+            # Construct the file path for the downloaded video.
+            video_file_path = os.path.join(output_path, f"{video_id}.mp4")
+            logger.info(f"Downloading video {video_id} in resolution {selected_resolution} using pytubefix started.")
+
+            # Download the video.
+            selected_stream.download(output_path, filename=f"{video_id}.mp4")
+            self.video_title = youtube_object.title
+            fps = self.get_video_fps(video_file_path)
+            logger.info(f"FPS of {video_id}: {fps}.")
+
+            return video_file_path, video_id, selected_resolution, fps
+
+        except Exception as e:
+            logger.error(f"pytubefix download method failed for video {video_id}: {e}")
+            logger.info("Falling back to yt_dlp method.")
+
+        # ----- Fallback method: using yt_dlp -----
         try:
             # Optionally upgrade yt_dlp (if the configuration requires it and it is Monday)
             if common.get_configs("update_package") and datetime.datetime.today().weekday() == 0:
@@ -213,60 +267,6 @@ class Youtube_Helper:
 
         except Exception as e:
             logger.error(f"yt_dlp download method failed for video {video_id}: {e}")
-            logger.info("Falling back to pytubefix method.")
-
-        # ----- Fallback method: using pytubefix (YouTube) -----
-        try:
-            # Optionally upgrade pytubefix (if configured and it is Monday)
-            if common.get_configs("update_package") and datetime.datetime.today().weekday() == 0:
-                Youtube_Helper.upgrade_package("pytube")
-                Youtube_Helper.upgrade_package("pytubefix")
-
-            # Construct the YouTube URL.
-            youtube_url = f"https://www.youtube.com/watch?v={video_id}"
-
-            # Create a YouTube object using the provided client configuration.
-            if common.get_configs("need_authentication"):
-                youtube_object = YouTube(youtube_url, common.get_configs('client'),
-                                         use_oauth=True, allow_oauth_cache=True)
-            else:
-                youtube_object = YouTube(youtube_url, common.get_configs('client'))
-
-            selected_stream = None
-            selected_resolution = None
-
-            # Iterate over the preferred resolutions to find a matching stream.
-            for resolution in resolutions:
-                # Filter the streams for the current resolution.
-                video_streams = youtube_object.streams.filter(res=resolution)
-                if video_streams:
-                    selected_resolution = resolution
-                    logger.info(f"Found video {video_id} in {resolution} using pytubefix.")
-                    # Use the first available stream.
-                    if hasattr(video_streams, 'first'):
-                        selected_stream = video_streams.first()
-                    else:
-                        selected_stream = video_streams[0]
-                    break
-
-            if not selected_stream:
-                logger.error(f"No stream available for video {video_id} in the specified resolutions via pytubefix.")
-                return None
-
-            # Construct the file path for the downloaded video.
-            video_file_path = os.path.join(output_path, f"{video_id}.mp4")
-            logger.info(f"Downloading video {video_id} in resolution {selected_resolution} using pytubefix started.")
-
-            # Download the video.
-            selected_stream.download(output_path, filename=f"{video_id}.mp4")
-            self.video_title = youtube_object.title
-            fps = self.get_video_fps(video_file_path)
-            logger.info(f"FPS of {video_id}: {fps}.")
-
-            return video_file_path, video_id, selected_resolution, fps
-
-        except Exception as e:
-            logger.error(f"pytubefix download method failed for video {video_id}: {e}")
             return None
 
     def get_video_fps(self, video_file_path):
