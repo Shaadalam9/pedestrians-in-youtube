@@ -102,9 +102,8 @@ Example of YOLO running on dashcam video (original video: https://www.youtube.co
 </a>
 
 ## Results
-
-Countries where the study has been conducted
-[![Countries where the study has been conducted](figures/world_map.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/world_map.html)
+[![Locations of cities with dashcam footage in dataset](figures/world_map.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/world_map.html)
+Locations of cities with dashcam footage in dataset.
 
 Pedestrian crossing decision time (sorted by countries)
 [![Pedestrian crossing decision time (sorted by countries](figures/time_to_start_cross.png?raw=true)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/time_to_start_cross.html)
@@ -112,14 +111,14 @@ Pedestrian crossing decision time (sorted by countries)
 Speed of crossing(sorted by countries)
 [![Speed of crossing(sorted by countries](figures/speed_of_crossing.png?raw=true)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/speed_of_crossing.html)
 
-Pedestrian crossing decision time(sorted by average of day and night)
-[![Pedestrian crossing decision time(sorted by average of day and night)](figures/time_to_start_cross_by_avg.png?raw=true)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/time_to_start_cross_by_avg.html)
+Pedestrian crossing decision time (sorted by average of day and night)
+[![Pedestrian crossing decision time (sorted by average of day and night)](figures/time_to_start_cross_by_avg.png?raw=true)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/time_to_start_cross_by_avg.html)
 
 Speed of crossing(sorted by average of day and night)
 [![Speed of crossing(sorted by average of day and night)](figures/speed_of_crossing_by_avg.png?raw=true)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/speed_of_crossing_by_avg.html)
 
-Merged figure of the speed of crossing and Pedestrian crossing decision time(sorted by countries)
-[![Merged figure of speed of crossing ad Pedestrian crossing decision time(sorted by countries)](figures/consolidated.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/consolidated.html)
+[![Pedestrian crossing decision time and crossing speed (sorted by countries)](figures/consolidated.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/consolidated.html)
+Pedestrian crossing decision time and crossing speed (sorted by countries).
 
 ## Relationship between computed and statistical metrics
 [![Speed of crossing over Pedestrian crossing decision time)](figures//scatter_speed_crossing-time_crossing.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures//scatter_speed_crossing-time_crossing.html)
