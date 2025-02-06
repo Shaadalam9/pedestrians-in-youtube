@@ -1615,18 +1615,6 @@ class Analysis():
                 layer="above"  # Draw the gridlines above the bars
             )
 
-        # Function to add vertical legend annotations
-        def add_vertical_legend_annotations(fig, legend_items, x_position, y_start, spacing=0.03, font_size=50):
-            for i, item in enumerate(legend_items):
-                fig.add_annotation(
-                    x=x_position,  # Use the x_position provided by the user
-                    y=y_start - i * spacing,  # Adjust vertical position based on index and spacing
-                    xref='paper', yref='paper', showarrow=False,
-                    text=f'<span style="color:{item["color"]};">&#9632;</span> {item["name"]}',  # noqa:E501
-                    font=dict(size=font_size),
-                    xanchor='left', align='left'  # Ensure the text is left-aligned
-                )
-
         # Define the legend items
         legend_items = [
             {"name": "Pedestrian crossing speed during daytime", "color": bar_colour_1},
@@ -1640,8 +1628,8 @@ class Analysis():
         y_legend_start_bottom = 0.98  # Lower position to the bottom left corner
 
         # Add the vertical legends at the top and bottom
-        add_vertical_legend_annotations(fig, legend_items, x_position=x_legend_position + 0.005,
-                                        y_start=y_legend_start_bottom + 0.02, spacing=0.007, font_size=40)
+        Analysis.add_vertical_legend_annotations(fig, legend_items, x_position=x_legend_position + 0.005,
+                                                 y_start=y_legend_start_bottom + 0.02, spacing=0.007, font_size=40)
 
         # Add a box around the legend
         fig.add_shape(
@@ -1649,7 +1637,8 @@ class Analysis():
             x0=x_legend_position,  # Adjust x0 to control the left edge of the box
             y0=y_legend_start_bottom + 0.02,  # Adjust y0 to control the top of the box
             x1=x_legend_position + 0.19,  # Adjust x1 to control the right edge of the box
-            y1=y_legend_start_bottom - len(legend_items) * 0.012 + 0.0395,  # Adjust y1 to control the bottom of the box
+            # Adjust y1 to control the bottom of the box
+            y1=y_legend_start_bottom - len(legend_items) * 0.012 + 0.0395,
             line=dict(color="black", width=2),  # Black border for the box
             fillcolor="rgba(255,255,255,0.7)"  # White fill with transparency
         )
@@ -2409,18 +2398,6 @@ class Analysis():
                 layer="above"  # Draw the gridlines above the bars
             )
 
-        # Function to add vertical legend annotations
-        def add_vertical_legend_annotations(fig, legend_items, x_position, y_start, spacing=0.03, font_size=50):
-            for i, item in enumerate(legend_items):
-                fig.add_annotation(
-                    x=x_position,  # Use the x_position provided by the user
-                    y=y_start - i * spacing,  # Adjust vertical position based on index and spacing
-                    xref='paper', yref='paper', showarrow=False,
-                    text=f'<span style="color:{item["color"]};">&#9632;</span> {item["name"]}',  # noqa:E501
-                    font=dict(size=font_size),
-                    xanchor='left', align='left'  # Ensure the text is left-aligned
-                )
-
         # Define the legend items
         legend_items = [
             {"name": "Speed during day", "color": bar_colour_1},
@@ -2432,8 +2409,8 @@ class Analysis():
         y_legend_start_bottom = 0.65  # Lower position to the bottom left corner
 
         # Add the vertical legends at the top and bottom
-        add_vertical_legend_annotations(fig, legend_items, x_position=x_legend_position,
-                                        y_start=y_legend_start_bottom, spacing=0.02, font_size=40)
+        Analysis.add_vertical_legend_annotations(fig, legend_items, x_position=x_legend_position,
+                                                 y_start=y_legend_start_bottom, spacing=0.02, font_size=40)
 
         # Add a box around the legend
         fig.add_shape(
@@ -2550,6 +2527,19 @@ class Analysis():
         fig.update_layout(margin=dict(l=80, r=100, t=150, b=180))
         Analysis.save_plotly_figure(fig, "speed_of_crossing_by_alphabetical_order",
                                     width=2400, height=3200, scale=3, save_final=True)
+
+    # Function to add vertical legend annotations
+    @staticmethod
+    def add_vertical_legend_annotations(fig, legend_items, x_position, y_start, spacing=0.03, font_size=50):
+        for i, item in enumerate(legend_items):
+            fig.add_annotation(
+                x=x_position,  # Use the x_position provided by the user
+                y=y_start - i * spacing,  # Adjust vertical position based on index and spacing
+                xref='paper', yref='paper', showarrow=False,
+                text=f'<span style="color:{item["color"]};">&#9632;</span> {item["name"]}',  # noqa:E501
+                font=dict(size=font_size),
+                xanchor='left', align='left'  # Ensure the text is left-aligned
+            )
 
     @staticmethod
     def plot_time_to_start_cross_by_alphabetical_order(df_mapping):
@@ -2750,18 +2740,6 @@ class Analysis():
             margin=dict(t=150, b=150), bargap=0, bargroupgap=0
         )
 
-        # Function to add vertical legend annotations
-        def add_vertical_legend_annotations(fig, legend_items, x_position, y_start, spacing=0.03, font_size=50):
-            for i, item in enumerate(legend_items):
-                fig.add_annotation(
-                    x=x_position,  # Use the x_position provided by the user
-                    y=y_start - i * spacing,  # Adjust vertical position based on index and spacing
-                    xref='paper', yref='paper', showarrow=False,
-                    text=f'<span style="color:{item["color"]};">&#9632;</span> {item["name"]}',  # noqa:E501
-                    font=dict(size=font_size),
-                    xanchor='left', align='left'  # Ensure the text is left-aligned
-                )
-
         # Define the legend items
         legend_items = [
             {"name": "Time during day", "color": bar_colour_1},
@@ -2773,8 +2751,8 @@ class Analysis():
         y_legend_start_bottom = 0.65  # Lower position to the bottom left corner
 
         # Add the vertical legends at the top and bottom
-        add_vertical_legend_annotations(fig, legend_items, x_position=x_legend_position,
-                                        y_start=y_legend_start_bottom, spacing=0.02, font_size=40)
+        Analysis.add_vertical_legend_annotations(fig, legend_items, x_position=x_legend_position,
+                                                 y_start=y_legend_start_bottom, spacing=0.02, font_size=40)
 
         # Manually add gridlines using `shapes`
         x_grid_values = [2, 4, 6, 8, 10, 12, 14, 16, 18]  # Define the gridline positions on the x-axis
@@ -3121,18 +3099,6 @@ class Analysis():
                 layer="above"  # Draw the gridlines above the bars
             )
 
-        # Function to add vertical legend annotations
-        def add_vertical_legend_annotations(fig, legend_items, x_position, y_start, spacing=0.03, font_size=50):
-            for i, item in enumerate(legend_items):
-                fig.add_annotation(
-                    x=x_position,  # Use the x_position provided by the user
-                    y=y_start - i * spacing,  # Adjust vertical position based on index and spacing
-                    xref='paper', yref='paper', showarrow=False,
-                    text=f'<span style="color:{item["color"]};">&#9632;</span> {item["name"]}',  # noqa:E501
-                    font=dict(size=font_size),
-                    xanchor='left', align='left'  # Ensure the text is left-aligned
-                )
-
         # Define the legend items
         legend_items = [
             {"name": "Speed during day", "color": bar_colour_1},
@@ -3144,8 +3110,8 @@ class Analysis():
         y_legend_start_bottom = 0.65  # Lower position to the bottom left corner
 
         # Add the vertical legends at the top and bottom
-        add_vertical_legend_annotations(fig, legend_items, x_position=x_legend_position,
-                                        y_start=y_legend_start_bottom, spacing=0.02, font_size=40)
+        Analysis.add_vertical_legend_annotations(fig, legend_items, x_position=x_legend_position,
+                                                 y_start=y_legend_start_bottom, spacing=0.02, font_size=40)
 
         # Add a box around the legend
         fig.add_shape(
@@ -3436,18 +3402,6 @@ class Analysis():
                 layer="above"  # Draw the gridlines above the bars
             )
 
-        # Function to add vertical legend annotations
-        def add_vertical_legend_annotations(fig, legend_items, x_position, y_start, spacing=0.03, font_size=50):
-            for i, item in enumerate(legend_items):
-                fig.add_annotation(
-                    x=x_position,  # Use the x_position provided by the user
-                    y=y_start - i * spacing,  # Adjust vertical position based on index and spacing
-                    xref='paper', yref='paper', showarrow=False,
-                    text=f'<span style="color:{item["color"]};">&#9632;</span> {item["name"]}',  # noqa:E501
-                    font=dict(size=font_size),
-                    xanchor='left', align='left'  # Ensure the text is left-aligned
-                )
-
         # Define the legend items
         legend_items = [
             {"name": "Time during day", "color": bar_colour_1},
@@ -3459,8 +3413,8 @@ class Analysis():
         y_legend_start_bottom = 0.65  # Lower position to the bottom left corner
 
         # Add the vertical legends at the top and bottom
-        add_vertical_legend_annotations(fig, legend_items, x_position=x_legend_position,
-                                        y_start=y_legend_start_bottom, spacing=0.02, font_size=40)
+        Analysis.add_vertical_legend_annotations(fig, legend_items, x_position=x_legend_position,
+                                                 y_start=y_legend_start_bottom, spacing=0.02, font_size=40)
 
         # Add a box around the legend
         fig.add_shape(
