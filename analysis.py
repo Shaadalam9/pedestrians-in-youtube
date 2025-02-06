@@ -3979,15 +3979,18 @@ class Analysis():
         # check and clean the data
         df = df.replace([np.inf, -np.inf], np.nan).dropna()  # Remove NaNs and Infs
 
-        # use KDTree to check point density
-        tree = KDTree(df[[x, y]].values)  # Ensure finite values
-        distances, _ = tree.query(df[[x, y]].values, k=2)  # Find nearest neighbor distance
+        if text == 'city':
+            # use KDTree to check point density
+            tree = KDTree(df[[x, y]].values)  # Ensure finite values
+            distances, _ = tree.query(df[[x, y]].values, k=2)  # Find nearest neighbor distance
 
-        # define a distance threshold for labeling
-        threshold = np.mean(distances[:, 1])
+            # define a distance threshold for labeling
+            threshold = np.mean(distances[:, 1])
 
-        # only label points that are not too close to others
-        df["display_label"] = np.where(distances[:, 1] > threshold, df["city"], "")
+            # only label points that are not too close to others
+            df["display_label"] = np.where(distances[:, 1] > threshold, df["city"], "")
+
+            text = "display_label"
 
         # scatter plot with histograms
         with warnings.catch_warnings():
@@ -3998,7 +4001,7 @@ class Analysis():
                              color=color,
                              symbol=symbol,
                              size=size,
-                             text="display_label",
+                             text=text,
                              trendline=trendline,
                              hover_data=hover_data,
                              hover_name=hover_name,
@@ -4006,7 +4009,7 @@ class Analysis():
                              marginal_y=marginal_y)
 
         # font size of text labels
-        fig.update_traces(textfont=dict(size=common.get_configs('font_size')-2))  # Adjust font size here
+        fig.update_traces(textfont=dict(size=common.get_configs('font_size')))  # Adjust font size here
 
         # location of labels
         if not marginal_x and not marginal_y:
@@ -4293,6 +4296,7 @@ if __name__ == "__main__":
                      x="speed_crossing",
                      y="time_crossing",
                      color="continent",
+                     text="city",
                      xaxis_title='Pedestrian crossing speed (in m/s)',
                      yaxis_title='Pedestrian crossing decision time (in s)',
                      pretty_text=False,
@@ -4309,6 +4313,7 @@ if __name__ == "__main__":
                      x="speed_crossing_day",
                      y="time_crossing_day",
                      color="continent",
+                     text="city",
                      xaxis_title='Pedestrian crossing speed during daytime (in m/s)',
                      yaxis_title='Pedestrian crossing decision time during daytime (in s)',
                      pretty_text=False,
@@ -4325,6 +4330,7 @@ if __name__ == "__main__":
                      x="speed_crossing_night",
                      y="time_crossing_night",
                      color="continent",
+                     text="city",
                      xaxis_title='Pedestrian crossing speed during night time (in m/s)',
                      yaxis_title='Pedestrian crossing decision time during night time (in s)',
                      pretty_text=False,
@@ -4340,6 +4346,7 @@ if __name__ == "__main__":
                      x="speed_crossing",
                      y="population_city",
                      color="continent",
+                     text="city",
                      xaxis_title='Pedestrian crossing speed (in m/s)',
                      yaxis_title='Population of city',
                      pretty_text=False,
@@ -4355,6 +4362,7 @@ if __name__ == "__main__":
                      x="time_crossing",
                      y="population_city",
                      color="continent",
+                     text="city",
                      xaxis_title='Pedestrian crossing decision time (in s)',
                      yaxis_title='Population of city',
                      pretty_text=False,
@@ -4370,6 +4378,7 @@ if __name__ == "__main__":
                      x="speed_crossing",
                      y="population_city",
                      color="continent",
+                     text="city",
                      xaxis_title='Pedestrian crossing speed (in m/s)',
                      yaxis_title='Population of city',
                      pretty_text=False,
@@ -4385,6 +4394,7 @@ if __name__ == "__main__":
                      x="time_crossing",
                      y="traffic_mortality",
                      color="continent",
+                     text="city",
                      xaxis_title='Pedestrian crossing decision time (in s)',
                      yaxis_title='Traffic mortality',
                      pretty_text=False,
@@ -4400,6 +4410,7 @@ if __name__ == "__main__":
                      x="speed_crossing",
                      y="traffic_mortality",
                      color="continent",
+                     text="city",
                      xaxis_title='Pedestrian crossing speed (in m/s)',
                      yaxis_title='Traffic mortality',
                      pretty_text=False,
@@ -4415,6 +4426,7 @@ if __name__ == "__main__":
                      x="time_crossing",
                      y="literacy_rate",
                      color="continent",
+                     text="city",
                      xaxis_title='Pedestrian crossing decision time (in s)',
                      yaxis_title='Literacy rate',
                      pretty_text=False,
@@ -4430,6 +4442,7 @@ if __name__ == "__main__":
                      x="speed_crossing",
                      y="literacy_rate",
                      color="continent",
+                     text="city",
                      xaxis_title='Pedestrian crossing speed (in m/s)',
                      yaxis_title='Literacy rate',
                      pretty_text=False,
@@ -4445,6 +4458,7 @@ if __name__ == "__main__":
                      x="time_crossing",
                      y="gini",
                      color="continent",
+                     text="city",
                      xaxis_title='Pedestrian crossing decision time (in s)',
                      yaxis_title='Gini coefficient',
                      pretty_text=False,
@@ -4460,6 +4474,7 @@ if __name__ == "__main__":
                      x="speed_crossing",
                      y="gini",
                      color="continent",
+                     text="city",
                      xaxis_title='Pedestrian crossing speed (in m/s)',
                      yaxis_title='Gini coefficient',
                      pretty_text=False,
@@ -4475,6 +4490,7 @@ if __name__ == "__main__":
                      x="time_crossing",
                      y="traffic_index",
                      color="continent",
+                     text="city",
                      # size="gdp_city_(billion_US)",
                      xaxis_title='Pedestrian crossing decision time (in s)',
                      yaxis_title='Traffic index',
@@ -4491,6 +4507,7 @@ if __name__ == "__main__":
                      x="speed_crossing",
                      y="traffic_index",
                      color="continent",
+                     text="city",
                      xaxis_title='Pedestrian crossing speed (in m/s)',
                      yaxis_title='Traffic index',
                      pretty_text=False,
