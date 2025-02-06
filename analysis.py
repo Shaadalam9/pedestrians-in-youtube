@@ -4264,7 +4264,7 @@ if __name__ == "__main__":
 
     # Set state to be NA
     df_mapping['state'] = df_mapping['state'].fillna('NA')
-    # Analysis.get_world_plot(df_mapping)
+    Analysis.get_world_plot(df_mapping)
     # Analysis.speed_and_time_to_start_cross(df_mapping)
     # Analysis.time_to_start_crossing_vs_literacy(df_mapping)
     # Analysis.time_to_start_crossing_vs_traffic_mortality(df_mapping)
@@ -4281,7 +4281,7 @@ if __name__ == "__main__":
     # Analysis.plot_time_to_start_cross_by_alphabetical_order(df_mapping)
     # Analysis.plot_speed_to_cross_by_average(df_mapping)
     # Analysis.plot_time_to_start_cross_by_average(df_mapping)
-    # Analysis.correlation_matrix(df_mapping)
+    Analysis.correlation_matrix(df_mapping)
     
     # Data to show on hover in scatter plots
     hover_data = ["state", "country", "gdp_city_(billion_US)", "population_city", "population_country",
