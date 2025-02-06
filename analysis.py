@@ -3612,7 +3612,7 @@ class Analysis():
         rename_dict_1 = {
             'avg_speed_0': 'Speed of', 'avg_speed_1': 'Pedestrian crossing speed',
             'avg_time_0': 'Pedestrian crossing decision time', 'avg_time_1': 'Pedestrian crossing decision time',
-            'ped_cross_city_0': 'Crosswalk traffic', 'ped_cross_city_1': 'Crosswalk traffic',
+            'ped_cross_city_0': 'Pedestrian crossing', 'ped_cross_city_1': 'Pedestrian crossing',
             'person_city_0': 'Detected persons', 'person_city_1': 'Detected persons',
             'bicycle_city_0': 'Detected bicycles', 'bicycle_city_1': 'Detected bicycles',
             'car_city_0': 'Detected cars', 'car_city_1': 'Detected cars',
@@ -3723,7 +3723,7 @@ class Analysis():
         # Rename the variables in the correlation matrix (example: renaming keys)
         rename_dict_2 = {
             'avg_speed_val': 'Pedestrian crossing speed', 'avg_time_val': 'Pedestrian crossing decision time',
-            'ped_cross_city': 'Crosswalk Traffic', 'person_city': 'Detected persons',
+            'ped_cross_city': 'Pedestrian crossing', 'person_city': 'Detected persons',
             'bicycle_city': 'Detected bicycles', 'car_city': 'Detected cars',
             'motorcycle_city': 'Detected motorcycles', 'bus_city': 'Detected bus',
             'truck_city': 'Detected truck', 'cross_evnt_city': 'Crossing without traffic light',
@@ -3821,7 +3821,7 @@ class Analysis():
             # Rename the variables in the correlation matrix (example: renaming keys)
             rename_dict_3 = {
                 'avg_speed_val': 'Pedestrian crossing speed', 'avg_time_val': 'Pedestrian crossing decision time',
-                'ped_cross_city': 'Crosswalk Traffic', 'person_city': 'Detected persons',
+                'ped_cross_city': 'Pedestrian crossing', 'person_city': 'Detected persons',
                 'bicycle_city': 'Detected bicycles', 'car_city': 'Detected cars',
                 'motorcycle_city': 'Detected motorcycles', 'bus_city': 'Detected bus',
                 'truck_city': 'Detected truck', 'cross_evnt_city': 'Crossing without traffic light',
