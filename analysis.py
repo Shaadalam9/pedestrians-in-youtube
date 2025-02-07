@@ -42,8 +42,8 @@ bar_colour_3 = 'rgb(204, 235, 197)'
 bar_colour_4 = 'rgb(222, 203, 228)'
 
 # Consts
-SAVE_PNG = False
-SAVE_EPS = False
+SAVE_PNG = True
+SAVE_EPS = True
 
 
 class Analysis():
@@ -4573,8 +4573,8 @@ if __name__ == "__main__":
     # Analysis.speed_and_time_to_start_cross(df_mapping)
     # Analysis.plot_speed_to_cross_by_alphabetical_order(df_mapping)
     # Analysis.plot_time_to_start_cross_by_alphabetical_order(df_mapping)
-    Analysis.plot_speed_to_cross_by_average(df_mapping)
-    Analysis.plot_time_to_start_cross_by_average(df_mapping)
+    # Analysis.plot_speed_to_cross_by_average(df_mapping)
+    # Analysis.plot_time_to_start_cross_by_average(df_mapping)
     # Analysis.correlation_matrix(df_mapping)
     
     # # Data to show on hover in scatter plots
