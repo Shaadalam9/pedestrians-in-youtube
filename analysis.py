@@ -4732,7 +4732,7 @@ if __name__ == "__main__":
                      y="person",
                      color="continent",
                      text="city",
-                     xaxis_title='Total time of footage',
+                     xaxis_title='Total time of footage (s)',
                      yaxis_title='Number of detected pedestrians',
                      pretty_text=False,
                      save_file=True,
