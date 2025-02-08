@@ -303,6 +303,12 @@ class Youtube_Helper:
             logger.error(f"Failed to retrieve FPS: {e}")
             return None
 
+    def get_fps(video_path):
+        cmd = ["ffmpeg", "-i", video_path]
+        result = subprocess.run(cmd, stderr=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
+        match = re.search(r"(\d+(?:\.\d+)?)\s+fps", result.stderr)
+        return float(match.group(1)) if match else None
+
     @staticmethod
     def trim_video(input_path, output_path, start_time, end_time):
         """
