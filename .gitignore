@@ -37,8 +37,7 @@ mapping_queue.csv
 last_updated_pytube.txt
 
 # Pickle files
-city_coordinates.pkl
-analysis_results.pkl
+*.pickle
 
 # Docker files
 docker-compose.debug.yml

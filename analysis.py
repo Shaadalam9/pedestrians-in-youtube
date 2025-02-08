@@ -33,8 +33,7 @@ logger = CustomLogger(__name__)  # use custom logger
 template = common.get_configs('plotly_template')
 
 # File to store the city coordinates
-pickle_file_coordinates = 'city_coordinates.pkl'
-pickle_file_path = 'analysis_results.pkl'
+file_results = 'results.pickle'
 
 # Colours in graphs
 bar_colour_1 = 'rgb(251, 180, 174)'
@@ -45,7 +44,7 @@ bar_colour_4 = 'rgb(222, 203, 228)'
 # Consts
 SAVE_PNG = True
 SAVE_EPS = True
-# todo: allocate heighy dynamically based on the number of cities to show
+# todo: allocate height dynamically based on the number of cities to show
 TALL_FIG_HEIGHT = 4000  # height of the tall bar plots
 SCALE = 1  # scale=3 hangs often
 
@@ -1103,7 +1102,7 @@ class Analysis():
     def speed_and_time_to_start_cross(df_mapping):
         logger.info("Plotting speed_and_time_to_start_cross")
         final_dict = {}
-        with open(pickle_file_path, 'rb') as file:
+        with open(file_results, 'rb') as file:
             data_tuple = pickle.load(file)
 
         avg_speed = data_tuple[25]
@@ -1714,7 +1713,7 @@ class Analysis():
         conditions = []  # Lists for conditions, time, and city
         cities, counts = [], []
 
-        with open(pickle_file_path, 'rb') as file:
+        with open(file_results, 'rb') as file:
             data_tuple = pickle.load(file)
 
         info = data_tuple[20]  # mobile phones
@@ -1747,7 +1746,7 @@ class Analysis():
     def plot_speed_to_cross_by_alphabetical_order(df_mapping):
         logger.info("Plotting plot_speed_to_cross_by_alphabetical_order")
         final_dict = {}
-        with open(pickle_file_path, 'rb') as file:
+        with open(file_results, 'rb') as file:
             data_tuple = pickle.load(file)
 
         avg_speed = data_tuple[25]
@@ -2125,7 +2124,7 @@ class Analysis():
     def plot_time_to_start_cross_by_alphabetical_order(df_mapping):
         logger.info("Plotting plot_time_to_start_cross_by_alphabetical_order.")
         final_dict = {}
-        with open(pickle_file_path, 'rb') as file:
+        with open(file_results, 'rb') as file:
             data_tuple = pickle.load(file)
 
         avg_time = data_tuple[24]
@@ -2492,7 +2491,7 @@ class Analysis():
     def plot_speed_to_cross_by_average(df_mapping):
         logger.info("Plotting plot_speed_to_cross_by_average.")
         final_dict = {}
-        with open(pickle_file_path, 'rb') as file:
+        with open(file_results, 'rb') as file:
             data_tuple = pickle.load(file)
 
         avg_speed = data_tuple[25]
@@ -2821,7 +2820,7 @@ class Analysis():
     def plot_time_to_start_cross_by_average(df_mapping):
         logger.info("Plotting plot_time_to_start_cross_by_average.")
         final_dict = {}
-        with open(pickle_file_path, 'rb') as file:
+        with open(file_results, 'rb') as file:
             data_tuple = pickle.load(file)
 
         avg_time = data_tuple[24]
@@ -3138,7 +3137,7 @@ class Analysis():
     @staticmethod
     def plot_crossing_without_traffic_light(df_mapping):
         final_dict = {}
-        with open(pickle_file_path, 'rb') as file:
+        with open(file_results, 'rb') as file:
             data_tuple = pickle.load(file)
 
         without_trf_light = data_tuple[28]
@@ -3447,7 +3446,7 @@ class Analysis():
     @staticmethod
     def plot_crossing_with_traffic_light(df_mapping):
         final_dict = {}
-        with open(pickle_file_path, 'rb') as file:
+        with open(file_results, 'rb') as file:
             data_tuple = pickle.load(file)
 
         with_trf_light = data_tuple[27]
@@ -3757,7 +3756,7 @@ class Analysis():
     def correlation_matrix(df_mapping):
         logger.info("Plotting correlation matrices.")
         final_dict = {}
-        with open(pickle_file_path, 'rb') as file:
+        with open(file_results, 'rb') as file:
             data_tuple = pickle.load(file)
 
         (ped_cross_city, ped_crossing_count, person_city, bicycle_city, car_city,
@@ -4142,6 +4141,7 @@ class Analysis():
 
     @staticmethod
     def find_city_id(df, video_id, start_time):
+        logger.debug(f"Looking for city for video_id={video_id}, start_time={start_time}.")
         for _, row in df.iterrows():
             videos = re.findall(r"[\w-]+", row["videos"])  # convert to list
             start_times = ast.literal_eval(row["start_time"])  # convert to list
@@ -4368,9 +4368,9 @@ class Analysis():
 if __name__ == "__main__":
     logger.info("Analysis started.")
 
-    if os.path.exists(pickle_file_path) and not common.get_configs('always_analyse'):
+    if os.path.exists(file_results) and not common.get_configs('always_analyse'):
         # Load the data from the pickle file
-        with open(pickle_file_path, 'rb') as file:
+        with open(file_results, 'rb') as file:
             (data, person_counter, bicycle_counter, car_counter, motorcycle_counter,
              bus_counter, truck_counter, cellphone_counter, traffic_light_counter, stop_sign_counter,
              pedestrian_cross_city, pedestrian_crossing_count, person_city, bicycle_city, car_city,
@@ -4598,8 +4598,8 @@ if __name__ == "__main__":
                 df_mapping.at[index, 'lon'] = lon
 
         # Save the results to a pickle file
-        logger.info("Saving results to a pickle file {}.", pickle_file_path)
-        with open(pickle_file_path, 'wb') as file:
+        logger.info("Saving results to a pickle file {}.", file_results)
+        with open(file_results, 'wb') as file:
             pickle.dump((data,                       # 0
                          person_counter,             # 1
                          bicycle_counter,            # 2
