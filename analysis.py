@@ -484,24 +484,28 @@ class Analysis():
         # Set state to NA
         df['state'] = df['state'].fillna('NA')
         # Columns to hide on hover
-        columns_remove = ['videos', 'time_of_day', 'start_time', 'end_time', 'upload_date', 'fps_list']
+        columns_remove = ['videos', 'time_of_day', 'start_time', 'end_time', 'upload_date', 'fps_list', 'vehicle_type']
         df = df.drop(columns=columns_remove, errors="ignore")  # ignore missing columns
+        # Sort by country
+        df = df.sort_values(by="country")
         # Draw map
         fig = px.scatter_map(df,
                              lat="lat",
                              lon="lon",
                              hover_data=df.columns,
-                             color=df["country"],
-                             zoom=1)
+                             hover_name="city",
+                             color=df["continent"],
+                             zoom=1.3)
         # Update layout
         fig.update_layout(
             margin=dict(l=0, r=0, t=0, b=0),  # Reduce margins
-            modebar_remove=["toImage"],  # remove modebar image button
+            # modebar_remove=["toImage"],  # remove modebar image button
             # showlegend=False,  # hide legend if not needed
-            annotations=[]  # remove any extra annotations
-        )
-        # Update font family
-        fig.update_layout(font=dict(family=common.get_configs('font_family')))
+            # annotations=[],  # remove any extra annotations
+            mapbox=dict(zoom=1.3),
+            font=dict(family=common.get_configs('font_family'),  # update font family
+                      size=common.get_configs('font_size'))  # update font size
+        )      
         # Save and display the figure
         Analysis.save_plotly_figure(fig, "mapbox_map", save_final=True)
 
@@ -4637,7 +4641,7 @@ if __name__ == "__main__":
     logger.info(f"cellphone: {cellphone_counter}; traffic light: {traffic_light_counter}; sign: {stop_sign_counter}")
 
     logger.info("Producing figures.")
-    Analysis.get_world_map(df_mapping)
+    # Analysis.get_world_map(df_mapping)
     Analysis.get_mapbox_map(df_mapping)
     # Analysis.speed_and_time_to_start_cross(df_mapping)
     # Analysis.plot_speed_to_cross_by_alphabetical_order(df_mapping)
@@ -4657,6 +4661,8 @@ if __name__ == "__main__":
     # df = df_mapping[df_mapping["speed_crossing"] != 0]
     # df = df[df["time_crossing"] != 0]
     # df['state'] = df['state'].fillna('NA')
+    # # Sort by country
+    # df = df.sort_values(by="country")
     # Analysis.scatter(df=df,
     #                  x="speed_crossing",
     #                  y="time_crossing",
@@ -4675,6 +4681,8 @@ if __name__ == "__main__":
     # df = df_mapping[df_mapping["speed_crossing_day"] != 0]
     # df = df[df["time_crossing_day"] != 0]
     # df['state'] = df['state'].fillna('NA')
+    # # Sort by country
+    # df = df.sort_values(by="country")
     # Analysis.scatter(df=df,
     #                  x="speed_crossing_day",
     #                  y="time_crossing_day",
@@ -4693,6 +4701,8 @@ if __name__ == "__main__":
     # df = df_mapping[df_mapping["speed_crossing_night"] != 0]
     # df = df[df["time_crossing_night"] != 0]
     # df['state'] = df['state'].fillna('NA')
+    # # Sort by country
+    # df = df.sort_values(by="country")
     # Analysis.scatter(df=df,
     #                  x="speed_crossing_night",
     #                  y="time_crossing_night",
@@ -4710,6 +4720,8 @@ if __name__ == "__main__":
     # # Speed of crossing vs population of city
     # df = df_mapping[df_mapping["speed_crossing"] != 0]
     # df['state'] = df['state'].fillna('NA')
+    # # Sort by country
+    # df = df.sort_values(by="country")
     # Analysis.scatter(df=df,
     #                  x="speed_crossing",
     #                  y="population_city",
@@ -4727,6 +4739,8 @@ if __name__ == "__main__":
     # # Time to start crossing vs population of city
     # df = df_mapping[df_mapping["time_crossing"] != 0]
     # df['state'] = df['state'].fillna('NA')
+    # # Sort by country
+    # df = df.sort_values(by="country")
     # Analysis.scatter(df=df,
     #                  x="time_crossing",
     #                  y="population_city",
@@ -4744,6 +4758,8 @@ if __name__ == "__main__":
     # # Speed of crossing vs population of city
     # df = df_mapping[df_mapping["speed_crossing"] != 0]
     # df['state'] = df['state'].fillna('NA')
+    # # Sort by country
+    # df = df.sort_values(by="country")
     # Analysis.scatter(df=df,
     #                  x="speed_crossing",
     #                  y="population_city",
@@ -4761,6 +4777,8 @@ if __name__ == "__main__":
     # # Time to start crossing vs population of city
     # df = df_mapping[df_mapping["time_crossing"] != 0]
     # df['state'] = df['state'].fillna('NA')
+    # # Sort by country
+    # df = df.sort_values(by="country")
     # Analysis.scatter(df=df,
     #                  x="time_crossing",
     #                  y="traffic_mortality",
@@ -4778,6 +4796,8 @@ if __name__ == "__main__":
     # # Speed of crossing vs population of city
     # df = df_mapping[df_mapping["speed_crossing"] != 0]
     # df['state'] = df['state'].fillna('NA')
+    # # Sort by country
+    # df = df.sort_values(by="country")
     # Analysis.scatter(df=df,
     #                  x="speed_crossing",
     #                  y="traffic_mortality",
@@ -4795,6 +4815,8 @@ if __name__ == "__main__":
     # # Time to start crossing vs population of city
     # df = df_mapping[df_mapping["time_crossing"] != 0]
     # df['state'] = df['state'].fillna('NA')
+    # # Sort by country
+    # df = df.sort_values(by="country")
     # Analysis.scatter(df=df,
     #                  x="time_crossing",
     #                  y="literacy_rate",
@@ -4812,6 +4834,8 @@ if __name__ == "__main__":
     # # Speed of crossing vs population of city
     # df = df_mapping[df_mapping["speed_crossing"] != 0]
     # df['state'] = df['state'].fillna('NA')
+    # # Sort by country
+    # df = df.sort_values(by="country")
     # Analysis.scatter(df=df,
     #                  x="speed_crossing",
     #                  y="literacy_rate",
@@ -4829,6 +4853,8 @@ if __name__ == "__main__":
     # # Time to start crossing vs population of city
     # df = df_mapping[df_mapping["time_crossing"] != 0]
     # df['state'] = df['state'].fillna('NA')
+    # # Sort by country
+    # df = df.sort_values(by="country")
     # Analysis.scatter(df=df,
     #                  x="time_crossing",
     #                  y="gini",
@@ -4846,6 +4872,8 @@ if __name__ == "__main__":
     # # Speed of crossing vs population of city
     # df = df_mapping[df_mapping["speed_crossing"] != 0]
     # df['state'] = df['state'].fillna('NA')
+    # # Sort by country
+    # df = df.sort_values(by="country")
     # Analysis.scatter(df=df,
     #                  x="speed_crossing",
     #                  y="gini",
@@ -4863,6 +4891,8 @@ if __name__ == "__main__":
     # # Time to start crossing vs population of city
     # df = df_mapping[df_mapping["time_crossing"] != 0]
     # df['state'] = df['state'].fillna('NA')
+    # # Sort by country
+    # df = df.sort_values(by="country")
     # Analysis.scatter(df=df,
     #                  x="time_crossing",
     #                  y="traffic_index",
@@ -4881,6 +4911,8 @@ if __name__ == "__main__":
     # # Speed of crossing vs population of city
     # df = df_mapping[df_mapping["speed_crossing"] != 0]
     # df['state'] = df['state'].fillna('NA')
+    # # Sort by country
+    # df = df.sort_values(by="country")
     # Analysis.scatter(df=df,
     #                  x="speed_crossing",
     #                  y="traffic_index",
@@ -4898,6 +4930,8 @@ if __name__ == "__main__":
     # # Speed of crossing vs detected mobile phones
     # df = df_mapping[df_mapping["time_crossing"] != 0]
     # df['state'] = df['state'].fillna('NA')
+    # # Sort by country
+    # df = df.sort_values(by="country")
     # df['cellphone_normalised'] = df['cellphone'] / df['total_time']
     # Analysis.scatter(df=df,
     #                  x="time_crossing",
@@ -4916,6 +4950,8 @@ if __name__ == "__main__":
     # # Speed of crossing vs detected mobile phones
     # df = df_mapping[df_mapping["speed_crossing"] != 0]
     # df['state'] = df['state'].fillna('NA')
+    # # Sort by country
+    # df = df.sort_values(by="country")
     # df['cellphone_normalised'] = df['cellphone'] / df['total_time']
     # Analysis.scatter(df=df,
     #                  x="speed_crossing",
@@ -4938,6 +4974,8 @@ if __name__ == "__main__":
     # # Crossing with and without traffic lights
     # df = df_mapping[df_mapping["speed_crossing"] != 0]
     # df['state'] = df['state'].fillna('NA')
+    # # Sort by country
+    # df = df.sort_values(by="country")
     # df['with_trf_light_norm'] = (df['with_trf_light_day'] + df['with_trf_light_day']) / df['total_time'] / df['population_city']  # noqa: E501
     # df['without_trf_light_norm'] = (df['without_trf_light_day'] + df['without_trf_light_day']) / df['total_time'] / df['population_city']  # noqa: E501
     # Analysis.scatter(df=df,
