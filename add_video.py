@@ -10,10 +10,11 @@ from threading import Timer
 import random
 import requests
 import ast
+from geopy.geocoders import Nominatim
+from geopy.exc import GeocoderTimedOut
 
 
 app = Flask(__name__)
-
 
 FILE_PATH = common.get_configs("mapping")     # mapping file
 
@@ -343,6 +344,8 @@ def form():
                         df.at[idx, 'traffic_index'] = 0.0
 
                 else:
+                    # get coordinates
+                    lat, lon = get_lat_lon(city, state, country)
                     # Add new row if city and country are not found in the CSV
                     new_row = {
                         'id': int(df.iloc[-1]['id']+1),
@@ -350,6 +353,8 @@ def form():
                         'state': state,
                         'country': country,
                         'ISO_country': common.get_iso3_country_code(common.correct_country(country)),
+                        'lat': lat,
+                        'lon': lon,
                         'videos': '[' + video_id + ']',
                         'time_of_day': str([[int(x) for x in time_of_day]]),  # Store as stringified list of integers
                         'start_time': str([[int(x) for x in start_time]]),    # Store as stringified list of integers
@@ -530,6 +535,20 @@ def get_country_average_height(iso3_code):
     except Exception as e:
         print(f"Error fetching height data: {e}")
         return 0.0
+
+
+def get_lat_lon(city, state, country):
+    """returns latitude and longitude of a location."""
+    # initialize geolocator
+    geolocator = Nominatim(user_agent="geo_lookup")
+    try:
+        location_query = f"{city}, {state}, {country}" if state else f"{city}, {country}"
+        location = geolocator.geocode(location_query, timeout=10)
+        if location:
+            return location.latitude, location.longitude
+        return None, None
+    except GeocoderTimedOut:
+        return None, None
 
 
 if __name__ == "__main__":

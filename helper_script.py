@@ -20,6 +20,8 @@ import sys
 import logging
 from tqdm import tqdm
 import datetime
+from geopy.geocoders import Nominatim
+from geopy.exc import GeocoderTimedOut
 
 
 logger = CustomLogger(__name__)  # use custom logger
@@ -801,6 +803,21 @@ class Youtube_Helper:
                                       ascending=[True, False]).drop_duplicates(subset=['ISO_country'])
 
         return geni_df[['ISO_country', 'gini']]
+
+    @staticmethod
+    def get_lat_lon(city, state, country):
+        """returns latitude and longitude of a location."""
+        # initialize geolocator
+        geolocator = Nominatim(user_agent="geo_lookup")
+        try:
+            location_query = f"{city}, {state}, {country}" if state else f"{city}, {country}"
+            location = geolocator.geocode(location_query, timeout=10)
+            if location:
+                logger.debug(f"Fetched coordinates for {city}, {state}, {country}: lat={location.latitude}, lon={location.longitude}")  # noqa: E501
+                return location.latitude, location.longitude
+            return None, None
+        except GeocoderTimedOut:
+            return None, None
 
     @staticmethod
     def fill_gini_data(df):
