@@ -19,11 +19,14 @@ import re
 import warnings
 from scipy.spatial import KDTree
 import shutil
+from geopy.geocoders import Nominatim
+from geopy.exc import GeocoderTimedOut, GeocoderUnavailable
+from datetime import datetime
 
 # Suppress the specific FutureWarning
 warnings.filterwarnings("ignore", category=FutureWarning, module="plotly")
 
-logs(show_level='debug', show_color=True)
+logs(show_level='info', show_color=True)
 logger = CustomLogger(__name__)  # use custom logger
 
 # set template for plotly output
@@ -219,14 +222,14 @@ class Analysis():
             city = row["city"]
             state = row['state'] if not pd.isna(row['state']) else "unknown"
             country = row["country"]
-            gdp = row["gdp_city_(billion_US)"]
+            gdp = row["gmp"]
             population = row["population_city"]
             population_country = row["population_country"]
             traffic_mortality = row["traffic_mortality"]
             continent = row["continent"]
             literacy_rate = row["literacy_rate"]
             avg_height = row["avg_height"]
-            iso_country = row["ISO_country"]
+            iso3 = row["iso3"]
             fps_list = ast.literal_eval(row["fps_list"])
 
             # Iterate through each video, start time, end time, and time of day
@@ -241,7 +244,7 @@ class Analysis():
                             # Return relevant information once found
                             return (video, s, end[counter], time_of_day_[counter], city, state,
                                     country, (gdp/population), population, population_country,
-                                    traffic_mortality, continent, literacy_rate, avg_height, iso_country, fps)
+                                    traffic_mortality, continent, literacy_rate, avg_height, iso3, fps)
                         counter += 1
 
     @staticmethod
@@ -371,7 +374,7 @@ class Analysis():
         countries = df_mapping["country"]
         coords_lat = df_mapping["lat"]
         coords_lon = df_mapping["lon"]
-        gdp_city = df_mapping["gdp_city_(billion_US)"]
+        gdp_city = df_mapping["gmp"]
         population_city = df_mapping["population_city"]
         population_country = df_mapping["population_country"]
         traffic_mortality_rate = df_mapping["traffic_mortality"]
@@ -418,10 +421,7 @@ class Analysis():
         # Process each city and its corresponding country
         city_coords = []
         for i, (city, state, lat, lon) in enumerate(tqdm(zip(cities, states, coords_lat, coords_lon), total=len(cities))):
-            if state and str(state).lower() != 'nan':
-                city_country = f"{city}, {state}, {countries[i]}"  # Combine city, state and country
-            else:
-                city_country = f"{city}, {countries[i]}"  # Combine city and country
+            if not state or str(state).lower() == 'nan':
                 state = 'N/A'
             if lat and lon:
                 city_coords.append({
@@ -541,7 +541,7 @@ class Analysis():
         if result is not None:
             # Unpack the result since it's not None
             (video, start, end, time_of_day, city, state, country, gdp_, population, population_country,
-             traffic_mortality_, continent, literacy_rate, avg_height, iso_country, fps) = result
+             traffic_mortality_, continent, literacy_rate, avg_height, iso3, fps) = result
 
         # Initialize an empty dictionary to store time taken for each object to cross
         var = {}
@@ -605,7 +605,7 @@ class Analysis():
             if result is not None:
                 # Unpack the result since it's not None
                 (video, start, end, time_of_day, city, state, country, gdp_, population, population_country,
-                 traffic_mortality_, continent, literacy_rate, avg_height, iso_country, fps) = result
+                 traffic_mortality_, continent, literacy_rate, avg_height, iso3, fps) = result
 
                 # Count the number of mobile objects in the video
                 mobile_ids = Analysis.count_object(value, 67)
@@ -682,7 +682,7 @@ class Analysis():
             if result is not None:
                 # Unpack the result since it's not None
                 (video, start, end, time_of_day, city, state, country, gdp_, population, population_country,
-                 traffic_mortality_, continent, literacy_rate, avg_height, iso_country, fps) = result
+                 traffic_mortality_, continent, literacy_rate, avg_height, iso3, fps) = result
 
                 # Calculate the duration of the video
                 duration = end - start
@@ -752,12 +752,12 @@ class Analysis():
             # Check if the result is None (i.e., no matching data was found)
             if result is not None:
                 (_, start, end, condition, city, state, country, gdp_, population, population_country,
-                 traffic_mortality_, continent, literacy_rate, avg_height, iso_country, fps) = result
+                 traffic_mortality_, continent, literacy_rate, avg_height, iso3, fps) = result
 
                 value = dfs.get(key)
 
                 # Store the country associated with each city
-                city_country_map_[f'{city}_{state}'] = iso_country
+                city_country_map_[f'{city}_{state}'] = iso3
 
                 # Calculate the duration of the video
                 duration = end - start
@@ -806,7 +806,7 @@ class Analysis():
             # Check if the result is None (i.e., no matching data was found)
             if result is not None:
                 (_, start, end, condition, city, state, country, gdp_, population, population_country,
-                 traffic_mortality_, continent, literacy_rate, avg_height, iso_country, fps) = result
+                 traffic_mortality_, continent, literacy_rate, avg_height, iso3, fps) = result
 
                 # Makes group based on Unique ID
                 crossed_ids_grouped = crossed_ids.groupby("Unique Id")
@@ -879,7 +879,7 @@ class Analysis():
             # Check if the result is None (i.e., no matching data was found)
             if result is not None:
                 (_, start, end, time_of_day, city, state, country, gdp_, population, population_country,
-                 traffic_mortality_, continent, literacy_rate, avg_height, iso_country, fps) = result
+                 traffic_mortality_, continent, literacy_rate, avg_height, iso3, fps) = result
 
                 dataframe = value
 
@@ -941,7 +941,7 @@ class Analysis():
             if result is not None:
 
                 (_, start, end, time_of_day, city, state, country, gdp_, population, population_country,
-                 traffic_mortality_, continent, literacy_rate, avg_height, iso_country, fps) = result
+                 traffic_mortality_, continent, literacy_rate, avg_height, iso3, fps) = result
 
                 # Extract the time of day
                 condition = time_of_day
@@ -1006,7 +1006,7 @@ class Analysis():
             if result is not None:
 
                 (_, start, end, time_of_day, city, state, country, gdp_, population, population_country,
-                 traffic_mortality_, continent, literacy_rate, avg_height, iso_country, fps) = result
+                 traffic_mortality_, continent, literacy_rate, avg_height, iso3, fps) = result
 
                 # Calculate the duration of the video
                 duration = end - start
@@ -1068,7 +1068,7 @@ class Analysis():
 
             if result is not None:
                 (_, start, end, time_of_day, city, state, country, gdp_, population, population_country,
-                 traffic_mortality_, continent, literacy_rate, avg_height, iso_country, fps) = result
+                 traffic_mortality_, continent, literacy_rate, avg_height, iso3, fps) = result
 
                 # Create the city_time_key (city + time_of_day)
                 city_time_key = f'{city}_{state}_{time_of_day}'
@@ -1110,7 +1110,7 @@ class Analysis():
 
             # Get the country from the previously stored city_country_map
             country = Analysis.get_value(df_mapping, "city", city, "state", state, "country")
-            iso_code = Analysis.get_value(df_mapping, "city", city, "state", state, "ISO_country")
+            iso_code = Analysis.get_value(df_mapping, "city", city, "state", state, "iso3")
             if country or iso_code is not None:
 
                 # Initialize the city's dictionary if not already present
@@ -1303,7 +1303,7 @@ class Analysis():
         # Plot left column (first half of cities)
         for i, city in enumerate(cities_ordered[:num_cities_per_col]):
             city_new, state = city.split('_')
-            iso_code = Analysis.get_value(df_mapping, "city", city_new, "state", state, "ISO_country")
+            iso_code = Analysis.get_value(df_mapping, "city", city_new, "state", state, "iso3")
             city = Analysis.format_city_state(city)  # type: ignore
             # Row for speed (Day and Night)
             row = 2 * i + 1
@@ -1370,7 +1370,7 @@ class Analysis():
         # Similarly for the right column
         for i, city in enumerate(cities_ordered[num_cities_per_col:]):
             city_new, state = city.split('_')
-            iso_code = Analysis.get_value(df_mapping, "city", city_new, "state", state, "ISO_country")
+            iso_code = Analysis.get_value(df_mapping, "city", city_new, "state", state, "iso3")
             city = Analysis.format_city_state(city)  # type: ignore
             row = 2 * i + 1
             idx = num_cities_per_col + i
@@ -1718,7 +1718,7 @@ class Analysis():
                                                        "state", state, "population_city"))  # type: ignore
             gdp.append(float(Analysis.get_value(df_mapping,
                                                 "city", city, "state", state,
-                                                "gdp_city_(billion_US)"))/population_city)  # type: ignore
+                                                "gmp"))/population_city)  # type: ignore
 
         # Plot the scatter diagram
         Analysis.plot_scatter_diag(x=traffic_deaths, y=info, size=gdp, color=continents, symbol=conditions,
@@ -1750,7 +1750,7 @@ class Analysis():
 
             # Get the country from the previously stored city_country_map
             country = Analysis.get_value(df_mapping, "city", city, "state", state, "country")
-            iso_code = Analysis.get_value(df_mapping, "city", city, "state", state, "ISO_country")
+            iso_code = Analysis.get_value(df_mapping, "city", city, "state", state, "iso3")
             if country or iso_code is not None:
                 # Initialize the city's dictionary if not already present
                 if f'{city}_{state}' not in final_dict:
@@ -1792,7 +1792,7 @@ class Analysis():
         # Plot left column (first half of cities)
         for i, city in enumerate(cities_ordered[:num_cities_per_col]):
             city_new, state = city.split('_')
-            iso_code = Analysis.get_value(df_mapping, "city", city_new, "state", state, "ISO_country")
+            iso_code = Analysis.get_value(df_mapping, "city", city_new, "state", state, "iso3")
             city = Analysis.format_city_state(city)  # type: ignore
             row = i + 1
             if day_avg_speed[i] is not None and night_avg_speed[i] is not None:
@@ -1825,7 +1825,7 @@ class Analysis():
 
         for i, city in enumerate(cities_ordered[num_cities_per_col:]):
             city_new, state = city.split('_')
-            iso_code = Analysis.get_value(df_mapping, "city", city_new, "state", state, "ISO_country")
+            iso_code = Analysis.get_value(df_mapping, "city", city_new, "state", state, "iso3")
             city = Analysis.format_city_state(city)  # type: ignore
             row = i + 1
             idx = num_cities_per_col + i
@@ -2128,7 +2128,7 @@ class Analysis():
 
             # Get the country from the previously stored city_country_map
             country = Analysis.get_value(df_mapping, "city", city, "state", state, "country")
-            iso_code = Analysis.get_value(df_mapping, "city", city, "state", state, "ISO_country")
+            iso_code = Analysis.get_value(df_mapping, "city", city, "state", state, "iso3")
             if country or iso_code is not None:
                 # Initialize the city's dictionary if not already present
                 if f'{city}_{state}' not in final_dict:
@@ -2170,7 +2170,7 @@ class Analysis():
         # Plot left column (first half of cities)
         for i, city in enumerate(cities_ordered[:num_cities_per_col]):
             city_new, state = city.split('_')
-            iso_code = Analysis.get_value(df_mapping, "city", city_new, "state", state, "ISO_country")
+            iso_code = Analysis.get_value(df_mapping, "city", city_new, "state", state, "iso3")
             city = Analysis.format_city_state(city)  # type: ignore
             # Row for speed (Day and Night)
             row = i + 1
@@ -2205,7 +2205,7 @@ class Analysis():
         # Similarly for the right column
         for i, city in enumerate(cities_ordered[num_cities_per_col:]):
             city_new, state = city.split('_')
-            iso_code = Analysis.get_value(df_mapping, "city", city_new, "state", state, "ISO_country")
+            iso_code = Analysis.get_value(df_mapping, "city", city_new, "state", state, "iso3")
             city = Analysis.format_city_state(city)  # type: ignore
             row = i + 1
             idx = num_cities_per_col + i
@@ -2495,7 +2495,7 @@ class Analysis():
 
             # Get the country from the previously stored city_country_map
             country = Analysis.get_value(df_mapping, "city", city, "state", state, "country")
-            iso_code = Analysis.get_value(df_mapping, "city", city, "state", state, "ISO_country")
+            iso_code = Analysis.get_value(df_mapping, "city", city, "state", state, "iso3")
             if country or iso_code is not None:
                 # Initialize the city's dictionary if not already present
                 if f"{city}_{state}" not in final_dict:
@@ -2529,7 +2529,7 @@ class Analysis():
         # Plot left column (first half of cities)
         for i, city in enumerate(cities_ordered[:num_cities_per_col]):
             city_new, state = city.split('_')
-            iso_code = Analysis.get_value(df_mapping, "city", city_new, "state", state, "ISO_country")
+            iso_code = Analysis.get_value(df_mapping, "city", city_new, "state", state, "iso3")
             city = Analysis.iso2_to_flag(Analysis.iso3_to_iso2(iso_code)) + " " + Analysis.format_city_state(city)   # type: ignore  # noqa: E501
             row = i + 1
             if day_avg_speed[i] is not None and night_avg_speed[i] is not None:
@@ -2576,7 +2576,7 @@ class Analysis():
 
         for i, city in enumerate(cities_ordered[num_cities_per_col:]):
             city_new, state = city.split('_')
-            iso_code = Analysis.get_value(df_mapping, "city", city_new, "state", state, "ISO_country")
+            iso_code = Analysis.get_value(df_mapping, "city", city_new, "state", state, "iso3")
             city = Analysis.iso2_to_flag(Analysis.iso3_to_iso2(iso_code)) + " " + Analysis.format_city_state(city)   # type: ignore  # noqa: E501
             row = i + 1
             idx = num_cities_per_col + i
@@ -2820,7 +2820,7 @@ class Analysis():
 
             # Get the country from the previously stored city_country_map
             country = Analysis.get_value(df_mapping, "city", city, "state", state, "country")
-            iso_code = Analysis.get_value(df_mapping, "city", city, "state", state, "ISO_country")
+            iso_code = Analysis.get_value(df_mapping, "city", city, "state", state, "iso3")
             if country or iso_code is not None:
                 # Initialize the city's dictionary if not already present
                 if f"{city}_{state}" not in final_dict:
@@ -2856,7 +2856,7 @@ class Analysis():
         for i, city in enumerate(cities_ordered[:num_cities_per_col]):
             # Row for speed (Day and Night)
             city_new, state = city.split('_')
-            iso_code = Analysis.get_value(df_mapping, "city", city_new, "state", state, "ISO_country")
+            iso_code = Analysis.get_value(df_mapping, "city", city_new, "state", state, "iso3")
             city = Analysis.iso2_to_flag(Analysis.iso3_to_iso2(iso_code)) + " " + Analysis.format_city_state(city)   # type: ignore  # noqa: E501
             row = i + 1
             if day_time_dict[i] is not None and night_time_dict[i] is not None:
@@ -2894,7 +2894,7 @@ class Analysis():
         # Similarly for the right column
         for i, city in enumerate(cities_ordered[num_cities_per_col:]):
             city_new, state = city.split('_')
-            iso_code = Analysis.get_value(df_mapping, "city", city_new, "state", state, "ISO_country")
+            iso_code = Analysis.get_value(df_mapping, "city", city_new, "state", state, "iso3")
             city = Analysis.iso2_to_flag(Analysis.iso3_to_iso2(iso_code)) + " " + Analysis.format_city_state(city)   # type: ignore  # noqa: E501
             row = i + 1
             idx = num_cities_per_col + i
@@ -3132,7 +3132,7 @@ class Analysis():
 
             # Get the country from the previously stored city_country_map
             country = Analysis.get_value(df_mapping, "city", city, "state", state, "country")
-            iso_code = Analysis.get_value(df_mapping, "city", city, "state", state, "ISO_country")
+            iso_code = Analysis.get_value(df_mapping, "city", city, "state", state, "iso3")
             if country or iso_code is not None:
                 # Initialize the city's dictionary if not already present
                 if f"{city}_{state}" not in final_dict:
@@ -3175,7 +3175,7 @@ class Analysis():
         # Plot left column (first half of cities)
         for i, city in enumerate(cities_ordered[:num_cities_per_col]):
             city_new, state = city.split('_')
-            iso_code = Analysis.get_value(df_mapping, "city", city_new, "state", state, "ISO_country")
+            iso_code = Analysis.get_value(df_mapping, "city", city_new, "state", state, "iso3")
             city = Analysis.iso2_to_flag(Analysis.iso3_to_iso2(iso_code)) + " " + Analysis.format_city_state(city)   # type: ignore  # noqa: E501
             row = i + 1
             if day_crossing[i] is not None and night_crossing[i] is not None:
@@ -3212,7 +3212,7 @@ class Analysis():
 
         for i, city in enumerate(cities_ordered[num_cities_per_col:]):
             city_new, state = city.split('_')
-            iso_code = Analysis.get_value(df_mapping, "city", city_new, "state", state, "ISO_country")
+            iso_code = Analysis.get_value(df_mapping, "city", city_new, "state", state, "iso3")
             city = Analysis.iso2_to_flag(Analysis.iso3_to_iso2(iso_code)) + " " + Analysis.format_city_state(city)   # type: ignore  # noqa: E501
             row = i + 1
             idx = num_cities_per_col + i
@@ -3441,7 +3441,7 @@ class Analysis():
 
             # Get the country from the previously stored city_country_map
             country = Analysis.get_value(df_mapping, "city", city, "state", state, "country")
-            iso_code = Analysis.get_value(df_mapping, "city", city, "state", state, "ISO_country")
+            iso_code = Analysis.get_value(df_mapping, "city", city, "state", state, "iso3")
             if country or iso_code is not None:
                 # Initialize the city's dictionary if not already present
                 if f"{city}_{state}" not in final_dict:
@@ -3484,7 +3484,7 @@ class Analysis():
         # Plot left column (first half of cities)
         for i, city in enumerate(cities_ordered[:num_cities_per_col]):
             city_new, state = city.split('_')
-            iso_code = Analysis.get_value(df_mapping, "city", city_new, "state", state, "ISO_country")
+            iso_code = Analysis.get_value(df_mapping, "city", city_new, "state", state, "iso3")
             city = Analysis.iso2_to_flag(Analysis.iso3_to_iso2(iso_code)) + " " + Analysis.format_city_state(city)   # type: ignore  # noqa: E501
             row = i + 1
             if day_crossing[i] is not None and night_crossing[i] is not None:
@@ -3521,7 +3521,7 @@ class Analysis():
 
         for i, city in enumerate(cities_ordered[num_cities_per_col:]):
             city_new, state = city.split('_')
-            iso_code = Analysis.get_value(df_mapping, "city", city_new, "state", state, "ISO_country")
+            iso_code = Analysis.get_value(df_mapping, "city", city_new, "state", state, "iso3")
             city = Analysis.iso2_to_flag(Analysis.iso3_to_iso2(iso_code)) + " " + Analysis.format_city_state(city)   # type: ignore  # noqa: E501
             row = i + 1
             idx = num_cities_per_col + i
@@ -3765,10 +3765,10 @@ class Analysis():
 
             # Get the country from the previously stored city_country_map
             country = Analysis.get_value(df_mapping, "city", city, "state", state, "country")
-            iso_code = Analysis.get_value(df_mapping, "city", city, "state", state, "ISO_country")
+            iso_code = Analysis.get_value(df_mapping, "city", city, "state", state, "iso3")
             continent = Analysis.get_value(df_mapping, "city", city, "state", state, "continent")
             population_country = Analysis.get_value(df_mapping, "city", city, "state", state, "population_country")
-            gdp_city = Analysis.get_value(df_mapping, "city", city, "state", state, "gdp_city_(billion_US)")
+            gdp_city = Analysis.get_value(df_mapping, "city", city, "state", state, "gmp")
             traffic_mortality = Analysis.get_value(df_mapping, "city", city, "state", state, "traffic_mortality")
             literacy_rate = Analysis.get_value(df_mapping, "city", city, "state", state, "literacy_rate")
             gini = Analysis.get_value(df_mapping, "city", city, "state", state, "gini")
@@ -4318,19 +4318,34 @@ class Analysis():
         return [positions[i % len(positions)] for i in range(len(x))]
 
     @staticmethod
-    def get_lat_lon(city, state, country):
-        """returns latitude and longitude of a location."""
-        # initialize geolocator
-        geolocator = Nominatim(user_agent="geo_lookup")
+    def get_coordinates(city, state, country):
+        """Get city coordinates either from the pickle file or geocode them."""
+        # Generate a unique user agent with the current date and time
+        current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        user_agent = f"my_geocoding_script_{current_time}"
+
+        # Create a geolocator with the dynamically generated user_agent
+        geolocator = Nominatim(user_agent=user_agent)
+
         try:
-            location_query = f"{city}, {state}, {country}" if state else f"{city}, {country}"
-            location = geolocator.geocode(location_query, timeout=10)
+            # Attempt to geocode the city and country with a longer timeout
+            if state and str(state).lower() != 'nan':
+                location_query = f"{city}, {state}, {country}"  # Combine city, state and country
+            else:
+                location_query = f"{city}, {country}"  # Combine city and country
+            location = geolocator.geocode(location_query, timeout=2)  # type: ignore # Set a 2-second timeout
+
             if location:
-                logger.debug(f"Fetched coordinates for {city}, {state}, {country}: lat={location.latitude}, lon={location.longitude}")  # noqa: E501
-                return location.latitude, location.longitude
-            return None, None
+                return location.latitude, location.longitude  # type: ignore
+            else:
+                logger.error(f"Failed to geocode {location_query}")
+                return None, None  # Return None if city is not found
+
         except GeocoderTimedOut:
-            return None, None
+            logger.error(f"Geocoding timed out for {location_query}.")
+        except GeocoderUnavailable:
+            logger.error(f"Geocoding server could not be reached for {location_query}.")
+            return None, None  # Return None if city is not found
 
 
 # Execute analysis
@@ -4556,12 +4571,14 @@ if __name__ == "__main__":
                 ] = int(value)  # Explicitly cast to int
         
         # Get lat and lon for cities
-        lat_lon_values = zip(*df_mapping.apply(lambda row: Analysis.get_lat_lon(row["city"],
-                                                                                row["state"],
-                                                                                row["country"]),
-                                               axis=1))
-        print(lat_lon_values)
-        df_mapping["lat"], df_mapping["lon"] = zip(*lat_lon_values)
+        logger.info("Fetching lat and lon coordinates for cities.")
+        for index, row in tqdm(df_mapping.iterrows(), total=len(df_mapping)):
+            if pd.isna(row["lat"]) or pd.isna(row["lon"]):
+                lat, lon = Analysis.get_coordinates(row["city"],
+                                                    row["state"],
+                                                    common.correct_country(row["country"]))
+                df_mapping.at[index, 'lat'] = lat
+                df_mapping.at[index, 'lon'] = lon
 
         # Save the results to a pickle file
         logger.info("Saving results to a pickle file {}.", pickle_file_path)
@@ -4617,7 +4634,7 @@ if __name__ == "__main__":
     # Analysis.correlation_matrix(df_mapping)
     
     # # Data to show on hover in scatter plots
-    # hover_data = ["state", "country", "gdp_city_(billion_US)", "population_city", "population_country",
+    # hover_data = ["state", "country", "gmp", "population_city", "population_country",
     #               "traffic_mortality", "literacy_rate", "person", "bicycle", "car", "motorcycle",
     #               "bus", "truck", "cellphone", "traffic_light", "stop_sign", "total_time", "speed_crossing",
     #               "speed_crossing_day", "speed_crossing_night", "time_crossing", "time_crossing_day",
@@ -4838,7 +4855,7 @@ if __name__ == "__main__":
     #                  y="traffic_index",
     #                  color="continent",
     #                  text="city",
-    #                  # size="gdp_city_(billion_US)",
+    #                  # size="gmp",
     #                  xaxis_title='Crossing decision time (in s)',
     #                  yaxis_title='Traffic index',
     #                  pretty_text=False,

@@ -31,12 +31,12 @@ if common.get_configs("update_ISO_code"):
     if "country" not in mapping.columns:
         raise KeyError("The CSV file does not have a 'country' column.")
 
-    # Update the ISO_country column without using apply
-    if "ISO_country" not in mapping.columns:
-        mapping["ISO_country"] = None  # Initialize the column if it doesn't exist
+    # Update the iso3 column without using apply
+    if "iso3" not in mapping.columns:
+        mapping["iso3"] = None  # Initialize the column if it doesn't exist
 
     for index, row in mapping.iterrows():
-        mapping.at[index, "ISO_country"] = helper.get_iso_alpha_3(row["country"], row["ISO_country"])
+        mapping.at[index, "iso3"] = helper.get_iso_alpha_3(row["country"], row["iso3"])
 
     # Save the updated DataFrame back to the same CSV
     mapping.to_csv(common.get_configs("mapping"), index=False)
@@ -97,9 +97,9 @@ for index, row in tqdm(mapping.iterrows(), total=mapping.shape[0]):
     start_times = ast.literal_eval(row["start_time"])
     end_times = ast.literal_eval(row["end_time"])
     time_of_day = ast.literal_eval(row["time_of_day"])
-    iso_country = str(row["ISO_country"])
+    iso3 = str(row["iso3"])
     # Check if countries is in the list to be analysed
-    if countries_analyse and iso_country not in countries_analyse:
+    if countries_analyse and iso3 not in countries_analyse:
         continue
     city = str(row["city"])
     state = str(row["state"])

@@ -20,8 +20,6 @@ import sys
 import logging
 from tqdm import tqdm
 import datetime
-from geopy.geocoders import Nominatim
-from geopy.exc import GeocoderTimedOut
 
 
 logger = CustomLogger(__name__)  # use custom logger
@@ -552,7 +550,7 @@ class Youtube_Helper:
 
         # Rename columns appropriately
         population_df = population_df.rename(columns={
-            population_df.columns[0]: 'ISO_country',
+            population_df.columns[0]: 'iso3',
             population_df.columns[2]: 'Year',
             population_df.columns[3]: 'Population'
         })
@@ -566,8 +564,8 @@ class Youtube_Helper:
     def update_population_in_csv(data):
 
         # Ensure the required columns exist in the CSV
-        if "ISO_country" not in data.columns:
-            raise KeyError("The CSV file does not have a 'ISO_country' column.")
+        if "iso3" not in data.columns:
+            raise KeyError("The CSV file does not have a 'iso3' column.")
 
         if "population_country" not in data.columns:
             data["population_country"] = None  # Initialize the column if it doesn't exist
@@ -576,12 +574,12 @@ class Youtube_Helper:
         latest_population = Youtube_Helper.get_latest_population()
 
         # Create a dictionary for quick lookup
-        population_dict = dict(zip(latest_population['ISO_country'], latest_population['Population']))
+        population_dict = dict(zip(latest_population['iso3'], latest_population['Population']))
 
         # Update the population_country column
         for index, row in data.iterrows():
-            ISO_country = row["ISO_country"]
-            population = population_dict.get(ISO_country, None)
+            iso3 = row["iso3"]
+            population = population_dict.get(iso3, None)
             data.at[index, "population_country"] = population  # Always update with the latest population data
 
         # Save the updated DataFrame back to the same CSV
@@ -713,7 +711,7 @@ class Youtube_Helper:
         Fetch the latest traffic mortality data from the World Bank.
 
         Returns:
-            pd.DataFrame: DataFrame with ISO_country and the latest Traffic Mortality Rate.
+            pd.DataFrame: DataFrame with iso3 and the latest Traffic Mortality Rate.
         """
         # World Bank indicator for traffic mortality rate
         indicator = 'SH.STA.TRAF.P5'  # Road traffic deaths per 100,000 people
@@ -750,15 +748,15 @@ class Youtube_Helper:
         """
         try:
             # Ensure the required columns exist
-            if 'ISO_country' not in df.columns or 'traffic_mortality' not in df.columns:
-                logger.error("The required columns 'ISO_country' and 'traffic_mortality' are missing from the file.")
+            if 'iso3' not in df.columns or 'traffic_mortality' not in df.columns:
+                logger.error("The required columns 'iso3' and 'traffic_mortality' are missing from the file.")
                 return
 
             # Get the latest traffic mortality data
             traffic_df = Youtube_Helper.get_latest_traffic_mortality()
 
             # Merge the traffic mortality data with the existing DataFrame
-            updated_df = pd.merge(df, traffic_df, on='ISO_country', how='left', suffixes=('', '_new'))
+            updated_df = pd.merge(df, traffic_df, on='iso3', how='left', suffixes=('', '_new'))
 
             # Update the traffic_mortality column with the new data
             updated_df['traffic_mortality'] = updated_df['traffic_mortality_new'].combine_first(
@@ -780,7 +778,7 @@ class Youtube_Helper:
         Fetch the latest GINI index data from the World Bank.
 
         Returns:
-            pd.DataFrame: DataFrame with ISO_country and the latest GINI index values.
+            pd.DataFrame: DataFrame with iso3 and the latest GINI index values.
         """
         # World Bank indicator for GINI index
         indicator = 'SI.POV.GINI'  # GINI index
@@ -793,31 +791,16 @@ class Youtube_Helper:
 
         # Rename columns appropriately
         geni_df = geni_df.rename(columns={
-            geni_df.columns[0]: 'ISO_country',
+            geni_df.columns[0]: 'iso3',
             geni_df.columns[2]: 'Year',
             geni_df.columns[3]: 'gini'
         })
 
         # Keep only the latest value for each country
-        geni_df = geni_df.sort_values(by=['ISO_country', 'Year'],
-                                      ascending=[True, False]).drop_duplicates(subset=['ISO_country'])
+        geni_df = geni_df.sort_values(by=['iso3', 'Year'],
+                                      ascending=[True, False]).drop_duplicates(subset=['iso3'])
 
-        return geni_df[['ISO_country', 'gini']]
-
-    @staticmethod
-    def get_lat_lon(city, state, country):
-        """returns latitude and longitude of a location."""
-        # initialize geolocator
-        geolocator = Nominatim(user_agent="geo_lookup")
-        try:
-            location_query = f"{city}, {state}, {country}" if state else f"{city}, {country}"
-            location = geolocator.geocode(location_query, timeout=10)
-            if location:
-                logger.debug(f"Fetched coordinates for {city}, {state}, {country}: lat={location.latitude}, lon={location.longitude}")  # noqa: E501
-                return location.latitude, location.longitude
-            return None, None
-        except GeocoderTimedOut:
-            return None, None
+        return geni_df[['iso3', 'gini']]
 
     @staticmethod
     def fill_gini_data(df):
@@ -830,14 +813,14 @@ class Youtube_Helper:
         try:
             # Ensure the required column exists
             if 'gini' not in df.columns:
-                logger.error("The required columns 'ISO_country' and/or 'gini' are missing from the file.")
+                logger.error("The required columns 'iso3' and/or 'gini' are missing from the file.")
                 return
 
             # Get the latest GINI index data
             geni_df = Youtube_Helper.get_latest_gini_values()
 
             # Merge the GINI index data with the existing DataFrame
-            updated_df = pd.merge(df, geni_df, on='ISO_country', how='left', suffixes=('', '_new'))
+            updated_df = pd.merge(df, geni_df, on='iso3', how='left', suffixes=('', '_new'))
 
             # Update the geni column with the new data
             updated_df['gini'] = updated_df['gini_new'].combine_first(updated_df['gini'])

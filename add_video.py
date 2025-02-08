@@ -11,7 +11,8 @@ import random
 import requests
 import ast
 from geopy.geocoders import Nominatim
-from geopy.exc import GeocoderTimedOut
+from geopy.exc import GeocoderTimedOut, GeocoderUnavailable
+from datetime import datetime
 
 
 app = Flask(__name__)
@@ -25,8 +26,8 @@ def load_csv(file_path):
     if os.path.exists(file_path):
         return pd.read_csv(file_path)
     else:
-        return pd.DataFrame(columns=['city', 'state', 'country', 'ISO_country', 'videos', 'time_of_day',
-                                     'vehicle_type', 'start_time', 'end_time', 'gdp_city_(billion_US)',
+        return pd.DataFrame(columns=['city', 'state', 'country', 'iso3', 'videos', 'time_of_day',
+                                     'vehicle_type', 'start_time', 'end_time', 'gmp',
                                      'population_city', 'population_country', 'traffic_mortality', 'continent',
                                      'literacy_rate', 'avg_height', 'upload_date', 'fps_list', 'gini',
                                      'traffic_index'])
@@ -152,11 +153,11 @@ def form():
                     country_population = get_country_population(country_data)
                 existing_data_row = {'city': city,
                                      'country': country,
-                                     'ISO_country': iso3_code,
+                                     'iso3': iso3_code,
                                      'state': city,
                                      'videos': [],
                                      'time_of_day': [],
-                                     'gdp_city_(billion_US)': 0.0,
+                                     'gmp': 0.0,
                                      'population_city': get_city_population(city_data),
                                      'population_country': country_population,
                                      'traffic_mortality': get_country_traffic_mortality(iso3_code),
@@ -293,9 +294,9 @@ def form():
                     df.at[idx, 'start_time'] = str(start_time_list)    # Store as string representation
                     df.at[idx, 'end_time'] = str(end_time_list)        # Store as string representation
                     if gdp_city:
-                        df.at[idx, 'gdp_city_(billion_US)'] = float(gdp_city)
+                        df.at[idx, 'gmp'] = float(gdp_city)
                     else:
-                        df.at[idx, 'gdp_city_(billion_US)'] = 0.0
+                        df.at[idx, 'gmp'] = 0.0
                     if population_city:
                         df.at[idx, 'population_city'] = float(population_city)
                     else:
@@ -345,21 +346,21 @@ def form():
 
                 else:
                     # get coordinates
-                    lat, lon = get_lat_lon(city, state, country)
+                    lat, lon = get_coordinates(city, state, common.correct_country(country))
                     # Add new row if city and country are not found in the CSV
                     new_row = {
                         'id': int(df.iloc[-1]['id']+1),
                         'city': city,
                         'state': state,
                         'country': country,
-                        'ISO_country': common.get_iso3_country_code(common.correct_country(country)),
+                        'iso3': common.get_iso3_country_code(common.correct_country(country)),
                         'lat': lat,
                         'lon': lon,
                         'videos': '[' + video_id + ']',
                         'time_of_day': str([[int(x) for x in time_of_day]]),  # Store as stringified list of integers
                         'start_time': str([[int(x) for x in start_time]]),    # Store as stringified list of integers
                         'end_time': str([[int(x) for x in end_time]]),        # Store as stringified list of integers
-                        'gdp_city_(billion_US)': gdp_city,
+                        'gmp': gdp_city,
                         'population_city': population_city,
                         'population_country': population_country,
                         'traffic_mortality': traffic_mortality,
@@ -537,18 +538,35 @@ def get_country_average_height(iso3_code):
         return 0.0
 
 
-def get_lat_lon(city, state, country):
-    """returns latitude and longitude of a location."""
-    # initialize geolocator
-    geolocator = Nominatim(user_agent="geo_lookup")
+@staticmethod
+def get_coordinates(city, state, country):
+    """Get city coordinates either from the pickle file or geocode them."""
+    # Generate a unique user agent with the current date and time
+    current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    user_agent = f"my_geocoding_script_{current_time}"
+
+    # Create a geolocator with the dynamically generated user_agent
+    geolocator = Nominatim(user_agent=user_agent)
+
     try:
-        location_query = f"{city}, {state}, {country}" if state else f"{city}, {country}"
-        location = geolocator.geocode(location_query, timeout=10)
+        # Attempt to geocode the city and country with a longer timeout
+        if state and str(state).lower() != 'nan':
+            location_query = f"{city}, {state}, {country}"  # Combine city, state and country
+        else:
+            location_query = f"{city}, {country}"  # Combine city and country
+        location = geolocator.geocode(location_query, timeout=2)  # type: ignore # Set a 2-second timeout
+
         if location:
-            return location.latitude, location.longitude
-        return None, None
+            return location.latitude, location.longitude  # type: ignore
+        else:
+            print(f"Failed to geocode {location_query}")
+            return None, None  # Return None if city is not found
+
     except GeocoderTimedOut:
-        return None, None
+        print(f"Geocoding timed out for {location_query}.")
+    except GeocoderUnavailable:
+        print(f"Geocoding server could not be reached for {location_query}.")
+        return None, None  # Return None if city is not found
 
 
 if __name__ == "__main__":
