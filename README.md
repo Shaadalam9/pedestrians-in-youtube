@@ -122,13 +122,13 @@ Crossing decision time (sorted by average of day and night).
 Crossing speed (sorted by average of day and night).
 
 ## Relationship between computed and statistical metrics
-[![Speed of crossing over crossing decision time)](figures/scatter_speed_crossing-time_crossing.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/scatter_speed_crossing-time_crossing.html)
+[![Speed of crossing over crossing decision time](figures/scatter_speed_crossing-time_crossing.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/scatter_speed_crossing-time_crossing.html)
 Crossing speed over crossing decision time.
 
-[![Speed of crossing over crossing decision time daytime)](figures/scatter_speed_crossing_daytime_crossing_day.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/scatter_speed_crossing_daytime_crossing_day.html)
+[![Speed of crossing over crossing decision time daytime](figures/scatter_speed_crossing_daytime_crossing_day.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/scatter_speed_crossing_daytime_crossing_day.html)
 Crossing speed over crossing decision time, during daytime.
 
-[![Speed of crossing over crossing decision time night time)](figures/scatter_speed_crossing_night-time_crossing_night.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/scatter_speed_crossing_night-time_crossing_night.html)
+[![Speed of crossing over crossing decision time night time](figures/scatter_speed_crossing_night-time_crossing_night.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/scatter_speed_crossing_night-time_crossing_night.html)
 Crossing speed over crossing decision time, during night time.
 
 [![Speed of crossing over population of city](figures/scatter_speed_crossing-population_city.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/scatter_speed_crossing-population_city.html)
