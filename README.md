@@ -102,7 +102,8 @@ Example of YOLO running on dashcam video (original video: https://www.youtube.co
   <img src="./readme/camera_mov.gif" width="100%" />
 </a>
 
-## Results
+## Description and analysis of dataset and analysis
+### Description of dataset
 <!-- [![Locations of cities with footage in dataset](figures/world_map.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/world_map.html)
 Locations of cities with footage in dataset. -->
 
@@ -112,6 +113,10 @@ Locations of cities with footage in dataset.
 <!-- [![Crossing decision time and crossing speed (sorted by countries)](figures/consolidated.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/consolidated.html)
 Crossing decision time and crossing speed (sorted by countries). -->
 
+[![Total time of footage over number of detected pedestrians](figures/scatter_total_time-person.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/scatter_total_time-person.html)
+Total time of footage over number of detected pedestrians.
+
+### Global behaviour of pedestrians
 [![Crossing decision time (sorted by countries](figures/time_crossing_alphabetical.png?raw=true)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/time_crossing_alphabetical.html)
 Crossing decision time (sorted by countries).
 
@@ -124,7 +129,7 @@ Crossing decision time (sorted by average of day and night).
 [![Crossing speed (sorted by average of day and night)](figures/crossing_speed_avg.png?raw=true)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/crossing_speed_avg.html)
 Crossing speed (sorted by average of day and night).
 
-## Relationship between computed and statistical metrics
+### Relationship between computed and statistical metrics
 [![Speed of crossing over crossing decision time](figures/scatter_speed_crossing-time_crossing.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/scatter_speed_crossing-time_crossing.html)
 Crossing speed over crossing decision time.
 
@@ -167,7 +172,7 @@ Crossing decision time over traffic index.
 [![Crossing decision time over traffic index](figures/scatter_time_crossing-traffic_index.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/scatter_time_crossing-traffic_index.html)
 Crossing decision time over traffic index.
 
-## Correlation matrices
+### Correlation matrices
 [![Correlation matrix based on average speed and time to start cross](figures/correlation_matrix_heatmap_averaged.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/correlation_matrix_heatmap_averaged.html)
 Correlation matrix.
 
@@ -195,7 +200,7 @@ Correlation matrix for North America.
 [![Correlation matrix for South America](figures/correlation_matrix_heatmap_South%20America.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/correlation_matrix_heatmap_South%20America.html)
 Correlation matrix for South America.
 
-## Analysis of pedestrian crossing road with and without traffic lights (jaywalking)
+### Analysis of pedestrian crossing road with and without traffic lights (jaywalking)
 [![Road crossings with traffic signals](figures/crossings_with_traffic_equipment_avg.png?raw=true)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/crossings_with_traffic_equipment_avg.html)
 Road crossings with traffic signals (normalised over time and number of detected pedestrians).
 
