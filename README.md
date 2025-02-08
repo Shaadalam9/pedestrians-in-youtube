@@ -86,7 +86,7 @@ python3 analysis.py
 
 Example of YOLO running on dashcam video (original video: https://www.youtube.com/watch?v=_Wyg213IZDI)
 <a href="https://youtu.be/NipvoDg0Nyk">
-  <img src="./ReadmeFiles/output_gif.gif" width="100%" />
+  <img src="./readme/output_gif.gif" width="100%" />
 </a>
 
 
@@ -94,12 +94,12 @@ Example of YOLO running on dashcam video (original video: https://www.youtube.co
 
 ### Videos were not selected if it skips frames
 <a href="https://youtu.be/0K9vaQxKZ9k">
-  <img src="./ReadmeFiles/ghost.gif" width="100%" />
+  <img src="./readme/ghost.gif" width="100%" />
 </a>
 
 ### Snippets of videos are not analysed during the movement of camera
 <a href="https://youtu.be/3jVszt_78_k">
-  <img src="./ReadmeFiles/camera_mov.gif" width="100%" />
+  <img src="./readme/camera_mov.gif" width="100%" />
 </a>
 
 ## Results
