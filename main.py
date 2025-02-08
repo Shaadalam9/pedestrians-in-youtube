@@ -116,26 +116,25 @@ for index, row in tqdm(mapping.iterrows(), total=mapping.shape[0]):
         # Define a base video file path for the downloaded original video
         base_video_path = os.path.join(output_path, f"{vid}.mp4")
 
-        video_fps = 0.0
+        video_fps = 0.0  # store detected FPS value
 
         # If the base video does not exist, attempt to download it
         if not os.path.exists(base_video_path):
             result = helper.download_video_with_resolution(video_id=vid, output_path=output_path)
             if result:
                 video_file_path, video_title, resolution, video_fps = result
-                print(video_fps)
                 # Set the base video path to the downloaded video
                 base_video_path = video_file_path
 
-                # if common.get_configs("update_fps_list"):
-                #     # Update the FPS information for the current video
-                #     if len(fps_values) <= vid_index:
-                #         fps_values.extend([60] * (vid_index - len(fps_values) + 1))
-                #     fps_values[vid_index] = fps  # type: ignore
+                if common.get_configs("update_fps_list"):
+                    # Update the FPS information for the current video
+                    if len(fps_values) <= vid_index:
+                        fps_values.extend([60] * (vid_index - len(fps_values) + 1))
+                    fps_values[vid_index] = video_fps  # type: ignore
 
-                #     # Update the DataFrame mapping and write to CSV
-                #     mapping.at[index, 'fps_list'] = str(fps_values)
-                #     mapping.to_csv(common.get_configs("mapping"), index=False)
+                    # Update the DataFrame mapping and write to CSV
+                    mapping.at[index, 'fps_list'] = str(fps_values)
+                    mapping.to_csv(common.get_configs("mapping"), index=False)
 
                 logger.info(f"Downloaded video: {video_file_path}.")
                 helper.set_video_title(video_title)
@@ -185,9 +184,11 @@ for index, row in tqdm(mapping.iterrows(), total=mapping.shape[0]):
             # Tracking mode: process the trimmed segment
             if common.get_configs("tracking_mode"):
                 if video_fps > 0:
-                    tracking_fps = fps_values[vid_index]
-                    logger.info(f"Started YOLO analysis for segment {start_time}-{end_time}s.")
+                    logger.info(f"Started YOLO analysis for segment {start_time}-{end_time}s with FPS value from video file {video_fps}.")  # noqa: E501
                     helper.tracking_mode(trimmed_video_path, trimmed_video_path, video_fps)
+                elif fps_values[vid_index] > 0:
+                    logger.info(f"Started YOLO analysis for segment {start_time}-{end_time}s with FPS value from mapping {fps_values[vid_index] > 0}.")  # noqa: E501
+                    helper.tracking_mode(trimmed_video_path, trimmed_video_path, fps_values[vid_index])
                 else:
                     logger.warning(f"FPS value video {vid} is {video_fps}. Skipping tracking mode.")
 

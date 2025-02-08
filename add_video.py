@@ -269,8 +269,8 @@ def form():
                         start_time_list.append([int(start_time[-1])])      # Append start time as integer
                         end_time_list.append([int(end_time[-1])])          # Append end time as integer
                         upload_date_list.append(int(upload_date_video))    # Append upload time as integer
-                        fps_list.append(int(fps_video))                  # Append fps list as integer
-                        vehicle_type_list.append(int(vehicle_type_video))  # Append fps list as integer
+                        fps_list.append(int(fps_video))                    # Append fps list as integer
+                        vehicle_type_list.append(int(vehicle_type_video))  # Append vehicle type as integer
                     else:
                         # If the video already exists, update the corresponding lists with the new data
                         video_index = videos_list.index(video_id)  # Find the index of the existing video ID
