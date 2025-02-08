@@ -420,7 +420,7 @@ class Analysis():
 
         # Process each city and its corresponding country
         city_coords = []
-        for i, (city, state, lat, lon) in enumerate(tqdm(zip(cities, states, coords_lat, coords_lon), total=len(cities))):
+        for i, (city, state, lat, lon) in enumerate(tqdm(zip(cities, states, coords_lat, coords_lon), total=len(cities))):  # noqa: E501
             if not state or str(state).lower() == 'nan':
                 state = 'N/A'
             if lat and lon:
@@ -481,15 +481,27 @@ class Analysis():
         Args:
             df_mapping (TYPE): dataframe with mapping info
         """
-
+        # Set state to NA
+        df['state'] = df['state'].fillna('NA')
+        # Columns to hide on hover
+        columns_remove = ['videos', 'time_of_day', 'start_time', 'end_time', 'upload_date', 'fps_list']
+        df = df.drop(columns=columns_remove, errors="ignore")  # ignore missing columns
+        # Draw map
         fig = px.scatter_map(df,
                              lat="lat",
                              lon="lon",
-                             hover_name="city",
+                             hover_data=df.columns,
+                             color=df["country"],
                              zoom=1)
-        # update font family
+        # Update layout
+        fig.update_layout(
+            margin=dict(l=0, r=0, t=0, b=0),  # Reduce margins
+            modebar_remove=["toImage"],  # remove modebar image button
+            # showlegend=False,  # hide legend if not needed
+            annotations=[]  # remove any extra annotations
+        )
+        # Update font family
         fig.update_layout(font=dict(family=common.get_configs('font_family')))
-
         # Save and display the figure
         Analysis.save_plotly_figure(fig, "mapbox_map", save_final=True)
 
@@ -4569,7 +4581,8 @@ if __name__ == "__main__":
                     ((df_mapping["state"] == state) | (pd.isna(df_mapping["state"]) & pd.isna(state))), 
                     "without_trf_light_night"
                 ] = int(value)  # Explicitly cast to int
-        
+        # Add column with count of videos
+        df_mapping["video_count"] = df_mapping["videos"].apply(lambda x: len(x.strip("[]").split(",")) if x.strip("[]") else 0)  # noqa: E501
         # Get lat and lon for cities
         logger.info("Fetching lat and lon coordinates for cities.")
         for index, row in tqdm(df_mapping.iterrows(), total=len(df_mapping)):

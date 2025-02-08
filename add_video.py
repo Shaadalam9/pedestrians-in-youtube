@@ -51,7 +51,7 @@ def form():
     start_time = []
     end_time = []
     end_time_input = 0
-    gdp_city = ''
+    gmp = ''
     population_city = ''
     population_country = ''
     traffic_mortality = ''
@@ -64,7 +64,7 @@ def form():
     gini = ''
     traffic_index = ''
     upload_date_video = ''
-    fps_video = 0
+    fps_video = ''
     yt_title = ''
     yt_upload_date = ''
     yt_description = ''
@@ -190,7 +190,7 @@ def form():
             start_time = request.form.getlist('start_time')
             end_time = request.form.getlist('end_time')
             end_time_input = int(end_time[0])  # for starting video at the last end time
-            gdp_city = request.form.get('gdp_city')
+            gmp = request.form.get('gmp')
             population_city = request.form.get('population_city')
             population_country = request.form.get('population_country')
             traffic_mortality = request.form.get('traffic_mortality')
@@ -293,8 +293,8 @@ def form():
                     df.at[idx, 'time_of_day'] = str(time_of_day_list)  # Store as string representation
                     df.at[idx, 'start_time'] = str(start_time_list)    # Store as string representation
                     df.at[idx, 'end_time'] = str(end_time_list)        # Store as string representation
-                    if gdp_city:
-                        df.at[idx, 'gmp'] = float(gdp_city)
+                    if gmp:
+                        df.at[idx, 'gmp'] = float(gmp)
                     else:
                         df.at[idx, 'gmp'] = 0.0
                     if population_city:
@@ -360,7 +360,7 @@ def form():
                         'time_of_day': str([[int(x) for x in time_of_day]]),  # Store as stringified list of integers
                         'start_time': str([[int(x) for x in start_time]]),    # Store as stringified list of integers
                         'end_time': str([[int(x) for x in end_time]]),        # Store as stringified list of integers
-                        'gmp': gdp_city,
+                        'gmp': gmp,
                         'population_city': population_city,
                         'population_country': population_country,
                         'traffic_mortality': traffic_mortality,
