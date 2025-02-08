@@ -103,7 +103,10 @@ Example of YOLO running on dashcam video (original video: https://www.youtube.co
 </a>
 
 ## Results
-[![Locations of cities with footage in dataset](figures/world_map.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/world_map.html)
+<!-- [![Locations of cities with footage in dataset](figures/world_map.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/world_map.html)
+Locations of cities with footage in dataset. -->
+
+[![Locations of cities with footage in dataset](figures/mapbox_map.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/mapbox_map.html)
 Locations of cities with footage in dataset.
 
 <!-- [![Crossing decision time and crossing speed (sorted by countries)](figures/consolidated.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/consolidated.html)
