@@ -86,7 +86,7 @@ Configuration of the project needs to be defined in `config`. Please use the `de
 - **`font_size`**: Specifies the font size to be used in outputs.
 - **`plotly_template`**: Defines the template for Plotly figures.
 
-For working with external APIs of [GeoNames](https://www.geonames.org) and [BEA](https://apps.bea.gov/api/signup), the API keys need to be placed in file `secret` (no extension) in the root of the project. The file needs to be formatted as `secret example`. This is optional for just running the analysis on the dataset.
+For working with external APIs of [GeoNames](https://www.geonames.org) and [BEA](https://apps.bea.gov/api/signup), the API keys need to be placed in file `secret` (no extension) in the root of the project. The file needs to be formatted as `secret example`. This is optional for just running the analysis on the dataset. 
 
 ### Adding videos to dataset
 To add more videos to the the `mapping` file, run `python add_video.py`. It is Flask we form which allows to add new videos for a city. The form understands if the city is already present in the dataset and adds a new videos to the existing row in the mapping file. Providing state is optional, and is recommended for US and Canada. Providing country is mandatory.
@@ -94,13 +94,17 @@ To add more videos to the the `mapping` file, run `python add_video.py`. It is F
 ![Form with new video](readme/form_new_video.jpg)
 Adding new video to a city. In the case for Delft, Netherlands (with state not mentioned).
 
+For each video, it is possible to add multiple segments (parts of the video). To add a new segment/video, it is mandatory to add the following information: `Time of day`, `Vehicle`, `Start time (in seconds)` (a counter of the current second is shown under the embedded video), `End time (seconds)` (it must be larger than the starting time), and `FPS` (to see the FPS of the video, click with secondary mouse button on the video and go to "Stats for nerds"🤓; FPS value is shown as a value following the resolution, e.g. "1920x1080@30"). All other values are attempted to be fetched automatically from various APIs and by analysing the video. All values can be adjusted by hand in the `mapping` file in case of mistakes/missing information.
+
+Each video can contain multiple segments (with each new segment starting at the same timestamp as the end of the previous segment or later). All video-level values (including FPS) do not have to be updated for each new segment (i.e., only start and end, time of day, and vehicle type of each new segment shall be provided).
+
 ![Form with new city](readme/form_new_city.jpg)
 Form understands that there is no entry for Delft, Netherlands in the mapping file yet and allows to add the first video for that city.
 
 ![Form with existing city](readme/form_existing_city.jpg)
 If the city already exists in data, the form extends the entry for that city with the new video. In this example, a new video is added to Kyiv, Ukraine.
 
-## Example of YOLO running on dashcam video
+## Example of YOLO running on a dashcam video
 
 <a href="https://youtu.be/NipvoDg0Nyk">
   <img src="./readme/output_gif.gif" width="100%" />
