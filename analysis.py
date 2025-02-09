@@ -3305,11 +3305,11 @@ class Analysis():
                 )
 
         # Set the x-axis labels (title_text) only for the last row and the first row
-        fig.update_xaxes(title=dict(text="Road crossings without traffic signals", font=dict(size=40)),
+        fig.update_xaxes(title=dict(text="Road crossings without traffic signals (normalised)", font=dict(size=40)),
                          tickfont=dict(size=40), ticks='outside', ticklen=10, tickwidth=2,
                          tickcolor='black', row=1, col=1)
 
-        fig.update_xaxes(title=dict(text="Road crossings without traffic signals", font=dict(size=40)),
+        fig.update_xaxes(title=dict(text="Road crossings without traffic signals (normalised)", font=dict(size=40)),
                          tickfont=dict(size=40), ticks='outside', ticklen=10, tickwidth=2,
                          tickcolor='black', row=1, col=2)
 
@@ -3614,11 +3614,11 @@ class Analysis():
                 )
 
         # Set the x-axis labels (title_text) only for the last row and the first row
-        fig.update_xaxes(title=dict(text="Road crossings with traffic signals", font=dict(size=40)),
+        fig.update_xaxes(title=dict(text="Road crossings with traffic signals (normalised)", font=dict(size=40)),
                          tickfont=dict(size=40), ticks='outside', ticklen=10, tickwidth=2,
                          tickcolor='black', row=1, col=1)
 
-        fig.update_xaxes(title=dict(text="Road crossings with traffic signals", font=dict(size=40)),
+        fig.update_xaxes(title=dict(text="Road crossings with traffic signals (normalised)", font=dict(size=40)),
                          tickfont=dict(size=40), ticks='outside', ticklen=10, tickwidth=2,
                          tickcolor='black', row=1, col=2)
 
@@ -4832,27 +4832,9 @@ if __name__ == "__main__":
                      legend_title="",
                      marginal_x=None,
                      marginal_y=None)
-    # Speed of crossing vs population of city
-    df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
-    df['state'] = df['state'].fillna('NA')
-    # Sort by country
-    df = df.sort_values(by="country")
-    Analysis.scatter(df=df,
-                     x="speed_crossing",
-                     y="population_city",
-                     color="continent",
-                     text="city",
-                     xaxis_title='Crossing speed (in m/s)',
-                     yaxis_title='Population of city',
-                     pretty_text=False,
-                     save_file=True,
-                     hover_data=hover_data,
-                     hover_name="city",
-                     legend_title="",
-                     marginal_x=None,
-                     marginal_y=None)
     # Time to start crossing vs population of city
     df = df_mapping[df_mapping["time_crossing"] != 0].copy()
+    df = df[(df["population_city"].notna()) & (df["population_city"] != 0)]
     df['state'] = df['state'].fillna('NA')
     # Sort by country
     df = df.sort_values(by="country")
@@ -4872,6 +4854,7 @@ if __name__ == "__main__":
                      marginal_y=None)
     # Speed of crossing vs population of city
     df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
+    df = df[(df["population_city"].notna()) & (df["population_city"] != 0)]
     df['state'] = df['state'].fillna('NA')
     # Sort by country
     df = df.sort_values(by="country")
@@ -4891,6 +4874,7 @@ if __name__ == "__main__":
                      marginal_y=None)
     # Time to start crossing vs population of city
     df = df_mapping[df_mapping["time_crossing"] != 0].copy()
+    df = df[(df["traffic_mortality"].notna()) & (df["traffic_mortality"] != 0)]
     df['state'] = df['state'].fillna('NA')
     # Sort by country
     df = df.sort_values(by="country")
@@ -4910,6 +4894,7 @@ if __name__ == "__main__":
                      marginal_y=None)
     # Speed of crossing vs population of city
     df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
+    df = df[(df["traffic_mortality"].notna()) & (df["traffic_mortality"] != 0)]
     df['state'] = df['state'].fillna('NA')
     # Sort by country
     df = df.sort_values(by="country")
@@ -4929,6 +4914,7 @@ if __name__ == "__main__":
                      marginal_y=None)
     # Time to start crossing vs population of city
     df = df_mapping[df_mapping["time_crossing"] != 0].copy()
+    df = df[(df["literacy_rate"].notna()) & (df["literacy_rate"] != 0)]
     df['state'] = df['state'].fillna('NA')
     # Sort by country
     df = df.sort_values(by="country")
@@ -4948,6 +4934,7 @@ if __name__ == "__main__":
                      marginal_y=None)
     # Speed of crossing vs population of city
     df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
+    df = df[(df["literacy_rate"].notna()) & (df["literacy_rate"] != 0)]
     df['state'] = df['state'].fillna('NA')
     # Sort by country
     df = df.sort_values(by="country")
@@ -4967,6 +4954,7 @@ if __name__ == "__main__":
                      marginal_y=None)
     # Time to start crossing vs population of city
     df = df_mapping[df_mapping["time_crossing"] != 0].copy()
+    df = df[(df["gini"].notna()) & (df["gini"] != 0)]
     df['state'] = df['state'].fillna('NA')
     # Sort by country
     df = df.sort_values(by="country")
@@ -4986,6 +4974,7 @@ if __name__ == "__main__":
                      marginal_y=None)
     # Speed of crossing vs population of city
     df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
+    df = df[(df["gini"].notna()) & (df["gini"] != 0)]
     df['state'] = df['state'].fillna('NA')
     # Sort by country
     df = df.sort_values(by="country")
@@ -5005,6 +4994,7 @@ if __name__ == "__main__":
                      marginal_y=None)
     # Time to start crossing vs population of city
     df = df_mapping[df_mapping["time_crossing"] != 0].copy()
+    df = df[(df["traffic_index"].notna()) & (df["traffic_index"] != 0)]
     df['state'] = df['state'].fillna('NA')
     # Sort by country
     df = df.sort_values(by="country")
@@ -5025,6 +5015,7 @@ if __name__ == "__main__":
                      marginal_y=None)
     # Speed of crossing vs population of city
     df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
+    df = df[df["traffic_index"] != 0]
     df['state'] = df['state'].fillna('NA')
     # Sort by country
     df = df.sort_values(by="country")
@@ -5087,19 +5078,19 @@ if __name__ == "__main__":
     Analysis.plot_crossing_without_traffic_light(df_mapping)
     Analysis.plot_crossing_with_traffic_light(df_mapping)
     # Crossing with and without traffic lights
-    df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
+    df = df_mapping.copy()
     df['state'] = df['state'].fillna('NA')
     # Sort by country
     df = df.sort_values(by="country")
-    df['with_trf_light_norm'] = (df['with_trf_light_day'] + df['with_trf_light_day']) / df['total_time'] / df['population_city']  # noqa: E501
-    df['without_trf_light_norm'] = (df['without_trf_light_day'] + df['without_trf_light_day']) / df['total_time'] / df['population_city']  # noqa: E501
+    df['with_trf_light_norm'] = (df['with_trf_light_day'] + df['with_trf_light_night']) / df['total_time'] / df['population_city']  # noqa: E501
+    df['without_trf_light_norm'] = (df['without_trf_light_day'] + df['without_trf_light_night']) / df['total_time'] / df['population_city']  # noqa: E501
     Analysis.scatter(df=df,
                      x="with_trf_light_norm",
                      y="without_trf_light_norm",
                      color="continent",
                      text="city",
-                     xaxis_title='Crossing events with traffic lights',
-                     yaxis_title='Crossing events without traffic lights',
+                     xaxis_title='Crossing events with traffic lights (normalised)',
+                     yaxis_title='Crossing events without traffic lights (normalised)',
                      pretty_text=False,
                      save_file=True,
                      hover_data=hover_data,
