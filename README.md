@@ -89,6 +89,7 @@ python3 analysis.py
 <a href="https://youtu.be/NipvoDg0Nyk">
   <img src="./readme/output_gif.gif" width="100%" />
 </a>
+
 Video: [https://www.youtube.com/watch?v=_Wyg213IZDI](https://www.youtube.com/watch?v=_Wyg213IZDI).
 
 ## Selection procedure
@@ -97,12 +98,14 @@ Video: [https://www.youtube.com/watch?v=_Wyg213IZDI](https://www.youtube.com/wat
 <a href="https://youtu.be/0K9vaQxKZ9k">
   <img src="./readme/ghost.gif" width="100%" />
 </a>
-Video: [https://www.youtube.com/watch?v=0K9vaQxKZ9k](https://www.youtube.com/watch?v=0K9vaQxKZ9k).
+
+Video: https://www.youtube.com/watch?v=0K9vaQxKZ9k](https://www.youtube.com/watch?v=0K9vaQxKZ9k).
 
 ### Snippets of videos are not analysed during the movement of camera
 <a href="https://youtu.be/3jVszt_78_k">
   <img src="./readme/camera_mov.gif" width="100%" />
 </a>
+
 Video: [https://www.youtube.com/watch?v=3jVszt_78_k](https://www.youtube.com/watch?v=3jVszt_78_k).
 
 ## Description and analysis of dataset
