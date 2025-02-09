@@ -121,6 +121,7 @@ def form():
             else:
                 existing_data = df[(df['city'] == city) & (df['country'] == country)]
             if not existing_data.empty:
+                message = "Entry for city found. You can update data."
                 existing_data_row = existing_data.iloc[0].to_dict()  # Convert to dictionary
                 state = existing_data_row.get('state', '')
 
@@ -142,7 +143,7 @@ def form():
                     end_time_list = ast.literal_eval(existing_data_row.get('end_time', ''))
                     end_time_video = end_time_list[position]
             else:
-                message = "No existing entry found. You can add new data."
+                message = "No entry for city found. You can add new data."
                 iso2_code = common.get_iso2_country_code(common.correct_country(country))
                 iso3_code = common.get_iso3_country_code(common.correct_country(country))
                 country_data = get_country_data(iso3_code)
