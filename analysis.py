@@ -45,7 +45,7 @@ bar_colour_4 = 'rgb(222, 203, 228)'
 SAVE_PNG = True
 SAVE_EPS = True
 # todo: allocate height dynamically based on the number of cities to show
-TALL_FIG_HEIGHT = 4000  # height of the tall bar plots
+TALL_FIG_HEIGHT = 4200  # height of the tall bar plots
 SCALE = 1  # scale=3 hangs often
 
 
@@ -606,7 +606,7 @@ class Analysis():
         """
         info, no_person, total_time = {}, {}, {}
         time_ = []
-        for key, value in dfs.items():
+        for key, value in tqdm(dfs.items(), total=len(dfs)):
             # Extract relevant information using the find_values function
             result = Analysis.find_values_with_video_id(df_mapping, key)
 
@@ -684,7 +684,7 @@ class Analysis():
         time_ = []
 
         # Iterate through each video DataFrame
-        for key, value in dfs.items():
+        for key, value in tqdm(dfs.items(), total=len(dfs)):
             result = Analysis.find_values_with_video_id(df_mapping, key)
 
             # Check if the result is None (i.e., no matching data was found)
@@ -753,7 +753,7 @@ class Analysis():
         # Create a dictionary to store country information for each city
         city_country_map_ = {}
         # Iterate over each video data
-        for key, df in data.items():
+        for key, df in tqdm(data.items(), total=len(data)):
             if df == {}:  # Skip if there is no data
                 continue
             result = Analysis.find_values_with_video_id(df_mapping, key)
@@ -805,7 +805,7 @@ class Analysis():
     @staticmethod
     def time_to_start_cross(df_mapping, dfs, data, person_id=0):
         time_dict = {}
-        for key, df in dfs.items():
+        for key, df in tqdm(dfs.items(), total=len(dfs)):
             data_cross = {}
             crossed_ids = df[(df["YOLO_id"] == person_id)]
 
@@ -870,7 +870,7 @@ class Analysis():
         return avg_time
 
     @staticmethod
-    def traffic_signs(df_mapping, dfs):
+    def calculate_traffic_signs(df_mapping, dfs):
         """Plots traffic safety vs traffic mortality.
 
         Args:
@@ -880,7 +880,7 @@ class Analysis():
         info, duration_ = {}, {}  # Dictionaries to store information and duration
 
         # Loop through each video data
-        for key, value in dfs.items():
+        for key, value in tqdm(dfs.items(), total=len(dfs)):
 
             # Extract relevant information using the find_values function
             result = Analysis.find_values_with_video_id(df_mapping, key)
@@ -4462,12 +4462,12 @@ if __name__ == "__main__":
 
         total_duration = Analysis.calculate_total_seconds(df_mapping)
         logger.info(f"Duration of videos in seconds: {total_duration}, in minutes: {total_duration/60:.2f}, in " +
-                    f"hours: {total_duration/60/60:.2f}")
-        logger.info("Total number of videos: {}", Analysis.calculate_total_videos(df_mapping))
+                    f"hours: {total_duration/60/60:.2f}.")
+        logger.info("Total number of videos: {}.", Analysis.calculate_total_videos(df_mapping))
         country, number = Analysis.get_unique_values(df_mapping, "country")
-        logger.info("Total number of countries: {}", number)
+        logger.info("Total number of countries: {}.", number)
         city, number = Analysis.get_unique_values(df_mapping, "city")
-        logger.info("Total number of cities: {}", number)
+        logger.info("Total number of cities: {}.", number)
 
         # Stores the content of the csv file in form of {name_time: content}
         dfs = Analysis.read_csv_files(common.get_configs('data'))
@@ -4493,14 +4493,15 @@ if __name__ == "__main__":
         df_mapping['without_trf_light_day'] = 0.0
         df_mapping['without_trf_light_night'] = 0.0
         # Loop over rows of data
-        for key, value in dfs.items():
+        logger.info("Analysing data.")
+        for key, value in tqdm(dfs.items(), total=len(dfs)):
             # extract information for the csv file from mapping
             video_id, start_index = key.rsplit("_", 1)  # split to extract id and index
             video_city_id = Analysis.find_city_id(df_mapping, video_id, int(start_index))
             video_city = df_mapping.loc[df_mapping["id"] == video_city_id, "city"].values[0]
             video_state = df_mapping.loc[df_mapping["id"] == video_city_id, "state"].values[0]
             video_country = df_mapping.loc[df_mapping["id"] == video_city_id, "country"].values[0]
-            logger.info("Analysing data from {} from {}, {}, {}.", key, video_city, video_state, video_country)
+            logger.debug(f"Analysing data from {key} from {video_city}, {video_state}, {video_country}.")
 
             # Get the number of number and unique id of the object crossing the road
             count, ids = Analysis.pedestrian_crossing(dfs[key], 0.45, 0.55, 0)
@@ -4551,13 +4552,13 @@ if __name__ == "__main__":
             # add duration of segment
             time_video = Analysis.get_duration_segment(df_mapping, video_id, int(start_index))
             df_mapping.loc[df_mapping["id"] == video_city_id, "total_time"] += time_video
-        logger.info("Calculating aggregated values.")
-        # add to mapping file
+        
+        # Aggregated values
+        logger.info("Calculating aggregated values for crossing speed.")
         speed_values = Analysis.calculate_speed_of_crossing(df_mapping, dfs, data)
-        time_values = Analysis.time_to_start_cross(df_mapping, dfs, data)
         avg_speed = Analysis.avg_speed_of_crossing(df_mapping, dfs, data)
         # add to mapping file
-        for key, value in avg_speed.items():
+        for key, value in tqdm(avg_speed.items(), total=len(avg_speed)):
             parts = key.split("_")
             city = parts[0]  # First part is always the city
             state = parts[1] if parts[1] != "unknown" else np.nan  # Second part is the state, unless it's "unknown"
@@ -4574,9 +4575,20 @@ if __name__ == "__main__":
                     ((df_mapping["state"] == state) | (pd.isna(df_mapping["state"]) & pd.isna(state))), 
                     "speed_crossing_night"
                 ] = float(value)  # Explicitly cast speed to float
+        # calculate average values
+        df_mapping["speed_crossing"] = np.where(
+            (df_mapping["speed_crossing_day"] > 0) & (df_mapping["speed_crossing_night"] > 0),  
+            df_mapping[["speed_crossing_day", "speed_crossing_night"]].mean(axis=1),  
+            np.where(
+                df_mapping["speed_crossing_day"] > 0, df_mapping["speed_crossing_day"],  
+                np.where(df_mapping["speed_crossing_night"] > 0, df_mapping["speed_crossing_night"], np.nan)
+            )
+        )
+        logger.info("Calculating aggregated values for crossing decision time.")
+        time_values = Analysis.time_to_start_cross(df_mapping, dfs, data)
         avg_time = Analysis.avg_time_to_start_cross(df_mapping, dfs, data)
         # add to mapping file
-        for key, value in avg_time.items():
+        for key, value in tqdm(avg_time.items(), total=len(avg_time)):
             parts = key.split("_")
             city = parts[0]  # First part is always the city
             state = parts[1] if parts[1] != "unknown" else np.nan  # Second part is the state, unless it's "unknown"
@@ -4594,14 +4606,6 @@ if __name__ == "__main__":
                     "time_crossing_night"
                 ] = float(value)  # Explicitly cast speed to float
         # calculate average values
-        df_mapping["speed_crossing"] = np.where(
-            (df_mapping["speed_crossing_day"] > 0) & (df_mapping["speed_crossing_night"] > 0),  
-            df_mapping[["speed_crossing_day", "speed_crossing_night"]].mean(axis=1),  
-            np.where(
-                df_mapping["speed_crossing_day"] > 0, df_mapping["speed_crossing_day"],  
-                np.where(df_mapping["speed_crossing_night"] > 0, df_mapping["speed_crossing_night"], np.nan)
-            )
-        )
         df_mapping["time_crossing"] = np.where(
             (df_mapping["time_crossing_day"] > 0) & (df_mapping["time_crossing_night"] > 0),  
             df_mapping[["time_crossing_day", "time_crossing_night"]].mean(axis=1),  
@@ -4610,18 +4614,32 @@ if __name__ == "__main__":
                 np.where(df_mapping["time_crossing_night"] > 0, df_mapping["time_crossing_night"], np.nan)
             )
         )
-        traffic_sign_city = Analysis.traffic_signs(df_mapping, dfs)
+        # todo: these functions are slow, and they are possible not needed now as counts are added to df_mapping
+        logger.info("Calculating counts of detected traffic signs.")
+        traffic_sign_city = Analysis.calculate_traffic_signs(df_mapping, dfs)
+        logger.info("Calculating counts of detected mobile phones.")
         cellphone_city = Analysis.calculate_cell_phones(df_mapping, dfs)
+        logger.info("Calculating counts of detected vehicles.")
         vehicle_city = Analysis.calculate_traffic(df_mapping, dfs, motorcycle=1, car=1, bus=1, truck=1)
+        logger.info("Calculating counts of detected bicycles.")
         bicycle_city = Analysis.calculate_traffic(df_mapping, dfs, bicycle=1)
+        logger.info("Calculating counts of detected cars (subset of vehicles).")
         car_city = Analysis.calculate_traffic(df_mapping, dfs, car=1)
+        logger.info("Calculating counts of detected motorcycles (subset of vehicles).")
         motorcycle_city = Analysis.calculate_traffic(df_mapping, dfs, motorcycle=1)
+        logger.info("Calculating counts of detected buses (subset of vehicles).")
         bus_city = Analysis.calculate_traffic(df_mapping, dfs, bus=1)
+        logger.info("Calculating counts of detected trucks (subset of vehicles).")
         truck_city = Analysis.calculate_traffic(df_mapping, dfs, truck=1)
+        logger.info("Calculating counts of detected persons.")
         person_city = Analysis.calculate_traffic(df_mapping, dfs, person=1)
+        logger.info("Calculating counts of detected crossing events with traffic lights.")
         cross_evnt_city = Analysis.crossing_event_wt_traffic_light(df_mapping, dfs, data)
+        logger.info("Calculating counts of crossing events.")
         pedestrian_cross_city = Analysis.pedestrian_cross_per_city(pedestrian_crossing_count, df_mapping)
+        
         # Jaywalking data
+        logger.info("Calculating parameters for detection of jaywalking.")
         with_trf_light, without_trf_light, _ = Analysis.crossing_event_wt_traffic_equipment(df_mapping, dfs, data)
         for key, value in with_trf_light.items():
             parts = key.split("_")
@@ -4710,11 +4728,12 @@ if __name__ == "__main__":
     df_mapping.to_csv(os.path.join(common.output_dir, "mapping_updated.csv"))
 
     logger.info("Detected:")
-    logger.info(f"person: {person_counter} ; bicycle: {bicycle_counter} ; car: {car_counter}")
-    logger.info(f"motorcycle: {motorcycle_counter} ; bus: {bus_counter} ; truck: {truck_counter}")
-    logger.info(f"cellphone: {cellphone_counter}; traffic light: {traffic_light_counter}; sign: {stop_sign_counter}")
+    logger.info(f"person: {person_counter}; bicycle: {bicycle_counter}; car: {car_counter}")
+    logger.info(f"motorcycle: {motorcycle_counter}; bus: {bus_counter}; truck: {truck_counter}")
+    logger.info(f"cellphone: {cellphone_counter}; traffic light: {traffic_light_counter}; " +
+                f"traffic sign: {stop_sign_counter}")
 
-    logger.info("Producing figures.")
+    logger.info("Producing output.")
     # Data to show on hover in scatter plots
     columns_remove = ['videos', 'time_of_day', 'start_time', 'end_time', 'upload_date', 'fps_list', 'vehicle_type']
     hover_data = list(set(df_mapping.columns) - set(columns_remove))
