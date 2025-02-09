@@ -154,10 +154,10 @@ def form():
                 existing_data_row = {'city': city,
                                      'country': country,
                                      'iso3': iso3_code,
-                                     'state': city,
+                                     'state': state,
                                      'videos': [],
                                      'time_of_day': [],
-                                     'gmp': 0.0,
+                                     'gmp': 0.0,  # get_gmp(city, state, iso3),
                                      'population_city': get_city_population(city_data),
                                      'population_country': country_population,
                                      'traffic_mortality': get_country_traffic_mortality(iso3_code),
@@ -536,6 +536,54 @@ def get_country_average_height(iso3_code):
     except Exception as e:
         print(f"Error fetching height data: {e}")
         return 0.0
+
+
+def get_gmp(city: str, state: str, iso3: str) -> float:
+    """
+    Fetches Gross Metropolitan Product (GMP) for a given city, state, and ISO3 country code.
+
+    Args:
+        city (str): The city's name.
+        state (str): The state (for U.S. cities).
+        iso3 (str): The 3-letter ISO country code.
+
+    Returns:
+        float: The city's Gross Metropolitan Product (GMP) in USD, or None if not found.
+    """
+    # todo: finish with taking state into account and caching received objects (slow API)
+    if iso3.upper() == "USA":
+        # Use BEA API for U.S. metro areas
+        url = "https://apps.bea.gov/api/data/"
+        params = {
+            "UserID": common.get_secrets('bea_api_key'),
+            "method": "GetData",
+            "datasetname": "Regional",
+            "TableName": "CAGDP2",  # GDP for metro areas
+            "LineCode": "1",  # Total GDP
+            "GeoFIPS": "MSA",  # Metropolitan Statistical Areas
+            "Year": "2022",
+            "ResultFormat": "json"
+        }
+        response = requests.get(url, params=params)
+        data = response.json()
+
+        # Extract GMP for the given city
+        for entry in data.get("BEAAPI", {}).get("Results", {}).get("Data", []):
+            if city.lower() in entry["GeoName"].lower():
+                return float(entry["DataValue"])
+
+    else:
+        # Use OECD API for international cities
+        url = f"https://stats.oecd.org/SDMX-JSON/data/CITIES/GDP.METRO.{iso3.upper()}?json-lang=en"
+        response = requests.get(url)
+        data = response.json()
+
+        # Extract GMP for the given city
+        for key, value in data.get("dataSets", [{}])[0].get("observations", {}).items():
+            if city.lower() in key.lower():
+                return float(value[0])
+
+    return None  # Return None if no data is found
 
 
 @staticmethod
