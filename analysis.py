@@ -1987,7 +1987,8 @@ class Analysis():
         #     x0=x_legend_position,  # Adjust x0 to control the left edge of the box
         #     y0=y_legend_start_bottom + 0.02,  # Adjust y0 to control the top of the box
         #     x1=x_legend_position + 0.06,  # Adjust x1 to control the right edge of the box
-        #     y1=y_legend_start_bottom - len(legend_items) * 0.03 + 0.0395,  # Adjust y1 to control the bottom of the box
+        #     # Adjust y1 to control the bottom of the box
+        #     y1=y_legend_start_bottom - len(legend_items) * 0.03 + 0.0395,
         #     line=dict(color="black", width=2),  # Black border for the box
         #     fillcolor="rgba(255,255,255,0.7)"  # White fill with transparency
         # )
@@ -2367,7 +2368,8 @@ class Analysis():
         #     x0=x_legend_position,  # Adjust x0 to control the left edge of the box
         #     y0=y_legend_start_bottom + 0.02,  # Adjust y0 to control the top of the box
         #     x1=x_legend_position + 0.06,  # Adjust x1 to control the right edge of the box
-        #     y1=y_legend_start_bottom - len(legend_items) * 0.03 + 0.0395,  # Adjust y1 to control the bottom of the box
+        #     # Adjust y1 to control the bottom of the box
+        #     y1=y_legend_start_bottom - len(legend_items) * 0.03 + 0.0395,
         #     line=dict(color="black", width=2),  # Black border for the box
         #     fillcolor="rgba(255,255,255,0.7)"  # White fill with transparency
         # )
@@ -2738,7 +2740,8 @@ class Analysis():
         #     x0=x_legend_position,  # Adjust x0 to control the left edge of the box
         #     y0=y_legend_start_bottom + 0.02,  # Adjust y0 to control the top of the box
         #     x1=x_legend_position + 0.06,  # Adjust x1 to control the right edge of the box
-        #     y1=y_legend_start_bottom - len(legend_items) * 0.03 + 0.0395,  # Adjust y1 to control the bottom of the box
+        #     # Adjust y1 to control the bottom of the box
+        #     y1=y_legend_start_bottom - len(legend_items) * 0.03 + 0.0395,
         #     line=dict(color="black", width=2),  # Black border for the box
         #     fillcolor="rgba(255,255,255,0.7)"  # White fill with transparency
         # )
@@ -3056,7 +3059,8 @@ class Analysis():
         #     x0=x_legend_position,  # Adjust x0 to control the left edge of the box
         #     y0=y_legend_start_bottom + 0.02,  # Adjust y0 to control the top of the box
         #     x1=x_legend_position + 0.06,  # Adjust x1 to control the right edge of the box
-        #     y1=y_legend_start_bottom - len(legend_items) * 0.03 + 0.0395,  # Adjust y1 to control the bottom of the box
+        #     # Adjust y1 to control the bottom of the box
+        #     y1=y_legend_start_bottom - len(legend_items) * 0.03 + 0.0395,
         #     line=dict(color="black", width=2),  # Black border for the box
         #     fillcolor="rgba(255,255,255,0.7)"  # White fill with transparency
         # )
