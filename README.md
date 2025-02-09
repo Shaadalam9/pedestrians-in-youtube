@@ -99,7 +99,7 @@ Video: [https://www.youtube.com/watch?v=_Wyg213IZDI](https://www.youtube.com/wat
   <img src="./readme/ghost.gif" width="100%" />
 </a>
 
-Video: https://www.youtube.com/watch?v=0K9vaQxKZ9k](https://www.youtube.com/watch?v=0K9vaQxKZ9k).
+Video: [https://www.youtube.com/watch?v=0K9vaQxKZ9k](https://www.youtube.com/watch?v=0K9vaQxKZ9k).
 
 ### Snippets of videos are not analysed during the movement of camera
 <a href="https://youtu.be/3jVszt_78_k">
