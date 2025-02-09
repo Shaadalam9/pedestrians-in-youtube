@@ -615,24 +615,25 @@ def get_traffic_index_lat_lon(lat, lon, api=""):
         else:
             print(f"Error fetching traffic index for {lat}, {lon}: {response.status_code}")
             return 0.0
-    # elif api == "trafiklab":
-    #     url = f"https://api.trafiklab.se/v1/trafficindex?lat={lat}&lon={lon}&apikey={common.get_secrets('trafiklab_api_key')}"
+    elif api == "trafiklab":
+        url = f"https://api.trafiklab.se/v1/trafficindex?lat={lat}&lon={lon}&apikey={common.get_secrets('trafiklab_api_key')}"  # noqa: E501
 
-    #     try:
-    #         response = requests.get(url)
-    #         response.raise_for_status()  # Raise an exception for HTTP errors
-    #         data = response.json()
+        try:
+            response = requests.get(url)
+            response.raise_for_status()  # Raise an exception for HTTP errors
+            data = response.json()
 
-    #         # Extract traffic index or other relevant data
-    #         traffic_index = data.get('trafficIndex', None)
+            # Extract traffic index or other relevant data
+            traffic_index = data.get('trafficIndex', None)
             
-    #         if traffic_index is not None:
-    #             return traffic_index
-    #         else:
-    #             return "Traffic index data not available"
+            if traffic_index is not None:
+                return traffic_index
+            else:
+                return 0.0
 
-    #     except requests.exceptions.RequestException as e:
-    #         return f"An error occurred: {e}"
+        except requests.exceptions.RequestException as e:
+            print(f"An error occurred: {e}")
+            return 0.0
     else:
         print(f"Wrong type of API provided {api}.")
         return 0.0

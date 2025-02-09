@@ -87,7 +87,7 @@ Configuration of the project needs to be defined in `config`. Please use the `de
 - **`font_size`**: Specifies the font size to be used in outputs.
 - **`plotly_template`**: Defines the template for Plotly figures.
 
-For working with external APIs of [GeoNames](https://www.geonames.org), [BEA](https://apps.bea.gov/api/signup) and [TomTom](https://developer.tomtom.com/user/register), the API keys need to be placed in file `secret` (no extension) in the root of the project. The file needs to be formatted as `secret example`. This is optional for just running the analysis on the dataset. 
+For working with external APIs of [GeoNames](https://www.geonames.org), [BEA](https://apps.bea.gov/api/signup), [TomTom](https://developer.tomtom.com/user/register), [Trafikab](https://www.trafiklab.se/api/trafiklab-apis), and [Numbeo](https://www.numbeo.com/common/api.jsp) (paid), the API keys need to be placed in file `secret` (no extension) in the root of the project. The file needs to be formatted as `secret example`. This is optional for just running the analysis on the dataset. 
 
 ### Adding videos to dataset
 To add more videos to the the `mapping` file, run `python add_video.py`. It is Flask we form which allows to add new videos for a city. The form understands if the city is already present in the dataset and adds a new videos to the existing row in the mapping file. Providing state is optional, and is recommended for USA 🇺🇸 and Canada 🇨🇦. Providing country is mandatory.
