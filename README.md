@@ -12,7 +12,7 @@ If you use this work for academic work please cite the following paper:
 ## Usage of the code
 The code is open-source and free to use. It is aimed for, but not limited to, academic research. We welcome forking of this repository, pull requests, and any contributions in the spirit of open science and open-source code 😍😄 For inquiries about collaboration, you may contact Md Shadab Alam (md_shadab_alam@outlook.com) or Pavlo Bazilinskyy (pavlo.bazilinskyy@gmail.com).
 
-## Getting Started
+## Running analysis code
 Tested with Python 3.9.19. To setup the environment run these two commands in a parent folder of the downloaded repository (replace `/` with `\` and possibly add `--user` if on Windows:
 
 **Step 1:**
@@ -53,6 +53,8 @@ Run the code:
 python3 analysis.py
 ```
 
+### Configuration of project
+Configuration of the project needs to be defined in `config`. Please use the `default.config` file for the required structure of the file. If no custom config file is provided, `default.config` is used. The config file has the following parameters:
 - **`data`**: Directory containing data (CSV output from YOLO).
 - **`videos`**: Directory containing the videos used to generate the data.
 - **`mapping`**: CSV file that contains mapping data for the cities referenced in the data.
@@ -83,6 +85,20 @@ python3 analysis.py
 - **`font_family`**: Specifies the font family to be used in outputs.
 - **`font_size`**: Specifies the font size to be used in outputs.
 - **`plotly_template`**: Defines the template for Plotly figures.
+
+For working with external APIs of [GeoNames](https://www.geonames.org) and [BEA](https://apps.bea.gov/api/signup), the API keys need to be placed in file `secret` (no extension) in the root of the project. The file needs to be formatted as `secret example`. This is optional for just running the analysis on the dataset.
+
+### Adding videos to dataset
+To add more videos to the the `mapping` file, run `python add_video.py`. It is Flask we form which allows to add new videos for a city. The form understands if the city is already present in the dataset and adds a new videos to the existing row in the mapping file. Providing state is optional, and is recommended for US and Canada. Providing country is mandatory.
+
+![Form with new video](readme/form_new_video.jpg)
+Adding new video to a city. In the case for Delft, Netherlands (with state not mentioned).
+
+![Form with new city](readme/form_new_city.jpg)
+Form understands that there is no entry for Delft, Netherlands in the mapping file yet and allows to add the first video for that city.
+
+![Form with existing city](readme/form_existing_city.jpg)
+If the city already exists in data, the form extends the entry for that city with the new video. In this example, a new video is added to Kyiv, Ukraine.
 
 ## Example of YOLO running on dashcam video
 
