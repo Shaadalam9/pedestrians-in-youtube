@@ -116,6 +116,10 @@
             overflow: hidden; /* prevent text overflow */
 /*            max-height: 20px; /* optional: limit max height */*/
         }
+
+        #currentTime {
+            color: red;
+        }
     </style>
     <script src="https://www.youtube.com/iframe_api"></script>
     <script>
@@ -365,7 +369,6 @@
                 <div class="form-group">
                     <button type="submit" name="submit_data">Submit</button>
                 </div>
-
                 <p class="videos-text"><strong>Videos:</strong> {{ existing_data['videos'] }}</p>
                 <p class="videos-text"><strong>Time of day:</strong> {{ existing_data['time_of_day'] }}</p>
                 <p class="videos-text"><strong>Vehicle:</strong> {{ existing_data['vehicle_type'] }}</p>
@@ -381,12 +384,9 @@
             {% if video_id %}
                 <!-- Embed the YouTube video only if a valid video ID is available -->
                 <iframe id="embeddedVideo" src="https://www.youtube.com/embed/{{ video_id }}?start={{ timestamp }}&enablejsapi=1&autoplay=1&mute=1" frameborder="0" allowfullscreen allow="autoplay"></iframe>
-                <p class="short_row">Current time: <span id="currentTime">0</span> s.</br>
-                <p class="short_row"><strong>ID:</strong> <span id="videoTitle">{{ video_id }}</span>.</br>
-                <p class="short_row"><strong>Start time</strong>: {{ start_time_video }}</br>
-                <p class="short_row"><strong>End time</strong>: {{ end_time_video }}</br>
-                <!-- <p><strong>Title:</strong> <span id="videoTitle">{{ yt_title }}</span>.</br> -->
-                <p class="short_row"><strong>Upload date:</strong> <span id="videoUploadDate">{{ yt_upload_date }}</span>.</br>
+                <p class="short_row">Current time: <span id="currentTime">0</span> s. <strong>ID:</strong> <span id="videoTitle">{{ video_id }}</span>. <strong>Upload date:</strong> <span id="videoUploadDate">{{ yt_upload_date }}</span>.</p>
+                <p class="short_row"><strong>Start time</strong>: {{ start_time_video }}</p>
+                <p class="short_row"><strong>End time</strong>: {{ end_time_video }}</p>
                 <p class="short_row"><strong>Description:</strong> <span id="videoDescription">{{ yt_description }}</span></p>
                 <!-- Map -->
                 <div id="map"></div>

@@ -108,7 +108,7 @@ If the city already exists in data, the form extends the entry for that city wit
 ## Example of YOLO running on a dashcam video
 
 <a href="https://youtu.be/NipvoDg0Nyk">
-  <img src="./readme/output_gif.gif" width="100%" />
+  <img src="./readme/output.gif" width="100%" />
 </a>
 
 Video: [https://www.youtube.com/watch?v=_Wyg213IZDI](https://www.youtube.com/watch?v=_Wyg213IZDI).
@@ -124,7 +124,7 @@ Video: [https://www.youtube.com/watch?v=0K9vaQxKZ9k](https://www.youtube.com/wat
 
 ### Snippets of videos are not analysed during the movement of camera
 <a href="https://youtu.be/3jVszt_78_k">
-  <img src="./readme/camera_mov.gif" width="100%" />
+  <img src="./readme/camera_move.gif" width="100%" />
 </a>
 
 Video: [https://www.youtube.com/watch?v=3jVszt_78_k](https://www.youtube.com/watch?v=3jVszt_78_k).
