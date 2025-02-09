@@ -2,13 +2,12 @@ This repository contains code that extracts YouTube videos based on a mapping.cs
 
 This study presents a comprehensive cross-cultural evaluation of pedestrian behaviour during road crossings, examining variations between developed and developing states worldwide. As urban landscapes evolve and autonomous vehicles (AVs) become integral to future transportation, understanding pedestrian behaviour becomes paramount for ensuring safe interactions between humans and AVs. Through an extensive review of global pedestrian studies, we analyse key factors influencing crossing behaviour, such as cultural norms, socioeconomic factors, infrastructure development, and regulatory frameworks. Our findings reveal distinct patterns in pedestrian conduct across different regions. Developed states generally exhibit more structured and rule-oriented crossing behaviours, influenced by established traffic regulations and advanced infrastructure. In contrast, developing states often witness a higher degree of informal and adaptive behaviour due to limited infrastructure and diverse cultural influences. These insights underscore the necessity for AVs to adapt to diverse pedestrian behaviour on a global scale, emphasising the importance of incorporating cultural nuances into AV programming and decision-making algorithms. As the integration of AVs into urban environments accelerates, this research contributes valuable insights for enhancing the safety and efficiency of autonomous transportation systems. By recognising and accommodating diverse pedestrian behaviours, AVs can navigate complex and dynamic urban settings, ensuring a harmonious coexistence with human road users across the globe.
 
+The dataset is available on [kaggle](https://www.kaggle.com/datasets/anonymousauthor123/pedestrian-in-youtubepyt).
+
 ## Citation
 If you use this work for academic work please cite the following paper:
 
 > Alam, Md. S., Martens, M. H., & Bazilinskyy, P. (2025). Understanding global pedestrian behaviour in 361 cities with dashcam videos on YouTube. Under review. Available at https://bazilinskyy.github.io/publications/alam2025crossing
-
-## Dataset
-Dataset is available on [kaggle](https://www.kaggle.com/datasets/anonymousauthor123/pedestrian-in-youtubepyt).
 
 ## Usage of the code
 The code is open-source and free to use. It is aimed for, but not limited to, academic research. We welcome forking of this repository, pull requests, and any contributions in the spirit of open science and open-source code 😍😄 For inquiries about collaboration, you may contact Md Shadab Alam (md_shadab_alam@outlook.com) or Pavlo Bazilinskyy (pavlo.bazilinskyy@gmail.com).
@@ -85,27 +84,28 @@ python3 analysis.py
 - **`font_size`**: Specifies the font size to be used in outputs.
 - **`plotly_template`**: Defines the template for Plotly figures.
 
-## Example
+## Example of YOLO running on dashcam video
 
-Example of YOLO running on dashcam video (original video: https://www.youtube.com/watch?v=_Wyg213IZDI)
 <a href="https://youtu.be/NipvoDg0Nyk">
   <img src="./readme/output_gif.gif" width="100%" />
 </a>
-
+Video: [https://www.youtube.com/watch?v=_Wyg213IZDI](https://www.youtube.com/watch?v=_Wyg213IZDI).
 
 ## Selection procedure
 
-### Videos were not selected if it skips frames
+### Segments of videos were not selected if frames are skipped
 <a href="https://youtu.be/0K9vaQxKZ9k">
   <img src="./readme/ghost.gif" width="100%" />
 </a>
+Video: [https://www.youtube.com/watch?v=0K9vaQxKZ9k](https://www.youtube.com/watch?v=0K9vaQxKZ9k).
 
 ### Snippets of videos are not analysed during the movement of camera
 <a href="https://youtu.be/3jVszt_78_k">
   <img src="./readme/camera_mov.gif" width="100%" />
 </a>
+Video: [https://www.youtube.com/watch?v=3jVszt_78_k](https://www.youtube.com/watch?v=3jVszt_78_k).
 
-## Description and analysis of dataset and analysis
+## Description and analysis of dataset
 ### Description of dataset
 <!-- [![Locations of cities with footage in dataset](figures/world_map.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/world_map.html)
 Locations of cities with footage in dataset. -->
