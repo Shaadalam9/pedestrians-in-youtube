@@ -1,7 +1,11 @@
 <!doctype html>
 <html lang="en">
 <head>
-    <title>Extend mapping</title>
+    <title>Add dashcam video</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
         .container {
             display: flex;
@@ -93,70 +97,132 @@
             height: 50%;
             max-height: 500px;
         }
+
+        #map {
+            width: 100%;
+            height: 200px; /* ensure height is explicitly set */
+            max-height: 200px;
+        }
     </style>
     <script src="https://www.youtube.com/iframe_api"></script>
     <script>
-        // Wait for the DOM to fully load
-        document.addEventListener('DOMContentLoaded', function() {
-            // Declare the YouTube player variable
-            let player;
+        let player; // global youtube player variable
 
-            // This function will be called once the API is ready
-            function onYouTubeIframeAPIReady() {
+        function onYouTubeIframeAPIReady() {
+            console.log("YouTube API Ready");
+            initializePlayer();
+        }
+
+        function initializePlayer() {
+            const videoElement = document.getElementById('embeddedVideo');
+
+            // check if the iframe exists and has the correct API enabled
+            if (videoElement) {
                 player = new YT.Player('embeddedVideo', {
                     events: {
+                        'onReady': function() {
+                            console.log("YouTube Player Ready");
+                            updateCurrentTime();
+                        },
                         'onStateChange': onPlayerStateChange
                     }
                 });
             }
+        }
 
-            // This function will be triggered whenever the state of the video changes
-            function onPlayerStateChange(event) {
-                // Check if the video is playing
-                if (event.data == YT.PlayerState.PLAYING) {
-                    updateCurrentTime(); // Update the time while video is playing
-                }
+        function onPlayerStateChange(event) {
+            if (event.data === YT.PlayerState.PLAYING) {
+                updateCurrentTime();
             }
+        }
 
-            // Function to update the current time displayed
-            function updateCurrentTime() {
-                // Get the current time from the YouTube player
-                const currentTime = player.getCurrentTime();
-                
-                // Update the current time displayed on the page
-                document.getElementById('currentTime').textContent = Math.floor(currentTime);
-                
-                // Continuously update the time every second while the video is playing
+        function updateCurrentTime() {
+            if (player && player.getCurrentTime) {
+                let timeDisplay = document.getElementById('currentTime');
+                if (timeDisplay) {
+                    timeDisplay.textContent = Math.floor(player.getCurrentTime());
+                }
                 setTimeout(updateCurrentTime, 1000);
             }
+        }
 
-            // Optionally, initialize the API when it's ready
-            if (typeof YT !== 'undefined' && YT.Player) {
-                onYouTubeIframeAPIReady();
-            }
-
+        // Wait for the DOM to fully load
+        document.addEventListener('DOMContentLoaded', function() {
             const fetchDataButton = document.getElementById('fetchDataButton');
             const embeddedVideo = document.getElementById('embeddedVideo');
-            const videoIdInput = document.getElementById('videoIdInput');
 
-            // Handle Fetch data button
             fetchDataButton.addEventListener('click', function () {
                 fetch('/fetch_video', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    }
+                    headers: { 'Content-Type': 'application/json' }
                 })
                 .then(response => response.json())
                 .then(data => {
                     if (data.video_id) {
-                        embeddedVideo.src = `https://www.youtube.com/embed/${data.video_id}&enablejsapi=1&autoplay=1&mute=1`;
+                        console.log("New video fetched:", data.video_id);
+                        embeddedVideo.src = `https://www.youtube.com/embed/${data.video_id}?enablejsapi=1&autoplay=1&mute=1`;
+
+                        // wait for iframe to load before re-initializing player
+                        embeddedVideo.onload = function () {
+                            console.log("Iframe loaded, reinitializing player");
+                            initializePlayer(); // reinitialize player after fetching new video
+                        };
                     } else {
                         alert('Failed to fetch video.');
                     }
                 })
                 .catch(error => console.error('Error:', error));
             });
+
+            // if the iframe already exists, initialize player immediately
+            if (typeof YT !== 'undefined' && YT.Player) {
+                initializePlayer();
+            }
+            
+            let lat = parseFloat("{{ existing_data['lat'] or 52.3676 }}");
+            let lon = parseFloat("{{ existing_data['lon'] or 4.9041 }}");
+
+            let mapElement = document.getElementById("map");
+            let latInput = document.getElementById("lat");
+            let lonInput = document.getElementById("lon");
+
+            if (mapElement && latInput && lonInput) {
+                console.log("Initializing map at:", lat, lon);
+
+                let map = L.map("map").setView([lat, lon], 13);
+
+                L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+                    attribution: "&copy; OpenStreetMap contributors",
+                    detectRetina: true,
+                    maxZoom: 18,
+                }).addTo(map);
+
+                let marker = L.marker([lat, lon], { draggable: true }).addTo(map);
+
+                // update input fields when marker is dragged
+                marker.on("dragend", function(event) {
+                    let position = marker.getLatLng();
+                    latInput.value = position.lat.toFixed(6);
+                    lonInput.value = position.lng.toFixed(6);
+                    console.log("Updated position:", position.lat, position.lng);
+                });
+
+                // update marker if user manually changes lat/lon in the inputs
+                function updateMarkerPosition() {
+                    let newLat = parseFloat(latInput.value);
+                    let newLon = parseFloat(lonInput.value);
+                    if (!isNaN(newLat) && !isNaN(newLon)) {
+                        marker.setLatLng([newLat, newLon]);
+                        map.setView([newLat, newLon], 13);
+                    }
+                }
+
+                latInput.addEventListener("change", updateMarkerPosition);
+                lonInput.addEventListener("change", updateMarkerPosition);
+            } else {
+                console.error("Map element or input fields not found!");
+            }
+
         });
     </script>
 </head>
@@ -240,6 +306,14 @@
                     <input type="text" id="fps_video" name="fps_video" value="{{ fps_video }}" required min="1" step="1" type="number" pattern="[0-9.]*">
                 </div>
                 <div class="form-group">
+                    <label for="lat">Latitude:</label>
+                    <input type="text" id="lat" name="lat" value="{{ existing_data['lat'] }}" type="number" pattern="[0-9.]*">
+                </div>
+                <div class="form-group">
+                    <label for="lon">Longitude:</label>
+                    <input type="text" id="lon" name="lon" value="{{ existing_data['lon'] }}" type="number" pattern="[0-9.]*">
+                </div>
+                <div class="form-group">
                     <label for="gmp">GDP city (billion USD):</label>
                     <input type="text" id="gmp" name="gmp" value="{{ existing_data['gmp'] }}" type="number" pattern="[0-9.]*">
                 </div>
@@ -294,13 +368,15 @@
             {% if video_id %}
                 <!-- Embed the YouTube video only if a valid video ID is available -->
                 <iframe id="embeddedVideo" src="https://www.youtube.com/embed/{{ video_id }}?start={{ timestamp }}&enablejsapi=1&autoplay=1&mute=1" frameborder="0" allowfullscreen allow="autoplay"></iframe>
-                <p>Current time: <span id="currentTime">0</span> s.</p>
-                <p><strong>ID:</strong> <span id="videoTitle">{{ video_id }}</span>.</p>
-                <p><strong>Start time</strong>: {{ start_time_video }}</p>
-                <p><strong>End time</strong>: {{ end_time_video }}</p>
-                <!-- <p><strong>Title:</strong> <span id="videoTitle">{{ yt_title }}</span>.</p> -->
-                <p><strong>Upload date:</strong> <span id="videoUploadDate">{{ yt_upload_date }}</span>.</p>
-                <p><strong>Description:</strong> <span id="videoDescription">{{ yt_description }}</span></p>
+                <p>Current time: <span id="currentTime">0</span> s.</br>
+                <strong>ID:</strong> <span id="videoTitle">{{ video_id }}</span>.
+                <strong>Start time</strong>: {{ start_time_video }}
+                <strong>End time</strong>: {{ end_time_video }}
+                <!-- <strong>Title:</strong> <span id="videoTitle">{{ yt_title }}</span>. -->
+                <strong>Upload date:</strong> <span id="videoUploadDate">{{ yt_upload_date }}</span>.
+                <strong>Description:</strong> <span id="videoDescription">{{ yt_description }}</span></p>
+                <!-- Map -->
+                <div id="map"></div>
             {% endif %}
         </div>
     </div>

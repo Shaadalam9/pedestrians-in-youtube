@@ -151,9 +151,13 @@ def form():
                     country_population = 1578000
                 else:
                     country_population = get_country_population(country_data)
+                # get coordinates
+                lat, lon = get_coordinates(city, state, common.correct_country(country))
                 existing_data_row = {'city': city,
                                      'country': country,
                                      'iso3': iso3_code,
+                                     'lat': lat,
+                                     'lon': lon,
                                      'state': state,
                                      'videos': [],
                                      'time_of_day': [],
@@ -170,7 +174,7 @@ def form():
                                      'fps_list': [],
                                      'vehicle_type': [],
                                      'gini': get_country_gini(country_data),
-                                     'traffic_index': 0.0}
+                                     'traffic_index': get_traffic_index_lat_lon(lat, lon)}  # alternative is paid Nombeo API  # noqa: E501
 
         elif 'submit_data' in request.form:
             city = request.form.get('city')
@@ -192,6 +196,8 @@ def form():
             end_time_input = int(end_time[0])  # for starting video at the last end time
             gmp = request.form.get('gmp')
             population_city = request.form.get('population_city')
+            lat = request.form.get('lat')
+            lon = request.form.get('lon')
             population_country = request.form.get('population_country')
             traffic_mortality = request.form.get('traffic_mortality')
             continent = request.form.get('continent')
@@ -318,6 +324,14 @@ def form():
                         df.at[idx, 'avg_height'] = float(avg_height)
                     else:
                         df.at[idx, 'avg_height'] = 0.0
+                    if lat:
+                        df.at[idx, 'lat'] = float(lat)
+                    else:
+                        df.at[idx, 'lat'] = 0.0
+                    if lon:
+                        df.at[idx, 'lon'] = float(lon)
+                    else:
+                        df.at[idx, 'lon'] = 0.0
                     for i in range(len(upload_date_list)):
                         if upload_date_list[i] != 'None':
                             upload_date_list[i] = int(upload_date_list[i])
@@ -345,8 +359,6 @@ def form():
                         df.at[idx, 'traffic_index'] = 0.0
 
                 else:
-                    # get coordinates
-                    lat, lon = get_coordinates(city, state, common.correct_country(country))
                     # Add new row if city and country are not found in the CSV
                     new_row = {
                         'id': int(df.iloc[-1]['id']+1),
@@ -489,15 +501,15 @@ def get_country_traffic_mortality(iso3_code):
         return 0.0
 
 
-def get_city_data(city_name, country_code):
+def get_city_data(city, country_code):
     """
     Get economic or city-related data from the Geonames API
 
-    :param city_name: Name of the city
+    :param city: Name of the city
     :param country_code: 2-letter ISO code of the country
     :return: City data
     """
-    url = f"http://api.geonames.org/searchJSON?q={city_name}&country={country_code}&username={common.get_secrets('geonames_username')}"  # noqa: E501
+    url = f"http://api.geonames.org/searchJSON?q={city}&country={country_code}&username={common.get_secrets('geonames_username')}"  # noqa: E501
     response = requests.get(url)
 
     if response.status_code == 200:
@@ -510,7 +522,7 @@ def get_city_population(city_data):
     """
     Get economic or city-related data from the Geonames API
 
-    :param city_name: Name of the city
+    :param city: Name of the city
     :param country_code: 2-letter ISO code of the country
     :return: City data
     """
@@ -586,7 +598,70 @@ def get_gmp(city: str, state: str, iso3: str) -> float:
     return None  # Return None if no data is found
 
 
-@staticmethod
+def get_traffic_index_lat_lon(lat, lon, api=""):
+    if api == "tomtom":
+        url = f"https://api.tomtom.com/traffic/services/4/flowSegmentData/absolute/10/json?key={common.get_secrets('tomtom_api_key')}&point={lat},{lon}"  # noqa: E501
+        response = requests.get(url)
+        
+        if response.status_code == 200:
+            data = response.json()
+            if "flowSegmentData" in data:
+                current_speed = data["flowSegmentData"]["currentSpeed"]
+                free_flow_speed = data["flowSegmentData"]["freeFlowSpeed"]
+                traffic_index = round((1 - current_speed / free_flow_speed) * 100, 2)
+                return traffic_index
+            else:
+                return 0.0
+        else:
+            print(f"Error fetching traffic index for {lat}, {lon}: {response.status_code}")
+            return 0.0
+    # elif api == "trafiklab":
+    #     url = f"https://api.trafiklab.se/v1/trafficindex?lat={lat}&lon={lon}&apikey={common.get_secrets('trafiklab_api_key')}"
+
+    #     try:
+    #         response = requests.get(url)
+    #         response.raise_for_status()  # Raise an exception for HTTP errors
+    #         data = response.json()
+
+    #         # Extract traffic index or other relevant data
+    #         traffic_index = data.get('trafficIndex', None)
+            
+    #         if traffic_index is not None:
+    #             return traffic_index
+    #         else:
+    #             return "Traffic index data not available"
+
+    #     except requests.exceptions.RequestException as e:
+    #         return f"An error occurred: {e}"
+    else:
+        print(f"Wrong type of API provided {api}.")
+        return 0.0
+
+
+def get_traffic_index(city, state, country):
+    # API endpoint for Numbeo Traffic Index with city, state, and country
+    if state:
+        url = f"https://www.numbeo.com/api/traffic?api_key={common.get_secrets('numbeo_api_key')}&city={city}&state={state}&country={country}"  # noqa: E501
+    else:
+        url = f"https://www.numbeo.com/api/traffic?api_key={common.get_secrets('numbeo_api_key')}&city={city}&country={country}"  # noqa: E501
+    try:
+        response = requests.get(url)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+        data = response.json()
+
+        # Check if the data contains traffic information
+        if 'traffic_index' in data:
+            traffic_index = data['traffic_index']
+            return traffic_index
+        else:
+            print(f"No traffic index data available fro city city={city}, state={state}, country={country}.")
+            return 0.0
+
+    except requests.exceptions.RequestException as e:
+        print(f"An error occurred: {e}")
+        return 0.0
+
+
 def get_coordinates(city, state, country):
     """Get city coordinates either from the pickle file or geocode them."""
     # Generate a unique user agent with the current date and time
