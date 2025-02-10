@@ -132,13 +132,13 @@ class Youtube_Helper:
             package_name (str): The name of the package to upgrade.
         """
         if Youtube_Helper.was_upgraded_today(package_name):
-            logging.info(f"{package_name} upgrade already attempted today. Skipping.")
+            logging.debug(f"{package_name} upgrade already attempted today. Skipping.")
             return
 
         try:
             logging.info(f"Upgrading {package_name}...")
             subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", package_name])
-            logging.info(f"{package_name} upgraded successfully!")
+            logging.info(f"{package_name} upgraded successfully.")
             Youtube_Helper.mark_as_upgraded(package_name)
         except subprocess.CalledProcessError as e:
             logging.error(f"Failed to upgrade {package_name}: {e}")
