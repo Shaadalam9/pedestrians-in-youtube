@@ -54,3 +54,6 @@ Dockerfile
 # log files
 *.log
 *.out
+
+# log of upgrades
+upgrade_log.json
