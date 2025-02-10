@@ -20,6 +20,7 @@ import sys
 import logging
 from tqdm import tqdm
 import datetime
+import json
 
 
 logger = CustomLogger(__name__)  # use custom logger
@@ -39,6 +40,9 @@ LINE_TICKNESS = 1
 RENDER = False
 SHOW_LABELS = False
 SHOW_CONF = False
+
+# logging of attempts to upgrade packages
+UPGRADE_LOG_FILE = "upgrade_log.json"
 
 
 class Youtube_Helper:
@@ -89,22 +93,56 @@ class Youtube_Helper:
             logger.error(f"Error: Folder '{new_name}' already exists.")
 
     @staticmethod
-    def upgrade_package(package_name):
+    def load_upgrade_log():
+        """Loads the upgrade log from a file."""
+        if not os.path.exists(UPGRADE_LOG_FILE):
+            return {}
+        try:
+            with open(UPGRADE_LOG_FILE, "r") as file:
+                return json.load(file)
+        except json.JSONDecodeError:
+            return {}
+
+    @staticmethod
+    def save_upgrade_log(log_data):
+        """Saves the upgrade log to a file."""
+        with open(UPGRADE_LOG_FILE, "w") as file:
+            json.dump(log_data, file)
+
+    @staticmethod
+    def was_upgraded_today(package_name):
+        """Checks if the package was attempted to be upgraded today."""
+        log_data = Youtube_Helper.load_upgrade_log()
+        today = datetime.date.today().isoformat()
+        return log_data.get(package_name) == today
+
+    @staticmethod
+    def mark_as_upgraded(package_name):
+        """Logs that a package upgrade was attempted today."""
+        log_data = Youtube_Helper.load_upgrade_log()
+        log_data[package_name] = datetime.date.today().isoformat()
+        Youtube_Helper.save_upgrade_log(log_data)
+
+    @staticmethod
+    def upgrade_package_if_needed(package_name):
         """
-        Upgrades a given Python package using pip.
+        Upgrades a given Python package using pip if it hasn't been attempted today.
 
         Parameters:
             package_name (str): The name of the package to upgrade.
-
-        The method uses subprocess to call pip and upgrade the package.
-        If the upgrade fails, it prints an error message.
         """
+        if Youtube_Helper.was_upgraded_today(package_name):
+            logging.info(f"{package_name} upgrade already attempted today. Skipping.")
+            return
+
         try:
-            print(f"Upgrading {package_name}...")
+            logging.info(f"Upgrading {package_name}...")
             subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", package_name])
-            print(f"{package_name} upgraded successfully!")
+            logging.info(f"{package_name} upgraded successfully!")
+            Youtube_Helper.mark_as_upgraded(package_name)
         except subprocess.CalledProcessError as e:
-            print(f"Failed to upgrade {package_name}: {e}")
+            logging.error(f"Failed to upgrade {package_name}: {e}")
+            Youtube_Helper.mark_as_upgraded(package_name)  # still log it to avoid retrying
 
     def download_video_with_resolution(self, video_id, resolutions=["720p", "480p", "360p", "144p"], output_path="."):
         """
@@ -127,8 +165,8 @@ class Youtube_Helper:
         try:
             # Optionally upgrade pytubefix (if configured and it is Monday)
             if common.get_configs("update_package") and datetime.datetime.today().weekday() == 0:
-                Youtube_Helper.upgrade_package("pytube")
-                Youtube_Helper.upgrade_package("pytubefix")
+                Youtube_Helper.upgrade_package_if_needed("pytube")
+                Youtube_Helper.upgrade_package_if_needed("pytubefix")
 
             # Construct the YouTube URL.
             youtube_url = f"https://www.youtube.com/watch?v={video_id}"
@@ -181,7 +219,7 @@ class Youtube_Helper:
         try:
             # Optionally upgrade yt_dlp (if the configuration requires it and it is Monday)
             if common.get_configs("update_package") and datetime.datetime.today().weekday() == 0:
-                Youtube_Helper.upgrade_package("yt_dlp")
+                Youtube_Helper.upgrade_package_if_needed("yt_dlp")
 
             # Construct the YouTube URL.
             youtube_url = f"https://www.youtube.com/watch?v={video_id}"
