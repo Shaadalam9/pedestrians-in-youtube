@@ -4681,7 +4681,7 @@ if __name__ == "__main__":
                     "without_trf_light_night"
                 ] = int(value)  # Explicitly cast to int
         # Add column with count of videos
-        df_mapping["video_count"] = df_mapping["videos"].apply(lambda x: len(x.strip("[]").split(",")) if x.strip("[]") else 0)  # noqa: E501
+        df_mapping["total_videos"] = df_mapping["videos"].apply(lambda x: len(x.strip("[]").split(",")) if x.strip("[]") else 0)  # noqa: E501
         # Get lat and lon for cities
         logger.info("Fetching lat and lon coordinates for cities.")
         for index, row in tqdm(df_mapping.iterrows(), total=len(df_mapping)):
