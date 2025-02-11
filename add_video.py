@@ -94,7 +94,6 @@ def form():
             elif state is not None:
                 state = state.strip()
             video_url = request.form.get('video_url')
-            print(city, state, country)
 
             # Extract video ID from YouTube URL
             try:
@@ -612,7 +611,7 @@ def get_gmp(city: str, state: str, iso3: str) -> float:
     return None  # Return None if no data is found
 
 
-def get_traffic_index_lat_lon(lat, lon, api=""):
+def get_traffic_index_lat_lon(lat, lon, api="tomtom"):
     if api == "tomtom":
         url = f"https://api.tomtom.com/traffic/services/4/flowSegmentData/absolute/10/json?key={common.get_secrets('tomtom_api_key')}&point={lat},{lon}"  # noqa: E501
         response = requests.get(url)
