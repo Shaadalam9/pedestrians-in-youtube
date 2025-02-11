@@ -185,19 +185,19 @@ def form():
                                      'traffic_index': get_traffic_index_lat_lon(lat, lon)}  # alternative is paid Nombeo API  # noqa: E501
 
         elif 'submit_data' in request.form:
-            city = request.form.get('city').strip()
+            city = request.form.get('city')
             # check for missing data
             if city == 'None' or city == 'nan':
                 city = None
             else:
                 city = city.strip()
-            country = request.form.get('country').strip()
+            country = request.form.get('country')
             # check for missing data
             if country == 'None' or country == 'nan':
                 country = None
             else:
                 country = country.strip()
-            state = request.form.get('state').strip()
+            state = request.form.get('state')
             # check for missing data
             if state == 'None' or state == 'nan':
                 state = None
