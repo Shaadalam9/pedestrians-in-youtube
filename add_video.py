@@ -75,19 +75,26 @@ def form():
 
     if request.method == 'POST':
         if 'fetch_data' in request.form:
-            city = request.form.get('city').strip()
+            city = request.form.get('city')
             # check for missing data
             if city == 'None' or city == 'nan':
                 city = None
-            country = request.form.get('country').strip()
+            else:
+                city = city.strip()
+            country = request.form.get('country')
             # check for missing data
             if country == 'None' or country == 'nan':
                 country = None
-            state = request.form.get('state').strip()
+            else:
+                country = country.strip()
+            state = request.form.get('state')
             # check for missing data
             if state == 'None' or state == 'nan':
                 state = None
+            else:
+                state = state.strip()
             video_url = request.form.get('video_url')
+            print(city, state, country)
 
             # Extract video ID from YouTube URL
             try:
@@ -182,14 +189,20 @@ def form():
             # check for missing data
             if city == 'None' or city == 'nan':
                 city = None
+            else:
+                city = city.strip()
             country = request.form.get('country').strip()
             # check for missing data
             if country == 'None' or country == 'nan':
                 country = None
+            else:
+                country = country.strip()
             state = request.form.get('state').strip()
             # check for missing data
             if state == 'None' or state == 'nan':
                 state = None
+            else:
+                state = state.strip()
             video_url = request.form.get('video_url')
             time_of_day = request.form.getlist('time_of_day')
             start_time = request.form.getlist('start_time')
