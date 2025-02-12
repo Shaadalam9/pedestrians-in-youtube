@@ -4769,9 +4769,9 @@ if __name__ == "__main__":
     
     # Analysis.speed_and_time_to_start_cross(df_mapping)
     # Analysis.plot_speed_to_cross_by_alphabetical_order(df_mapping)
-    Analysis.plot_time_to_start_cross_by_alphabetical_order(df_mapping)
+    # Analysis.plot_time_to_start_cross_by_alphabetical_order(df_mapping)
     # Analysis.plot_speed_to_cross_by_average(df_mapping)
-    # Analysis.plot_time_to_start_cross_by_average(df_mapping)
+    Analysis.plot_time_to_start_cross_by_average(df_mapping)
     # Analysis.correlation_matrix(df_mapping)
 
     # # Speed of crossing vs time to start crossing
