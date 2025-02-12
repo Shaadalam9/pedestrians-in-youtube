@@ -26,7 +26,7 @@ from datetime import datetime
 # Suppress the specific FutureWarning
 warnings.filterwarnings("ignore", category=FutureWarning, module="plotly")
 
-logs(show_level='info', show_color=True)
+logs(show_level=common.get_configs("logger_level"), show_color=True)
 logger = CustomLogger(__name__)  # use custom logger
 
 # set template for plotly output
