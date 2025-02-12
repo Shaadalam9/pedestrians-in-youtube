@@ -155,6 +155,7 @@ for index, row in tqdm(mapping.iterrows(), total=mapping.shape[0]):
             logger.info(f"Using already downloaded video: {vid}.")
             video_title = vid  # or any fallback title
             helper.set_video_title(video_title)
+            video_fps = helper.get_video_fps(video_file_path)  # try to get FPS value of existing file
 
         for start_time, end_time, time_of_day_value in zip(start_times_list, end_times_list, time_of_day_list):
             # Construct a unique file name for the trimmed segment
@@ -187,7 +188,7 @@ for index, row in tqdm(mapping.iterrows(), total=mapping.shape[0]):
                     logger.info(f"Started YOLO analysis for segment {start_time}-{end_time}s with FPS value from video file {video_fps}.")  # noqa: E501
                     helper.tracking_mode(trimmed_video_path, trimmed_video_path, video_fps)
                 elif fps_values[vid_index] > 0:
-                    logger.info(f"Started YOLO analysis for segment {start_time}-{end_time}s with FPS value from mapping {fps_values[vid_index] > 0}.")  # noqa: E501
+                    logger.info(f"Started YOLO analysis for segment {start_time}-{end_time}s with FPS value from mapping {fps_values[vid_index]}.")  # noqa: E501
                     helper.tracking_mode(trimmed_video_path, trimmed_video_path, fps_values[vid_index])
                 else:
                     logger.warning(f"FPS value video {vid} is {video_fps}. Skipping tracking mode.")
