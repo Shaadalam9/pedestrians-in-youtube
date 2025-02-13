@@ -457,7 +457,7 @@ class Youtube_Helper:
             return False
 
     @staticmethod
-    def check_for_download_csv_file(mapping):
+    def check_missing_mapping(mapping):
         for index, row in mapping.iterrows():
             video_ids = [id.strip() for id in row["videos"].strip("[]").split(',')]
             start_times = ast.literal_eval(row["start_time"])
