@@ -674,8 +674,8 @@ class Youtube_Helper:
 
                     if formats_720p:
                         # Select the format with the highest FPS
-                        max_fps_format = max(formats_720p, key=lambda fmt: fmt['fps'])
-                        return max_fps_format['fps']
+                        first_fps_format = formats_720p[0]
+                        return first_fps_format['fps']
 
                     # Fallback: No 720p formats with FPS information
                     logger.warning(f"No valid 720p formats with FPS found for video {video_id}.")
@@ -704,12 +704,12 @@ class Youtube_Helper:
             for i, video_id in enumerate(video_ids):
                 video_id = video_id.strip()
                 # Skip processing if the FPS value already exists
-                if i < len(existing_fps) and existing_fps[i] is not None:
-                    fps_values.append(existing_fps[i])
-                    logger.info(f"Skipping video {video_id} as FPS is already available.")
-                else:
-                    fps = get_fps(video_id)
-                    fps_values.append(fps)
+                # if i < len(existing_fps) and existing_fps[i] is not None:
+                #     fps_values.append(existing_fps[i])
+                #     logger.info(f"Skipping video {video_id} as FPS is already available.")
+                # else:
+                fps = get_fps(video_id)
+                fps_values.append(fps)
             return str(fps_values)
         # Process the 'videos' column and add/update the 'fps_list' column
         if 'fps_list' not in df.columns:
