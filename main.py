@@ -23,8 +23,8 @@ delete_youtube_video = common.get_configs("delete_youtube_video")
 data_folder = common.get_configs("data")
 countries_analyse = common.get_configs("countries_analyse")
 
-if common.get_configs("check_for_download_csv_file"):
-    helper.check_for_download_csv_file(mapping)
+if common.get_configs("check_missing_mapping"):
+    helper.check_missing_mapping(mapping)
 
 if common.get_configs("update_ISO_code"):
     # Ensure the country column exists
