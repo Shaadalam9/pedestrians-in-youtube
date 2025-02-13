@@ -148,9 +148,7 @@ class Youtube_Helper:
         """
         Downloads a YouTube video in one of the specified resolutions and returns video details.
 
-        This function first attempts to download the video using the yt_dlp method.
-        If that fails (for example, due to unavailable streams or an exception), it falls back
-        to downloading using the pytubefix/YouTube method.
+        This function attempts to download the video using the pytubefix/YouTube method.
 
         Parameters:
             video_id (str): The YouTube video ID.
@@ -159,9 +157,8 @@ class Youtube_Helper:
 
         Returns:
             tuple or None: A tuple (video_file_path, video_id, resolution, fps) if successful,
-                            or None if both methods fail.
+                            or None if methods fail.
         """
-        # ----- First method: using pytubefix (YouTube) -----
         try:
             # Optionally upgrade pytubefix (if configured and it is Monday)
             if common.get_configs("update_package") and datetime.datetime.today().weekday() == 0:
@@ -187,7 +184,7 @@ class Youtube_Helper:
                 video_streams = youtube_object.streams.filter(res=resolution)
                 if video_streams:
                     selected_resolution = resolution
-                    logger.info(f"Found video {video_id} in {resolution} using pytubefix.")
+                    logger.info(f"Found video {video_id} in {resolution}.")
                     # Use the first available stream.
                     if hasattr(video_streams, 'first'):
                         selected_stream = video_streams.first()
@@ -196,12 +193,12 @@ class Youtube_Helper:
                     break
 
             if not selected_stream:
-                logger.error(f"No stream available for video {video_id} in the specified resolutions via pytubefix.")
+                logger.error(f"No stream available for video {video_id} in the specified resolutions.")
                 return None
 
             # Construct the file path for the downloaded video.
             video_file_path = os.path.join(output_path, f"{video_id}.mp4")
-            logger.info(f"Downloading video {video_id} in resolution {selected_resolution} using pytubefix started.")
+            logger.info(f"Downloading video {video_id} in resolution {selected_resolution} started.")
 
             # Download the video.
             selected_stream.download(output_path, filename=f"{video_id}.mp4")
@@ -214,98 +211,6 @@ class Youtube_Helper:
         except Exception as e:
             logger.error(f"pytubefix download method failed for video {video_id}: {e}")
             logger.info("Falling back to yt_dlp method.")
-
-        # ----- Fallback method: using yt_dlp -----
-        try:
-            # Optionally upgrade yt_dlp (if the configuration requires it and it is Monday)
-            if common.get_configs("update_package") and datetime.datetime.today().weekday() == 0:
-                Youtube_Helper.upgrade_package_if_needed("yt_dlp")
-
-            # Construct the YouTube URL.
-            youtube_url = f"https://www.youtube.com/watch?v={video_id}"
-
-            # Extract video information (including available formats) without downloading.
-            extract_opts = {
-                'skip_download': True,
-                'quiet': True,
-            }
-            with yt_dlp.YoutubeDL(extract_opts) as ydl:
-                info_dict = ydl.extract_info(youtube_url, download=False)
-
-            available_formats = info_dict.get("formats", [])  # type: ignore
-            selected_format_str = None
-            selected_resolution = None
-
-            # Iterate over the preferred resolutions.
-            for res in resolutions:
-                try:
-                    res_height = int(res.rstrip("p"))
-                except ValueError:
-                    continue
-
-                # Check for a video-only stream (no audio).
-                video_only_found = any(
-                    fmt for fmt in available_formats
-                    if fmt.get("height") == res_height and fmt.get("acodec") == "none"
-                )
-                if video_only_found:
-                    selected_format_str = f"bestvideo[height={res_height}]"
-                    selected_resolution = res
-                    logger.info(f"Found video-only format for video {video_id} at {res}.")
-                    break
-
-                # Otherwise, check for any stream at that resolution.
-                progressive_found = any(
-                    fmt for fmt in available_formats
-                    if fmt.get("height") == res_height
-                )
-                if progressive_found:
-                    selected_format_str = f"best[height={res_height}]"
-                    selected_resolution = res
-                    logger.info(f"Found progressive format for video {video_id} at {res}; audio will be removed.")
-                    break
-
-            if not selected_format_str:
-                logger.error(f"No stream available for video {video_id} in the specified resolutions via yt_dlp.")
-                # Raise an exception to trigger the fallback method.
-                raise Exception("No stream available via yt_dlp")
-            po_token = common.get_secrets("po_token")
-            # Set download options.
-            download_opts = {
-                'format': selected_format_str,
-                'outtmpl': os.path.join(output_path, f"{video_id}.%(ext)s"),
-                'quiet': True,
-                'postprocessors': [{
-                    'key': 'FFmpegVideoConvertor',
-                    'preferedformat': 'mp4'
-                }],
-                'postprocessor_args': ['-an'],
-                'http_headers': {
-                    'Cookie': f'pot={po_token}'
-                },
-                'extractor_args': {
-                    'youtube': {
-                        'po_token': f'web.gvs+{po_token}'
-                    }
-                },
-                'cookiesfrombrowser': ('chrome',)
-            }
-
-            logger.info(f"Downloading video {video_id} in resolution {selected_resolution} using yt_dlp started.")
-            with yt_dlp.YoutubeDL(download_opts) as ydl:
-                ydl.download([youtube_url])
-
-            # Final output file path (assuming the postprocessor outputs an MP4 file).
-            video_file_path = os.path.join(output_path, f"{video_id}.mp4")
-            self.video_title = info_dict.get("title")  # type: ignore
-            fps = self.get_video_fps(video_file_path)
-            logger.info(f"FPS of {video_id}: {fps}.")
-
-            return video_file_path, video_id, selected_resolution, fps
-
-        except Exception as e:
-            logger.error(f"yt_dlp download method failed for video {video_id}: {e}")
-            return None
 
     def get_video_fps(self, video_file_path):
         """

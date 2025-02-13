@@ -69,7 +69,7 @@ Configuration of the project needs to be defined in `config`. Please use the `de
 - **`compress_youtube_video`**: Compresses YouTube videos (using the H.255 codec by default).
 - **`delete_runs_files`**: Deletes files containing YOLO output after analysis.
 - **`monitor_temp`**: Monitors the temperature of the device running the analysis.
-- **`check_for_download_csv_file`**: Flag indicating whether any video listed in the mapping file is pending analysis.
+- **`check_missing_mapping`**: Identifies all the missing csv files.
 - **`client`**: Specifies the client type for downloading YouTube videos; accepted values are `"WEB"`, `"ANDROID"` or `"ios"`.
 - **`model`**: Specifies the YOLO model to use; supported/tested versions include `v8x` and `v11x`.
 - **`countries_analyse`**: Lists the countries to be analysed.
@@ -87,7 +87,7 @@ Configuration of the project needs to be defined in `config`. Please use the `de
 - **`plotly_template`**: Defines the template for Plotly figures.
 - **`logger_level`**: Level of console output. Can be: debug, info, warning, error.
 
-For working with external APIs of [GeoNames](https://www.geonames.org), [BEA](https://apps.bea.gov/api/signup), [TomTom](https://developer.tomtom.com/user/register), [Trafikab](https://www.trafiklab.se/api/trafiklab-apis), and [Numbeo](https://www.numbeo.com/common/api.jsp) (paid), the API keys need to be placed in file `secret` (no extension) in the root of the project. The file needs to be formatted as `secret example`. This is optional for just running the analysis on the dataset. 
+For working with external APIs of [GeoNames](https://www.geonames.org), [BEA](https://apps.bea.gov/api/signup), [TomTom](https://developer.tomtom.com/user/register), [Trafikab](https://www.trafiklab.se/api/trafiklab-apis), and [Numbeo](https://www.numbeo.com/common/api.jsp) (paid), the API keys need to be placed in file `secret` (no extension) in the root of the project. The file needs to be formatted as `secret example`. This is optional for just running the analysis on the dataset.
 
 ## Example of YOLO output for a video with dashcam footage
 
