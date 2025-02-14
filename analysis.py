@@ -233,6 +233,9 @@ class Analysis():
 
             # Iterate through each video, start time, end time, and time of day
             for video, start, end, time_of_day_, fps in zip(video_ids, start_times, end_times, time_of_day, fps_list):
+                # Assume FPS=30 for None
+                if not fps:
+                    fps = 30
                 # Check if the current video matches the specified ID
                 if video == id:
                     counter = 0
@@ -4749,7 +4752,7 @@ if __name__ == "__main__":
     # Analysis.get_world_map(df_mapping)
     df = df_mapping.copy()  # copy df to manipulate for output
     df['state'] = df['state'].fillna('NA')  # Set state to NA
-    # Analysis.get_mapbox_map(df=df, hover_data=hover_data)  # mapbox map
+    Analysis.get_mapbox_map(df=df, hover_data=hover_data)  # mapbox map
 
     # # Amount of footage
     # Analysis.scatter(df=df,
@@ -4771,7 +4774,7 @@ if __name__ == "__main__":
     # Analysis.plot_speed_to_cross_by_alphabetical_order(df_mapping)
     # Analysis.plot_time_to_start_cross_by_alphabetical_order(df_mapping)
     # Analysis.plot_speed_to_cross_by_average(df_mapping)
-    Analysis.plot_time_to_start_cross_by_average(df_mapping)
+    # Analysis.plot_time_to_start_cross_by_average(df_mapping)
     # Analysis.correlation_matrix(df_mapping)
 
     # # Speed of crossing vs time to start crossing
