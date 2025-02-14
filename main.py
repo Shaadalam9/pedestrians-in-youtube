@@ -171,7 +171,8 @@ for index, row in tqdm(mapping.iterrows(), total=mapping.shape[0]):
 
             if start_time is None and end_time is None:
                 logger.info("No trimming required for this video.")
-            else:
+            elif common.get_configs("prediction_mode") or common.get_configs("tracking_mode"):
+                # trim only if needed
                 logger.info(f"Trimming in progress for segment {start_time}-{end_time}s.")
                 # Adjust end_time if needed (e.g., to account for missing frames)
                 end_time_adj = end_time - 1
@@ -213,7 +214,9 @@ for index, row in tqdm(mapping.iterrows(), total=mapping.shape[0]):
                     source_folder = os.path.join("runs", "detect")
                     destination_folder = os.path.join("runs", f"{video_title}_{resolution}_{datetime.now()}")
                     helper.rename_folder(source_folder, destination_folder)
-            os.remove(trimmed_video_path)
+            # remove trimmed file
+            if common.get_configs("prediction_mode") or common.get_configs("tracking_mode"):
+                os.remove(trimmed_video_path)
 
         # Optionally delete the original video after processing if needed
         if delete_youtube_video:
