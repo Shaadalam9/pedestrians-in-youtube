@@ -942,7 +942,7 @@ class Analysis():
         # light was present between it or not. Only getting those unique_id of the person who crosses the road.
 
         # Loop through each video data
-        for key, df in data.items():
+        for key, df in tqdm(data.items(), total=len(data)):
 
             counter_exists, counter_nt_exists = 0, 0
 
@@ -1008,7 +1008,7 @@ class Analysis():
         # light was present between it or not. Only getting those unique_id of the person who crosses the road.
 
         # Loop through each video data
-        for key, df in data.items():
+        for key, df in tqdm(data.items(), total=len(data)):
             counter_exists, counter_nt_exists = 0, 0
 
             # Extract relevant information using the find_values function
