@@ -210,7 +210,6 @@ class Youtube_Helper:
 
         except Exception as e:
             logger.error(f"pytubefix download method failed for video {video_id}: {e}")
-            logger.info("Falling back to yt_dlp method.")
 
     def get_video_fps(self, video_file_path):
         """

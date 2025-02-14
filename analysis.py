@@ -498,7 +498,7 @@ class Analysis():
             mapbox=dict(zoom=1.3),
             font=dict(family=common.get_configs('font_family'),  # update font family
                       size=common.get_configs('font_size'))  # update font size
-        )      
+        )
         # Save and display the figure
         Analysis.save_plotly_figure(fig, "mapbox_map", save_final=True)
 
@@ -2828,7 +2828,7 @@ class Analysis():
             raise ValueError("'time' returned None, please check the input data or calculations.")
 
         # Now populate the final_dict with city-wise speed data
-        for city_condition, time in tqdm(avg_time.items()):    
+        for city_condition, time in tqdm(avg_time.items()):
             city, state, condition = city_condition.split('_')
 
             # Get the country from the previously stored city_country_map
@@ -3152,12 +3152,12 @@ class Analysis():
                 if f"{city}_{state}" not in final_dict:
                     final_dict[f"{city}_{state}"] = {"without_trf_light_0": None, "without_trf_light_1": None,
                                                      "country": country, "iso": iso_code}
-                
+
                 # normalise by total time and total number of detected persons
                 total_time = Analysis.get_value(df_mapping, "city", city, "state", state, "total_time")
                 person = Analysis.get_value(df_mapping, "city", city, "state", state, "person")
                 count = count / total_time / person
-                
+
                 # Populate the corresponding speed based on the condition
                 final_dict[f"{city}_{state}"][f"without_trf_light_{condition}"] = count
 
@@ -3466,7 +3466,7 @@ class Analysis():
                 total_time = Analysis.get_value(df_mapping, "city", city, "state", state, "total_time")
                 person = Analysis.get_value(df_mapping, "city", city, "state", state, "person")
                 count = count / total_time / person
-                
+
                 # Populate the corresponding speed based on the condition
                 final_dict[f"{city}_{state}"][f"with_trf_light_{condition}"] = count
 
@@ -4144,12 +4144,12 @@ class Analysis():
         for _, row in df.iterrows():
             videos = re.findall(r"[\w-]+", row["videos"])  # convert to list
             start_times = ast.literal_eval(row["start_time"])  # convert to list
-            
+
             if video_id in videos:
                 index = videos.index(video_id)  # get the index of the video
                 if start_time in start_times[index]:  # check if start_time matches
                     return row["id"]  # return the matching city
-    
+
         return None  # return none if no match is found
 
     @staticmethod
@@ -4159,7 +4159,7 @@ class Analysis():
             videos = re.findall(r"[\w-]+", row["videos"])  # convert to list
             start_times = ast.literal_eval(row["start_time"])  # convert to list
             end_times = ast.literal_eval(row["end_time"])  # convert to list
-            
+
             if video_id in videos:
                 index = videos.index(video_id)  # get the index of the video
                 if start_time in start_times[index]:  # check if start_time matches
@@ -4167,7 +4167,7 @@ class Analysis():
                     index_start = start_times[index].index(start_time)
                     end_time = end_times[index][index_start]
                     return end_time - start_time  # return duration of segment
-    
+
         return None  # return none if no match is found
 
     @staticmethod
@@ -4328,7 +4328,7 @@ class Analysis():
     @staticmethod
     def improve_text_position(x):
         """ it is more efficient if the x values are sorted """
-        # fix indentation 
+        # fix indentation
         positions = ['top center', 'bottom center']  # you can add more: left centre ...
         return [positions[i % len(positions)] for i in range(len(x))]
 
@@ -4521,11 +4521,11 @@ if __name__ == "__main__":
             person_video = Analysis.count_object(dfs[key], 0)
             person_counter += person_video
             df_mapping.loc[df_mapping["id"] == video_city_id, "person"] += person_video
-            
+
             bicycle_video = Analysis.count_object(dfs[key], 1)
             bicycle_counter += bicycle_video
             df_mapping.loc[df_mapping["id"] == video_city_id, "bicycle"] += bicycle_video
-            
+
             car_video = Analysis.count_object(dfs[key], 2)
             car_counter += car_video
             df_mapping.loc[df_mapping["id"] == video_city_id, "car"] += car_video
@@ -4557,7 +4557,7 @@ if __name__ == "__main__":
             # add duration of segment
             time_video = Analysis.get_duration_segment(df_mapping, video_id, int(start_index))
             df_mapping.loc[df_mapping["id"] == video_city_id, "total_time"] += time_video
-        
+
         # Aggregated values
         logger.info("Calculating aggregated values for crossing speed.")
         speed_values = Analysis.calculate_speed_of_crossing(df_mapping, dfs, data)
@@ -4570,22 +4570,22 @@ if __name__ == "__main__":
             time_of_day = int(parts[2])  # Third part is the time-of-day
             if not time_of_day:  # day
                 df_mapping.loc[
-                    (df_mapping["city"] == city) & 
-                    ((df_mapping["state"] == state) | (pd.isna(df_mapping["state"]) & pd.isna(state))), 
+                    (df_mapping["city"] == city) &
+                    ((df_mapping["state"] == state) | (pd.isna(df_mapping["state"]) & pd.isna(state))),
                     "speed_crossing_day"
                 ] = float(value)  # Explicitly cast speed to float
             else:  # night
                 df_mapping.loc[
-                    (df_mapping["city"] == city) & 
-                    ((df_mapping["state"] == state) | (pd.isna(df_mapping["state"]) & pd.isna(state))), 
+                    (df_mapping["city"] == city) &
+                    ((df_mapping["state"] == state) | (pd.isna(df_mapping["state"]) & pd.isna(state))),
                     "speed_crossing_night"
                 ] = float(value)  # Explicitly cast speed to float
         # calculate average values
         df_mapping["speed_crossing"] = np.where(
-            (df_mapping["speed_crossing_day"] > 0) & (df_mapping["speed_crossing_night"] > 0),  
-            df_mapping[["speed_crossing_day", "speed_crossing_night"]].mean(axis=1),  
+            (df_mapping["speed_crossing_day"] > 0) & (df_mapping["speed_crossing_night"] > 0),
+            df_mapping[["speed_crossing_day", "speed_crossing_night"]].mean(axis=1),
             np.where(
-                df_mapping["speed_crossing_day"] > 0, df_mapping["speed_crossing_day"],  
+                df_mapping["speed_crossing_day"] > 0, df_mapping["speed_crossing_day"],
                 np.where(df_mapping["speed_crossing_night"] > 0, df_mapping["speed_crossing_night"], np.nan)
             )
         )
@@ -4600,22 +4600,22 @@ if __name__ == "__main__":
             time_of_day = int(parts[2])  # Third part is the time-of-day
             if not time_of_day:  # day
                 df_mapping.loc[
-                    (df_mapping["city"] == city) & 
-                    ((df_mapping["state"] == state) | (pd.isna(df_mapping["state"]) & pd.isna(state))), 
+                    (df_mapping["city"] == city) &
+                    ((df_mapping["state"] == state) | (pd.isna(df_mapping["state"]) & pd.isna(state))),
                     "time_crossing_day"
                 ] = float(value)  # Explicitly cast speed to float
             else:  # night
                 df_mapping.loc[
-                    (df_mapping["city"] == city) & 
-                    ((df_mapping["state"] == state) | (pd.isna(df_mapping["state"]) & pd.isna(state))), 
+                    (df_mapping["city"] == city) &
+                    ((df_mapping["state"] == state) | (pd.isna(df_mapping["state"]) & pd.isna(state))),
                     "time_crossing_night"
                 ] = float(value)  # Explicitly cast speed to float
         # calculate average values
         df_mapping["time_crossing"] = np.where(
-            (df_mapping["time_crossing_day"] > 0) & (df_mapping["time_crossing_night"] > 0),  
-            df_mapping[["time_crossing_day", "time_crossing_night"]].mean(axis=1),  
+            (df_mapping["time_crossing_day"] > 0) & (df_mapping["time_crossing_night"] > 0),
+            df_mapping[["time_crossing_day", "time_crossing_night"]].mean(axis=1),
             np.where(
-                df_mapping["time_crossing_day"] > 0, df_mapping["time_crossing_day"],  
+                df_mapping["time_crossing_day"] > 0, df_mapping["time_crossing_day"],
                 np.where(df_mapping["time_crossing_night"] > 0, df_mapping["time_crossing_night"], np.nan)
             )
         )
@@ -4642,7 +4642,7 @@ if __name__ == "__main__":
         cross_evnt_city = Analysis.crossing_event_wt_traffic_light(df_mapping, dfs, data)
         logger.info("Calculating counts of crossing events.")
         pedestrian_cross_city = Analysis.pedestrian_cross_per_city(pedestrian_crossing_count, df_mapping)
-        
+
         # Jaywalking data
         logger.info("Calculating parameters for detection of jaywalking.")
         with_trf_light, without_trf_light, _ = Analysis.crossing_event_wt_traffic_equipment(df_mapping, dfs, data)
@@ -4653,14 +4653,14 @@ if __name__ == "__main__":
             time_of_day = int(parts[2])  # Third part is the time-of-day
             if not time_of_day:  # day
                 df_mapping.loc[
-                    (df_mapping["city"] == city) & 
-                    ((df_mapping["state"] == state) | (pd.isna(df_mapping["state"]) & pd.isna(state))), 
+                    (df_mapping["city"] == city) &
+                    ((df_mapping["state"] == state) | (pd.isna(df_mapping["state"]) & pd.isna(state))),
                     "with_trf_light_day"
                 ] = int(value)  # Explicitly cast to int
             else:  # night
                 df_mapping.loc[
-                    (df_mapping["city"] == city) & 
-                    ((df_mapping["state"] == state) | (pd.isna(df_mapping["state"]) & pd.isna(state))), 
+                    (df_mapping["city"] == city) &
+                    ((df_mapping["state"] == state) | (pd.isna(df_mapping["state"]) & pd.isna(state))),
                     "with_trf_light_night"
                 ] = int(value)  # Explicitly cast to int
         # add to mapping file
@@ -4671,14 +4671,14 @@ if __name__ == "__main__":
             time_of_day = int(parts[2])  # Third part is the time-of-day
             if not time_of_day:  # day
                 df_mapping.loc[
-                    (df_mapping["city"] == city) & 
-                    ((df_mapping["state"] == state) | (pd.isna(df_mapping["state"]) & pd.isna(state))), 
+                    (df_mapping["city"] == city) &
+                    ((df_mapping["state"] == state) | (pd.isna(df_mapping["state"]) & pd.isna(state))),
                     "without_trf_light_day"
                 ] = int(value)  # Explicitly cast to int
             else:  # night
                 df_mapping.loc[
-                    (df_mapping["city"] == city) & 
-                    ((df_mapping["state"] == state) | (pd.isna(df_mapping["state"]) & pd.isna(state))), 
+                    (df_mapping["city"] == city) &
+                    ((df_mapping["state"] == state) | (pd.isna(df_mapping["state"]) & pd.isna(state))),
                     "without_trf_light_night"
                 ] = int(value)  # Explicitly cast to int
         # Add column with count of videos
@@ -4701,7 +4701,7 @@ if __name__ == "__main__":
                          bicycle_counter,            # 2
                          car_counter,                # 3
                          motorcycle_counter,         # 4
-                         bus_counter,                # 5     
+                         bus_counter,                # 5
                          truck_counter,              # 6
                          cellphone_counter,          # 7
                          traffic_light_counter,      # 8
@@ -4745,12 +4745,12 @@ if __name__ == "__main__":
     # Data to avoid showing on hover in scatter plots
     columns_remove = ['videos', 'time_of_day', 'start_time', 'end_time', 'upload_date', 'fps_list', 'vehicle_type']
     hover_data = list(set(df_mapping.columns) - set(columns_remove))
-    
+
     # Analysis.get_world_map(df_mapping)
     df = df_mapping.copy()  # copy df to manipulate for output
     df['state'] = df['state'].fillna('NA')  # Set state to NA
     # Analysis.get_mapbox_map(df=df, hover_data=hover_data)  # mapbox map
-    
+
     # # Amount of footage
     # Analysis.scatter(df=df,
     #                  x="total_time",
@@ -4766,7 +4766,7 @@ if __name__ == "__main__":
     #                  legend_title="",
     #                  marginal_x=None,
     #                  marginal_y=None)
-    
+
     # Analysis.speed_and_time_to_start_cross(df_mapping)
     # Analysis.plot_speed_to_cross_by_alphabetical_order(df_mapping)
     # Analysis.plot_time_to_start_cross_by_alphabetical_order(df_mapping)
