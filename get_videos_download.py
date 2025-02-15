@@ -34,7 +34,9 @@ df_filtered = df[df['filtered_videos'].map(len) > 0]
 
 df_filtered = df_filtered.drop(columns=['videos']).rename(columns={'filtered_videos': 'videos'})
 
-# save the filtered subset
+# save the filtered subset with correct list format
+df_filtered['videos'] = df_filtered['videos'].apply(lambda x: f"[{','.join(x)}]" if isinstance(x, list) else "[]")
+
 subset_file = 'mapping_queue.csv'
 df_filtered.to_csv(subset_file, index=False)
 
