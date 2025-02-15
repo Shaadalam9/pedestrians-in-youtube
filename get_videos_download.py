@@ -33,7 +33,9 @@ df_filtered = df_filtered[['id', 'city', 'state', 'country', 'iso3', 'filtered_v
 # save the filtered subset with correct list format
 df_filtered['videos'] = df_filtered['videos'].apply(lambda x: f"[{','.join(x)}]" if isinstance(x, list) else "[]")
 
-queue_file = 'mapping_queue1.csv'
+queue_file = 'mapping_queue.csv'
 df_filtered.to_csv(queue_file, index=False)
 
-print(f'filtered mapping saved to {queue_file}')
+# count total number of videos added
+total_videos = df_filtered['videos'].apply(lambda x: len(x.strip('[]').split(',')) if x != "[]" else 0).sum()
+print(f'{total_videos} videos added to {queue_file}.')
