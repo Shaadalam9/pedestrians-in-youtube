@@ -198,7 +198,7 @@ class Youtube_Helper:
 
             # Construct the file path for the downloaded video.
             video_file_path = os.path.join(output_path, f"{video_id}.mp4")
-            logger.info(f"Downloading video {video_id} in resolution {selected_resolution} started.")
+            logger.info(f"Download of video {video_id} in {selected_resolution} started.")
 
             # Download the video.
             selected_stream.download(output_path, filename=f"{video_id}.mp4")
