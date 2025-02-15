@@ -184,7 +184,7 @@ class Youtube_Helper:
                 video_streams = youtube_object.streams.filter(res=resolution)
                 if video_streams:
                     selected_resolution = resolution
-                    logger.info(f"Found video {video_id} in {resolution}.")
+                    logger.debug(f"Found video {video_id} in {resolution}.")
                     # Use the first available stream.
                     if hasattr(video_streams, 'first'):
                         selected_stream = video_streams.first()
