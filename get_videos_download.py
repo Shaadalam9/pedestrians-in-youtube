@@ -28,12 +28,12 @@ def filter_videos(video_list):
 df['filtered_videos'] = df['videos'].apply(filter_videos)
 df_filtered = df[df['filtered_videos'].map(len) > 0]
 
-df_filtered = df_filtered.drop(columns=['videos']).rename(columns={'filtered_videos': 'videos'})
+df_filtered = df_filtered[['id', 'city', 'state', 'country', 'iso3', 'filtered_videos']].rename(columns={'filtered_videos': 'videos'})  # noqa: E501
 
 # save the filtered subset with correct list format
 df_filtered['videos'] = df_filtered['videos'].apply(lambda x: f"[{','.join(x)}]" if isinstance(x, list) else "[]")
 
-queue_file = 'mapping_queue.csv'
+queue_file = 'mapping_queue1.csv'
 df_filtered.to_csv(queue_file, index=False)
 
 print(f'filtered mapping saved to {queue_file}')
