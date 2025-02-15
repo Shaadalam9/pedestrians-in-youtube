@@ -3,15 +3,11 @@ import os
 import pandas as pd
 import common
 
-# get the folder where downloaded videos are stored
-video_folder = common.get_configs('videos')
-
 # get a list of already downloaded video files (assuming mp4 format)
-downloaded_videos = {f.split('.')[0] for f in os.listdir(video_folder) if f.endswith('.mp4')}
+downloaded_videos = {f.split('.')[0] for f in os.listdir(common.get_configs('videos')) if f.endswith('.mp4')}
 
-# load mapping.csv
-mapping_file = 'mapping.csv'
-df = pd.read_csv(mapping_file)
+# load mapping
+df = pd.read_csv(common.get_configs('mapping'))
 
 
 # function to check if a video id is already downloaded
@@ -37,7 +33,7 @@ df_filtered = df_filtered.drop(columns=['videos']).rename(columns={'filtered_vid
 # save the filtered subset with correct list format
 df_filtered['videos'] = df_filtered['videos'].apply(lambda x: f"[{','.join(x)}]" if isinstance(x, list) else "[]")
 
-subset_file = 'mapping_queue.csv'
-df_filtered.to_csv(subset_file, index=False)
+queue_file = 'mapping_queue.csv'
+df_filtered.to_csv(queue_file, index=False)
 
-print(f'filtered mapping saved to {subset_file}')
+print(f'filtered mapping saved to {queue_file}')
