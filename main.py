@@ -163,7 +163,7 @@ for index, row in tqdm(mapping.iterrows(), total=mapping.shape[0]):
 
             # If the YOLO output file already exists, skip processing for this segment
             if os.path.isfile(trimmed_file_path) and (common.get_configs("prediction_mode") or common.get_configs("tracking_mode")):  # noqa: E501
-                logger.info(f"{vid}_{start_time}.csv: YOLO file already exists. Skipping segment.")
+                logger.info(f"{vid}: YOLO file {vid}_{start_time}.csv exists. Skipping segment.")
                 continue
 
             # Define a temporary path for the trimmed video segment
