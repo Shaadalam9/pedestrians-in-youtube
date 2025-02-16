@@ -1,6 +1,7 @@
 # by Shadab Alam <md_shadab_alam@outlook.com> and Pavlo Bazilinskyy <pavlo.bazilinskyy@gmail.com>
 import os
 from pytubefix import YouTube
+from pytubefix.cli import on_progress
 from moviepy.video.io.VideoFileClip import VideoFileClip
 import cv2
 from ultralytics import YOLO
@@ -170,10 +171,15 @@ class Youtube_Helper:
 
             # Create a YouTube object using the provided client configuration.
             if common.get_configs("need_authentication"):
-                youtube_object = YouTube(youtube_url, common.get_configs('client'),
-                                         use_oauth=True, allow_oauth_cache=True)
+                youtube_object = YouTube(youtube_url,
+                                         common.get_configs('client'),
+                                         use_oauth=True,
+                                         allow_oauth_cache=True,
+                                         on_progress_callback=on_progress)
             else:
-                youtube_object = YouTube(youtube_url, common.get_configs('client'))
+                youtube_object = YouTube(youtube_url,
+                                         common.get_configs('client'),
+                                         on_progress_callback=on_progress)
 
             selected_stream = None
             selected_resolution = None
@@ -595,14 +601,14 @@ class Youtube_Helper:
             video_ids = video_ids.strip("[]").split(",")
 
             # Ensure existing_fps_list is a valid string or initialize as an empty list
-            if isinstance(existing_fps_list, str) and existing_fps_list.strip():
-                try:
-                    existing_fps = eval(existing_fps_list)  # Convert string to list
-                except Exception as e:
-                    logger.error(f"Error parsing existing_fps_list: {e}")
-                    existing_fps = [None] * len(video_ids)
-            else:
-                existing_fps = [None] * len(video_ids)
+            # if isinstance(existing_fps_list, str) and existing_fps_list.strip():
+            #     try:
+            #         existing_fps = eval(existing_fps_list)  # Convert string to list
+            #     except Exception as e:
+            #         logger.error(f"Error parsing existing_fps_list: {e}")
+            #         existing_fps = [None] * len(video_ids)
+            # else:
+            #     existing_fps = [None] * len(video_ids)
 
             fps_values = []
             for i, video_id in enumerate(video_ids):
