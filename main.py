@@ -136,7 +136,7 @@ for index, row in tqdm(mapping.iterrows(), total=mapping.shape[0]):
                     mapping.at[index, 'fps_list'] = str(fps_values)
                     mapping.to_csv(common.get_configs("mapping"), index=False)
 
-                logger.info(f"Downloaded video: {video_file_path}.")
+                logger.info(f"{vid}: downloaded to {video_file_path}.")
                 helper.set_video_title(video_title)
 
                 # Optionally compress the video if required
@@ -146,13 +146,13 @@ for index, row in tqdm(mapping.iterrows(), total=mapping.shape[0]):
                 # If download fails, check if the video already exists
                 if os.path.exists(base_video_path):
                     video_title = vid  # or any fallback title
-                    logger.info(f"Download failed, but video found: {base_video_path}.")
+                    logger.info(f"{vid}: download failed, but video found: {base_video_path}.")
                     helper.set_video_title(video_title)
                 else:
-                    logger.error(f"Video {vid} not found and download failed. Skipping this video.")
+                    logger.error(f"{vid}: video not found and download failed. Skipping.")
                     continue
         else:
-            logger.info(f"Using already downloaded video: {vid}.")
+            logger.info(f"{vid}: using already downloaded video.")
             video_title = vid  # or any fallback title
             helper.set_video_title(video_title)
             video_fps = helper.get_video_fps(base_video_path)  # try to get FPS value of existing file
@@ -163,22 +163,22 @@ for index, row in tqdm(mapping.iterrows(), total=mapping.shape[0]):
 
             # If the YOLO output file already exists, skip processing for this segment
             if os.path.isfile(trimmed_file_path) and (common.get_configs("prediction_mode") or common.get_configs("tracking_mode")):  # noqa: E501
-                logger.info(f"YOLO file already exists: {vid}_{start_time}.csv. Skipping processing of segment.")
+                logger.info(f"{vid}_{start_time}.csv: YOLO file already exists. Skipping segment.")
                 continue
 
             # Define a temporary path for the trimmed video segment
             trimmed_video_path = os.path.join(output_path, f"{video_title}_mod.mp4")
 
             if start_time is None and end_time is None:
-                logger.info("No trimming required for this video.")
+                logger.info(f"{vid}: no trimming required for this video.")
             elif common.get_configs("prediction_mode") or common.get_configs("tracking_mode"):
                 # trim only if needed
-                logger.info(f"Trimming in progress for segment {start_time}-{end_time}s.")
+                logger.info(f"{vid}: trimming in progress for segment {start_time}-{end_time}s.")
                 # Adjust end_time if needed (e.g., to account for missing frames)
                 end_time_adj = end_time - 1
                 helper.trim_video(base_video_path, trimmed_video_path, start_time, end_time_adj)
 
-                logger.info(f"Trimming completed for segment {start_time}-{end_time}s.")
+                logger.info(f"{vid}: trimming completed for segment {start_time}-{end_time}s.")
 
             if common.get_configs("prediction_mode"):
                 helper.prediction_mode()
@@ -186,13 +186,13 @@ for index, row in tqdm(mapping.iterrows(), total=mapping.shape[0]):
             # Tracking mode: process the trimmed segment
             if common.get_configs("tracking_mode"):
                 if video_fps > 0:
-                    logger.info(f"Started YOLO analysis for segment {start_time}-{end_time}s with FPS value from video file {video_fps}.")  # noqa: E501
+                    logger.info(f"{vid}: started YOLO analysis for segment {start_time}-{end_time}s with FPS from file {video_fps}.")  # noqa: E501
                     helper.tracking_mode(trimmed_video_path, trimmed_video_path, video_fps)
                 elif fps_values[vid_index] > 0:
-                    logger.info(f"Started YOLO analysis for segment {start_time}-{end_time}s with FPS value from mapping {fps_values[vid_index]}.")  # noqa: E501
+                    logger.info(f"{vid}: started YOLO analysis for segment {start_time}-{end_time}s with FPS from mapping {fps_values[vid_index]}.")  # noqa: E501
                     helper.tracking_mode(trimmed_video_path, trimmed_video_path, fps_values[vid_index])
                 else:
-                    logger.warning(f"FPS value video {vid} is {video_fps}. Skipping tracking mode.")
+                    logger.warning(f"{vid}: FPS value is {video_fps}. Skipping tracking mode.")
 
                 # Move and rename the generated CSV file from tracking mode
                 old_file_path = os.path.join("runs", "detect", f"{vid}.csv")
@@ -200,13 +200,13 @@ for index, row in tqdm(mapping.iterrows(), total=mapping.shape[0]):
                 if os.path.exists(old_file_path):
                     os.rename(old_file_path, new_file_path)
                 else:
-                    logger.error(f"Error: {old_file_path} does not exist.")
+                    logger.error(f"{vid}: error:{old_file_path} does not exist.")
 
                 # Move the CSV file to the desired folder
                 if os.path.exists(new_file_path):
                     shutil.move(new_file_path, data_folder)
                 else:
-                    logger.error(f"Error: {new_file_path} does not exist.")
+                    logger.error(f"{vid}: error: {new_file_path} does not exist.")
 
                 if delete_runs_files:
                     shutil.rmtree(os.path.join("runs", "detect"))
