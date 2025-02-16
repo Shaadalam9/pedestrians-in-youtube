@@ -94,9 +94,10 @@ os.makedirs(data_folder, exist_ok=True)
 # Go over rows. Add progress bar.
 for index, row in tqdm(mapping.iterrows(), total=mapping.shape[0]):
     video_ids = [id.strip() for id in row["videos"].strip("[]").split(',')]
-    start_times = ast.literal_eval(row["start_time"])
-    end_times = ast.literal_eval(row["end_time"])
-    time_of_day = ast.literal_eval(row["time_of_day"])
+    if common.get_configs("prediction_mode") or common.get_configs("tracking_mode"):
+        start_times = ast.literal_eval(row["start_time"])
+        end_times = ast.literal_eval(row["end_time"])
+        time_of_day = ast.literal_eval(row["time_of_day"])
     iso3 = str(row["iso3"])
     # Check if countries is in the list to be analysed
     if countries_analyse and iso3 not in countries_analyse:
