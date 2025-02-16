@@ -120,7 +120,7 @@ for index, row in tqdm(mapping.iterrows(), total=mapping.shape[0]):
 
         # If the base video does not exist, attempt to download it
         if not os.path.exists(base_video_path):
-            result = helper.download_video_with_resolution(video_id=vid, output_path=output_path)
+            result = helper.download_video_with_resolution(vid=vid, output_path=output_path)
             if result:
                 video_file_path, video_title, resolution, video_fps = result
                 # Set the base video path to the downloaded video
