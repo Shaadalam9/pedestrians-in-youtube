@@ -204,7 +204,7 @@ class Youtube_Helper:
 
             # Construct the file path for the downloaded video.
             video_file_path = os.path.join(output_path, f"{vid}.mp4")
-            logger.info(f"{vid}: download of video in {selected_resolution} started.")
+            logger.info(f"{vid}: download in {selected_resolution} started with pytube.")
 
             # Download the video.
             selected_stream.download(output_path, filename=f"{vid}.mp4")
@@ -294,7 +294,7 @@ class Youtube_Helper:
                 'cookiesfrombrowser': ('chrome',)
             }
 
-            logger.info(f"{vid}: download of video in {selected_resolution} started.")
+            logger.info(f"{vid}: download in {selected_resolution} started with yt_dlp.")
             with yt_dlp.YoutubeDL(download_opts) as ydl:
                 ydl.download([youtube_url])
 
