@@ -28,10 +28,6 @@ def filter_videos(video_list):
 df['filtered_videos'] = df['videos'].apply(filter_videos)
 df_filtered = df[df['filtered_videos'].map(len) > 0]
 
-# update 'start_time', 'end_time', and 'time_of_day' based on filtered videos
-for col in ['start_time', 'end_time', 'time_of_day']:
-    df_filtered[col] = df_filtered.apply(lambda row: [row[col][i] for i, vid in enumerate(row['videos']) if vid in row['filtered_videos']], axis=1)
-
 df_filtered = df_filtered[['id',
                            'city',
                            'state',
@@ -40,8 +36,10 @@ df_filtered = df_filtered[['id',
                            'filtered_videos',
                            'start_time',
                            'end_time',
+                           'vehicle_type',
+                           'upload_date',
+                           'fps_list',
                            'time_of_day']].rename(columns={'filtered_videos': 'videos'})
-
 # save the filtered subset with correct list format
 df_filtered['videos'] = df_filtered['videos'].apply(lambda x: f"[{','.join(x)}]" if isinstance(x, list) else "[]")
 
