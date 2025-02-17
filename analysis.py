@@ -3921,7 +3921,7 @@ class Analysis():
         Analysis.save_plotly_figure(fig, "correlation_matrix_heatmap_day", save_final=True)
 
         # Generate the heatmap using Plotly
-        fig = px.imshow(corr_matrix_night, text_auto=".2f",  # Display correlation values on the heatmap
+        fig = px.imshow(corr_matrix_night, text_auto=".2f",  # Display correlation values on heatmap  # type: ignore
                         color_continuous_scale='RdBu',  # Color scale (you can customize this)
                         aspect="auto",  # Automatically adjust aspect ratio
                         # title="Correlation Matrix Heatmap in night"  # Title of the heatmap
@@ -4010,7 +4010,7 @@ class Analysis():
         corr_matrix_avg = corr_matrix_avg.rename(columns=rename_dict_2, index=rename_dict_2)
 
         # Generate the heatmap using Plotly
-        fig = px.imshow(corr_matrix_avg, text_auto=".2f",  # Display correlation values on the heatmap
+        fig = px.imshow(corr_matrix_avg, text_auto=".2f",  # Display correlation values on heatmap  # type: ignore
                         color_continuous_scale='RdBu',  # Color scale (you can customize this)
                         aspect="auto",  # Automatically adjust aspect ratio
                         # title="Correlation matrix heatmap averaged" # Title of the heatmap
@@ -4108,7 +4108,7 @@ class Analysis():
             corr_matrix_avg = corr_matrix_avg.rename(columns=rename_dict_3, index=rename_dict_3)
 
             # Generate the heatmap using Plotly
-            fig = px.imshow(corr_matrix_avg, text_auto=".2f",  # Display correlation values on the heatmap
+            fig = px.imshow(corr_matrix_avg, text_auto=".2f",  # Display correlation values on heatmap  # type: ignore
                             color_continuous_scale='RdBu',  # Color scale (you can customize this)
                             aspect="auto",  # Automatically adjust aspect ratio
                             # title=f"Correlation matrix heatmap {continents}"  # Title of the heatmap
