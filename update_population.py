@@ -34,7 +34,7 @@ def get_city_data(city_name, country_code):
     results = []
     start_row = 0
     max_rows = 100  # Fetch 100 results per request (max allowed)
-    
+
     while True:
         params = {
             "q": city_name,
@@ -43,25 +43,25 @@ def get_city_data(city_name, country_code):
             "maxRows": max_rows,
             "startRow": start_row
         }
-        
+
         response = requests.get(base_url, params=params)
-        
+
         if response.status_code != 200:
             print(f"Error: {response.status_code} - {response.text}")
             return None
-        
+
         data = response.json()
-        
+
         if "geonames" not in data or not data["geonames"]:
             break  # No more results
-        
+
         results.extend(data["geonames"])  # Append new data
-        
+
         if len(data["geonames"]) < max_rows:
             break  # No more pages
-        
+
         start_row += max_rows  # Fetch the next page
-    
+
         time.sleep(1)  # Avoid hitting rate limits
 
     return results

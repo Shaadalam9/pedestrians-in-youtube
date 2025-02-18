@@ -477,6 +477,7 @@ class Analysis():
         # Save and display the figure
         Analysis.save_plotly_figure(fig, "world_map", save_final=True)
 
+    @staticmethod
     def get_mapbox_map(df, hover_data=None):
         """Generate world map with cities using mapbox.
 
@@ -4365,6 +4366,7 @@ class Analysis():
             logger.error(f"Geocoding server could not be reached for {location_query}.")
             return None, None  # Return None if city is not found
 
+    @staticmethod
     def hist(df, x, nbins=None, color=None, pretty_text=False, marginal='rug', xaxis_title=None,
              yaxis_title=None, name_file=None, save_file=False, save_final=False, fig_save_width=1320,
              fig_save_height=680, font_family=None, font_size=None):
@@ -4559,7 +4561,7 @@ if __name__ == "__main__":
 
             # add duration of segment
             time_video = Analysis.get_duration_segment(df_mapping, video_id, int(start_index))
-            df_mapping.loc[df_mapping["id"] == video_city_id, "total_time"] += time_video
+            df_mapping.loc[df_mapping["id"] == video_city_id, "total_time"] += time_video  # type: ignore
 
         # Aggregated values
         logger.info("Calculating aggregated values for crossing speed.")
@@ -4692,7 +4694,7 @@ if __name__ == "__main__":
             if pd.isna(row["lat"]) or pd.isna(row["lon"]):
                 lat, lon = Analysis.get_coordinates(row["city"],
                                                     row["state"],
-                                                    common.correct_country(row["country"]))
+                                                    common.correct_country(row["country"]))  # type: ignore
                 df_mapping.at[index, 'lat'] = lat
                 df_mapping.at[index, 'lon'] = lon
 
@@ -4767,8 +4769,8 @@ if __name__ == "__main__":
                      hover_data=hover_data,
                      hover_name="city",
                      legend_title="",
-                     marginal_x=None,
-                     marginal_y=None)
+                     marginal_x=None,  # type: ignore
+                     marginal_y=None)  # type: ignore
 
     Analysis.speed_and_time_to_start_cross(df_mapping)
     Analysis.plot_speed_to_cross_by_alphabetical_order(df_mapping)
@@ -4793,8 +4795,9 @@ if __name__ == "__main__":
                      hover_data=hover_data,
                      hover_name="city",
                      legend_title="",
-                     marginal_x=None,
-                     marginal_y=None)
+                     marginal_x=None,  # type: ignore
+                     marginal_y=None)  # type: ignore
+
     # Speed of crossing during daytime vs time to start crossing during daytime
     df = df_mapping[df_mapping["speed_crossing_day"] != 0].copy()
     df = df[df["time_crossing_day"] != 0]
@@ -4811,8 +4814,9 @@ if __name__ == "__main__":
                      hover_data=hover_data,
                      hover_name="city",
                      legend_title="",
-                     marginal_x=None,
-                     marginal_y=None)
+                     marginal_x=None,  # type: ignore
+                     marginal_y=None)  # type: ignore
+
     # Speed of crossing during night time vs time to start crossing during night time
     df = df_mapping[df_mapping["speed_crossing_night"] != 0].copy()
     df = df[df["time_crossing_night"] != 0]
@@ -4829,8 +4833,9 @@ if __name__ == "__main__":
                      hover_data=hover_data,
                      hover_name="city",
                      legend_title="",
-                     marginal_x=None,
-                     marginal_y=None)
+                     marginal_x=None,  # type: ignore
+                     marginal_y=None)  # type: ignore
+
     # Time to start crossing vs population of city
     df = df_mapping[df_mapping["time_crossing"] != 0].copy()
     df = df[(df["population_city"].notna()) & (df["population_city"] != 0)]
@@ -4847,8 +4852,9 @@ if __name__ == "__main__":
                      hover_data=hover_data,
                      hover_name="city",
                      legend_title="",
-                     marginal_x=None,
-                     marginal_y=None)
+                     marginal_x=None,  # type: ignore
+                     marginal_y=None)  # type: ignore
+
     # Speed of crossing vs population of city
     df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
     df = df[(df["population_city"].notna()) & (df["population_city"] != 0)]
@@ -4865,8 +4871,9 @@ if __name__ == "__main__":
                      hover_data=hover_data,
                      hover_name="city",
                      legend_title="",
-                     marginal_x=None,
-                     marginal_y=None)
+                     marginal_x=None,  # type: ignore
+                     marginal_y=None)  # type: ignore
+
     # Time to start crossing vs population of city
     df = df_mapping[df_mapping["time_crossing"] != 0].copy()
     df = df[(df["traffic_mortality"].notna()) & (df["traffic_mortality"] != 0)]
@@ -4883,8 +4890,9 @@ if __name__ == "__main__":
                      hover_data=hover_data,
                      hover_name="city",
                      legend_title="",
-                     marginal_x=None,
-                     marginal_y=None)
+                     marginal_x=None,  # type: ignore
+                     marginal_y=None)  # type: ignore
+
     # Speed of crossing vs population of city
     df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
     df = df[(df["traffic_mortality"].notna()) & (df["traffic_mortality"] != 0)]
@@ -4901,8 +4909,9 @@ if __name__ == "__main__":
                      hover_data=hover_data,
                      hover_name="city",
                      legend_title="",
-                     marginal_x=None,
-                     marginal_y=None)
+                     marginal_x=None,  # type: ignore
+                     marginal_y=None)  # type: ignore
+
     # Time to start crossing vs population of city
     df = df_mapping[df_mapping["time_crossing"] != 0].copy()
     df = df[(df["literacy_rate"].notna()) & (df["literacy_rate"] != 0)]
@@ -4919,8 +4928,9 @@ if __name__ == "__main__":
                      hover_data=hover_data,
                      hover_name="city",
                      legend_title="",
-                     marginal_x=None,
-                     marginal_y=None)
+                     marginal_x=None,  # type: ignore
+                     marginal_y=None)  # type: ignore
+
     # Speed of crossing vs population of city
     df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
     df = df[(df["literacy_rate"].notna()) & (df["literacy_rate"] != 0)]
@@ -4937,8 +4947,9 @@ if __name__ == "__main__":
                      hover_data=hover_data,
                      hover_name="city",
                      legend_title="",
-                     marginal_x=None,
-                     marginal_y=None)
+                     marginal_x=None,  # type: ignore
+                     marginal_y=None)  # type: ignore
+
     # Time to start crossing vs population of city
     df = df_mapping[df_mapping["time_crossing"] != 0].copy()
     df = df[(df["gini"].notna()) & (df["gini"] != 0)]
@@ -4955,8 +4966,9 @@ if __name__ == "__main__":
                      hover_data=hover_data,
                      hover_name="city",
                      legend_title="",
-                     marginal_x=None,
-                     marginal_y=None)
+                     marginal_x=None,  # type: ignore
+                     marginal_y=None)  # type: ignore
+
     # Speed of crossing vs population of city
     df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
     df = df[(df["gini"].notna()) & (df["gini"] != 0)]
@@ -4973,8 +4985,9 @@ if __name__ == "__main__":
                      hover_data=hover_data,
                      hover_name="city",
                      legend_title="",
-                     marginal_x=None,
-                     marginal_y=None)
+                     marginal_x=None,  # type: ignore
+                     marginal_y=None)  # type: ignore
+
     # Time to start crossing vs population of city
     df = df_mapping[df_mapping["time_crossing"] != 0].copy()
     df = df[(df["traffic_index"].notna()) & (df["traffic_index"] != 0)]
@@ -4992,8 +5005,9 @@ if __name__ == "__main__":
                      hover_data=hover_data,
                      hover_name="city",
                      legend_title="",
-                     marginal_x=None,
-                     marginal_y=None)
+                     marginal_x=None,  # type: ignore
+                     marginal_y=None)  # type: ignore
+
     # Speed of crossing vs population of city
     df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
     df = df[df["traffic_index"] != 0]
@@ -5010,8 +5024,9 @@ if __name__ == "__main__":
                      hover_data=hover_data,
                      hover_name="city",
                      legend_title="",
-                     marginal_x=None,
-                     marginal_y=None)
+                     marginal_x=None,  # type: ignore
+                     marginal_y=None)  # type: ignore
+
     # Speed of crossing vs detected mobile phones
     df = df_mapping[df_mapping["time_crossing"] != 0].copy()
     df['state'] = df['state'].fillna('NA')
@@ -5028,8 +5043,9 @@ if __name__ == "__main__":
                      hover_data=hover_data,
                      hover_name="city",
                      legend_title="",
-                     marginal_x=None,
-                     marginal_y=None)
+                     marginal_x=None,  # type: ignore
+                     marginal_y=None)  # type: ignore
+
     # Speed of crossing vs detected mobile phones
     df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
     df['state'] = df['state'].fillna('NA')
@@ -5046,8 +5062,8 @@ if __name__ == "__main__":
                      hover_data=hover_data,
                      hover_name="city",
                      legend_title="",
-                     marginal_x=None,
-                     marginal_y=None)
+                     marginal_x=None,  # type: ignore
+                     marginal_y=None)  # type: ignore
 
     # Jaywalking
     Analysis.plot_crossing_without_traffic_light(df_mapping)
@@ -5069,5 +5085,5 @@ if __name__ == "__main__":
                      hover_data=hover_data,
                      hover_name="city",
                      legend_title="",
-                     marginal_x=None,
-                     marginal_y=None)
+                     marginal_x=None,  # type: ignore
+                     marginal_y=None)  # type: ignore

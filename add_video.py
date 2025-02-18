@@ -615,7 +615,7 @@ def get_traffic_index_lat_lon(lat, lon, api="tomtom"):
     if api == "tomtom":
         url = f"https://api.tomtom.com/traffic/services/4/flowSegmentData/absolute/10/json?key={common.get_secrets('tomtom_api_key')}&point={lat},{lon}"  # noqa: E501
         response = requests.get(url)
-        
+
         if response.status_code == 200:
             data = response.json()
             if "flowSegmentData" in data:
@@ -638,7 +638,7 @@ def get_traffic_index_lat_lon(lat, lon, api="tomtom"):
 
             # Extract traffic index or other relevant data
             traffic_index = data.get('trafficIndex', None)
-            
+
             if traffic_index is not None:
                 return traffic_index
             else:

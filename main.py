@@ -185,9 +185,9 @@ for index, row in tqdm(mapping.iterrows(), total=mapping.shape[0]):
 
             # Tracking mode: process the trimmed segment
             if common.get_configs("tracking_mode"):
-                if video_fps > 0:
+                if video_fps > 0:  # type: ignore
                     logger.info(f"{vid}: started YOLO analysis for segment {start_time}-{end_time}s with FPS from file {video_fps}.")  # noqa: E501
-                    helper.tracking_mode(trimmed_video_path, trimmed_video_path, video_fps)
+                    helper.tracking_mode(trimmed_video_path, trimmed_video_path, video_fps)  # type: ignore
                 elif fps_values[vid_index] > 0:
                     logger.info(f"{vid}: started YOLO analysis for segment {start_time}-{end_time}s with FPS from mapping {fps_values[vid_index]}.")  # noqa: E501
                     helper.tracking_mode(trimmed_video_path, trimmed_video_path, fps_values[vid_index])
