@@ -129,7 +129,6 @@ def form():
             if not existing_data.empty:
                 message = "Entry for city found. You can update data."
                 existing_data_row = existing_data.iloc[0].to_dict()  # Convert to dictionary
-                state = existing_data_row.get('state', '')
 
                 # Get the list of videos for the city (state) and country
                 videos_list = existing_data_row.get('videos', '').split(',')
