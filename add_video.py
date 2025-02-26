@@ -64,7 +64,7 @@ def form():
     gini = ''
     traffic_index = ''
     upload_date_video = ''
-    fps_video = ''
+    fps_video = '30'
     yt_title = ''
     yt_upload_date = ''
     yt_description = ''
