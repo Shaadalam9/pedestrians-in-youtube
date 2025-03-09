@@ -225,4 +225,5 @@ while True:  # run this script loop forever
                 os.remove(base_video_path)
 
             # Pause the file for 30 min before doing analysis again
+            logger.info("Sleeping for 30 min before attempting to go over mapping again.")
             time.sleep(1800)
