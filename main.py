@@ -224,6 +224,7 @@ while True:  # run this script loop forever
             if delete_youtube_video:
                 os.remove(base_video_path)
 
-            # Pause the file for 30 min before doing analysis again
-            logger.info("Sleeping for 30 min before attempting to go over mapping again.")
-            time.sleep(1800)
+    # Pause the file for sleep_sec seconds before doing analysis again
+    sleep_sec = common.get_configs("sleep_sec")
+    logger.info(f"Sleeping for {sleep_sec} before attempting to go over mapping again.")
+    time.sleep(sleep_sec)
