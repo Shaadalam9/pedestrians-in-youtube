@@ -45,7 +45,7 @@ bar_colour_4 = 'rgb(222, 203, 228)'
 SAVE_PNG = True
 SAVE_EPS = True
 # todo: allocate height dynamically based on the number of cities to show
-TALL_FIG_HEIGHT = 4400  # height of the tall bar plots
+TALL_FIG_HEIGHT = 5000  # height of the tall bar plots
 SCALE = 1  # scale=3 hangs often
 
 
