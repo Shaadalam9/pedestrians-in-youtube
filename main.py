@@ -19,7 +19,8 @@ helper = Youtube_Helper()
 while True:  # run this script loop forever
     # Load the config file
     mapping = pd.read_csv(common.get_configs("mapping"))
-    output_path = common.get_configs("videos")
+    video_paths = common.get_configs("videos")  # use the last folder with videos
+    output_path = common.get_configs("videos")[-1]  # use the last folder with videos
     delete_runs_files = common.get_configs("delete_runs_files")
     delete_youtube_video = common.get_configs("delete_youtube_video")
     data_folder = common.get_configs("data")
@@ -121,7 +122,7 @@ while True:  # run this script loop forever
             video_fps = 0.0  # store detected FPS value
 
             # If the base video does not exist, attempt to download it
-            if not os.path.exists(base_video_path):
+            if not any(os.path.exists(os.path.join(path, f"{vid}.mp4")) for path in video_paths):
                 result = helper.download_video_with_resolution(vid=vid, output_path=output_path)
                 if result:
                     video_file_path, video_title, resolution, video_fps = result
@@ -155,6 +156,11 @@ while True:  # run this script loop forever
                         continue
             else:
                 logger.info(f"{vid}: using already downloaded video.")
+                # find the first folder where the file exists
+                existing_folder = next((path for path in video_paths if os.path.exists(os.path.join(path, f"{vid}.mp4"))), None)  # noqa: E501
+                # if the file exists, use that folder; otherwise, default to the last folder
+                output_path = existing_folder if existing_folder else video_paths[-1]
+                base_video_path = os.path.join(output_path, f"{vid}.mp4")
                 video_title = vid  # or any fallback title
                 helper.set_video_title(video_title)
                 video_fps = helper.get_video_fps(base_video_path)  # try to get FPS value of existing file
