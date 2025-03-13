@@ -160,8 +160,8 @@ while True:  # run this script loop forever
                 # find the first folder where the file exists
                 existing_folder = next((path for path in video_paths if os.path.exists(os.path.join(path, f"{vid}.mp4"))), None)  # noqa: E501
                 # if the file exists, use that folder; otherwise, default to the last folder
-                output_path = existing_folder if existing_folder else video_paths[-1]
-                base_video_path = os.path.join(output_path, f"{vid}.mp4")
+                existing_path = existing_folder if existing_folder else video_paths[-1]
+                base_video_path = os.path.join(existing_path, f"{vid}.mp4")
                 video_title = vid  # or any fallback title
                 helper.set_video_title(video_title)
                 video_fps = helper.get_video_fps(base_video_path)  # try to get FPS value of existing file
