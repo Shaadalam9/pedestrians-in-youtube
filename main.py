@@ -21,6 +21,7 @@ while True:  # run this script loop forever
     mapping = pd.read_csv(common.get_configs("mapping"))
     video_paths = common.get_configs("videos")  # use the last folder with videos
     output_path = common.get_configs("videos")[-1]  # use the last folder with videos
+    print(output_path)
     delete_runs_files = common.get_configs("delete_runs_files")
     delete_youtube_video = common.get_configs("delete_youtube_video")
     data_folder = common.get_configs("data")
