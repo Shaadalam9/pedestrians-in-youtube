@@ -123,7 +123,6 @@ while True:  # run this script loop forever
 
             # If the base video does not exist, attempt to download it
             if not any(os.path.exists(os.path.join(path, f"{vid}.mp4")) for path in video_paths):
-                print(output_path)
                 result = helper.download_video_with_resolution(vid=vid, output_path=output_path)
                 if result:
                     video_file_path, video_title, resolution, video_fps = result
