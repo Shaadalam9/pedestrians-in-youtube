@@ -490,7 +490,7 @@ class Analysis():
                              hover_data=hover_data,
                              hover_name="city",
                              color=df["continent"],
-                             zoom=1.3)
+                             zoom=1.3)  # type: ignore
         # Update layout
         fig.update_layout(
             margin=dict(l=0, r=0, t=0, b=0),  # Reduce margins
@@ -1701,47 +1701,6 @@ class Analysis():
                                     save_final=True)
 
     @staticmethod
-    def plot_cell_phone_vs_traffic_mortality(df_mapping, need_annotations=True):
-        """Plots the relationship between average cell phone usage per person detected vs. traffic mortality.
-
-        Args:
-            df_mapping (DataFrame): DataFrame containing mapping information.
-            dfs (dict): Dictionary of DataFrames containing video data.
-        """
-        traffic_deaths, continents, gdp = [], [], []  # Lists for traffic related deaths, continents, and GDP
-        conditions = []  # Lists for conditions, time, and city
-        cities, counts = [], []
-
-        with open(file_results, 'rb') as file:
-            data_tuple = pickle.load(file)
-
-        info = data_tuple[20]  # mobile phones
-
-        for key, value in info.items():
-            city, state, condition = key.split('_')
-            if need_annotations:
-                cities.append(f'{city}_{state}')
-            else:
-                cities.append("")
-            conditions.append(condition)
-            counts.append(value)
-            traffic_deaths.append(float(Analysis.get_value(df_mapping, "city", city,
-                                                           "state", state, "traffic_mortality")))  # type: ignore
-            continents.append(Analysis.get_value(df_mapping, "city", city, "state", state, "continent"))
-            population_city = float(Analysis.get_value(df_mapping, "city", city,
-                                                       "state", state, "population_city"))  # type: ignore
-            gdp.append(float(Analysis.get_value(df_mapping,
-                                                "city", city, "state", state,
-                                                "gmp"))/population_city)  # type: ignore
-
-        # Plot the scatter diagram
-        Analysis.plot_scatter_diag(x=traffic_deaths, y=info, size=gdp, color=continents, symbol=conditions,
-                                   city=cities, plot_name="cell_phone_vs_traffic_mortality",
-                                   x_label="Traffic mortality rate (per 100,000 population)",
-                                   y_label="Number of Mobile detected in the video (normalised)",
-                                   legend_x=0.07, legend_y=0.96)
-
-    @staticmethod
     def plot_speed_to_cross_by_alphabetical_order(df_mapping):
         logger.info("Plotting plot_speed_to_cross_by_alphabetical_order")
         final_dict = {}
@@ -1802,7 +1761,7 @@ class Analysis():
 
         fig = make_subplots(
             rows=num_cities_per_col, cols=2,  # Two columns
-            vertical_spacing=0.001,  # Reduce the vertical spacing
+            vertical_spacing=0.0005,  # Reduce the vertical spacing
             horizontal_spacing=0.01,  # Reduce horizontal spacing between columns
             row_heights=[1.0] * (num_cities_per_col),
         )
@@ -2185,7 +2144,7 @@ class Analysis():
 
         fig = make_subplots(
             rows=num_cities_per_col, cols=2,  # Two columns
-            vertical_spacing=0.001,  # Reduce the vertical spacing
+            vertical_spacing=0.0005,  # Reduce the vertical spacing
             horizontal_spacing=0.01,  # Reduce horizontal spacing between columns
             row_heights=[1.0] * (num_cities_per_col),
         )
@@ -2548,7 +2507,7 @@ class Analysis():
 
         fig = make_subplots(
             rows=num_cities_per_col, cols=2,  # Two columns
-            vertical_spacing=0.001,  # Reduce the vertical spacing
+            vertical_spacing=0.0005,  # Reduce the vertical spacing
             horizontal_spacing=0.01,  # Reduce horizontal spacing between columns
             row_heights=[1.0] * (num_cities_per_col),
         )
@@ -2878,7 +2837,7 @@ class Analysis():
 
         fig = make_subplots(
             rows=num_cities_per_col, cols=2,  # Two columns
-            vertical_spacing=0.001,  # Reduce the vertical spacing
+            vertical_spacing=0.0005,  # Reduce the vertical spacing
             horizontal_spacing=0.01,  # Reduce horizontal spacing between columns
             row_heights=[1.0] * (num_cities_per_col),
         )
@@ -3202,7 +3161,7 @@ class Analysis():
 
         fig = make_subplots(
             rows=num_cities_per_col, cols=2,  # Two columns
-            vertical_spacing=0.001,  # Reduce the vertical spacing
+            vertical_spacing=0.0005,  # Reduce the vertical spacing
             horizontal_spacing=0.01,  # Reduce horizontal spacing between columns
             row_heights=[1.0] * (num_cities_per_col),
         )
@@ -3378,7 +3337,7 @@ class Analysis():
         ]
 
         # Add vertical legends with the positions you will provide
-        x_legend_position = 0.94  # Position close to the left edge
+        x_legend_position = 0.92  # Position close to the left edge
         y_legend_start_bottom = 0.02  # Lower position to the bottom left corner
 
         # Add the vertical legends at the top and bottom
@@ -3514,7 +3473,7 @@ class Analysis():
 
         fig = make_subplots(
             rows=num_cities_per_col, cols=2,  # Two columns
-            vertical_spacing=0.001,  # Reduce the vertical spacing
+            vertical_spacing=0.0005,  # Reduce the vertical spacing
             horizontal_spacing=0.01,  # Reduce horizontal spacing between columns
             row_heights=[1.0] * (num_cities_per_col),
         )
@@ -3690,7 +3649,7 @@ class Analysis():
         ]
 
         # Add vertical legends with the positions you will provide
-        x_legend_position = 0.94  # Position close to the left edge
+        x_legend_position = 0.92  # Position close to the left edge
         y_legend_start_bottom = 0.02  # Lower position to the bottom left corner
 
         # Add the vertical legends at the top and bottom
