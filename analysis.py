@@ -44,8 +44,6 @@ bar_colour_4 = 'rgb(222, 203, 228)'
 # Consts
 SAVE_PNG = True
 SAVE_EPS = True
-# todo: allocate height dynamically based on the number of cities to show
-TALL_FIG_HEIGHT = 5000  # height of the tall bar plots
 SCALE = 1  # scale=3 hangs often
 
 
@@ -1305,6 +1303,9 @@ class Analysis():
 
         # Determine how many cities will be in each column
         num_cities_per_col = len(cities_ordered) // 2 + len(cities_ordered) % 2  # Split cities into two groups
+        # Define a base height per row and calculate total figure height
+        BASE_HEIGHT_PER_ROW = 50  # Adjust as needed
+        TALL_FIG_HEIGHT = num_cities_per_col * BASE_HEIGHT_PER_ROW
 
         fig = make_subplots(
             rows=num_cities_per_col * 2, cols=2,  # Two columns
@@ -1545,7 +1546,7 @@ class Analysis():
         )
 
         # Set the x-axis range to cover the values you want in x_grid_values
-        x_grid_values = [2, 4, 6, 8, 10, 12, 14, 16, 18]
+        x_grid_values = [2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22]
 
         for x in x_grid_values:
             fig.add_shape(
@@ -1579,7 +1580,7 @@ class Analysis():
         y_legend_start_bottom = 0.98  # Lower position to the bottom left corner
 
         # Add the vertical legends at the top and bottom
-        Analysis.add_vertical_legend_annotations(fig, legend_items, x_position=x_legend_position + 0.005,
+        Analysis.add_vertical_legend_annotations(fig, legend_items, x_position=x_legend_position - 0.03,
                                                  y_start=y_legend_start_bottom + 0.02, spacing=0.007, font_size=40)
 
         # # Add a box around the legend
@@ -1795,6 +1796,10 @@ class Analysis():
         # Determine how many cities will be in each column
         num_cities_per_col = len(cities_ordered) // 2 + len(cities_ordered) % 2  # Split cities into two groups
 
+        # Define a base height per row and calculate total figure height
+        BASE_HEIGHT_PER_ROW = 50  # Adjust as needed
+        TALL_FIG_HEIGHT = num_cities_per_col * BASE_HEIGHT_PER_ROW
+
         fig = make_subplots(
             rows=num_cities_per_col, cols=2,  # Two columns
             vertical_spacing=0.001,  # Reduce the vertical spacing
@@ -1979,7 +1984,7 @@ class Analysis():
         ]
 
         # Add vertical legends with the positions you will provide
-        x_legend_position = 0.94  # Position close to the left edge
+        x_legend_position = 0.92  # Position close to the left edge
         y_legend_start_bottom = 0.02  # Lower position to the bottom left corner
 
         # Add the vertical legends at the top and bottom
@@ -2174,6 +2179,9 @@ class Analysis():
 
         # Determine how many cities will be in each column
         num_cities_per_col = len(cities_ordered) // 2 + len(cities_ordered) % 2  # Split cities into two groups
+        # Define a base height per row and calculate total figure height
+        BASE_HEIGHT_PER_ROW = 50  # Adjust as needed
+        TALL_FIG_HEIGHT = num_cities_per_col * BASE_HEIGHT_PER_ROW
 
         fig = make_subplots(
             rows=num_cities_per_col, cols=2,  # Two columns
@@ -2333,7 +2341,7 @@ class Analysis():
         )
 
         # Manually add gridlines using `shapes`
-        x_grid_values = [2, 4, 6, 8, 10, 12, 14, 16, 18]  # Define the gridline positions on the x-axis
+        x_grid_values = [2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22]  # Define the gridline positions on the x-axis
         for x in x_grid_values:
             fig.add_shape(
                 type="line",
@@ -2360,7 +2368,7 @@ class Analysis():
         ]
 
         # Add vertical legends with the positions you will provide
-        x_legend_position = 0.94  # Position close to the left edge
+        x_legend_position = 0.92  # Position close to the left edge
         y_legend_start_bottom = 0.02  # Lower position to the bottom left corner
 
         # Add the vertical legends at the top and bottom
@@ -2534,6 +2542,9 @@ class Analysis():
 
         # Determine how many cities will be in each column
         num_cities_per_col = len(cities_ordered) // 2 + len(cities_ordered) % 2  # Split cities into two groups
+        # Define a base height per row and calculate total figure height
+        BASE_HEIGHT_PER_ROW = 50  # Adjust as needed
+        TALL_FIG_HEIGHT = num_cities_per_col * BASE_HEIGHT_PER_ROW
 
         fig = make_subplots(
             rows=num_cities_per_col, cols=2,  # Two columns
@@ -2732,7 +2743,7 @@ class Analysis():
         ]
 
         # Add vertical legends with the positions you will provide
-        x_legend_position = 0.94  # Position close to the left edge
+        x_legend_position = 0.92  # Position close to the left edge
         y_legend_start_bottom = 0.02  # Lower position to the bottom left corner
 
         # Add the vertical legends at the top and bottom
@@ -2861,6 +2872,9 @@ class Analysis():
 
         # Determine how many cities will be in each column
         num_cities_per_col = len(cities_ordered) // 2 + len(cities_ordered) % 2  # Split cities into two groups
+        # Define a base height per row and calculate total figure height
+        BASE_HEIGHT_PER_ROW = 50  # Adjust as needed
+        TALL_FIG_HEIGHT = num_cities_per_col * BASE_HEIGHT_PER_ROW
 
         fig = make_subplots(
             rows=num_cities_per_col, cols=2,  # Two columns
@@ -3024,7 +3038,7 @@ class Analysis():
         )
 
         # Manually add gridlines using `shapes`
-        x_grid_values = [2, 4, 6, 8, 10, 12, 14, 16, 18]  # Define the gridline positions on the x-axis
+        x_grid_values = [2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22]  # Define the gridline positions on the x-axis
         for x in x_grid_values:
             fig.add_shape(
                 type="line",
@@ -3051,7 +3065,7 @@ class Analysis():
         ]
 
         # Add vertical legends with the positions you will provide
-        x_legend_position = 0.94  # Position close to the left edge
+        x_legend_position = 0.92  # Position close to the left edge
         y_legend_start_bottom = 0.02  # Lower position to the bottom left corner
 
         # Add the vertical legends at the top and bottom
@@ -3182,6 +3196,9 @@ class Analysis():
 
         # Determine how many cities will be in each column
         num_cities_per_col = len(cities_ordered) // 2 + len(cities_ordered) % 2  # Split cities into two groups
+        # Define a base height per row and calculate total figure height
+        BASE_HEIGHT_PER_ROW = 50  # Adjust as needed
+        TALL_FIG_HEIGHT = num_cities_per_col * BASE_HEIGHT_PER_ROW
 
         fig = make_subplots(
             rows=num_cities_per_col, cols=2,  # Two columns
@@ -3491,6 +3508,9 @@ class Analysis():
 
         # Determine how many cities will be in each column
         num_cities_per_col = len(cities_ordered) // 2 + len(cities_ordered) % 2  # Split cities into two groups
+        # Define a base height per row and calculate total figure height
+        BASE_HEIGHT_PER_ROW = 50  # Adjust as needed
+        TALL_FIG_HEIGHT = num_cities_per_col * BASE_HEIGHT_PER_ROW
 
         fig = make_subplots(
             rows=num_cities_per_col, cols=2,  # Two columns
@@ -3911,7 +3931,7 @@ class Analysis():
         corr_matrix_night = corr_matrix_night.rename(columns=rename_dict_1, index=rename_dict_1)
 
         # Generate the heatmap using Plotly
-        fig = px.imshow(corr_matrix_day, text_auto=".2f",  # Display correlation values on the heatmap
+        fig = px.imshow(corr_matrix_day, text_auto=".2f",  # Display correlation values on the heatmap # type: ignore
                         color_continuous_scale='RdBu',  # Color scale (you can customize this)
                         aspect="auto")  # Automatically adjust aspect ratio
         fig.update_layout(coloraxis_showscale=False)
@@ -4508,9 +4528,9 @@ if __name__ == "__main__":
             # extract information for the csv file from mapping
             video_id, start_index = key.rsplit("_", 1)  # split to extract id and index
             video_city_id = Analysis.find_city_id(df_mapping, video_id, int(start_index))
-            video_city = df_mapping.loc[df_mapping["id"] == video_city_id, "city"].values[0]
-            video_state = df_mapping.loc[df_mapping["id"] == video_city_id, "state"].values[0]
-            video_country = df_mapping.loc[df_mapping["id"] == video_city_id, "country"].values[0]
+            video_city = df_mapping.loc[df_mapping["id"] == video_city_id, "city"].values[0]  # type:ignore
+            video_state = df_mapping.loc[df_mapping["id"] == video_city_id, "state"].values[0]  # type:ignore
+            video_country = df_mapping.loc[df_mapping["id"] == video_city_id, "country"].values[0]  # type:ignore
             logger.debug(f"Analysing data from {key} from {video_city}, {video_state}, {video_country}.")
 
             # Get the number of number and unique id of the object crossing the road
