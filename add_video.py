@@ -352,10 +352,11 @@ def form():
                     upload_date_list = upload_date_list.replace('\'', '')
                     upload_date_list = upload_date_list.replace(' ', '')
                     df.at[idx, 'upload_date'] = upload_date_list
-                    fps_list = [float(x) for x in fps_list]
+                    fps_list = [30.0 if str(x).strip().lower() == 'none' else float(x) for x in fps_list]
                     fps_list = str(fps_list)
                     fps_list = fps_list.replace('\'', '')
                     fps_list = fps_list.replace(' ', '')
+                    print(fps_list)
                     df.at[idx, 'fps_list'] = fps_list
                     vehicle_type_list = [int(x) for x in vehicle_type_list]
                     vehicle_type_list = str(vehicle_type_list)
