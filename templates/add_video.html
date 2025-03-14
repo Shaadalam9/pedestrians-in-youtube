@@ -564,11 +564,11 @@
                 </div> -->
                 <div class="form-group">
                     <label for="lat">Latitude:</label>
-                    <input type="text" id="lat" name="lat" value="{{ existing_data['lat'] }}" type="number" pattern="[0-9.]*">
+                    <input type="text" id="lat" name="lat" value="{{ existing_data['lat'] }}" type="number" pattern="-?[0-9]+(\.[0-9]+)?">
                 </div>
                 <div class="form-group">
                     <label for="lon">Longitude:</label>
-                    <input type="text" id="lon" name="lon" value="{{ existing_data['lon'] }}" type="number" pattern="[0-9.]*">
+                    <input type="text" id="lon" name="lon" value="{{ existing_data['lon'] }}" type="number" pattern="-?[0-9]+(\.[0-9]+)?">
                 </div>
                 <div class="form-group">
                     <label for="gmp">GDP city (billion USD):</label>
