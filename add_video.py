@@ -216,7 +216,8 @@ def form():
             literacy_rate = request.form.get('literacy_rate')
             avg_height = request.form.get('avg_height')
             upload_date_video = request.form.get('upload_date_video')
-            fps_video = request.form.get('fps_video')
+            # fps_video = request.form.get('fps_video')
+            fps_video = '30'
             vehicle_type_video = request.form.get('vehicle_type')
             gini = request.form.get('gini')
             traffic_index = request.form.get('traffic_index')
