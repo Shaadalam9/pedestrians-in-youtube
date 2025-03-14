@@ -56,7 +56,7 @@ python3 analysis.py
 ### Configuration of project
 Configuration of the project needs to be defined in `config`. Please use the `default.config` file for the required structure of the file. If no custom config file is provided, `default.config` is used. The config file has the following parameters:
 - **`data`**: Directory containing data (CSV output from YOLO).
-- **`videos`**: Directory containing the videos used to generate the data.
+- **`videos`**: Directories containing the videos used to generate the data.
 - **`mapping`**: CSV file that contains mapping data for the cities referenced in the data.
 - **`prediction_mode`**: Configures YOLO for object detection.
 - **`tracking_mode`**: Configures YOLO for object tracking.
