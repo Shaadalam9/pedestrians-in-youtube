@@ -44,6 +44,9 @@ bar_colour_4 = 'rgb(222, 203, 228)'
 # Consts
 SAVE_PNG = True
 SAVE_EPS = True
+BASE_HEIGHT_PER_ROW = 20  # Adjust as needed
+FLAG_SIZE = 12
+TEXT_SIZE = 12
 SCALE = 1  # scale=3 hangs often
 
 
@@ -1304,7 +1307,6 @@ class Analysis():
         # Determine how many cities will be in each column
         num_cities_per_col = len(cities_ordered) // 2 + len(cities_ordered) % 2  # Split cities into two groups
         # Define a base height per row and calculate total figure height
-        BASE_HEIGHT_PER_ROW = 50  # Adjust as needed
         TALL_FIG_HEIGHT = num_cities_per_col * BASE_HEIGHT_PER_ROW
 
         fig = make_subplots(
@@ -1624,7 +1626,7 @@ class Analysis():
         # Adjust x positioning for the left and right columns
         x_position_left = 0.0  # Position for the left column
         x_position_right = 1.0  # Position for the right column
-        font_size = 20  # Font size for visibility
+        font_size = 15  # Font size for visibility
 
         # Initialize variables for dynamic y positioning for both columns
         current_row_left = 1  # Start from the first row for the left column
@@ -1684,7 +1686,7 @@ class Analysis():
                 # bordercolor="black",  # Border for visibility
             )
         fig.update_yaxes(
-            tickfont=dict(size=20, color="black"),
+            tickfont=dict(size=14, color="black"),
             showticklabels=True,  # Ensure city names are visible
             ticklabelposition='inside',  # Move the tick labels inside the bars
         )
@@ -1756,7 +1758,6 @@ class Analysis():
         num_cities_per_col = len(cities_ordered) // 2 + len(cities_ordered) % 2  # Split cities into two groups
 
         # Define a base height per row and calculate total figure height
-        BASE_HEIGHT_PER_ROW = 50  # Adjust as needed
         TALL_FIG_HEIGHT = num_cities_per_col * BASE_HEIGHT_PER_ROW
 
         fig = make_subplots(
@@ -1991,7 +1992,7 @@ class Analysis():
         # Adjust x positioning for the left and right columns
         x_position_left = 0.0  # Position for the left column
         x_position_right = 1.0  # Position for the right column
-        font_size = 20  # Font size for visibility
+        font_size = FLAG_SIZE  # Font size for visibility
 
         # Initialize variables for dynamic y positioning for both columns
         current_row_left = 1  # Start from the first row for the left column
@@ -2051,7 +2052,7 @@ class Analysis():
                 # bordercolor="black",  # Border for visibility
             )
         fig.update_yaxes(
-            tickfont=dict(size=16, color="black"),
+            tickfont=dict(size=TEXT_SIZE, color="black"),
             showticklabels=True,  # Ensure city names are visible
             ticklabelposition='inside',  # Move the tick labels inside the bars
         )
@@ -2139,7 +2140,6 @@ class Analysis():
         # Determine how many cities will be in each column
         num_cities_per_col = len(cities_ordered) // 2 + len(cities_ordered) % 2  # Split cities into two groups
         # Define a base height per row and calculate total figure height
-        BASE_HEIGHT_PER_ROW = 50  # Adjust as needed
         TALL_FIG_HEIGHT = num_cities_per_col * BASE_HEIGHT_PER_ROW
 
         fig = make_subplots(
@@ -2375,7 +2375,7 @@ class Analysis():
         # Adjust x positioning for the left and right columns
         x_position_left = 0.0  # Position for the left column
         x_position_right = 1.0  # Position for the right column
-        font_size = 20  # Font size for visibility
+        font_size = FLAG_SIZE  # Font size for visibility
 
         # Initialize variables for dynamic y positioning for both columns
         current_row_left = 1  # Start from the first row for the left column
@@ -2435,7 +2435,7 @@ class Analysis():
                 # bordercolor="black",  # Border for visibility
             )
         fig.update_yaxes(
-            tickfont=dict(size=16, color="black"),
+            tickfont=dict(size=TEXT_SIZE, color="black"),
             showticklabels=True,  # Ensure city names are visible
             ticklabelposition='inside',  # Move the tick labels inside the bars
         )
@@ -2502,7 +2502,6 @@ class Analysis():
         # Determine how many cities will be in each column
         num_cities_per_col = len(cities_ordered) // 2 + len(cities_ordered) % 2  # Split cities into two groups
         # Define a base height per row and calculate total figure height
-        BASE_HEIGHT_PER_ROW = 50  # Adjust as needed
         TALL_FIG_HEIGHT = num_cities_per_col * BASE_HEIGHT_PER_ROW
 
         fig = make_subplots(
@@ -2772,7 +2771,7 @@ class Analysis():
             current_row_right += 2  # Increment the row for each city (speed and time take two rows)
 
         fig.update_yaxes(
-            tickfont=dict(size=16, color="black"),
+            tickfont=dict(size=TEXT_SIZE, color="black"),
             showticklabels=True,  # Ensure city names are visible
             ticklabelposition='inside',  # Move the tick labels inside the bars
         )
@@ -2832,7 +2831,6 @@ class Analysis():
         # Determine how many cities will be in each column
         num_cities_per_col = len(cities_ordered) // 2 + len(cities_ordered) % 2  # Split cities into two groups
         # Define a base height per row and calculate total figure height
-        BASE_HEIGHT_PER_ROW = 50  # Adjust as needed
         TALL_FIG_HEIGHT = num_cities_per_col * BASE_HEIGHT_PER_ROW
 
         fig = make_subplots(
@@ -3094,7 +3092,7 @@ class Analysis():
             current_row_right += 2  # Increment the row for each city (speed and time take two rows)
 
         fig.update_yaxes(
-            tickfont=dict(size=16, color="black"),
+            tickfont=dict(size=TEXT_SIZE, color="black"),
             showticklabels=True,  # Ensure city names are visible
             ticklabelposition='inside',  # Move the tick labels inside the bars
         )
@@ -3109,6 +3107,12 @@ class Analysis():
         fig.update_layout(margin=dict(l=10, r=10, t=150, b=10))
         Analysis.save_plotly_figure(fig, "time_crossing_avg", width=2400, height=TALL_FIG_HEIGHT, scale=SCALE,
                                     save_final=True)
+
+    @staticmethod
+    def safe_average(values):
+        # Filter out None and NaN values.
+        valid_values = [v for v in values if v is not None and not (isinstance(v, float) and math.isnan(v))]
+        return sum(valid_values) / len(valid_values) if valid_values else 0
 
     @staticmethod
     def plot_crossing_without_traffic_light(df_mapping):
@@ -3138,11 +3142,22 @@ class Analysis():
                 # Populate the corresponding speed based on the condition
                 final_dict[f"{city}_{state}"][f"without_trf_light_{condition}"] = count
 
-        # Sort cities by the sum of speed_0 and speed_1 values
+        # Multiply each of the numeric speed values by 10^6
+        for city_key, data in final_dict.items():
+            for key, value in data.items():
+                # Only modify keys that represent speed values
+                if key.startswith("without_trf_light") and value is not None:
+                    data[key] = round(value * 10**6, 2)
+
         cities_ordered = sorted(
             final_dict.keys(),
-            key=lambda city: (final_dict[city]["without_trf_light_0"] or 0) + (
-                final_dict[city]["without_trf_light_1"] or 0), reverse=True)
+            key=lambda city: Analysis.safe_average([
+                final_dict[city]["without_trf_light_0"],
+                final_dict[city]["without_trf_light_1"]
+            ]),
+            reverse=True
+        )
+
         # Extract unique cities
         cities = list(set([key.split('_')[0] for key in final_dict.keys()]))
 
@@ -3150,13 +3165,9 @@ class Analysis():
         day_crossing = [final_dict[city]['without_trf_light_0'] for city in cities_ordered]
         night_crossing = [final_dict[city]['without_trf_light_1'] for city in cities_ordered]
 
-        # # Ensure that plotting uses cities_ordered
-        # assert len(cities_ordered) == len(day_crossing) == len(night_crossing), "Lengths of lists don't match!"
-
         # Determine how many cities will be in each column
         num_cities_per_col = len(cities_ordered) // 2 + len(cities_ordered) % 2  # Split cities into two groups
         # Define a base height per row and calculate total figure height
-        BASE_HEIGHT_PER_ROW = 50  # Adjust as needed
         TALL_FIG_HEIGHT = num_cities_per_col * BASE_HEIGHT_PER_ROW
 
         fig = make_subplots(
@@ -3173,7 +3184,7 @@ class Analysis():
             city = Analysis.iso2_to_flag(Analysis.iso3_to_iso2(iso_code)) + " " + Analysis.format_city_state(city)   # type: ignore  # noqa: E501
             row = i + 1
             if day_crossing[i] is not None and night_crossing[i] is not None:
-                value = (day_crossing[i] + night_crossing[i])/2
+                value = round((day_crossing[i] + night_crossing[i])/2, 2)
                 fig.add_trace(go.Bar(
                     x=[day_crossing[i]], y=[f'{city} {value}'], orientation='h',
                     name=f"{city} crossing without traffic light in day",
@@ -3211,7 +3222,7 @@ class Analysis():
             row = i + 1
             idx = num_cities_per_col + i
             if day_crossing[idx] is not None and night_crossing[idx] is not None:
-                value = (day_crossing[idx] + night_crossing[idx])/2
+                value = round((day_crossing[idx] + night_crossing[idx])/2, 2)
                 fig.add_trace(go.Bar(
                     x=[day_crossing[idx]], y=[f'{city} {value}'], orientation='h',
                     name=f"{city} crossing without traffic light in day",
@@ -3344,17 +3355,6 @@ class Analysis():
         Analysis.add_vertical_legend_annotations(fig, legend_items, x_position=x_legend_position,
                                                  y_start=y_legend_start_bottom, spacing=0.015, font_size=40)
 
-        # # Add a box around the legend
-        # fig.add_shape(
-        #     type="rect", xref="paper", yref="paper",
-        #     x0=x_legend_position,  # Adjust x0 to control the left edge of the box
-        #     y0=y_legend_start_bottom + 0.01,  # Adjust y0 to control the top of the box
-        #     x1=x_legend_position + 0.095,  # Adjust x1 to control the right edge of the box
-        #     y1=y_legend_start_bottom - len(legend_items) * 0.03 + 0.02,  # Adjust y1 to control the bottom of the box
-        #     line=dict(color="black", width=2),  # Black border for the box
-        #     fillcolor="rgba(255,255,255,0.7)"  # White fill with transparency
-        # )
-
         # Add a box around the first column (left side)
         fig.add_shape(
             type="rect", xref="paper", yref="paper",
@@ -3450,11 +3450,22 @@ class Analysis():
                 # Populate the corresponding speed based on the condition
                 final_dict[f"{city}_{state}"][f"with_trf_light_{condition}"] = count
 
-        # Sort cities by the sum of speed_0 and speed_1 values
+        # Multiply each of the numeric speed values by 10^6
+        for city_key, data in final_dict.items():
+            for key, value in data.items():
+                # Only modify keys that represent speed values
+                if key.startswith("with_trf_light") and value is not None:
+                    data[key] = round(value * 10**6, 2)
+
         cities_ordered = sorted(
             final_dict.keys(),
-            key=lambda city: (final_dict[city]["with_trf_light_0"] or 0) + (
-                final_dict[city]["with_trf_light_1"] or 0), reverse=True)
+            key=lambda city: Analysis.safe_average([
+                final_dict[city]["with_trf_light_0"],
+                final_dict[city]["with_trf_light_1"]
+            ]),
+            reverse=True
+        )
+
         # Extract unique cities
         cities = list(set([key.split('_')[0] for key in final_dict.keys()]))
 
@@ -3468,7 +3479,6 @@ class Analysis():
         # Determine how many cities will be in each column
         num_cities_per_col = len(cities_ordered) // 2 + len(cities_ordered) % 2  # Split cities into two groups
         # Define a base height per row and calculate total figure height
-        BASE_HEIGHT_PER_ROW = 50  # Adjust as needed
         TALL_FIG_HEIGHT = num_cities_per_col * BASE_HEIGHT_PER_ROW
 
         fig = make_subplots(
@@ -3485,7 +3495,7 @@ class Analysis():
             city = Analysis.iso2_to_flag(Analysis.iso3_to_iso2(iso_code)) + " " + Analysis.format_city_state(city)   # type: ignore  # noqa: E501
             row = i + 1
             if day_crossing[i] is not None and night_crossing[i] is not None:
-                value = (day_crossing[i] + night_crossing[i])/2
+                value = round((day_crossing[i] + night_crossing[i])/2, 2)
                 fig.add_trace(go.Bar(
                     x=[day_crossing[i]], y=[f'{city} {value}'], orientation='h',
                     name=f"{city} crossing with traffic light in day",
@@ -3523,7 +3533,7 @@ class Analysis():
             row = i + 1
             idx = num_cities_per_col + i
             if day_crossing[idx] is not None and night_crossing[idx] is not None:
-                value = (day_crossing[idx] + night_crossing[idx])/2
+                value = round((day_crossing[idx] + night_crossing[idx])/2, 2)
                 fig.add_trace(go.Bar(
                     x=[day_crossing[idx]], y=[f'{city} {value}'], orientation='h',
                     name=f"{city} crossing with traffic light in day",
@@ -3621,7 +3631,7 @@ class Analysis():
         )
 
         # Manually add gridlines using `shapes`
-        x_grid_values = [500, 1000, 1500, 2000, 2500]  # Define the gridline positions on the x-axis
+        x_grid_values = [50, 100, 150, 200, 250]  # Define the gridline positions on the x-axis
 
         for x in x_grid_values:
             fig.add_shape(
