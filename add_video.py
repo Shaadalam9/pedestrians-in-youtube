@@ -356,7 +356,6 @@ def form():
                     fps_list = str(fps_list)
                     fps_list = fps_list.replace('\'', '')
                     fps_list = fps_list.replace(' ', '')
-                    print(fps_list)
                     df.at[idx, 'fps_list'] = fps_list
                     vehicle_type_list = [int(x) for x in vehicle_type_list]
                     vehicle_type_list = str(vehicle_type_list)

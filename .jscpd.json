@@ -1,0 +1,10 @@
+{
+  "threshold": 30,
+  "minLines": 10,
+  "reporters": ["html", "markdown"],
+  "ignore": [
+    "**/node_modules/**",
+    "**/.git/**",
+    "**/*.md"
+  ]
+}
