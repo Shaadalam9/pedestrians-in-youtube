@@ -4744,6 +4744,7 @@ if __name__ == "__main__":
     df = df_mapping.copy()  # copy df to manipulate for output
     df['state'] = df['state'].fillna('NA')  # Set state to NA
     Analysis.get_mapbox_map(df=df, hover_data=hover_data)  # mapbox map
+    Analysis.get_world_map(df=df)  # map with countries
 
     # Amount of footage
     Analysis.scatter(df=df,
