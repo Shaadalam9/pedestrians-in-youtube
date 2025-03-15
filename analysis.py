@@ -371,21 +371,11 @@ class Analysis():
 
     @staticmethod
     def get_world_map(df_mapping):
-        logger.info("Generating map.")
         cities = df_mapping["city"]
         states = df_mapping["state"]
         countries = df_mapping["country"]
         coords_lat = df_mapping["lat"]
         coords_lon = df_mapping["lon"]
-        gdp_city = df_mapping["gmp"]
-        population_city = df_mapping["population_city"]
-        population_country = df_mapping["population_country"]
-        traffic_mortality_rate = df_mapping["traffic_mortality"]
-        continent = df_mapping["continent"]
-        literacy_rate = df_mapping["literacy_rate"]
-        avg_height = df_mapping["avg_height"]
-        gini = df_mapping["gini"]
-        traffic_index = df_mapping["traffic_index"]
 
         # Create the country list to highlight in the choropleth map
         countries_set = set(countries)  # Use set to avoid duplicates
@@ -396,6 +386,7 @@ class Analysis():
 
         # Create a DataFrame for highlighted countries with a value (same for all to have the same color)
         df = pd.DataFrame({'country': list(countries_set), 'value': 1})
+        print(df)
 
         # Create a choropleth map using Plotly with grey color for countries
         fig = px.choropleth(df, locations="country", locationmode="country names",
@@ -430,18 +421,18 @@ class Analysis():
                 city_coords.append({
                     'City': city,
                     'State': state,
-                    'Country': countries[i],
-                    'Continent': continent[i],
+                    'Country': df_mapping["country"].iloc[i],
+                    'Continent': df_mapping["continent"].iloc[i],
                     'lat': lat,
                     'lon': lon,
-                    'GDP (Billion USD)': gdp_city[i],
-                    'City population (thousands)': population_city[i] / 1000.0,
-                    'Country population (thousands)': population_country[i] / 1000.0,
-                    'Traffic mortality rate (per 100,000)': traffic_mortality_rate[i],
-                    'Literacy rate': literacy_rate[i],
-                    'Average height (cm)': avg_height[i],
-                    'Gini coefficient': gini[i],
-                    'Traffic index': traffic_index[i],
+                    'GDP (Billion USD)': df_mapping["gmp"].iloc[i],
+                    'City population (thousands)': df_mapping["population_city"].iloc[i] / 1000.0,
+                    'Country population (thousands)': df_mapping["population_country"].iloc[i] / 1000.0,
+                    'Traffic mortality rate (per 100,000)': df_mapping["traffic_mortality"].iloc[i],
+                    'Literacy rate': df_mapping["literacy_rate"].iloc[i],
+                    'Average height (cm)': df_mapping["avg_height"].iloc[i],
+                    'Gini coefficient': df_mapping["gini"].iloc[i],
+                    'Traffic index': df_mapping["traffic_index"].iloc[i],
                 })
 
         if city_coords:
@@ -4744,7 +4735,7 @@ if __name__ == "__main__":
     df = df_mapping.copy()  # copy df to manipulate for output
     df['state'] = df['state'].fillna('NA')  # Set state to NA
     Analysis.get_mapbox_map(df=df, hover_data=hover_data)  # mapbox map
-    Analysis.get_world_map(df=df)  # map with countries
+    Analysis.get_world_map(df_mapping=df)  # map with countries
 
     # Amount of footage
     Analysis.scatter(df=df,
