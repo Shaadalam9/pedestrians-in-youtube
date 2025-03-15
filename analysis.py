@@ -400,6 +400,9 @@ class Analysis():
             geo=dict(
                 showframe=False,
                 showcoastlines=True,
+                coastlinecolor="black",  # Set coastline color
+                showcountries=True,  # Show country borders
+                countrycolor="black",  # Set border color
                 projection_type='equirectangular',
                 showlakes=True,
                 lakecolor='rgb(173, 216, 230)',  # Light blue for lakes
