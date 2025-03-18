@@ -386,7 +386,6 @@ class Analysis():
 
         # Create a DataFrame for highlighted countries with a value (same for all to have the same color)
         df = pd.DataFrame({'country': list(countries_set), 'value': 1})
-        print(df)
 
         # Create a choropleth map using Plotly with grey color for countries
         fig = px.choropleth(df, locations="country", locationmode="country names",

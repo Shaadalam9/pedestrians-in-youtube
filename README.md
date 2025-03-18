@@ -114,6 +114,20 @@ Video: [https://www.youtube.com/watch?v=0K9vaQxKZ9k](https://www.youtube.com/wat
 
 Video: [https://www.youtube.com/watch?v=3jVszt_78_k](https://www.youtube.com/watch?v=3jVszt_78_k).
 
+### Videos are excluded from analysis if the camera is unstable or shaking
+<a href="https://youtu.be/uFG1_JBZUmM">
+  <img src="./readme/shaking.gif" width="100%" />
+</a>
+
+Video: [https://www.youtube.com/watch?v=uFG1_JBZUmM](https://www.youtube.com/watch?v=uFG1_JBZUmM).
+
+### Snippets of videos captured in parking areas were excluded from analysis
+<a href="https://youtu.be/U0pdQ8eZtHY">
+  <img src="./readme/parking.gif" width="100%" />
+</a>
+
+Video: [https://www.youtube.com/watch?v=U0pdQ8eZtHY](https://www.youtube.com/watch?v=U0pdQ8eZtHY).
+
 ## Description and analysis of dataset
 ### Description of dataset
 <!-- [![Locations of cities with footage in dataset](figures/world_map.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/world_map.html)
