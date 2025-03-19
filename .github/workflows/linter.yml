@@ -54,5 +54,6 @@ jobs:
           DEFAULT_BRANCH: main
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FILTER_REGEX_INCLUDE: .*
+          FILTER_REGEX_EXCLUDE: README\.md  # This line excludes README.md
           VALIDATE_PYTHON_BLACK: false
           VALIDATE_PYTHON_ISORT: false
