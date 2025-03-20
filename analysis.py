@@ -782,8 +782,8 @@ class Analysis():
 
                     speed_ = (distance / time) / 100
 
-                    # Taken from https://doi.org/10.1177/0361198106198200104
-                    if speed_ > 1.2:  # Exclude outlier speeds
+                    # Taken from https://www.wikiwand.com/en/articles/Preferred_walking_speed
+                    if speed_ > 1.42:  # Exclude outlier speeds
                         continue
                     if f'{city}_{state}_{condition}' in speed_dict:
                         speed_dict[f'{city}_{state}_{condition}'].append(speed_)
