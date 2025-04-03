@@ -4,7 +4,10 @@ import pandas as pd
 import common
 
 # get a list of already downloaded video files (assuming mp4 format)
-downloaded_videos = {f.split('.')[0] for f in os.listdir(common.get_configs('videos')) if f.endswith('.mp4')}
+downloaded_videos = set()
+for folder in common.get_configs('videos'):
+    if os.path.exists(folder):
+        downloaded_videos.update(f.split('.')[0] for f in os.listdir(folder) if f.endswith('.mp4'))
 
 # load mapping
 df = pd.read_csv(common.get_configs('mapping'))
