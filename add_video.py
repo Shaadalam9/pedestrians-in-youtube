@@ -259,13 +259,23 @@ def form():
             else:
                 # Check if the city is already present in the CSV
                 if state:
-                    check_existing = city in df['city'].values and state in df['state'].values and country in df['country'].values  # noqa: E501
+                    check_existing = not df[
+                        (df['city'] == city) &
+                        (df['state'] == state) &
+                        (df['country'] == country)
+                    ].empty
                 else:
-                    check_existing = city in df['city'].values and country in df['country'].values
+                    check_existing = not df[
+                        (df['city'] == city) &
+                        (df['country'] == country)
+                    ].empty
                 if check_existing:
                     if state:
                         idx = df[(df['city'] == city) & (df['state'] == state) & (df['country'] == country)].index[0]
                     else:
+                        print(city, country)
+                        print(df['city'])
+                        print(df['country'])
                         idx = df[(df['city'] == city) & (df['country'] == country)].index[0]
                     # Get the list of videos for the city (and state) and country
                     videos_list = df.at[idx, 'videos'].split(',') if pd.notna(df.at[idx, 'videos']) else []
