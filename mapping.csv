@@ -679,3 +679,5 @@ id,city,state,country,iso3,continent,lat,lon,gmp,population_city,population_coun
 678,Brighton,,Saint Vincent and the Grenadines,VCT,North America,13.1299959,-61.1749086,0.0,0.0,110947.0,7.4,96.9,171.0,0.0,0.0,[Gl07tLi8oSc],[[0]],[[34]],[[240]],[0],[17092022],[30]
 679,Biabou,,Saint Vincent and the Grenadines,VCT,North America,13.1957077,-61.1387249,0.0,1050.0,110947.0,7.4,96.9,171.0,0.0,0.0,[yXj9JV95k_Y],"[[0, 0, 0]]","[[556, 1270, 1883]]","[[1175, 1689, 2099]]",[0],[28112021],[30.0]
 680,Diamond Village,,Saint Vincent and the Grenadines,VCT,North America,13.1406651,-61.1682917,0.0,0.0,110947.0,7.4,96.9,171.0,0.0,0.0,[ELj3snsvwN4],"[[0, 0]]","[[48, 470]]","[[440, 508]]",[0],[10022025],[30.0]
+681,Sainte-Rose,,Guadeloupe,GLP,North America,16.3327353,-61.698147,0.0,20192.0,383569.0,0.0,0.0,0.0,0.0,0.0,[eKy0Kj-_PEk],"[[0, 0]]","[[32, 843]]","[[759, 958]]",[0],[18042022],[30.0]
+682,Pointe-à-Pitre,,Guadeloupe,GLP,North America,16.2408636,-61.5334077,0.0,53514.0,378561.0,0.0,0.0,0.0,0.0,37.21,[V4bseJC9svQ],"[[0, 0]]","[[21, 858]]","[[530, 1175]]",[0],[12072022],[30.0]
