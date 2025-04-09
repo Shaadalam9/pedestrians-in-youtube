@@ -669,3 +669,4 @@ id,city,state,country,iso3,continent,lat,lon,gmp,population_city,population_coun
 668,Morne Fortune,,Saint Lucia,LCA,North America,14.000035,-60.995753,0.0,950.0,183629.0,29.8,0.0,171.0,0.0,0.0,"[s3d-2VufeUM,HL_7vZrVgKs]","[[0], [0]]","[[614], [1403]]","[[1052], [1572]]","[0,0]","[19062021,12032020]","[30.0,30.0]"
 669,Gros Islet,,Saint Lucia,LCA,North America,14.081303,-60.952493,0.0,25000.0,183629.0,29.8,0.0,171.0,0.0,0.0,"[Xr7kM-stlHA,dq0KtaYX7pU]","[[0], [0]]","[[110], [668]]","[[384], [1390]]","[0,0]","[27042020,14072018]","[30.0,30.0]"
 670,Vieux Fort,,Saint Lucia,LCA,North America,13.748056,-60.961754,0.0,15132.0,183629.0,29.8,0.0,171.0,0.0,0.0,[6idguUEkkU4],[[0]],[[926]],[[1379]],[0],[29122024],[30]
+671,Kingstown,,Saint Vincent and the Grenadines,VCT,North America,13.1561864,-61.2279621,0.0,24518.0,110947.0,7.4,96.9,171.0,0.0,0.0,[9A2nqtmerIE],"[[0, 0]]","[[0, 227]]","[[118, 460]]",[0],[12022021],[30.0]
