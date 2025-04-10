@@ -691,4 +691,7 @@ id,city,state,country,iso3,continent,lat,lon,gmp,population_city,population_coun
 690,Pelican Key,,Sint Maarten,Country not found,North America,18.028465,-63.0922417,0.0,0.0,58477.0,0.0,0.0,0.0,0.0,0.0,[cmpCF1BOUDE],[[0]],[[79]],[[423]],[0],[19092018],[30]
 691,Lowlands,,Sint Maarten,Country not found,Africa,18.0503567,-63.1290296,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,[SUo43a8HS4g],[[0]],[[0]],[[338]],[0],[06052019],[30]
 692,Terres-Basses,,Saint Martin,Country not found,North America,18.067045,-63.138943,0.0,9419.0,31496.0,0.0,0.0,0.0,0.0,0.0,[SUo43a8HS4g],[[0]],[[488]],[[1067]],[0],[06052019],[30]
-693,Marigot,,Saint Martin,Country not found,North America,18.0668544,-63.0848869,0.0,5700,31496,0.0,0.0,0.0,0.0,0.0,[SUo43a8HS4g],[[0]],[[1259]],[[1473]],[0],[06052019],[30]
+693,Marigot,,Saint Martin,Country not found,North America,18.0668544,-63.0848869,0.0,5700.0,31496.0,0.0,0.0,0.0,0.0,0.0,"[SUo43a8HS4g,tItevXXD1Zg]","[[0], [0, 0]]","[[1259], [77, 232]]","[[1473], [228, 465]]","[0,0]","[6052019,28102021]","[30.0,30.0]"
+694,Simpson Bay,,Sint Maarten,Country not found,North America,18.0396777,-63.0972367,0.0,0.0,73777.0,0.0,0.0,0.0,0.0,0.0,[jjMf9ZjBxTM],[[0]],[[216]],[[703]],[0],[11052021],[30]
+695,Maho,,Sint Maarten,Country not found,North America,18.0472081,-63.1242907,0.0,0.0,73777.0,0.0,0.0,0.0,0.0,0.0,[jjMf9ZjBxTM],[[0]],[[902]],[[1280]],[0],[11052021],[30]
+696,Sandy Ground,,Saint Martin,Country not found,North America,18.0580902,-63.1000249,0.0,0.0,31496,0.0,0.0,0.0,0.0,0.0,[jjMf9ZjBxTM],[[0]],[[1726]],[[2213]],[0],[11052021],[30]
