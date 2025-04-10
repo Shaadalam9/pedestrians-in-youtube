@@ -689,3 +689,6 @@ id,city,state,country,iso3,continent,lat,lon,gmp,population_city,population_coun
 688,Saint-François,,Guadeloupe,GLP,North America,16.2532002,-61.2750706,0.0,12732.0,400132.0,0.0,0.0,0.0,0.0,0.0,[JQ-f11EGmBo],[[0]],[[198]],[[490]],[0],[29112022],[30]
 689,Philipsburg,,Sint Maarten,Country not found,North America,18.0250713,-63.0483073,0.0,1894.0,58477.0,0.0,0.0,0.0,0.0,0.0,"[XYF5lvDGHHo,cmpCF1BOUDE]","[[0, 0, 0], [0]]","[[598, 758, 1187], [608]]","[[725, 1033, 1233], [1995]]","[0,0]","[18022018,19092018]","[30.0,30.0]"
 690,Pelican Key,,Sint Maarten,Country not found,North America,18.028465,-63.0922417,0.0,0.0,58477.0,0.0,0.0,0.0,0.0,0.0,[cmpCF1BOUDE],[[0]],[[79]],[[423]],[0],[19092018],[30]
+691,Lowlands,,Sint Maarten,Country not found,Africa,18.0503567,-63.1290296,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,[SUo43a8HS4g],[[0]],[[0]],[[338]],[0],[06052019],[30]
+692,Terres-Basses,,Saint Martin,Country not found,North America,18.067045,-63.138943,0.0,9419.0,31496.0,0.0,0.0,0.0,0.0,0.0,[SUo43a8HS4g],[[0]],[[488]],[[1067]],[0],[06052019],[30]
+693,Marigot,,Saint Martin,Country not found,North America,18.0668544,-63.0848869,0.0,5700,31496,0.0,0.0,0.0,0.0,0.0,[SUo43a8HS4g],[[0]],[[1259]],[[1473]],[0],[06052019],[30]
