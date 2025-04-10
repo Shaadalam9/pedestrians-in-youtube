@@ -687,4 +687,5 @@ id,city,state,country,iso3,continent,lat,lon,gmp,population_city,population_coun
 686,Deshaies,,Guadeloupe,GLP,North America,16.3061627,-61.7938974,0.0,3792.0,400132.0,0.0,0.0,0.0,0.0,0.0,[DbneXFHYKJk],[[0]],[[1098]],[[1251]],[0],[25032025],[30]
 687,Le Moule,,Guadeloupe,GLP,North America,16.3316709,-61.3476233,0.0,22692.0,400132.0,0.0,0.0,0.0,0.0,0.0,[JQ-f11EGmBo],[[0]],[[926]],[[1558]],[0],[29112022],[30]
 688,Saint-François,,Guadeloupe,GLP,North America,16.2532002,-61.2750706,0.0,12732.0,400132.0,0.0,0.0,0.0,0.0,0.0,[JQ-f11EGmBo],[[0]],[[198]],[[490]],[0],[29112022],[30]
-689,Philipsburg,,Sint Maarten,Country not found,North America,18.0250713,-63.0483073,0.0,1894.0,58477.0,0.0,0.0,0.0,0.0,0.0,[XYF5lvDGHHo],"[[0, 0, 0]]","[[598, 758, 1187]]","[[725, 1033, 1233]]",[0],[18022018],[30.0]
+689,Philipsburg,,Sint Maarten,Country not found,North America,18.0250713,-63.0483073,0.0,1894.0,58477.0,0.0,0.0,0.0,0.0,0.0,"[XYF5lvDGHHo,cmpCF1BOUDE]","[[0, 0, 0], [0]]","[[598, 758, 1187], [608]]","[[725, 1033, 1233], [1995]]","[0,0]","[18022018,19092018]","[30.0,30.0]"
+690,Pelican Key,,Sint Maarten,Country not found,North America,18.028465,-63.0922417,0.0,0.0,58477.0,0.0,0.0,0.0,0.0,0.0,[cmpCF1BOUDE],[[0]],[[79]],[[423]],[0],[19092018],[30]
