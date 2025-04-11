@@ -8,7 +8,9 @@ from logmod import logs
 logs(show_level=common.get_configs("logger_level"), show_color=True)
 logger = CustomLogger(__name__)  # use custom logger
 
-for filename in os.listdir(common.get_configs('data')):
+folders = common.get_configs('data')
+
+for filename in os.listdir(folders[-1]):  # use last folder
     if filename.endswith(".csv"):
         file_path = os.path.join(common.get_configs('data'), filename)
         try:
