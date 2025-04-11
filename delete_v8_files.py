@@ -12,7 +12,7 @@ folders = common.get_configs('data')
 
 for filename in os.listdir(folders[-1]):  # use last folder
     if filename.endswith(".csv"):
-        file_path = os.path.join(common.get_configs('data'), filename)
+        file_path = os.path.join(folders[-1], filename)
         try:
             df = pd.read_csv(file_path)
 
