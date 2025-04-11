@@ -707,3 +707,4 @@ id,city,state,country,iso3,continent,lat,lon,gmp,population_city,population_coun
 706,West End Village,,Anguilla,AIA,North America,18.1734379,-63.1451941,0.0,0.0,13452.0,0.0,0.0,0.0,0.0,0.0,[TIrm1kVaR_8],[[0]],[[20]],[[205]],[0],[10082016],[30]
 707,East End,,British Virgin Islands,Country not found,North America,18.4411609,-64.5569031,0.0,0.0,30030.0,0.0,0.0,0.0,0.0,0.0,[tK8Tj_XXLHY],[[0]],[[0]],[[141]],[0],[21082020],[30]
 708,Whitehall Estate,,Cayman Islands,CYM,North America,19.3150248,-81.3827132,0.0,0.0,65720.0,0.0,99.0,0.0,0.0,0.0,[pLn_QX7VpPM],"[[0, 0]]","[[23, 512]]","[[484, 1168]]",[0],[9062021],[30.0]
+709,George Town,,Cayman Islands,CYM,North America,19.2953549,-81.3807776,0.0,29370,65720,0.0,99,0.0,0.0,0.0,[AZJVdhRSjVg],[[0]],[[15]],[[1941]],[0],[05092024],[30]
