@@ -6,6 +6,7 @@ _output/
 video/
 videos/
 data/
+data-bkp/
 source_videos/
 
 # Model files
