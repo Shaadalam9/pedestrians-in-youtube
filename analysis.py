@@ -42,9 +42,7 @@ bar_colour_3 = 'rgb(204, 235, 197)'
 bar_colour_4 = 'rgb(222, 203, 228)'
 
 # Consts
-SAVE_PNG = True
-SAVE_EPS = True
-BASE_HEIGHT_PER_ROW = 20  # Adjust as needed
+BASE_HEIGHT_PER_ROW = 22  # Adjust as needed
 FLAG_SIZE = 12
 TEXT_SIZE = 12
 SCALE = 1  # scale=3 hangs often
@@ -114,7 +112,8 @@ class Analysis():
         return num_groups
 
     @staticmethod
-    def save_plotly_figure(fig, filename, width=1600, height=900, scale=SCALE, save_final=True):
+    def save_plotly_figure(fig, filename, width=1600, height=900, scale=SCALE, save_final=True, save_png=True,
+                           save_eps=True):
         """Saves a Plotly figure as HTML, PNG, SVG, and EPS formats.
 
         Args:
@@ -140,7 +139,7 @@ class Analysis():
 
         try:
             # Save as PNG
-            if SAVE_PNG:
+            if save_png:
                 logger.info(f"Saving png file for {filename}.")
                 fig.write_image(os.path.join(output_folder, filename + ".png"), width=width, height=height,
                                 scale=scale)
@@ -150,7 +149,7 @@ class Analysis():
                                 os.path.join(output_final, filename + ".png"))
 
             # Save as EPS
-            if SAVE_EPS:
+            if save_eps:
                 logger.info(f"Saving eps file for {filename}.")
                 fig.write_image(os.path.join(output_folder, filename + ".eps"), width=width, height=height)
                 # also save the final figure
@@ -1697,7 +1696,7 @@ class Analysis():
         # Final adjustments and display
         fig.update_layout(margin=dict(l=80, r=100, t=150, b=180))
         Analysis.save_plotly_figure(fig, "consolidated", height=TALL_FIG_HEIGHT*2, width=4960, scale=SCALE,
-                                    save_final=True)
+                                    save_final=True, save_eps=False)
 
     @staticmethod
     def plot_speed_to_cross_by_alphabetical_order(df_mapping):
