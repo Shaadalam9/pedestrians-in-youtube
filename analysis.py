@@ -4165,7 +4165,7 @@ class Analysis():
                 marker_size=None, pretty_text=False, marginal_x='violin', marginal_y='violin', xaxis_title=None,
                 yaxis_title=None, xaxis_range=None, yaxis_range=None, name_file=None, save_file=False,
                 save_final=False, fig_save_width=1320, fig_save_height=680, font_family=None, font_size=None,
-                hover_name=None, legend_title=None):
+                hover_name=None, legend_title=None, legend_x=None, legend_y=None, label_distance_factor=1.0):
         """
         Output scatter plot of variables x and y with optional assignment of colour and size.
 
@@ -4196,6 +4196,9 @@ class Analysis():
             font_size (int, optional): font size to be used across the figure. None = use config value.
             hover_name (list, optional): title on top of hover popup.
             legend_title (list, optional): title on top of legend.
+            legend_x (float, optional): x position of legend.
+            legend_y (float, optional): y position of legend.
+            label_distance_factor (float, optional): multiplier for the threshold to control density of text labels.
         """
         logger.info('Creating scatter plot for x={} and y={}.', x, y)
         # using size and marker_size is not supported
@@ -4241,18 +4244,21 @@ class Analysis():
         # check and clean the data
         df = df.replace([np.inf, -np.inf], np.nan).dropna()  # Remove NaNs and Infs
 
-        if text == 'city':
-            # use KDTree to check point density
-            tree = KDTree(df[[x, y]].values)  # Ensure finite values
-            distances, _ = tree.query(df[[x, y]].values, k=2)  # Find nearest neighbor distance
+        if text:
+            if text in df.columns:
+                # use KDTree to check point density
+                tree = KDTree(df[[x, y]].values)  # Ensure finite values
+                distances, _ = tree.query(df[[x, y]].values, k=2)  # Find nearest neighbor distance
 
-            # define a distance threshold for labeling
-            threshold = np.mean(distances[:, 1])
+                # define a distance threshold for labeling
+                threshold = np.mean(distances[:, 1]) * label_distance_factor
 
-            # only label points that are not too close to others
-            df["display_label"] = np.where(distances[:, 1] > threshold, df["city"], "")
+                # only label points that are not too close to others
+                df["display_label"] = np.where(distances[:, 1] > threshold, df[text], "")
 
-            text = "display_label"
+                text = "display_label"
+            else:
+                logger.warning("Column 'country' not found, skipping display_label logic.")
 
         # scatter plot with histograms
         with warnings.catch_warnings():
@@ -4303,6 +4309,9 @@ class Analysis():
         else:
             # use value from config file
             fig.update_layout(font=dict(size=common.get_configs('font_size')))
+        # legend
+        if legend_x and legend_y:
+            fig.update_layout(legend=dict(x=legend_x, y=legend_y, bgcolor='rgba(0,0,0,0)'))
         # save file to local output folder
         if save_file:
             # build filename
