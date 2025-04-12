@@ -20,10 +20,6 @@ __pycache__/
 *.pyc
 *.egg-info/
 
-# Scripts
-run_download.py
-check.py
-
 # macOS specific files
 **/.DS_Store
 
@@ -35,7 +31,6 @@ check.py
 config
 secret
 mapping_queue.csv
-last_updated_pytube.txt
 
 # Pickle files
 *.pickle
