@@ -4115,6 +4115,7 @@ class Analysis():
     def iso2_to_flag(iso2):
         if iso2 is None:
             # Return a placeholder or an empty string if the ISO-2 code is not available
+            logger.debug("Set ISO-2 to Kosovo.")
             return "🇽🇰"
         return chr(ord('🇦') + (ord(iso2[0]) - ord('A'))) + chr(ord('🇦') + (ord(iso2[1]) - ord('A')))
 
