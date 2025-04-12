@@ -42,7 +42,7 @@ bar_colour_3 = 'rgb(204, 235, 197)'
 bar_colour_4 = 'rgb(222, 203, 228)'
 
 # Consts
-BASE_HEIGHT_PER_ROW = 22  # Adjust as needed
+BASE_HEIGHT_PER_ROW = 20  # Adjust as needed
 FLAG_SIZE = 12
 TEXT_SIZE = 12
 SCALE = 1  # scale=3 hangs often
