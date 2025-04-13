@@ -1092,9 +1092,10 @@ class Analysis():
         return final
 
     # Plotting functions:
-
+    # todo: xtick and labels shown incorrectly
     @staticmethod
-    def speed_and_time_to_start_cross(df_mapping):
+    def speed_and_time_to_start_cross(df_mapping, font_size_captions=40, x_axis_title_height=150, legend_x=0.81,
+                                      legend_y=0.98, legend_spacing=0.02):
         logger.info("Plotting speed_and_time_to_start_cross")
         final_dict = {}
         with open(file_results, 'rb') as file:
@@ -1488,8 +1489,8 @@ class Analysis():
 
         # Set the x-axis labels (title_text) only for the last row and the first row
         fig.update_xaxes(
-            title=dict(text="Crossing speed (m/s)", font=dict(size=40)),
-            tickfont=dict(size=40),
+            title=dict(text="Mean speed of crossing (in m/s)", font=dict(size=font_size_captions)),
+            tickfont=dict(size=font_size_captions),
             ticks='outside',
             ticklen=10,
             tickwidth=2,
@@ -1498,8 +1499,8 @@ class Analysis():
             col=1
         )
         fig.update_xaxes(
-            title=dict(text="Crossing speed (m/s)", font=dict(size=40)),
-            tickfont=dict(size=40),
+            title=dict(text="Mean speed of crossing (in m/s)", font=dict(size=font_size_captions)),
+            tickfont=dict(size=font_size_captions),
             ticks='outside',
             ticklen=10,
             tickwidth=2,
@@ -1508,8 +1509,8 @@ class Analysis():
             col=2
         )
         fig.update_xaxes(
-            title=dict(text="Crossing decision time (s)", font=dict(size=40)),
-            tickfont=dict(size=40),
+            title=dict(text="Mean time to start crossing (in s)", font=dict(size=font_size_captions)),
+            tickfont=dict(size=font_size_captions),
             ticks='outside',
             ticklen=10,
             tickwidth=2,
@@ -1519,8 +1520,8 @@ class Analysis():
         )
 
         fig.update_xaxes(
-            title=dict(text="Crossing decision time (s)", font=dict(size=40)),
-            tickfont=dict(size=40),
+            title=dict(text="Mean time to start crossing (in s)", font=dict(size=font_size_captions)),
+            tickfont=dict(size=font_size_captions),
             ticks='outside',
             ticklen=10,
             tickwidth=2,
@@ -1573,13 +1574,9 @@ class Analysis():
             {"name": "Crossing decision time during night time", "color": bar_colour_4},
         ]
 
-        # Add vertical legends with the positions you will provide
-        x_legend_position = 0.84  # Position close to the left edge
-        y_legend_start_bottom = 0.98  # Lower position to the bottom left corner
-
         # Add the vertical legends at the top and bottom
-        Analysis.add_vertical_legend_annotations(fig, legend_items, x_position=x_legend_position - 0.03,
-                                                 y_start=y_legend_start_bottom + 0.02, spacing=0.007, font_size=40)
+        Analysis.add_vertical_legend_annotations(fig, legend_items, x_position=legend_x, y_start=legend_y,
+                                                 spacing=legend_spacing,font_size=font_size_captions)
 
         # # Add a box around the legend
         # fig.add_shape(
@@ -1694,12 +1691,14 @@ class Analysis():
         fig.update_layout(font=dict(family=common.get_configs('font_family')))
 
         # Final adjustments and display
-        fig.update_layout(margin=dict(l=80, r=100, t=150, b=180))
+        # todo: eps export hands
+        fig.update_layout(margin=dict(l=80, r=80, t=x_axis_title_height, b=x_axis_title_height))
         Analysis.save_plotly_figure(fig, "consolidated", height=TALL_FIG_HEIGHT*2, width=4960, scale=SCALE,
                                     save_final=True, save_eps=False)
 
     @staticmethod
-    def plot_speed_to_cross_by_alphabetical_order(df_mapping):
+    def plot_speed_to_cross_by_alphabetical_order(df_mapping, font_size_captions=40, x_axis_title_height=110,
+                                                  legend_x=0.92, legend_y=0.015, legend_spacing=0.02):
         logger.info("Plotting plot_speed_to_cross_by_alphabetical_order")
         final_dict = {}
         with open(file_results, 'rb') as file:
@@ -1877,8 +1876,8 @@ class Analysis():
 
         # Set the x-axis labels (title_text) only for the last row and the first row
         fig.update_xaxes(
-            title=dict(text="Crossing speed (m/s)", font=dict(size=40)),
-            tickfont=dict(size=40),
+            title=dict(text="Mean speed of crossing (in m/s)", font=dict(size=font_size_captions)),
+            tickfont=dict(size=font_size_captions),
             ticks='outside',
             ticklen=10,
             tickwidth=2,
@@ -1888,8 +1887,8 @@ class Analysis():
         )
 
         fig.update_xaxes(
-            title=dict(text="Crossing speed (m/s)", font=dict(size=40)),
-            tickfont=dict(size=40),
+            title=dict(text="Mean speed of crossing (in m/s)", font=dict(size=font_size_captions)),
+            tickfont=dict(size=font_size_captions),
             ticks='outside',
             ticklen=10,
             tickwidth=2,
@@ -1939,13 +1938,9 @@ class Analysis():
             {"name": "Night", "color": bar_colour_2},
         ]
 
-        # Add vertical legends with the positions you will provide
-        x_legend_position = 0.92  # Position close to the left edge
-        y_legend_start_bottom = 0.02  # Lower position to the bottom left corner
-
         # Add the vertical legends at the top and bottom
-        Analysis.add_vertical_legend_annotations(fig, legend_items, x_position=x_legend_position,
-                                                 y_start=y_legend_start_bottom, spacing=0.015, font_size=40)
+        Analysis.add_vertical_legend_annotations(fig, legend_items, x_position=legend_x,
+                                                 y_start=legend_y, spacing=legend_spacing, font_size=font_size_captions)
 
         # # Add a box around the legend
         # fig.add_shape(
@@ -2060,7 +2055,7 @@ class Analysis():
         fig.update_layout(font=dict(family=common.get_configs('font_family')))
 
         # Final adjustments and display
-        fig.update_layout(margin=dict(l=80, r=80, t=110, b=10))
+        fig.update_layout(margin=dict(l=80, r=80, t=x_axis_title_height, b=10))
         Analysis.save_plotly_figure(fig=fig,
                                     filename="crossing_speed_alphabetical",
                                     width=2480,
@@ -2082,7 +2077,8 @@ class Analysis():
             )
 
     @staticmethod
-    def plot_time_to_start_cross_by_alphabetical_order(df_mapping):
+    def plot_time_to_start_cross_by_alphabetical_order(df_mapping, font_size_captions=40, x_axis_title_height=110,
+                                                       legend_x=0.92, legend_y=0.02, legend_spacing=0.01):
         logger.info("Plotting plot_time_to_start_cross_by_alphabetical_order.")
         final_dict = {}
         with open(file_results, 'rb') as file:
@@ -2260,8 +2256,8 @@ class Analysis():
 
         # Set the x-axis labels (title_text) only for the last row and the first row
         fig.update_xaxes(
-            title=dict(text="Crossing decision time (s)", font=dict(size=40)),
-            tickfont=dict(size=40),
+            title=dict(text="Mean time to start crossing (in s)", font=dict(size=font_size_captions)),
+            tickfont=dict(size=font_size_captions),
             ticks='outside',
             ticklen=10,
             tickwidth=2,
@@ -2271,8 +2267,8 @@ class Analysis():
         )
 
         fig.update_xaxes(
-            title=dict(text="Crossing decision time (s)", font=dict(size=40)),
-            tickfont=dict(size=40),
+            title=dict(text="Mean time to start crossing (in s)", font=dict(size=font_size_captions)),
+            tickfont=dict(size=font_size_captions),
             ticks='outside',
             ticklen=10,
             tickwidth=2,
@@ -2322,13 +2318,9 @@ class Analysis():
             {"name": "Night", "color": bar_colour_2},
         ]
 
-        # Add vertical legends with the positions you will provide
-        x_legend_position = 0.92  # Position close to the left edge
-        y_legend_start_bottom = 0.02  # Lower position to the bottom left corner
-
         # Add the vertical legends at the top and bottom
-        Analysis.add_vertical_legend_annotations(fig, legend_items, x_position=x_legend_position,
-                                                 y_start=y_legend_start_bottom, spacing=0.015, font_size=40)
+        Analysis.add_vertical_legend_annotations(fig, legend_items, x_position=legend_x,
+                                                 y_start=legend_y, spacing=legend_spacing, font_size=font_size_captions)
 
         # # Add a box around the legend
         # fig.add_shape(
@@ -2443,7 +2435,7 @@ class Analysis():
         fig.update_layout(font=dict(family=common.get_configs('font_family')))
 
         # Final adjustments and display
-        fig.update_layout(margin=dict(l=80, r=80, t=110, b=10))
+        fig.update_layout(margin=dict(l=80, r=80, t=x_axis_title_height, b=10))
         Analysis.save_plotly_figure(fig=fig,
                                     filename="time_crossing_alphabetical",
                                     width=2480,
@@ -2452,7 +2444,8 @@ class Analysis():
                                     save_final=True)
 
     @staticmethod
-    def plot_speed_to_cross_by_average(df_mapping):
+    def plot_speed_to_cross_by_average(df_mapping, font_size_captions=40, x_axis_title_height=150, legend_x=0.81,
+                                       legend_y=0.98, legend_spacing=0.02):
         logger.info("Plotting plot_speed_to_cross_by_average.")
         final_dict = {}
         with open(file_results, 'rb') as file:
@@ -2634,8 +2627,8 @@ class Analysis():
 
         # Set the x-axis labels (title_text) only for the last row and the first row
         fig.update_xaxes(
-            title=dict(text="Crossing speed (m/s)", font=dict(size=40)),
-            tickfont=dict(size=40),
+            title=dict(text="Mean speed of crossing (in m/s)", font=dict(size=font_size_captions)),
+            tickfont=dict(size=font_size_captions),
             ticks='outside',
             ticklen=10,
             tickwidth=2,
@@ -2645,8 +2638,8 @@ class Analysis():
         )
 
         fig.update_xaxes(
-            title=dict(text="Crossing speed (m/s)", font=dict(size=40)),
-            tickfont=dict(size=40),
+            title=dict(text="Mean speed of crossing (in m/s)", font=dict(size=font_size_captions)),
+            tickfont=dict(size=font_size_captions),
             ticks='outside',
             ticklen=10,
             tickwidth=2,
@@ -2696,13 +2689,9 @@ class Analysis():
             {"name": "Night", "color": bar_colour_2},
         ]
 
-        # Add vertical legends with the positions you will provide
-        x_legend_position = 0.92  # Position close to the left edge
-        y_legend_start_bottom = 0.02  # Lower position to the bottom left corner
-
         # Add the vertical legends at the top and bottom
-        Analysis.add_vertical_legend_annotations(fig, legend_items, x_position=x_legend_position,
-                                                 y_start=y_legend_start_bottom, spacing=0.015, font_size=40)
+        Analysis.add_vertical_legend_annotations(fig, legend_items, x_position=legend_x,
+                                                 y_start=legend_y, spacing=legend_spacing, font_size=font_size_captions)
 
         # # Add a box around the legend
         # fig.add_shape(
@@ -2779,12 +2768,13 @@ class Analysis():
         fig.update_layout(font=dict(family=common.get_configs('font_family')))
 
         # Final adjustments and display
-        fig.update_layout(margin=dict(l=10, r=10, t=150, b=10))
+        fig.update_layout(margin=dict(l=10, r=10, t=x_axis_title_height, b=10))
         Analysis.save_plotly_figure(fig, "crossing_speed_avg", width=2400, height=TALL_FIG_HEIGHT, scale=SCALE,
                                     save_final=True)
 
     @staticmethod
-    def plot_time_to_start_cross_by_average(df_mapping):
+    def plot_time_to_start_cross_by_average(df_mapping, font_size_captions=40, x_axis_title_height=110,
+                                            legend_x=0.81, legend_y=0.98, legend_spacing=0.02):
         logger.info("Plotting plot_time_to_start_cross_by_average.")
         final_dict = {}
         with open(file_results, 'rb') as file:
@@ -2955,8 +2945,8 @@ class Analysis():
 
         # Set the x-axis labels (title_text) only for the last row and the first row
         fig.update_xaxes(
-            title=dict(text="Crossing decision time (s)", font=dict(size=40)),
-            tickfont=dict(size=40),
+            title=dict(text="Mean time to start crossing (in s)", font=dict(size=font_size_captions)),
+            tickfont=dict(size=font_size_captions),
             ticks='outside',
             ticklen=10,
             tickwidth=2,
@@ -2966,8 +2956,8 @@ class Analysis():
         )
 
         fig.update_xaxes(
-            title=dict(text="Crossing decision time (s)", font=dict(size=40)),
-            tickfont=dict(size=40),
+            title=dict(text="Mean time to start crossing (in s)", font=dict(size=font_size_captions)),
+            tickfont=dict(size=font_size_captions),
             ticks='outside',
             ticklen=10,
             tickwidth=2,
@@ -3017,13 +3007,9 @@ class Analysis():
             {"name": "Night", "color": bar_colour_2},
         ]
 
-        # Add vertical legends with the positions you will provide
-        x_legend_position = 0.92  # Position close to the left edge
-        y_legend_start_bottom = 0.02  # Lower position to the bottom left corner
-
         # Add the vertical legends at the top and bottom
-        Analysis.add_vertical_legend_annotations(fig, legend_items, x_position=x_legend_position,
-                                                 y_start=y_legend_start_bottom, spacing=0.015, font_size=40)
+        Analysis.add_vertical_legend_annotations(fig, legend_items, x_position=legend_x,
+                                                 y_start=legend_y, spacing=legend_spacing, font_size=font_size_captions)
 
         # # Add a box around the legend
         # fig.add_shape(
@@ -3100,7 +3086,7 @@ class Analysis():
         fig.update_layout(font=dict(family=common.get_configs('font_family')))
 
         # Final adjustments and display
-        fig.update_layout(margin=dict(l=10, r=10, t=150, b=10))
+        fig.update_layout(margin=dict(l=10, r=10, t=x_axis_title_height, b=10))
         Analysis.save_plotly_figure(fig, "time_crossing_avg", width=2400, height=TALL_FIG_HEIGHT, scale=SCALE,
                                     save_final=True)
 
@@ -3111,7 +3097,7 @@ class Analysis():
         return sum(valid_values) / len(valid_values) if valid_values else 0
 
     @staticmethod
-    def plot_crossing_without_traffic_light(df_mapping):
+    def plot_crossing_without_traffic_light(df_mapping, font_size_captions=40, x_axis_title_height=150):
         final_dict = {}
         with open(file_results, 'rb') as file:
             data_tuple = pickle.load(file)
@@ -3294,11 +3280,11 @@ class Analysis():
 
         # Set the x-axis labels (title_text) only for the last row and the first row
         fig.update_xaxes(title=dict(text="Road crossings without traffic signals (normalised)", font=dict(size=40)),
-                         tickfont=dict(size=40), ticks='outside', ticklen=10, tickwidth=2,
+                         tickfont=dict(size=font_size_captions), ticks='outside', ticklen=10, tickwidth=2,
                          tickcolor='black', row=1, col=1)
 
         fig.update_xaxes(title=dict(text="Road crossings without traffic signals (normalised)", font=dict(size=40)),
-                         tickfont=dict(size=40), ticks='outside', ticklen=10, tickwidth=2,
+                         tickfont=dict(size=font_size_captions), ticks='outside', ticklen=10, tickwidth=2,
                          tickcolor='black', row=1, col=2)
 
         # Update both y-axes (for left and right columns) to hide the tick labels
@@ -3414,12 +3400,12 @@ class Analysis():
         fig.update_layout(font=dict(family=common.get_configs('font_family')))
 
         # Final adjustments and display
-        fig.update_layout(margin=dict(l=80, r=100, t=150, b=180))
+        fig.update_layout(margin=dict(l=80, r=100, t=x_axis_title_height, b=180))
         Analysis.save_plotly_figure(fig, "crossings_without_traffic_equipment_avg",
                                     width=2480, height=TALL_FIG_HEIGHT, scale=SCALE, save_final=True)
 
     @staticmethod
-    def plot_crossing_with_traffic_light(df_mapping):
+    def plot_crossing_with_traffic_light(df_mapping, font_size_captions=40, x_axis_title_height=150):
         final_dict = {}
         with open(file_results, 'rb') as file:
             data_tuple = pickle.load(file)
@@ -3605,11 +3591,11 @@ class Analysis():
 
         # Set the x-axis labels (title_text) only for the last row and the first row
         fig.update_xaxes(title=dict(text="Road crossings with traffic signals (normalised)", font=dict(size=40)),
-                         tickfont=dict(size=40), ticks='outside', ticklen=10, tickwidth=2,
+                         tickfont=dict(size=font_size_captions), ticks='outside', ticklen=10, tickwidth=2,
                          tickcolor='black', row=1, col=1)
 
         fig.update_xaxes(title=dict(text="Road crossings with traffic signals (normalised)", font=dict(size=40)),
-                         tickfont=dict(size=40), ticks='outside', ticklen=10, tickwidth=2,
+                         tickfont=dict(size=font_size_captions), ticks='outside', ticklen=10, tickwidth=2,
                          tickcolor='black', row=1, col=2)
 
         # Update both y-axes (for left and right columns) to hide the tick labels
@@ -3736,7 +3722,7 @@ class Analysis():
         fig.update_layout(font=dict(family=common.get_configs('font_family')))
 
         # Final adjustments and display
-        fig.update_layout(margin=dict(l=80, r=100, t=150, b=180))
+        fig.update_layout(margin=dict(l=80, r=100, t=x_axis_title_height, b=180))
         Analysis.save_plotly_figure(fig, "crossings_with_traffic_equipment_avg", width=2480, height=TALL_FIG_HEIGHT,
                                     scale=SCALE, save_final=True)
 
@@ -4749,337 +4735,367 @@ if __name__ == "__main__":
     # Analysis.get_world_map(df_mapping)
     df = df_mapping.copy()  # copy df to manipulate for output
     df['state'] = df['state'].fillna('NA')  # Set state to NA
-    Analysis.get_mapbox_map(df=df, hover_data=hover_data)  # mapbox map
-    Analysis.get_world_map(df_mapping=df)  # map with countries
+    # Analysis.get_mapbox_map(df=df, hover_data=hover_data)  # mapbox map
+    # Analysis.get_world_map(df_mapping=df)  # map with countries
 
     # Amount of footage
-    Analysis.scatter(df=df,
-                     x="total_time",
-                     y="person",
-                     color="continent",
-                     text="city",
-                     xaxis_title='Total time of footage (s)',
-                     yaxis_title='Number of detected pedestrians',
-                     pretty_text=False,
-                     save_file=True,
-                     hover_data=hover_data,
-                     hover_name="city",
-                     legend_title="",
-                     marginal_x=None,  # type: ignore
-                     marginal_y=None)  # type: ignore
+    # Analysis.scatter(df=df,
+    #                  x="total_time",
+    #                  y="person",
+    #                  color="continent",
+    #                  text="city",
+    #                  xaxis_title='Total time of footage (s)',
+    #                  yaxis_title='Number of detected pedestrians',
+    #                  pretty_text=False,
+    #                  save_file=True,
+    #                  hover_data=hover_data,
+    #                  hover_name="city",
+    #                  legend_title="",
+    #                  legend_x=0.87,
+    #                  legend_y=0.05,
+    #                  marginal_x=None,  # type: ignore
+    #                  marginal_y=None)  # type: ignore
 
-    Analysis.speed_and_time_to_start_cross(df_mapping)
-    Analysis.plot_speed_to_cross_by_alphabetical_order(df_mapping)
-    Analysis.plot_time_to_start_cross_by_alphabetical_order(df_mapping)
-    Analysis.plot_speed_to_cross_by_average(df_mapping)
-    Analysis.plot_time_to_start_cross_by_average(df_mapping)
-    Analysis.correlation_matrix(df_mapping)
+    # todo: ISO-3 codes next to figures shift. need to correct once "final" dataset is online
+    Analysis.speed_and_time_to_start_cross(df_mapping,
+                                           x_axis_title_height=110,
+                                           font_size_captions=common.get_configs("font_size") + 8,
+                                           legend_x=0.9,
+                                           legend_y=0.01,
+                                           legend_spacing=0.0026)
+    Analysis.plot_speed_to_cross_by_alphabetical_order(df_mapping,
+                                                       x_axis_title_height=60,
+                                                       font_size_captions=common.get_configs("font_size"),
+                                                       legend_x=0.97,
+                                                       legend_y=1.0,
+                                                       legend_spacing=0.004)
+    Analysis.plot_time_to_start_cross_by_alphabetical_order(df_mapping,
+                                                            x_axis_title_height=60,
+                                                            font_size_captions=common.get_configs("font_size"),
+                                                            legend_x=0.97,
+                                                            legend_y=1.0,
+                                                            legend_spacing=0.004)
+    Analysis.plot_speed_to_cross_by_average(df_mapping,
+                                            x_axis_title_height=60,
+                                            font_size_captions=common.get_configs("font_size"),
+                                            legend_x=0.97,
+                                            legend_y=1.0,
+                                            legend_spacing=0.004)
+    Analysis.plot_time_to_start_cross_by_average(df_mapping,
+                                                 x_axis_title_height=60,
+                                                 font_size_captions=common.get_configs("font_size"),
+                                                 legend_x=0.97,
+                                                 legend_y=1.0,
+                                                 legend_spacing=0.004)
+    # Analysis.correlation_matrix(df_mapping)
 
-    # Speed of crossing vs time to start crossing
-    df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
-    df = df[df["time_crossing"] != 0]
-    df['state'] = df['state'].fillna('NA')
-    Analysis.scatter(df=df,
-                     x="speed_crossing",
-                     y="time_crossing",
-                     color="continent",
-                     text="city",
-                     xaxis_title='Crossing speed (in m/s)',
-                     yaxis_title='Crossing decision time (in s)',
-                     pretty_text=False,
-                     save_file=True,
-                     hover_data=hover_data,
-                     hover_name="city",
-                     legend_title="",
-                     marginal_x=None,  # type: ignore
-                     marginal_y=None)  # type: ignore
+    # # Speed of crossing vs time to start crossing
+    # df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
+    # df = df[df["time_crossing"] != 0]
+    # df['state'] = df['state'].fillna('NA')
+    # Analysis.scatter(df=df,
+    #                  x="speed_crossing",
+    #                  y="time_crossing",
+    #                  color="continent",
+    #                  text="city",
+    #                  xaxis_title='Mean speed of crossing (in m/s)',
+    #                  yaxis_title='Mean time to start crossing (in s)',
+    #                  pretty_text=False,
+    #                  save_file=True,
+    #                  hover_data=hover_data,
+    #                  hover_name="city",
+    #                  legend_title="",
+    #                  legend_x=0.87,
+    #                  legend_y=1.0,
+    #                  marginal_x=None,  # type: ignore
+    #                  marginal_y=None)  # type: ignore
 
-    # Speed of crossing during daytime vs time to start crossing during daytime
-    df = df_mapping[df_mapping["speed_crossing_day"] != 0].copy()
-    df = df[df["time_crossing_day"] != 0]
-    df['state'] = df['state'].fillna('NA')
-    Analysis.scatter(df=df,
-                     x="speed_crossing_day",
-                     y="time_crossing_day",
-                     color="continent",
-                     text="city",
-                     xaxis_title='Crossing speed during daytime (in m/s)',
-                     yaxis_title='Crossing decision time during daytime (in s)',
-                     pretty_text=False,
-                     save_file=True,
-                     hover_data=hover_data,
-                     hover_name="city",
-                     legend_title="",
-                     marginal_x=None,  # type: ignore
-                     marginal_y=None)  # type: ignore
+    # # Speed of crossing during daytime vs time to start crossing during daytime
+    # df = df_mapping[df_mapping["speed_crossing_day"] != 0].copy()
+    # df = df[df["time_crossing_day"] != 0]
+    # df['state'] = df['state'].fillna('NA')
+    # Analysis.scatter(df=df,
+    #                  x="speed_crossing_day",
+    #                  y="time_crossing_day",
+    #                  color="continent",
+    #                  text="city",
+    #                  xaxis_title='Crossing speed during daytime (in m/s)',
+    #                  yaxis_title='Crossing decision time during daytime (in s)',
+    #                  pretty_text=False,
+    #                  save_file=True,
+    #                  hover_data=hover_data,
+    #                  hover_name="city",
+    #                  legend_title="",
+    #                  marginal_x=None,  # type: ignore
+    #                  marginal_y=None)  # type: ignore
 
-    # Speed of crossing during night time vs time to start crossing during night time
-    df = df_mapping[df_mapping["speed_crossing_night"] != 0].copy()
-    df = df[df["time_crossing_night"] != 0]
-    df['state'] = df['state'].fillna('NA')
-    Analysis.scatter(df=df,
-                     x="speed_crossing_night",
-                     y="time_crossing_night",
-                     color="continent",
-                     text="city",
-                     xaxis_title='Crossing speed during night time (in m/s)',
-                     yaxis_title='Crossing decision time during night time (in s)',
-                     pretty_text=False,
-                     save_file=True,
-                     hover_data=hover_data,
-                     hover_name="city",
-                     legend_title="",
-                     marginal_x=None,  # type: ignore
-                     marginal_y=None)  # type: ignore
+    # # Speed of crossing during night time vs time to start crossing during night time
+    # df = df_mapping[df_mapping["speed_crossing_night"] != 0].copy()
+    # df = df[df["time_crossing_night"] != 0]
+    # df['state'] = df['state'].fillna('NA')
+    # Analysis.scatter(df=df,
+    #                  x="speed_crossing_night",
+    #                  y="time_crossing_night",
+    #                  color="continent",
+    #                  text="city",
+    #                  xaxis_title='Crossing speed during night time (in m/s)',
+    #                  yaxis_title='Crossing decision time during night time (in s)',
+    #                  pretty_text=False,
+    #                  save_file=True,
+    #                  hover_data=hover_data,
+    #                  hover_name="city",
+    #                  legend_title="",
+    #                  marginal_x=None,  # type: ignore
+    #                  marginal_y=None)  # type: ignore
 
-    # Time to start crossing vs population of city
-    df = df_mapping[df_mapping["time_crossing"] != 0].copy()
-    df = df[(df["population_city"].notna()) & (df["population_city"] != 0)]
-    df['state'] = df['state'].fillna('NA')
-    Analysis.scatter(df=df,
-                     x="time_crossing",
-                     y="population_city",
-                     color="continent",
-                     text="city",
-                     xaxis_title='Crossing decision time (in s)',
-                     yaxis_title='Population of city',
-                     pretty_text=False,
-                     save_file=True,
-                     hover_data=hover_data,
-                     hover_name="city",
-                     legend_title="",
-                     marginal_x=None,  # type: ignore
-                     marginal_y=None)  # type: ignore
+    # # Time to start crossing vs population of city
+    # df = df_mapping[df_mapping["time_crossing"] != 0].copy()
+    # df = df[(df["population_city"].notna()) & (df["population_city"] != 0)]
+    # df['state'] = df['state'].fillna('NA')
+    # Analysis.scatter(df=df,
+    #                  x="time_crossing",
+    #                  y="population_city",
+    #                  color="continent",
+    #                  text="city",
+    #                  xaxis_title='Mean time to start crossing (in s)',
+    #                  yaxis_title='Population of city',
+    #                  pretty_text=False,
+    #                  save_file=True,
+    #                  hover_data=hover_data,
+    #                  hover_name="city",
+    #                  legend_title="",
+    #                  marginal_x=None,  # type: ignore
+    #                  marginal_y=None)  # type: ignore
 
-    # Speed of crossing vs population of city
-    df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
-    df = df[(df["population_city"].notna()) & (df["population_city"] != 0)]
-    df['state'] = df['state'].fillna('NA')
-    Analysis.scatter(df=df,
-                     x="speed_crossing",
-                     y="population_city",
-                     color="continent",
-                     text="city",
-                     xaxis_title='Crossing speed (in m/s)',
-                     yaxis_title='Population of city',
-                     pretty_text=False,
-                     save_file=True,
-                     hover_data=hover_data,
-                     hover_name="city",
-                     legend_title="",
-                     marginal_x=None,  # type: ignore
-                     marginal_y=None)  # type: ignore
+    # # Speed of crossing vs population of city
+    # df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
+    # df = df[(df["population_city"].notna()) & (df["population_city"] != 0)]
+    # df['state'] = df['state'].fillna('NA')
+    # Analysis.scatter(df=df,
+    #                  x="speed_crossing",
+    #                  y="population_city",
+    #                  color="continent",
+    #                  text="city",
+    #                  xaxis_title='Mean speed of crossing (in m/s)',
+    #                  yaxis_title='Population of city',
+    #                  pretty_text=False,
+    #                  save_file=True,
+    #                  hover_data=hover_data,
+    #                  hover_name="city",
+    #                  legend_title="",
+    #                  marginal_x=None,  # type: ignore
+    #                  marginal_y=None)  # type: ignore
 
-    # Time to start crossing vs population of city
-    df = df_mapping[df_mapping["time_crossing"] != 0].copy()
-    df = df[(df["traffic_mortality"].notna()) & (df["traffic_mortality"] != 0)]
-    df['state'] = df['state'].fillna('NA')
-    Analysis.scatter(df=df,
-                     x="time_crossing",
-                     y="traffic_mortality",
-                     color="continent",
-                     text="city",
-                     xaxis_title='Crossing decision time (in s)',
-                     yaxis_title='National traffic mortality rate (per 100,000 of population)',
-                     pretty_text=False,
-                     save_file=True,
-                     hover_data=hover_data,
-                     hover_name="city",
-                     legend_title="",
-                     marginal_x=None,  # type: ignore
-                     marginal_y=None)  # type: ignore
+    # # Time to start crossing vs population of city
+    # df = df_mapping[df_mapping["time_crossing"] != 0].copy()
+    # df = df[(df["traffic_mortality"].notna()) & (df["traffic_mortality"] != 0)]
+    # df['state'] = df['state'].fillna('NA')
+    # Analysis.scatter(df=df,
+    #                  x="time_crossing",
+    #                  y="traffic_mortality",
+    #                  color="continent",
+    #                  text="city",
+    #                  xaxis_title='Mean time to start crossing (in s)',
+    #                  yaxis_title='National traffic mortality rate (per 100,000 of population)',
+    #                  pretty_text=False,
+    #                  save_file=True,
+    #                  hover_data=hover_data,
+    #                  hover_name="city",
+    #                  legend_title="",
+    #                  marginal_x=None,  # type: ignore
+    #                  marginal_y=None)  # type: ignore
 
-    # Speed of crossing vs population of city
-    df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
-    df = df[(df["traffic_mortality"].notna()) & (df["traffic_mortality"] != 0)]
-    df['state'] = df['state'].fillna('NA')
-    Analysis.scatter(df=df,
-                     x="speed_crossing",
-                     y="traffic_mortality",
-                     color="continent",
-                     text="city",
-                     xaxis_title='Crossing speed (in m/s)',
-                     yaxis_title='National traffic mortality rate (per 100,000 of population)',
-                     pretty_text=False,
-                     save_file=True,
-                     hover_data=hover_data,
-                     hover_name="city",
-                     legend_title="",
-                     marginal_x=None,  # type: ignore
-                     marginal_y=None)  # type: ignore
+    # # Speed of crossing vs population of city
+    # df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
+    # df = df[(df["traffic_mortality"].notna()) & (df["traffic_mortality"] != 0)]
+    # df['state'] = df['state'].fillna('NA')
+    # Analysis.scatter(df=df,
+    #                  x="speed_crossing",
+    #                  y="traffic_mortality",
+    #                  color="continent",
+    #                  text="city",
+    #                  xaxis_title='Mean speed of crossing (in m/s)',
+    #                  yaxis_title='National traffic mortality rate (per 100,000 of population)',
+    #                  pretty_text=False,
+    #                  save_file=True,
+    #                  hover_data=hover_data,
+    #                  hover_name="city",
+    #                  legend_title="",
+    #                  marginal_x=None,  # type: ignore
+    #                  marginal_y=None)  # type: ignore
 
-    # Time to start crossing vs population of city
-    df = df_mapping[df_mapping["time_crossing"] != 0].copy()
-    df = df[(df["literacy_rate"].notna()) & (df["literacy_rate"] != 0)]
-    df['state'] = df['state'].fillna('NA')
-    Analysis.scatter(df=df,
-                     x="time_crossing",
-                     y="literacy_rate",
-                     color="continent",
-                     text="city",
-                     xaxis_title='Crossing decision time (in s)',
-                     yaxis_title='Literacy rate',
-                     pretty_text=False,
-                     save_file=True,
-                     hover_data=hover_data,
-                     hover_name="city",
-                     legend_title="",
-                     marginal_x=None,  # type: ignore
-                     marginal_y=None)  # type: ignore
+    # # Time to start crossing vs population of city
+    # df = df_mapping[df_mapping["time_crossing"] != 0].copy()
+    # df = df[(df["literacy_rate"].notna()) & (df["literacy_rate"] != 0)]
+    # df['state'] = df['state'].fillna('NA')
+    # Analysis.scatter(df=df,
+    #                  x="time_crossing",
+    #                  y="literacy_rate",
+    #                  color="continent",
+    #                  text="city",
+    #                  xaxis_title='Mean time to start crossing (in s)',
+    #                  yaxis_title='Literacy rate',
+    #                  pretty_text=False,
+    #                  save_file=True,
+    #                  hover_data=hover_data,
+    #                  hover_name="city",
+    #                  legend_title="",
+    #                  marginal_x=None,  # type: ignore
+    #                  marginal_y=None)  # type: ignore
 
-    # Speed of crossing vs population of city
-    df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
-    df = df[(df["literacy_rate"].notna()) & (df["literacy_rate"] != 0)]
-    df['state'] = df['state'].fillna('NA')
-    Analysis.scatter(df=df,
-                     x="speed_crossing",
-                     y="literacy_rate",
-                     color="continent",
-                     text="city",
-                     xaxis_title='Crossing speed (in m/s)',
-                     yaxis_title='Literacy rate',
-                     pretty_text=False,
-                     save_file=True,
-                     hover_data=hover_data,
-                     hover_name="city",
-                     legend_title="",
-                     marginal_x=None,  # type: ignore
-                     marginal_y=None)  # type: ignore
+    # # Speed of crossing vs population of city
+    # df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
+    # df = df[(df["literacy_rate"].notna()) & (df["literacy_rate"] != 0)]
+    # df['state'] = df['state'].fillna('NA')
+    # Analysis.scatter(df=df,
+    #                  x="speed_crossing",
+    #                  y="literacy_rate",
+    #                  color="continent",
+    #                  text="city",
+    #                  xaxis_title='Mean speed of crossing (in m/s)',
+    #                  yaxis_title='Literacy rate',
+    #                  pretty_text=False,
+    #                  save_file=True,
+    #                  hover_data=hover_data,
+    #                  hover_name="city",
+    #                  legend_title="",
+    #                  marginal_x=None,  # type: ignore
+    #                  marginal_y=None)  # type: ignore
 
-    # Time to start crossing vs population of city
-    df = df_mapping[df_mapping["time_crossing"] != 0].copy()
-    df = df[(df["gini"].notna()) & (df["gini"] != 0)]
-    df['state'] = df['state'].fillna('NA')
-    Analysis.scatter(df=df,
-                     x="time_crossing",
-                     y="gini",
-                     color="continent",
-                     text="city",
-                     xaxis_title='Crossing decision time (in s)',
-                     yaxis_title='Gini coefficient',
-                     pretty_text=False,
-                     save_file=True,
-                     hover_data=hover_data,
-                     hover_name="city",
-                     legend_title="",
-                     marginal_x=None,  # type: ignore
-                     marginal_y=None)  # type: ignore
+    # # Time to start crossing vs population of city
+    # df = df_mapping[df_mapping["time_crossing"] != 0].copy()
+    # df = df[(df["gini"].notna()) & (df["gini"] != 0)]
+    # df['state'] = df['state'].fillna('NA')
+    # Analysis.scatter(df=df,
+    #                  x="time_crossing",
+    #                  y="gini",
+    #                  color="continent",
+    #                  text="city",
+    #                  xaxis_title='Mean time to start crossing (in s)',
+    #                  yaxis_title='Gini coefficient',
+    #                  pretty_text=False,
+    #                  save_file=True,
+    #                  hover_data=hover_data,
+    #                  hover_name="city",
+    #                  legend_title="",
+    #                  marginal_x=None,  # type: ignore
+    #                  marginal_y=None)  # type: ignore
 
-    # Speed of crossing vs population of city
-    df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
-    df = df[(df["gini"].notna()) & (df["gini"] != 0)]
-    df['state'] = df['state'].fillna('NA')
-    Analysis.scatter(df=df,
-                     x="speed_crossing",
-                     y="gini",
-                     color="continent",
-                     text="city",
-                     xaxis_title='Crossing speed (in m/s)',
-                     yaxis_title='Gini coefficient',
-                     pretty_text=False,
-                     save_file=True,
-                     hover_data=hover_data,
-                     hover_name="city",
-                     legend_title="",
-                     marginal_x=None,  # type: ignore
-                     marginal_y=None)  # type: ignore
+    # # Speed of crossing vs population of city
+    # df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
+    # df = df[(df["gini"].notna()) & (df["gini"] != 0)]
+    # df['state'] = df['state'].fillna('NA')
+    # Analysis.scatter(df=df,
+    #                  x="speed_crossing",
+    #                  y="gini",
+    #                  color="continent",
+    #                  text="city",
+    #                  xaxis_title='Mean speed of crossing (in m/s)',
+    #                  yaxis_title='Gini coefficient',
+    #                  pretty_text=False,
+    #                  save_file=True,
+    #                  hover_data=hover_data,
+    #                  hover_name="city",
+    #                  legend_title="",
+    #                  marginal_x=None,  # type: ignore
+    #                  marginal_y=None)  # type: ignore
 
-    # Time to start crossing vs population of city
-    df = df_mapping[df_mapping["time_crossing"] != 0].copy()
-    df = df[(df["traffic_index"].notna()) & (df["traffic_index"] != 0)]
-    df['state'] = df['state'].fillna('NA')
-    Analysis.scatter(df=df,
-                     x="time_crossing",
-                     y="traffic_index",
-                     color="continent",
-                     text="city",
-                     # size="gmp",
-                     xaxis_title='Crossing decision time (in s)',
-                     yaxis_title='Traffic index',
-                     pretty_text=False,
-                     save_file=True,
-                     hover_data=hover_data,
-                     hover_name="city",
-                     legend_title="",
-                     marginal_x=None,  # type: ignore
-                     marginal_y=None)  # type: ignore
+    # # Time to start crossing vs population of city
+    # df = df_mapping[df_mapping["time_crossing"] != 0].copy()
+    # df = df[(df["traffic_index"].notna()) & (df["traffic_index"] != 0)]
+    # df['state'] = df['state'].fillna('NA')
+    # Analysis.scatter(df=df,
+    #                  x="time_crossing",
+    #                  y="traffic_index",
+    #                  color="continent",
+    #                  text="city",
+    #                  # size="gmp",
+    #                  xaxis_title='Mean time to start crossing (in s)',
+    #                  yaxis_title='Traffic index',
+    #                  pretty_text=False,
+    #                  save_file=True,
+    #                  hover_data=hover_data,
+    #                  hover_name="city",
+    #                  legend_title="",
+    #                  marginal_x=None,  # type: ignore
+    #                  marginal_y=None)  # type: ignore
 
-    # Speed of crossing vs population of city
-    df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
-    df = df[df["traffic_index"] != 0]
-    df['state'] = df['state'].fillna('NA')
-    Analysis.scatter(df=df,
-                     x="speed_crossing",
-                     y="traffic_index",
-                     color="continent",
-                     text="city",
-                     xaxis_title='Crossing speed (in m/s)',
-                     yaxis_title='Traffic index',
-                     pretty_text=False,
-                     save_file=True,
-                     hover_data=hover_data,
-                     hover_name="city",
-                     legend_title="",
-                     marginal_x=None,  # type: ignore
-                     marginal_y=None)  # type: ignore
+    # # Speed of crossing vs population of city
+    # df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
+    # df = df[df["traffic_index"] != 0]
+    # df['state'] = df['state'].fillna('NA')
+    # Analysis.scatter(df=df,
+    #                  x="speed_crossing",
+    #                  y="traffic_index",
+    #                  color="continent",
+    #                  text="city",
+    #                  xaxis_title='Mean speed of crossing (in m/s)',
+    #                  yaxis_title='Traffic index',
+    #                  pretty_text=False,
+    #                  save_file=True,
+    #                  hover_data=hover_data,
+    #                  hover_name="city",
+    #                  legend_title="",
+    #                  marginal_x=None,  # type: ignore
+    #                  marginal_y=None)  # type: ignore
 
-    # Speed of crossing vs detected mobile phones
-    df = df_mapping[df_mapping["time_crossing"] != 0].copy()
-    df['state'] = df['state'].fillna('NA')
-    df['cellphone_normalised'] = df['cellphone'] / df['total_time']
-    Analysis.scatter(df=df,
-                     x="time_crossing",
-                     y="cellphone_normalised",
-                     color="continent",
-                     text="city",
-                     xaxis_title='Crossing decision time (in s)',
-                     yaxis_title='Mobile phones detected (normalised over time)',
-                     pretty_text=False,
-                     save_file=True,
-                     hover_data=hover_data,
-                     hover_name="city",
-                     legend_title="",
-                     marginal_x=None,  # type: ignore
-                     marginal_y=None)  # type: ignore
+    # # Speed of crossing vs detected mobile phones
+    # df = df_mapping[df_mapping["time_crossing"] != 0].copy()
+    # df['state'] = df['state'].fillna('NA')
+    # df['cellphone_normalised'] = df['cellphone'] / df['total_time']
+    # Analysis.scatter(df=df,
+    #                  x="time_crossing",
+    #                  y="cellphone_normalised",
+    #                  color="continent",
+    #                  text="city",
+    #                  xaxis_title='Mean time to start crossing (in s)',
+    #                  yaxis_title='Mobile phones detected (normalised over time)',
+    #                  pretty_text=False,
+    #                  save_file=True,
+    #                  hover_data=hover_data,
+    #                  hover_name="city",
+    #                  legend_title="",
+    #                  marginal_x=None,  # type: ignore
+    #                  marginal_y=None)  # type: ignore
 
-    # Speed of crossing vs detected mobile phones
-    df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
-    df['state'] = df['state'].fillna('NA')
-    df['cellphone_normalised'] = df['cellphone'] / df['total_time']
-    Analysis.scatter(df=df,
-                     x="speed_crossing",
-                     y="cellphone_normalised",
-                     color="continent",
-                     text="city",
-                     xaxis_title='Crossing speed (in m/s)',
-                     yaxis_title='Mobile phones detected (normalised over time)',
-                     pretty_text=False,
-                     save_file=True,
-                     hover_data=hover_data,
-                     hover_name="city",
-                     legend_title="",
-                     marginal_x=None,  # type: ignore
-                     marginal_y=None)  # type: ignore
+    # # Speed of crossing vs detected mobile phones
+    # df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
+    # df['state'] = df['state'].fillna('NA')
+    # df['cellphone_normalised'] = df['cellphone'] / df['total_time']
+    # Analysis.scatter(df=df,
+    #                  x="speed_crossing",
+    #                  y="cellphone_normalised",
+    #                  color="continent",
+    #                  text="city",
+    #                  xaxis_title='Mean speed of crossing (in m/s)',
+    #                  yaxis_title='Mobile phones detected (normalised over time)',
+    #                  pretty_text=False,
+    #                  save_file=True,
+    #                  hover_data=hover_data,
+    #                  hover_name="city",
+    #                  legend_title="",
+    #                  marginal_x=None,  # type: ignore
+    #                  marginal_y=None)  # type: ignore
 
-    # Jaywalking
-    Analysis.plot_crossing_without_traffic_light(df_mapping)
-    Analysis.plot_crossing_with_traffic_light(df_mapping)
-    # Crossing with and without traffic lights
-    df = df_mapping.copy()
-    df['state'] = df['state'].fillna('NA')
-    df['with_trf_light_norm'] = (df['with_trf_light_day'] + df['with_trf_light_night']) / df['total_time'] / df['population_city']  # noqa: E501
-    df['without_trf_light_norm'] = (df['without_trf_light_day'] + df['without_trf_light_night']) / df['total_time'] / df['population_city']  # noqa: E501
-    Analysis.scatter(df=df,
-                     x="with_trf_light_norm",
-                     y="without_trf_light_norm",
-                     color="continent",
-                     text="city",
-                     xaxis_title='Crossing events with traffic lights (normalised)',
-                     yaxis_title='Crossing events without traffic lights (normalised)',
-                     pretty_text=False,
-                     save_file=True,
-                     hover_data=hover_data,
-                     hover_name="city",
-                     legend_title="",
-                     marginal_x=None,  # type: ignore
-                     marginal_y=None)  # type: ignore
+    # # Jaywalking
+    # Analysis.plot_crossing_without_traffic_light(df_mapping)
+    # Analysis.plot_crossing_with_traffic_light(df_mapping)
+    # # Crossing with and without traffic lights
+    # df = df_mapping.copy()
+    # df['state'] = df['state'].fillna('NA')
+    # df['with_trf_light_norm'] = (df['with_trf_light_day'] + df['with_trf_light_night']) / df['total_time'] / df['population_city']  # noqa: E501
+    # df['without_trf_light_norm'] = (df['without_trf_light_day'] + df['without_trf_light_night']) / df['total_time'] / df['population_city']  # noqa: E501
+    # Analysis.scatter(df=df,
+    #                  x="with_trf_light_norm",
+    #                  y="without_trf_light_norm",
+    #                  color="continent",
+    #                  text="city",
+    #                  xaxis_title='Crossing events with traffic lights (normalised)',
+    #                  yaxis_title='Crossing events without traffic lights (normalised)',
+    #                  pretty_text=False,
+    #                  save_file=True,
+    #                  hover_data=hover_data,
+    #                  hover_name="city",
+    #                  legend_title="",
+    #                  marginal_x=None,  # type: ignore
+    #                  marginal_y=None)  # type: ignore
