@@ -720,3 +720,4 @@ id,city,state,country,iso3,continent,lat,lon,gmp,population_city,population_coun
 719,Georgetown,,Saint Vincent and the Grenadines,VCT,North America,13.287363,-61.11724,0.0,1680.0,110947.0,7.4,96.9,171.0,0.0,0.0,[MB7ZWu9IFCs],[[0]],[[3876]],[[4249]],[0],[26042022],[30]
 720,Sainte-Anne,,Guadeloupe,GLP,North America,16.225685,-61.3859128,0.0,22859.0,400132.0,0.0,0.0,0.0,0.0,22.92,"[6T-tVCiemOU,FVi-CP7z4hc]","[[0, 0], [0]]","[[8, 457], [1197]]","[[453, 710], [1523]]","[0,0]","[24032022,29012024]","[30.0,30.0]"
 721,Les Abymes,,Guadeloupe,GLP,North America,16.2706436,-61.5057749,0.0,53514.0,400132.0,0.0,0.0,0.0,0.0,0.0,[6rkQh8Gl-yg],"[[0, 0, 0]]","[[300, 714, 1110]]","[[473, 952, 1250]]",[0],[24092022],[30.0]
+722,Basse-Terre,,Guadeloupe,GLP,North America,16.0000778,-61.7333373,0.0,30837,400132,0.0,0.0,0.0,0.0,27.66,[nhkj1M1sCWo],[[0]],[[1441]],[[1645]],[0],[26032025],[30]
