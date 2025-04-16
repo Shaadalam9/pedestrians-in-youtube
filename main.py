@@ -23,7 +23,7 @@ while True:  # run this script loop forever
     output_path = common.get_configs("videos")[-1]  # use the last folder with videos to download
     delete_runs_files = common.get_configs("delete_runs_files")
     delete_youtube_video = common.get_configs("delete_youtube_video")
-    data_folder = common.get_configs("data")
+    data_folder = common.get_configs("data")[-1]  # use the last folder in the list to store data
     countries_analyse = common.get_configs("countries_analyse")
 
     if common.get_configs("check_missing_mapping"):
