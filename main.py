@@ -23,7 +23,8 @@ while True:  # run this script loop forever
     output_path = common.get_configs("videos")[-1]  # use the last folder with videos to download
     delete_runs_files = common.get_configs("delete_runs_files")
     delete_youtube_video = common.get_configs("delete_youtube_video")
-    data_folder = common.get_configs("data")[-1]  # use the last folder in the list to store data
+    data_folders = common.get_configs("data")  # use the last folder in the list to store data
+    data_path = common.get_configs("data")[-1]  # use the last folder in the list to store data
     countries_analyse = common.get_configs("countries_analyse")
 
     if common.get_configs("check_missing_mapping"):
@@ -92,7 +93,7 @@ while True:  # run this script loop forever
     helper.delete_folder(folder_path="runs")
 
     # create required directories
-    os.makedirs(data_folder, exist_ok=True)
+    os.makedirs(data_path, exist_ok=True)
 
     # Go over rows. Add progress bar.
     for index, row in tqdm(mapping.iterrows(), total=mapping.shape[0]):
@@ -167,10 +168,18 @@ while True:  # run this script loop forever
 
             for start_time, end_time, time_of_day_value in zip(start_times_list, end_times_list, time_of_day_list):
                 # Construct a unique file name for the trimmed segment
-                trimmed_file_path = os.path.join(data_folder, f'{vid}_{start_time}.csv')
+                trimmed_file_path = os.path.join(data_path, f'{vid}_{start_time}.csv')
+
+                # check if YOLO file is in any of the data folders
+                found_path = None
+                for folder in data_folders:
+                    path = os.path.join(folder, f'{vid}_{start_time}.csv')
+                    if os.path.isfile(path):
+                        found_path = path
+                        break
 
                 # If the YOLO output file already exists, skip processing for this segment
-                if os.path.isfile(trimmed_file_path) and (common.get_configs("prediction_mode") or common.get_configs("tracking_mode")):  # noqa: E501
+                if found_path and (common.get_configs("prediction_mode") or common.get_configs("tracking_mode")):  # noqa: E501
                     logger.info(f"{vid}: YOLO file {vid}_{start_time}.csv exists. Skipping segment.")
                     continue
 
@@ -212,7 +221,7 @@ while True:  # run this script loop forever
 
                     # Move the CSV file to the desired folder
                     if os.path.exists(new_file_path):
-                        shutil.move(new_file_path, data_folder)
+                        shutil.move(new_file_path, data_path)
                     else:
                         logger.error(f"{vid}: error: {new_file_path} does not exist.")
 
