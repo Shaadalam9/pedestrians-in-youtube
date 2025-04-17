@@ -4092,6 +4092,7 @@ class Analysis():
 
     @staticmethod
     def iso2_to_flag(iso2):
+        logger.debug(f"Converting iso2 {iso2} to flag.")
         if iso2 is None:
             # Return a placeholder or an empty string if the ISO-2 code is not available
             logger.debug("Set ISO-2 to Kosovo.")
@@ -4105,7 +4106,8 @@ class Analysis():
             country = pycountry.countries.get(alpha_3=iso3_code)
             # Return the ISO-2 code
             return country.alpha_2 if country else None
-        except AttributeError:
+        except AttributeError or LookupError as e:
+            logger.debug(f"Converting up ISO-3 {iso3_code} to ISO-2 returned error: {e}.")
             return None
 
     @staticmethod
