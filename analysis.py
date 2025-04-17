@@ -4259,7 +4259,9 @@ class Analysis():
                              marginal_y=marginal_y)
 
         # font size of text labels
-        fig.update_traces(textfont=dict(size=common.get_configs('font_size')))  # Adjust font size here
+        for trace in fig.data:
+            if trace.type == "scatter" and "text" in trace:
+                trace.textfont = dict(size=common.get_configs('font_size'))
 
         # location of labels
         if not marginal_x and not marginal_y:
