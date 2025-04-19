@@ -273,9 +273,6 @@ def form():
                     if state:
                         idx = df[(df['city'] == city) & (df['state'] == state) & (df['country'] == country)].index[0]
                     else:
-                        print(city, country)
-                        print(df['city'])
-                        print(df['country'])
                         idx = df[(df['city'] == city) & (df['country'] == country)].index[0]
                     # Get the list of videos for the city (and state) and country
                     videos_list = df.at[idx, 'videos'].split(',') if pd.notna(df.at[idx, 'videos']) else []
