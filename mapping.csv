@@ -766,3 +766,5 @@ id,city,state,country,iso3,continent,lat,lon,gmp,population_city,population_coun
 765,Lelu,,Micronesia,FSM,Oceania,5.3324023,163.0241705,0.0,1995.0,104468.0,0.0,0.0,0.0,0.0,0.0,[tJ29l0ED2mg],[[0]],[[1025]],[[1253]],[0],[28122013],[30]
 766,Kuala Belait,,Brunei,Country not found,Asia,4.5845101,114.1932373,0.0,4544.0,460345.0,0.0,0.0,0.0,0.0,0.0,[NGblxbSDiR0],[[1]],[[61]],[[245]],[0],[02052022],[30]
 767,Bandar Seri Begawan,,Brunei,Country not found,Asia,4.8895453,114.9417574,0.0,100700.0,460345.0,0.0,0.0,0.0,0.0,0.0,"[NGblxbSDiR0,R0yCPuZQIgA]","[[1], [0, 0, 0]]","[[1], [61, 690, 1236]]","[[246], [431, 733, 1283]]","[0,0]","[2052022,12052017]","[30.0,30.0]"
+768,Majuro,,Marshall Islands,MHL,Oceania,7.0909924,171.3816354,0.0,25400.0,59194.0,5.7,98.0,160.0,0.0,0.0,[zAzltPXn0OI],[[0]],[[618]],[[1240]],[0],[26062023],[30]
+769,Kampung Sungai Buloh,,Brunei,Country not found,Asia,4.9892364,115.0229602,0.0,3857,458949,0.0,0.0,0.0,0.0,0.0,[6eG2iLuB75M],[[0]],[[103]],[[875]],[0],[30112021],[30]
