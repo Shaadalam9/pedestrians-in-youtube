@@ -144,6 +144,8 @@ def correct_country(country):
         return 'Venezuela, Bolivarian Republic of'
     elif country == 'Bolivia':
         return 'Bolivia, Plurinational State of'
+    elif country == 'Laos':
+        return 'the Lao People\'s Democratic Republic'
     else:
         return country
 
