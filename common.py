@@ -100,24 +100,24 @@ def search_dict(dictionary, search_for, nested=False):
     return None
 
 
-def save_to_p(file, data, desription_data='data'):
+def save_to_p(file, data, description_data='data'):
     """
     Save data to a pickle file.
     """
     path = os.path.join(os.path.join(root_dir, 'trust'), file)
     with open(path, 'wb') as f:
         pickle.dump(data, f)
-    logger.info('Saved ' + desription_data + ' to pickle file {}.', file)
+    logger.info('Saved ' + description_data + ' to pickle file {}.', file)
 
 
-def load_from_p(file, desription_data='data'):
+def load_from_p(file, description_data='data'):
     """
     Load data from a pickle file.
     """
     path = os.path.join(os.path.join(root_dir, 'trust'), file)
     with open(path, 'rb') as f:
         data = pickle.load(f)
-    logger.info('Loaded ' + desription_data + ' from pickle file {}.',
+    logger.info('Loaded ' + description_data + ' from pickle file {}.',
                 file)
     return data
 

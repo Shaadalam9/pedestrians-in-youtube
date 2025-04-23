@@ -4711,12 +4711,13 @@ if __name__ == "__main__":
                          without_trf_light),         # 28
                         file)
         logger.info("Analysis results saved to pickle file.")
-
+    
     # Set index as ID
     df_mapping = df_mapping.set_index("id")
     # Sort by continent and city, both in ascending order
     df_mapping = df_mapping.sort_values(by=["continent", "city"], ascending=[True, True])
     # Save updated mapping file in output
+    os.makedirs(common.output_dir, exist_ok=True)  # check if folder
     df_mapping.to_csv(os.path.join(common.output_dir, "mapping_updated.csv"))
 
     logger.info("Detected:")
