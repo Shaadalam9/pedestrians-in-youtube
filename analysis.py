@@ -4112,7 +4112,7 @@ class Analysis():
 
     @staticmethod
     def find_city_id(df, video_id, start_time):
-        logger.debug(f"Looking for city for video_id={video_id}, start_time={start_time}.")
+        logger.debug(f"{video_id}: looking for city, start_time={start_time}.")
         for _, row in df.iterrows():
             videos = re.findall(r"[\w-]+", row["videos"])  # convert to list
             start_times = ast.literal_eval(row["start_time"])  # convert to list
