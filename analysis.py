@@ -987,7 +987,7 @@ class Analysis():
                                                                          0) + counter_nt_exists
         return counter_1, counter_2, time_
 
-    # todo: comnbine methods for looking at crossing events with/without traffic lights
+    # todo: combine methods for looking at crossing events with/without traffic lights
     @staticmethod
     def crossing_event_wt_traffic_light(df_mapping, dfs, data):
         """Plots traffic mortality rate vs percentage of crossing events without traffic light.
@@ -4442,8 +4442,13 @@ if __name__ == "__main__":
 
         logger.info("Loaded analysis results from pickle file.")
     else:
-        # Stores the mapping file
-        df_mapping = pd.read_csv("mapping.csv")
+        # Store the mapping file
+        df_mapping = pd.read_csv(common.get_configs("mapping"))
+        
+        # Limit countries if required
+        countries_include = common.get_configs("countries_analyse")
+        if countries_include:
+            df_mapping = df_mapping[df_mapping["iso3"].isin(common.get_configs("countries_analyse"))]
 
         pedestrian_crossing_count, data = {}, {}
         person_counter, bicycle_counter, car_counter, motorcycle_counter = 0, 0, 0, 0

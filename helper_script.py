@@ -370,6 +370,7 @@ class Youtube_Helper:
         video_clip = VideoFileClip(input_path).subclip(start_time, end_time)
 
         # Write the subclip to the specified output file using the 'libx264' codec for video and 'aac' for audio.
+        os.makedirs(output_path, exist_ok=True)  # check if folder exists
         video_clip.write_videofile(output_path, codec="libx264", audio_codec="aac")
 
         # Close the video clip to release any resources used.
@@ -1000,7 +1001,7 @@ class Youtube_Helper:
                         if len(track) > 30:  # retain 90 tracks for 90 frames
                             track.pop(0)
 
-                    # Draw the tracking lines
+                        # Draw the tracking lines
                         points = np.hstack(track).astype(np.int32).reshape((-1, 1, 2))
                         cv2.polylines(annotated_frame, [points], isClosed=False, color=(230, 230, 230),
                                       thickness=LINE_TICKNESS*5)
