@@ -150,6 +150,8 @@ def correct_country(country):
         return 'United Republic of Tanzania'
     elif country == 'Congo (Democratic Republic)':
         return 'Democratic Republic of the Congo'
+    elif country == 'Congo (Congo-Brazzaville)':
+        return 'Republic of the Congo'
     else:
         return country
 
