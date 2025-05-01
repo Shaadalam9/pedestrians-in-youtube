@@ -122,38 +122,86 @@ def load_from_p(file, description_data='data'):
     return data
 
 
+# def correct_country(country):
+#     """
+#     Get accurate country name.
+#     """
+#     if country == 'Russia':
+#         return 'Russian Federation'
+#     elif country == 'Syria':
+#         return 'Syrian Arab Republic'
+#     elif country == 'Korea' or country == 'South Korea':
+#         return 'Korea, Republic of'
+#     elif country == 'Taiwan':
+#         return 'Taiwan, Province of China'
+#     elif country == 'Turkiye' or country == 'Türkiye':
+#         return 'Turkey'
+#     elif country == 'Vietnam':
+#         return 'Viet Nam'
+#     elif country == 'Moldova':
+#         return 'Moldova, Republic of'
+#     elif country == 'Venezuela':
+#         return 'Venezuela, Bolivarian Republic of'
+#     elif country == 'Bolivia':
+#         return 'Bolivia, Plurinational State of'
+#     elif country == 'Laos':
+#         return 'the Lao People\'s Democratic Republic'
+#     elif country == 'Tanzania':
+#         return 'United Republic of Tanzania'
+#     elif country == 'Congo (Democratic Republic)':
+#         return 'Democratic Republic of the Congo'
+#     elif country == 'Congo (Congo-Brazzaville)':
+#         return 'Republic of the Congo'
+#     else:
+#         return country
+
 def correct_country(country):
     """
-    Get accurate country name.
+    Corrects common country name variations for compatibility with pycountry.countries.get(name=...).
     """
-    if country == 'Russia':
-        return 'Russian Federation'
-    elif country == 'Syria':
-        return 'Syrian Arab Republic'
-    elif country == 'Korea' or country == 'South Korea':
-        return 'Korea, Republic of'
-    elif country == 'Taiwan':
-        return 'Taiwan, Province of China'
-    elif country == 'Turkiye' or country == 'Türkiye':
-        return 'Turkey'
-    elif country == 'Vietnam':
-        return 'Viet Nam'
-    elif country == 'Moldova':
-        return 'Moldova, Republic of'
-    elif country == 'Venezuela':
-        return 'Venezuela, Bolivarian Republic of'
-    elif country == 'Bolivia':
-        return 'Bolivia, Plurinational State of'
-    elif country == 'Laos':
-        return 'the Lao People\'s Democratic Republic'
-    elif country == 'Tanzania':
-        return 'United Republic of Tanzania'
-    elif country == 'Congo (Democratic Republic)':
-        return 'Democratic Republic of the Congo'
-    elif country == 'Congo (Congo-Brazzaville)':
-        return 'Republic of the Congo'
-    else:
-        return country
+    corrections = {
+        'Russia': 'Russian Federation',
+        'Syria': 'Syrian Arab Republic',
+        'South Korea': 'Korea, Republic of',
+        'North Korea': "Korea, Democratic People's Republic of",
+        'Korea': 'Korea, Republic of',
+        'Iran': 'Iran, Islamic Republic of',
+        'Vietnam': 'Viet Nam',
+        'Venezuela': 'Venezuela, Bolivarian Republic of',
+        'Bolivia': 'Bolivia, Plurinational State of',
+        'Moldova': 'Moldova, Republic of',
+        'Laos': "Lao People's Democratic Republic",
+        'Brunei': 'Brunei Darussalam',
+        'Czech Republic': 'Czechia',
+        'Ivory Coast': "Côte d'Ivoire",
+        'Cape Verde': 'Cabo Verde',
+        'Swaziland': 'Eswatini',
+        'Macau': 'Macao',
+        'Taiwan': 'Taiwan, Province of China',
+        'Tanzania': 'Tanzania, United Republic of',
+        'United States': 'United States of America',
+        'UK': 'United Kingdom',
+        'Palestine': 'Palestine, State of',
+        'Micronesia': 'Micronesia, Federated States of',
+        'Bahamas': 'Bahamas, The',
+        'Gambia': 'Gambia, The',
+        'São Tomé and Príncipe': 'Sao Tome and Principe',
+        'Turkiye': 'Turkey',
+        'Türkiye': 'Turkey',
+        'Congo (Democratic Republic)': 'Congo, The Democratic Republic of the',
+        'Congo (Congo-Brazzaville)': 'Congo',
+        'Burma': 'Myanmar',
+        'East Timor': 'Timor-Leste',
+        'Saint Kitts': 'Saint Kitts and Nevis',
+        'Saint Vincent': 'Saint Vincent and the Grenadines',
+        'Saint Lucia': 'Saint Lucia',
+        'Antigua': 'Antigua and Barbuda',
+        'Trinidad': 'Trinidad and Tobago',
+        'Slovak Republic': 'Slovakia',
+        'Vatican': 'Holy See',
+    }
+
+    return corrections.get(country, country)
 
 
 # Fetch ISO-3 country data
@@ -162,12 +210,21 @@ def get_iso3_country_code(country_name):
         return 'XKX'
     try:
         country = pycountry.countries.get(name=country_name)
+        print(country_name)
         if country:
             return country.alpha_3  # ISO-3 code
         else:
             return "Country not found"
     except KeyError:
         return "Country not found"
+
+
+def iso3_to_country_name(iso3):
+    try:
+        country = pycountry.countries.get(alpha_3=iso3.upper())
+        return country.name if country else None
+    except KeyError:
+        return None
 
 
 # Fetch ISO-2 country data
