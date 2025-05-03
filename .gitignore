@@ -31,6 +31,7 @@ __pycache__/
 config
 secret
 mapping_queue.csv
+mapping-bkp.csv
 
 # Pickle files
 *.pickle
@@ -53,3 +54,4 @@ Dockerfile
 
 # log of upgrades
 upgrade_log.json
+
