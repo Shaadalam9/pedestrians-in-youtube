@@ -53,9 +53,9 @@ for col in list_columns:
 
 # process each mapping-NAME.csv
 for file in glob.glob('mapping-*.csv'):
-    if file == base_file:
+    if file == base_file or file == backup_file:
         continue
-
+    print(f"Working with {file}")
     new_df = pd.read_csv(file)
     for col in list_columns:
         if col in nested_list_columns:
