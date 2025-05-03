@@ -179,7 +179,7 @@ def correct_country(country):
         'Macau': 'Macao',
         'Taiwan': 'Taiwan, Province of China',
         'Tanzania': 'Tanzania, United Republic of',
-        'United States': 'United States of America',
+        # 'United States': 'United States of America',
         'UK': 'United Kingdom',
         'Palestine': 'Palestine, State of',
         'Micronesia': 'Micronesia, Federated States of',
