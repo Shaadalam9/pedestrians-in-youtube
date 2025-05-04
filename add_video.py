@@ -220,8 +220,6 @@ def form():
             fps_video = '30'
             vehicle_type_video = request.form.get('vehicle_type')
             time_of_day_video = request.form.get('time_of_day')
-            print(vehicle_type_video)
-            print(time_of_day_video)
             gini = request.form.get('gini')
             traffic_index = request.form.get('traffic_index')
 
@@ -430,6 +428,11 @@ def form():
 
     if not upload_date_video and yt_upload_date:
         upload_date_video = yt_upload_date.strftime('%d%m%Y')
+
+    # Cast to int for checks
+    vehicle_type_video = int(vehicle_type_video) if vehicle_type_video is not None else None
+    time_of_day_video = int(time_of_day_video) if time_of_day_video is not None else None
+
     return render_template(
         "add_video.html", message=message, df=df, city=city, country=country, state=state, video_url=video_url,
         video_id=video_id, existing_data=existing_data_row, fps_video=fps_video, upload_date_video=upload_date_video,
