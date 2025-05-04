@@ -184,7 +184,7 @@ def correct_country(country):
         'Palestine': 'Palestine, State of',
         'Micronesia': 'Micronesia, Federated States of',
         'Bahamas': 'Bahamas, The',
-        'Gambia': 'Gambia, The',
+        # 'Gambia': 'Gambia, The',
         'São Tomé and Príncipe': 'Sao Tome and Principe',
         'Turkiye': 'Turkey',
         'Türkiye': 'Turkey',
