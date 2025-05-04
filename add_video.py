@@ -68,10 +68,10 @@ def form():
     yt_title = ''
     yt_upload_date = ''
     yt_description = ''
-    vehicle_type_video = 0
     start_time_video = []
     end_time_video = []
     vehicle_type_video = 0
+    time_of_day_video = 0
 
     if request.method == 'POST':
         if 'fetch_data' in request.form:
@@ -219,6 +219,9 @@ def form():
             # fps_video = request.form.get('fps_video')
             fps_video = '30'
             vehicle_type_video = request.form.get('vehicle_type')
+            time_of_day_video = request.form.get('time_of_day')
+            print(vehicle_type_video)
+            print(time_of_day_video)
             gini = request.form.get('gini')
             traffic_index = request.form.get('traffic_index')
 
@@ -431,7 +434,8 @@ def form():
         "add_video.html", message=message, df=df, city=city, country=country, state=state, video_url=video_url,
         video_id=video_id, existing_data=existing_data_row, fps_video=fps_video, upload_date_video=upload_date_video,
         timestamp=end_time_input, yt_title=yt_title, yt_description=yt_description, yt_upload_date=yt_upload_date,
-        start_time_video=start_time_video, end_time_video=end_time_video
+        start_time_video=start_time_video, end_time_video=end_time_video, vehicle_type_video=vehicle_type_video,
+        time_of_day_video=time_of_day_video
     )
 
 
