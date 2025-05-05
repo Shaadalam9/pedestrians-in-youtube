@@ -247,9 +247,14 @@ class Analysis():
                     for s in start:
                         # Check if the start time matches the specified start time
                         if int(start_) == s:
+                            # Calculate gpd per capita to avoid division by zero
+                            if population > 0:
+                                gpd_capita = gdp/population
+                            else:
+                                gpd_capita = 0
                             # Return relevant information once found
                             return (video, s, end[counter], time_of_day_[counter], city, state,
-                                    country, (gdp/population), population, population_country,
+                                    country, gpd_capita, population, population_country,
                                     traffic_mortality, continent, literacy_rate, avg_height, iso3, fps)
                         counter += 1
 
@@ -1576,7 +1581,7 @@ class Analysis():
 
         # Add the vertical legends at the top and bottom
         Analysis.add_vertical_legend_annotations(fig, legend_items, x_position=legend_x, y_start=legend_y,
-                                                 spacing=legend_spacing,font_size=font_size_captions)
+                                                 spacing=legend_spacing, font_size=font_size_captions)
 
         # # Add a box around the legend
         # fig.add_shape(
@@ -1692,9 +1697,10 @@ class Analysis():
 
         # Final adjustments and display
         # todo: eps export hands
+        # todo: png export hands
         fig.update_layout(margin=dict(l=80, r=80, t=x_axis_title_height, b=x_axis_title_height))
         Analysis.save_plotly_figure(fig, "consolidated", height=TALL_FIG_HEIGHT*2, width=4960, scale=SCALE,
-                                    save_final=True, save_eps=False)
+                                    save_final=True, save_eps=False, save_png=False)
 
     @staticmethod
     def plot_speed_to_cross_by_alphabetical_order(df_mapping, font_size_captions=40, x_axis_title_height=110,
@@ -5141,39 +5147,39 @@ if __name__ == "__main__":
                      marginal_x=None,  # type: ignore
                      marginal_y=None)  # type: ignore
 
-    # Jaywalking
-    Analysis.plot_crossing_without_traffic_light(df_mapping,
-                                                 x_axis_title_height=60,
-                                                 font_size_captions=common.get_configs("font_size"),
-                                                 legend_x=0.97,
-                                                 legend_y=1.0,
-                                                 legend_spacing=0.004)
-    Analysis.plot_crossing_with_traffic_light(df_mapping,
-                                              x_axis_title_height=60,
-                                              font_size_captions=common.get_configs("font_size"),
-                                              legend_x=0.97,
-                                              legend_y=1.0,
-                                              legend_spacing=0.004)
-    # Crossing with and without traffic lights
-    df = df_mapping.copy()
-    df['state'] = df['state'].fillna('NA')
-    df['with_trf_light_norm'] = (df['with_trf_light_day'] + df['with_trf_light_night']) / df['total_time'] / df['population_city']  # noqa: E501
-    df['without_trf_light_norm'] = (df['without_trf_light_day'] + df['without_trf_light_night']) / df['total_time'] / df['population_city']  # noqa: E501
-    Analysis.scatter(df=df,
-                     x="with_trf_light_norm",
-                     y="without_trf_light_norm",
-                     color="continent",
-                     text="city",
-                     xaxis_title='Crossing events with traffic lights (normalised)',
-                     yaxis_title='Crossing events without traffic lights (normalised)',
-                     pretty_text=False,
-                     marker_size=10,
-                     save_file=True,
-                     hover_data=hover_data,
-                     hover_name="city",
-                     legend_title="",
-                     legend_x=0.87,
-                     legend_y=1.0,
-                     label_distance_factor=3.0,
-                     marginal_x=None,  # type: ignore
-                     marginal_y=None)  # type: ignore
+    # # Jaywalking
+    # Analysis.plot_crossing_without_traffic_light(df_mapping,
+    #                                              x_axis_title_height=60,
+    #                                              font_size_captions=common.get_configs("font_size"),
+    #                                              legend_x=0.97,
+    #                                              legend_y=1.0,
+    #                                              legend_spacing=0.004)
+    # Analysis.plot_crossing_with_traffic_light(df_mapping,
+    #                                           x_axis_title_height=60,
+    #                                           font_size_captions=common.get_configs("font_size"),
+    #                                           legend_x=0.97,
+    #                                           legend_y=1.0,
+    #                                           legend_spacing=0.004)
+    # # Crossing with and without traffic lights
+    # df = df_mapping.copy()
+    # df['state'] = df['state'].fillna('NA')
+    # df['with_trf_light_norm'] = (df['with_trf_light_day'] + df['with_trf_light_night']) / df['total_time'] / df['population_city']  # noqa: E501
+    # df['without_trf_light_norm'] = (df['without_trf_light_day'] + df['without_trf_light_night']) / df['total_time'] / df['population_city']  # noqa: E501
+    # Analysis.scatter(df=df,
+    #                  x="with_trf_light_norm",
+    #                  y="without_trf_light_norm",
+    #                  color="continent",
+    #                  text="city",
+    #                  xaxis_title='Crossing events with traffic lights (normalised)',
+    #                  yaxis_title='Crossing events without traffic lights (normalised)',
+    #                  pretty_text=False,
+    #                  marker_size=10,
+    #                  save_file=True,
+    #                  hover_data=hover_data,
+    #                  hover_name="city",
+    #                  legend_title="",
+    #                  legend_x=0.87,
+    #                  legend_y=1.0,
+    #                  label_distance_factor=3.0,
+    #                  marginal_x=None,  # type: ignore
+    #                  marginal_y=None)  # type: ignore
