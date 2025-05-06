@@ -243,3 +243,7 @@ while True:  # run this script loop forever
     sleep_sec = common.get_configs("sleep_sec")
     logger.info(f"Sleeping for {sleep_sec} before attempting to go over mapping again.")
     time.sleep(sleep_sec)
+
+    # Run git pull to get the latest changes in the mapping file
+    if common.get_configs("git_pull"):
+        common.git_pull()
