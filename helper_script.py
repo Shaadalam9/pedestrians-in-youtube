@@ -47,6 +47,21 @@ UPGRADE_LOG_FILE = "upgrade_log.json"
 
 
 class Youtube_Helper:
+    """
+    A helper class for managing YouTube video downloads, processing, and analytics.
+
+    Features:
+        - Downloads videos via pytube or yt_dlp with resolution preference.
+        - Handles video compression, trimming, and FPS extraction.
+        - Applies object detection and tracking using YOLO models.
+        - Updates and maintains CSV datasets with video metadata.
+        - Interfaces with World Bank data to supplement mapping files.
+
+    Attributes:
+        model (str): Path or identifier for the YOLO model to use.
+        resolution (str): Target resolution for downloaded videos.
+        video_title (str): Title of the currently processed video.
+    """
 
     def __init__(self, video_title=None):
         """
@@ -95,7 +110,12 @@ class Youtube_Helper:
 
     @staticmethod
     def load_upgrade_log():
-        """Loads the upgrade log from a file."""
+        """
+        Load package upgrade attempt log from file.
+
+        Returns:
+            dict: Dictionary with package names and last upgrade date.
+        """
         if not os.path.exists(UPGRADE_LOG_FILE):
             return {}
         try:
@@ -106,20 +126,38 @@ class Youtube_Helper:
 
     @staticmethod
     def save_upgrade_log(log_data):
-        """Saves the upgrade log to a file."""
+        """
+        Save package upgrade log to a JSON file.
+
+        Parameters:
+            log_data (dict): Dictionary of package upgrade dates.
+        """
         with open(UPGRADE_LOG_FILE, "w") as file:
             json.dump(log_data, file)
 
     @staticmethod
     def was_upgraded_today(package_name):
-        """Checks if the package was attempted to be upgraded today."""
+        """
+        Check whether the given package was already upgraded today.
+
+        Parameters:
+            package_name (str): Name of the package.
+
+        Returns:
+            bool: True if upgraded today, False otherwise.
+        """
         log_data = Youtube_Helper.load_upgrade_log()
         today = datetime.date.today().isoformat()
         return log_data.get(package_name) == today
 
     @staticmethod
     def mark_as_upgraded(package_name):
-        """Logs that a package upgrade was attempted today."""
+        """
+        Mark a package as upgraded by saving today's date in the log.
+
+        Parameters:
+            package_name (str): Name of the package.
+        """
         log_data = Youtube_Helper.load_upgrade_log()
         log_data[package_name] = datetime.date.today().isoformat()
         Youtube_Helper.save_upgrade_log(log_data)
@@ -480,6 +518,14 @@ class Youtube_Helper:
 
     @staticmethod
     def create_video_from_images(image_folder, output_video_path, frame_rate):
+        """
+        Creates a video file from a sequence of image frames.
+
+        Parameters:
+            image_folder (str): Folder containing frame images.
+            output_video_path (str): Path where the output video will be saved.
+            frame_rate (int or float): Frame rate for the video.
+        """
         images = [img for img in os.listdir(image_folder) if img.endswith(".jpg")]
 
         if not images:
@@ -509,6 +555,14 @@ class Youtube_Helper:
 
     @staticmethod
     def merge_txt_to_csv_dynamically(txt_location, output_csv, frame_count):
+        """
+        Merges YOLO-format label data from a .txt file into a CSV, frame by frame.
+
+        Parameters:
+            txt_location (str): Directory containing label .txt files.
+            output_csv (str): Path to the CSV file to update.
+            frame_count (int): Frame number being processed (used for naming).
+        """
         # Define the path for the new text file
         new_txt_file_name = os.path.join(txt_location, f"label_{frame_count}.txt")
 
@@ -556,6 +610,12 @@ class Youtube_Helper:
 
     @staticmethod
     def check_missing_mapping(mapping):
+        """
+        Checks the mapping DataFrame for missing CSV label files based on video ID and start time.
+
+        Parameters:
+            mapping (pd.DataFrame): DataFrame containing video IDs and start times.
+        """
         for index, row in mapping.iterrows():
             video_ids = [id.strip() for id in row["videos"].strip("[]").split(',')]
             start_times = ast.literal_eval(row["start_time"])
@@ -571,6 +631,16 @@ class Youtube_Helper:
 
     @staticmethod
     def get_iso_alpha_3(country_name, existing_iso):
+        """
+        Converts a country name to ISO 3166-1 alpha-3 format.
+
+        Parameters:
+            country_name (str): Full country name.
+            existing_iso (str): Existing ISO code as fallback.
+
+        Returns:
+            str or None: ISO 3166-1 alpha-3 code or fallback value.
+        """
         try:
             return pycountry.countries.lookup(country_name).alpha_3
         except LookupError:
@@ -580,6 +650,12 @@ class Youtube_Helper:
 
     @staticmethod
     def get_latest_population():
+        """
+        Fetches the latest available population data from World Bank.
+
+        Returns:
+            pd.DataFrame: Population data with columns ['iso3', 'Year', 'Population'].
+        """
         # Search for the population indicator
         indicator = 'SP.POP.TOTL'  # Total Population (World Bank indicator code)
 
@@ -603,6 +679,12 @@ class Youtube_Helper:
 
     @staticmethod
     def update_population_in_csv(data):
+        """
+        Updates the mapping DataFrame with the latest country population data.
+
+        Parameters:
+            data (pd.DataFrame): The mapping DataFrame to update.
+        """
 
         # Ensure the required columns exist in the CSV
         if "iso3" not in data.columns:
@@ -728,6 +810,15 @@ class Youtube_Helper:
 
     @staticmethod
     def get_upload_date(video_id):
+        """
+        Retrieves the upload date of a YouTube video given its video ID.
+
+        Parameters:
+            video_id (str): YouTube video ID.
+
+        Returns:
+            str or None: Upload date in 'ddmmyyyy' format or None if not retrievable.
+        """
         try:
             # Construct YouTube URL from video ID
             video_url = f"https://www.youtube.com/watch?v={video_id}"
@@ -877,6 +968,12 @@ class Youtube_Helper:
             logger.error(f"An error occurred: {e}")
 
     def prediction_mode(self):
+        """
+        Runs the YOLO object detection model on the video associated with this instance.
+
+        The prediction is performed using the configuration stored in the class instance.
+        The output is saved with annotations and optionally visualized.
+        """
         model = YOLO(self.model)
         model.predict(source=os.path.join(output_path, f"{self.video_title}.mp4"),
                       save=True,
@@ -888,6 +985,20 @@ class Youtube_Helper:
                       show_conf=SHOW_CONF)
 
     def tracking_mode(self, input_video_path, output_video_path, video_fps=25):
+        """
+        Performs object tracking on a video using YOLO and saves tracking results.
+
+        Parameters:
+            input_video_path (str): Path to the input video.
+            output_video_path (str): Path to save the final output video.
+            video_fps (int, optional): Frames per second for the output video (default is 25).
+
+        This function processes each frame:
+            - Runs YOLO tracking.
+            - Saves annotated frames and tracking data.
+            - Optionally displays the annotated video.
+            - Appends tracking labels to a CSV file.
+        """
         model = YOLO(self.model)
         cap = cv2.VideoCapture(input_video_path)
 
