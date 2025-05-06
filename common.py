@@ -220,6 +220,7 @@ def get_iso3_country_code(country_name):
         return "Country not found"
 
 
+# Convert ISO-3 to country name
 def iso3_to_country_name(iso3):
     try:
         country = pycountry.countries.get(alpha_3=iso3.upper())
@@ -242,6 +243,7 @@ def get_iso2_country_code(country_name):
         return "Country not found"
 
 
+# Pull changes from repository
 def git_pull():
     try:
         logger.info("Attempting to pull latest changes from git repository...")
