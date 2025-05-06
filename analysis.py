@@ -68,7 +68,7 @@ class Analysis():
 
         dfs = {}
         logger.info("reading csv files.")
-        
+
         for folder_path in folder_paths:
             if not os.path.exists(folder_path):
                 logger.warning(f"Folder does not exist: {folder_path}.")
@@ -1583,18 +1583,6 @@ class Analysis():
         Analysis.add_vertical_legend_annotations(fig, legend_items, x_position=legend_x, y_start=legend_y,
                                                  spacing=legend_spacing, font_size=font_size_captions)
 
-        # # Add a box around the legend
-        # fig.add_shape(
-        #     type="rect", xref="paper", yref="paper",
-        #     x0=x_legend_position,  # Adjust x0 to control the left edge of the box
-        #     y0=y_legend_start_bottom + 0.02,  # Adjust y0 to control the top of the box
-        #     x1=x_legend_position + 0.16,  # Adjust x1 to control the right edge of the box
-        #     # Adjust y1 to control the bottom of the box
-        #     y1=y_legend_start_bottom - len(legend_items) * 0.012 + 0.0395,
-        #     line=dict(color="black", width=2),  # Black border for the box
-        #     fillcolor="rgba(255,255,255,0.7)"  # White fill with transparency
-        # )
-
         # Add a box around the first column (left side)
         fig.add_shape(
             type="rect", xref="paper", yref="paper",
@@ -1945,20 +1933,11 @@ class Analysis():
         ]
 
         # Add the vertical legends at the top and bottom
-        Analysis.add_vertical_legend_annotations(fig, legend_items, x_position=legend_x,
-                                                 y_start=legend_y, spacing=legend_spacing, font_size=font_size_captions)
-
-        # # Add a box around the legend
-        # fig.add_shape(
-        #     type="rect", xref="paper", yref="paper",
-        #     x0=x_legend_position,  # Adjust x0 to control the left edge of the box
-        #     y0=y_legend_start_bottom + 0.02,  # Adjust y0 to control the top of the box
-        #     x1=x_legend_position + 0.06,  # Adjust x1 to control the right edge of the box
-        #     # Adjust y1 to control the bottom of the box
-        #     y1=y_legend_start_bottom - len(legend_items) * 0.03 + 0.0395,
-        #     line=dict(color="black", width=2),  # Black border for the box
-        #     fillcolor="rgba(255,255,255,0.7)"  # White fill with transparency
-        # )
+        Analysis.add_vertical_legend_annotations(fig, legend_items,
+                                                 x_position=legend_x,
+                                                 y_start=legend_y,
+                                                 spacing=legend_spacing,
+                                                 font_size=font_size_captions)
 
         # Add a box around the first column (left side)
         fig.add_shape(
@@ -2696,8 +2675,11 @@ class Analysis():
         ]
 
         # Add the vertical legends at the top and bottom
-        Analysis.add_vertical_legend_annotations(fig, legend_items, x_position=legend_x,
-                                                 y_start=legend_y, spacing=legend_spacing, font_size=font_size_captions)
+        Analysis.add_vertical_legend_annotations(fig, legend_items,
+                                                 x_position=legend_x,
+                                                 y_start=legend_y,
+                                                 spacing=legend_spacing,
+                                                 font_size=font_size_captions)
 
         # # Add a box around the legend
         # fig.add_shape(
@@ -3014,8 +2996,11 @@ class Analysis():
         ]
 
         # Add the vertical legends at the top and bottom
-        Analysis.add_vertical_legend_annotations(fig, legend_items, x_position=legend_x,
-                                                 y_start=legend_y, spacing=legend_spacing, font_size=font_size_captions)
+        Analysis.add_vertical_legend_annotations(fig, legend_items,
+                                                 x_position=legend_x,
+                                                 y_start=legend_y,
+                                                 spacing=legend_spacing,
+                                                 font_size=font_size_captions)
 
         # # Add a box around the legend
         # fig.add_shape(
@@ -4266,8 +4251,8 @@ class Analysis():
 
         # font size of text labels
         for trace in fig.data:
-            if trace.type == "scatter" and "text" in trace:
-                trace.textfont = dict(size=common.get_configs('font_size'))
+            if trace.type == "scatter" and "text" in trace:  # type: ignore
+                trace.textfont = dict(size=common.get_configs('font_size'))  # type: ignore
 
         # location of labels
         if not marginal_x and not marginal_y:
@@ -4450,7 +4435,7 @@ if __name__ == "__main__":
     else:
         # Store the mapping file
         df_mapping = pd.read_csv(common.get_configs("mapping"))
-        
+
         # Limit countries if required
         countries_include = common.get_configs("countries_analyse")
         if countries_include:
@@ -4722,7 +4707,7 @@ if __name__ == "__main__":
                          without_trf_light),         # 28
                         file)
         logger.info("Analysis results saved to pickle file.")
-    
+
     # Set index as ID
     df_mapping = df_mapping.set_index("id")
     # Sort by continent and city, both in ascending order
