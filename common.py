@@ -7,6 +7,7 @@ import pickle
 import sys
 import pycountry
 from custom_logger import CustomLogger
+import subprocess
 
 root_dir = os.path.dirname(__file__)
 cache_dir = os.path.join(root_dir, '_cache')
@@ -239,3 +240,12 @@ def get_iso2_country_code(country_name):
             return "Country not found"
     except KeyError:
         return "Country not found"
+
+
+def git_pull():
+    try:
+        logger.info("Attempting to pull latest changes from git repository...")
+        result = subprocess.run(["git", "pull"], capture_output=True, text=True, check=True)
+        logger.info(f"Git pull successful:\n{result.stdout}")
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Git pull failed with error:\n{e.stderr}")

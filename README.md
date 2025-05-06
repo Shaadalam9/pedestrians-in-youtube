@@ -86,7 +86,8 @@ Configuration of the project needs to be defined in `config`. Please use the `de
 - **`font_size`**: Specifies the font size to be used in outputs.
 - **`plotly_template`**: Defines the template for Plotly figures.
 - **`logger_level`**: Level of console output. Can be: debug, info, warning, error.
-- **`sleep_sec`**: Amount of seconds of pause between going over the mapping files.
+- **`sleep_sec`**: Amount of seconds of pause in the end of the loop in `main.py`.
+- **`git_pull`**: Pull changes from git repository in the end of the loop in `main.py`.
 
 For working with external APIs of [GeoNames](https://www.geonames.org), [BEA](https://apps.bea.gov/api/signup), [TomTom](https://developer.tomtom.com/user/register), [Trafikab](https://www.trafiklab.se/api/trafiklab-apis), and [Numbeo](https://www.numbeo.com/common/api.jsp) (paid), the API keys need to be placed in file `secret` (no extension) in the root of the project. The file needs to be formatted as `default.secret`. This is optional for just running the analysis on the dataset.
 
