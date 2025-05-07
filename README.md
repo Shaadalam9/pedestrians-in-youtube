@@ -144,14 +144,17 @@ Crossing decision time and crossing speed (sorted by countries). -->
 Total time of footage over number of detected pedestrians.
 
 ### Time to start crossing
-[![Crossing decision time (sorted by countries](figures/time_crossing_alphabetical.png?raw=true)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/time_crossing_alphabetical.html)
+[![Distribution of speed](figures/hist_Speed.png?raw=true)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/hist_Speed.html)
+Distribution of crossing speed in the dataset.
+
+[![Crossing decision time (sorted by countries)](figures/time_crossing_alphabetical.png?raw=true)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/time_crossing_alphabetical.html)
 Crossing decision time (sorted by countries).
 
 [![Crossing decision time (sorted by average of day and night)](figures/time_crossing_avg.png?raw=true)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/time_crossing_avg.html)
 Crossing decision time (sorted by average of day and night).
 
 ### Speed of crossing
-[![Crossing speed (sorted by countries](figures/crossing_speed_alphabetical.png?raw=true)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/crossing_speed_alphabetical.html)
+[![Crossing speed (sorted by countries)](figures/crossing_speed_alphabetical.png?raw=true)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/crossing_speed_alphabetical.html)
 Crossing speed (sorted by countries).
 
 [![Crossing speed (sorted by average of day and night)](figures/crossing_speed_avg.png?raw=true)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/crossing_speed_avg.html)

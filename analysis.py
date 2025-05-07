@@ -755,7 +755,7 @@ class Analysis():
     @staticmethod
     def calculate_speed_of_crossing(df_mapping, dfs, data, person_id=0):
         speed_dict = {}
-        time_ = []
+        time_, all_speed = [], []
         # Create a dictionary to store country information for each city
         city_country_map_ = {}
         # Iterate over each video data
@@ -789,6 +789,7 @@ class Analysis():
                     distance = (max_x_center - min_x_center) / ppm
 
                     speed_ = (distance / time) / 100
+                    all_speed.append(speed_)
 
                     # Taken from https://www.wikiwand.com/en/articles/Preferred_walking_speed
                     if speed_ > 1.42:  # Exclude outlier speeds
@@ -798,12 +799,12 @@ class Analysis():
                     else:
                         speed_dict[f'{city}_{state}_{condition}'] = [speed_]
 
-        return speed_dict
+        return speed_dict, all_speed
 
     @staticmethod
     def avg_speed_of_crossing(df_mapping, dfs, data):
 
-        speed_array = Analysis.calculate_speed_of_crossing(df_mapping, dfs, data)
+        speed_array, _ = Analysis.calculate_speed_of_crossing(df_mapping, dfs, data)
         avg_speed = {key: sum(values) / len(values) for key, values in speed_array.items()}
 
         return avg_speed
@@ -2307,18 +2308,6 @@ class Analysis():
         Analysis.add_vertical_legend_annotations(fig, legend_items, x_position=legend_x, y_start=legend_y,
                                                  spacing=legend_spacing, font_size=font_size_captions)
 
-        # # Add a box around the legend
-        # fig.add_shape(
-        #     type="rect", xref="paper", yref="paper",
-        #     x0=x_legend_position,  # Adjust x0 to control the left edge of the box
-        #     y0=y_legend_start_bottom + 0.02,  # Adjust y0 to control the top of the box
-        #     x1=x_legend_position + 0.06,  # Adjust x1 to control the right edge of the box
-        #     # Adjust y1 to control the bottom of the box
-        #     y1=y_legend_start_bottom - len(legend_items) * 0.03 + 0.0395,
-        #     line=dict(color="black", width=2),  # Black border for the box
-        #     fillcolor="rgba(255,255,255,0.7)"  # White fill with transparency
-        # )
-
         # Add a box around the first column (left side)
         fig.add_shape(
             type="rect", xref="paper", yref="paper",
@@ -2519,20 +2508,6 @@ class Analysis():
                     textposition='inside', insidetextanchor='start', showlegend=False,
                     text=[''], textfont=dict(size=14, color='white')), row=row, col=1)
 
-            # # add flag
-            # fig.add_annotation(
-            #     x=-0.012,  # Right column x position
-            #     y=row,  # Calculated y position based on the city order
-            #     xref="paper", yref="paper",
-            #     text=Analysis.iso2_to_flag(Analysis.iso3_to_iso2(country)),  # Country flag
-            #     showarrow=False,
-            #     font=dict(size=14, color="black"),
-            #     xanchor='left',
-            #     align='left',
-            #     bgcolor='rgba(255,255,255,0.8)',  # Background color for visibility
-            #     # bordercolor="black",  # Border for visibility
-            # )
-
         for i, city in enumerate(cities_ordered[num_cities_per_col:]):
             city_new, state = city.split('_')
             iso_code = Analysis.get_value(df_mapping, "city", city_new, "state", state, "iso3")
@@ -2680,18 +2655,6 @@ class Analysis():
                                                  y_start=legend_y,
                                                  spacing=legend_spacing,
                                                  font_size=font_size_captions)
-
-        # # Add a box around the legend
-        # fig.add_shape(
-        #     type="rect", xref="paper", yref="paper",
-        #     x0=x_legend_position,  # Adjust x0 to control the left edge of the box
-        #     y0=y_legend_start_bottom + 0.02,  # Adjust y0 to control the top of the box
-        #     x1=x_legend_position + 0.06,  # Adjust x1 to control the right edge of the box
-        #     # Adjust y1 to control the bottom of the box
-        #     y1=y_legend_start_bottom - len(legend_items) * 0.03 + 0.0395,
-        #     line=dict(color="black", width=2),  # Black border for the box
-        #     fillcolor="rgba(255,255,255,0.7)"  # White fill with transparency
-        # )
 
         # Add a box around the first column (left side)
         fig.add_shape(
@@ -4337,82 +4300,74 @@ class Analysis():
             return None, None  # Return None if city is not found
 
     @staticmethod
-    def hist(df, x, nbins=None, color=None, pretty_text=False, marginal='rug', xaxis_title=None,
-             yaxis_title=None, name_file=None, save_file=False, save_final=False, fig_save_width=1320,
-             fig_save_height=680, font_family=None, font_size=None):
+    def hist(data_index, name, nbins=None, color=None, pretty_text=False, marginal='rug',
+             xaxis_title=None, yaxis_title=None, name_file=None, save_file=False, save_final=False,
+             fig_save_width=1320, fig_save_height=680, font_family=None, font_size=None,
+             vlines=None, xrange=None):
         """
-        Output histogram of time of participation.
+        Output histogram of selected data from pickle file.
 
         Args:
-            df (dataframe): dataframe with data from heroku.
-            x (list): column names of dataframe to plot.
+            data_index (int): index of the item in the tuple to plot.
             nbins (int, optional): number of bins in histogram.
-            color (str, optional): dataframe column to assign colour of circles.
-            pretty_text (bool, optional): prettify ticks by replacing _ with spaces and capitalising each value.
-            marginal (str, optional): type of marginal on x axis. Can be 'histogram', 'rug', 'box', or 'violin'.
+            color (str, optional): dataframe column to assign colour of bars.
+            pretty_text (bool, optional): prettify ticks by replacing _ with spaces and capitalising.
+            marginal (str, optional): marginal type: 'histogram', 'rug', 'box', or 'violin'.
             xaxis_title (str, optional): title for x axis.
             yaxis_title (str, optional): title for y axis.
             name_file (str, optional): name of file to save.
-            save_file (bool, optional): flag for saving an html file with plot.
-            save_final (bool, optional): flag for saving an a final figure to /figures.
-            fig_save_width (int, optional): width of figures to be saved.
-            fig_save_height (int, optional): height of figures to be saved.
-            font_family (str, optional): font family to be used across the figure. None = use config value.
-            font_size (int, optional): font size to be used across the figure. None = use config value.
+            save_file (bool, optional): whether to save HTML file of the plot.
+            save_final (bool, optional): whether to save final figure to /figures.
+            fig_save_width (int, optional): width of saved figure.
+            fig_save_height (int, optional): height of saved figure.
+            font_family (str, optional): font family to use. Defaults to config.
+            font_size (int, optional): font size to use. Defaults to config.
         """
-        logger.info('Creating histogram for x={}.', x)
-        # using colour with multiple values to plot not supported
-        if color and len(x) > 1:
-            logger.error('Color property can be used only with a single variable to plot.')
-            return -1
-        # prettify ticks
-        if pretty_text:
-            for variable in x:
-                # check if column contains strings
-                if isinstance(df.iloc[0][variable], str):
-                    # replace underscores with spaces
-                    df[variable] = df[variable].str.replace('_', ' ')
-                    # capitalise
-                    df[variable] = df[variable].str.capitalize()
-            if color and isinstance(df.iloc[0][color], str):  # check if string
-                # replace underscores with spaces
-                df[color] = df[color].str.replace('_', ' ')
-                # capitalise
-                df[color] = df[color].str.capitalize()
-        # create figure
+
+        # Load data from pickle file
+        with open(file_results, 'rb') as file:
+            data_tuple = pickle.load(file)
+        all_values = data_tuple[data_index]
+
+        logger.info('Creating histogram for {}.', name)
+
+        # Restrict values to the specified x-range if provided
+        if xrange is not None:
+            x_min, x_max = xrange
+            all_values = [x for x in all_values if x_min <= x <= x_max]
+
+        # Create histogram
         if color:
-            fig = px.histogram(df[x], nbins=nbins, marginal=marginal, color=df[color])
+            fig = px.histogram(df, x=all_values, nbins=nbins, marginal=marginal, color=color)
         else:
-            fig = px.histogram(df[x], nbins=nbins, marginal=marginal)
-        # ticks as numbers
-        fig.update_layout(xaxis=dict(tickformat='digits'))
-        # update layout
-        fig.update_layout(template=common.get_configs('plotly_template'),
-                          xaxis_title=xaxis_title,
-                          yaxis_title=yaxis_title)
-        # update font family
-        if font_family:
-            # use given value
-            fig.update_layout(font=dict(family=font_family))
-        else:
-            # use value from config file
-            fig.update_layout(font=dict(family=common.get_configs('font_family')))
-        # update font size
-        if font_size:
-            # use given value
-            fig.update_layout(font=dict(size=font_size))
-        else:
-            # use value from config file
-            fig.update_layout(font=dict(size=common.get_configs('font_size')))
-        # save file to local output folder
+            fig = px.histogram(df, x=all_values, nbins=nbins, marginal=marginal)
+
+        fig.update_layout(
+            xaxis=dict(tickformat='digits'),
+            template=common.get_configs('plotly_template'),
+            xaxis_title=xaxis_title,
+            yaxis_title=yaxis_title,
+            font=dict(
+                family=font_family if font_family else common.get_configs('font_family'),
+                size=font_size if font_size else common.get_configs('font_size')
+            )
+        )
+
+        if vlines:
+            for x in vlines:
+                fig.add_vline(
+                    x=x,
+                    line_dash='dot',
+                    line_color='black',
+                    annotation_text=f'{x}',
+                    annotation_position='top'
+                )
+
         if save_file:
-            # build filename
             if not name_file:
-                name_file = 'hist_' + '-'.join(str(val) for val in x)
-            # Final adjustments and display
+                name_file = f"hist_{name}"
             fig.update_layout(margin=dict(l=10, r=10, t=10, b=10))
             Analysis.save_plotly_figure(fig, name_file, save_final=True)
-        # open it in localhost instead
         else:
             fig.show()
 
@@ -4429,7 +4384,7 @@ if __name__ == "__main__":
              pedestrian_cross_city, pedestrian_crossing_count, person_city, bicycle_city, car_city,
              motorcycle_city, bus_city, truck_city, cross_evnt_city, vehicle_city,
              cellphone_city, traffic_sign_city, speed_values, time_values, avg_time, avg_speed,
-             df_mapping, with_trf_light, without_trf_light) = pickle.load(file)
+             df_mapping, with_trf_light, without_trf_light, all_speed) = pickle.load(file)
 
         logger.info("Loaded analysis results from pickle file.")
     else:
@@ -4540,7 +4495,7 @@ if __name__ == "__main__":
 
         # Aggregated values
         logger.info("Calculating aggregated values for crossing speed.")
-        speed_values = Analysis.calculate_speed_of_crossing(df_mapping, dfs, data)
+        speed_values, all_speed = Analysis.calculate_speed_of_crossing(df_mapping, dfs, data)
         avg_speed = Analysis.avg_speed_of_crossing(df_mapping, dfs, data)
         # add to mapping file
         for key, value in tqdm(avg_speed.items(), total=len(avg_speed)):
@@ -4704,7 +4659,8 @@ if __name__ == "__main__":
                          avg_speed,                  # 25
                          df_mapping,                 # 26
                          with_trf_light,             # 27
-                         without_trf_light),         # 28
+                         without_trf_light,          # 28
+                         all_speed),                 # 29
                         file)
         logger.info("Analysis results saved to pickle file.")
 
@@ -4752,6 +4708,8 @@ if __name__ == "__main__":
                      label_distance_factor=5.0,
                      marginal_x=None,  # type: ignore
                      marginal_y=None)  # type: ignore
+
+    Analysis.hist(data_index=29, name="Speed", vlines=[1.42], save_file=True)
 
     # todo: ISO-3 codes next to figures shift. need to correct once "final" dataset is online
     Analysis.speed_and_time_to_start_cross(df_mapping,
@@ -5132,39 +5090,39 @@ if __name__ == "__main__":
                      marginal_x=None,  # type: ignore
                      marginal_y=None)  # type: ignore
 
-    # # Jaywalking
-    # Analysis.plot_crossing_without_traffic_light(df_mapping,
-    #                                              x_axis_title_height=60,
-    #                                              font_size_captions=common.get_configs("font_size"),
-    #                                              legend_x=0.97,
-    #                                              legend_y=1.0,
-    #                                              legend_spacing=0.004)
-    # Analysis.plot_crossing_with_traffic_light(df_mapping,
-    #                                           x_axis_title_height=60,
-    #                                           font_size_captions=common.get_configs("font_size"),
-    #                                           legend_x=0.97,
-    #                                           legend_y=1.0,
-    #                                           legend_spacing=0.004)
-    # # Crossing with and without traffic lights
-    # df = df_mapping.copy()
-    # df['state'] = df['state'].fillna('NA')
-    # df['with_trf_light_norm'] = (df['with_trf_light_day'] + df['with_trf_light_night']) / df['total_time'] / df['population_city']  # noqa: E501
-    # df['without_trf_light_norm'] = (df['without_trf_light_day'] + df['without_trf_light_night']) / df['total_time'] / df['population_city']  # noqa: E501
-    # Analysis.scatter(df=df,
-    #                  x="with_trf_light_norm",
-    #                  y="without_trf_light_norm",
-    #                  color="continent",
-    #                  text="city",
-    #                  xaxis_title='Crossing events with traffic lights (normalised)',
-    #                  yaxis_title='Crossing events without traffic lights (normalised)',
-    #                  pretty_text=False,
-    #                  marker_size=10,
-    #                  save_file=True,
-    #                  hover_data=hover_data,
-    #                  hover_name="city",
-    #                  legend_title="",
-    #                  legend_x=0.87,
-    #                  legend_y=1.0,
-    #                  label_distance_factor=3.0,
-    #                  marginal_x=None,  # type: ignore
-    #                  marginal_y=None)  # type: ignore
+    # Jaywalking
+    Analysis.plot_crossing_without_traffic_light(df_mapping,
+                                                 x_axis_title_height=60,
+                                                 font_size_captions=common.get_configs("font_size"),
+                                                 legend_x=0.97,
+                                                 legend_y=1.0,
+                                                 legend_spacing=0.004)
+    Analysis.plot_crossing_with_traffic_light(df_mapping,
+                                              x_axis_title_height=60,
+                                              font_size_captions=common.get_configs("font_size"),
+                                              legend_x=0.97,
+                                              legend_y=1.0,
+                                              legend_spacing=0.004)
+    # Crossing with and without traffic lights
+    df = df_mapping.copy()
+    df['state'] = df['state'].fillna('NA')
+    df['with_trf_light_norm'] = (df['with_trf_light_day'] + df['with_trf_light_night']) / df['total_time'] / df['population_city']  # noqa: E501
+    df['without_trf_light_norm'] = (df['without_trf_light_day'] + df['without_trf_light_night']) / df['total_time'] / df['population_city']  # noqa: E501
+    Analysis.scatter(df=df,
+                     x="with_trf_light_norm",
+                     y="without_trf_light_norm",
+                     color="continent",
+                     text="city",
+                     xaxis_title='Crossing events with traffic lights (normalised)',
+                     yaxis_title='Crossing events without traffic lights (normalised)',
+                     pretty_text=False,
+                     marker_size=10,
+                     save_file=True,
+                     hover_data=hover_data,
+                     hover_name="city",
+                     legend_title="",
+                     legend_x=0.87,
+                     legend_y=1.0,
+                     label_distance_factor=3.0,
+                     marginal_x=None,  # type: ignore
+                     marginal_y=None)  # type: ignore
