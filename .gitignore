@@ -8,6 +8,7 @@ videos/
 data/
 data-bkp/
 source_videos/
+saved_snaps
 
 # Model files
 yolov8x.pt
@@ -54,4 +55,3 @@ Dockerfile
 
 # log of upgrades
 upgrade_log.json
-

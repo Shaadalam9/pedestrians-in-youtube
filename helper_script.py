@@ -1,5 +1,6 @@
 # by Shadab Alam <md_shadab_alam@outlook.com> and Pavlo Bazilinskyy <pavlo.bazilinskyy@gmail.com>
 import os
+import re
 from pytubefix import YouTube
 from pytubefix.cli import on_progress
 from moviepy.video.io.VideoFileClip import VideoFileClip
@@ -33,6 +34,7 @@ confidence = common.get_configs("confidence")
 display_frame_tracking = common.get_configs("display_frame_tracking")
 output_path = common.get_configs("videos")
 save_annoted_img = common.get_configs("save_annoted_img")
+save_tracked_img = common.get_configs("save_tracked_img")
 delete_labels = common.get_configs("delete_labels")
 delete_frames = common.get_configs("delete_frames")
 
@@ -407,6 +409,9 @@ class Youtube_Helper:
         # Load the video and create a subclip using the provided start and end times.
         video_clip = VideoFileClip(input_path).subclip(start_time, end_time)
 
+        # Ensure the output directory exists
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
         # Write the subclip to the specified output file using the 'libx264' codec for video and 'aac' for audio.
         video_clip.write_videofile(output_path, codec="libx264", audio_codec="aac")
 
@@ -517,7 +522,7 @@ class Youtube_Helper:
         return youtube_id
 
     @staticmethod
-    def create_video_from_images(image_folder, output_video_path, frame_rate):
+    def create_video_from_images(image_folder, output_video_path, frame_rate=30):
         """
         Creates a video file from a sequence of image frames.
 
@@ -526,17 +531,28 @@ class Youtube_Helper:
             output_video_path (str): Path where the output video will be saved.
             frame_rate (int or float): Frame rate for the video.
         """
+        os.makedirs(os.path.dirname(output_video_path), exist_ok=True)
+
+        def extract_frame_number(filename):
+            match = re.search(r'frame_tracked_(\d+)\.jpg', filename)
+            return int(match.group(1)) if match else float('inf')  # Push invalid ones to the end
+
         images = [img for img in os.listdir(image_folder) if img.endswith(".jpg")]
 
         if not images:
             logger.error("No JPG images found in the specified folder.")
             return
 
-        images.sort(key=lambda x: int(x.split("frame_")[1].split(".")[0]))
+        images.sort(key=extract_frame_number)
 
         first_image_path = os.path.join(image_folder, images[0])
         frame = cv2.imread(first_image_path)
-        height, width, layers = frame.shape
+
+        if frame is None:
+            logger.error(f"Could not read the first image: {first_image_path}")
+            return
+
+        height, width, _ = frame.shape
 
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # type: ignore
         video = cv2.VideoWriter(output_video_path, fourcc, frame_rate, (width, height))
@@ -984,7 +1000,7 @@ class Youtube_Helper:
                       show_labels=SHOW_LABELS,
                       show_conf=SHOW_CONF)
 
-    def tracking_mode(self, input_video_path, output_video_path, video_fps=25):
+    def tracking_mode(self, input_video_path, output_video_path, flag=0, video_fps=25):
         """
         Performs object tracking on a video using YOLO and saves tracking results.
 
@@ -1008,6 +1024,7 @@ class Youtube_Helper:
         # Output paths for frames, txt files, and final video
         frames_output_path = os.path.join("runs", "detect", "frames")
         annotated_frame_output_path = os.path.join("runs", "detect", "annotated_frames")
+        tracked_frame_output_path = os.path.join("runs", "detect", "tracked_frame")
         txt_output_path = os.path.join("runs", "detect", "labels")
         text_filename = os.path.join("runs", "detect", "track", "labels", "image0.txt")
         display_video_output_path = os.path.join("runs", "detect", "display_video.mp4")
@@ -1016,6 +1033,7 @@ class Youtube_Helper:
         os.makedirs(frames_output_path, exist_ok=True)
         os.makedirs(txt_output_path, exist_ok=True)
         os.makedirs(annotated_frame_output_path, exist_ok=True)
+        os.makedirs(tracked_frame_output_path, exist_ok=True)
 
         # Initialize a VideoWriter for the final video
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # type: ignore
@@ -1069,7 +1087,7 @@ class Youtube_Helper:
                 try:
                     track_ids = results[0].boxes.id.int().cpu().tolist()  # type: ignore
 
-                    # Visualize the results on the frame
+                    # Visualise the results on the frame
                     annotated_frame = results[0].plot()
 
                 # Save annotated frame to file
@@ -1121,9 +1139,13 @@ class Youtube_Helper:
 
                 # Display the annotated frame
                 if display_frame_tracking:
-
                     cv2.imshow("YOLOv11 Tracking", annotated_frame)
                     display_video_writer.write(annotated_frame)
+
+                # Save the annotated frame here
+                if save_tracked_img:
+                    frame_filename = os.path.join(tracked_frame_output_path, f"frame_tracked_{frame_count}.jpg")
+                    cv2.imwrite(frame_filename, annotated_frame)
 
                 # Break the loop if 'q' is pressed
                 if cv2.waitKey(1) & 0xFF == ord("q"):
@@ -1135,3 +1157,8 @@ class Youtube_Helper:
         cap.release()
         cv2.destroyAllWindows()
         progress_bar.close()
+
+        if flag == 1:
+            Youtube_Helper.create_video_from_images(image_folder=tracked_frame_output_path,
+                                                    output_video_path=output_video_path,
+                                                    frame_rate=30)
