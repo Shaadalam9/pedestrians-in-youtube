@@ -6,6 +6,7 @@ import os
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+from helper_script import Youtube_Helper
 import common
 from custom_logger import CustomLogger
 from logmod import logs
@@ -28,6 +29,8 @@ warnings.filterwarnings("ignore", category=FutureWarning, module="plotly")
 
 logs(show_level=common.get_configs("logger_level"), show_color=True)
 logger = CustomLogger(__name__)  # use custom logger
+
+helper = Youtube_Helper()
 
 # set template for plotly output
 template = common.get_configs('plotly_template')
@@ -4079,22 +4082,47 @@ class Analysis():
         return None  # return none if no match is found
 
     @staticmethod
-    def get_duration_segment(df, video_id, start_time):
+    def get_duration_segment(video_id, start_time, duration=None):
         """Get duration of segment."""
-        for _, row in df.iterrows():
-            videos = re.findall(r"[\w-]+", row["videos"])  # convert to list
-            start_times = ast.literal_eval(row["start_time"])  # convert to list
-            end_times = ast.literal_eval(row["end_time"])  # convert to list
+        video_name, start_offset = video_id.rsplit("_", 1)
+        start_offset = int(start_offset)
+        folder_paths = common.get_configs("videos")
+        path = None
 
-            if video_id in videos:
-                index = videos.index(video_id)  # get the index of the video
-                if start_time in start_times[index]:  # check if start_time matches
-                    # find end time that matches the start time
-                    index_start = start_times[index].index(start_time)
-                    end_time = end_times[index][index_start]
-                    return end_time - start_time  # return duration of segment
+        for folder_path in folder_paths:
+            for root, dirs, files in os.walk(folder_path):
+                for file in files:
+                    if file.startswith(video_name):
+                        path = os.path.join(root, file)
+                        break
+                if path:
+                    break
+            if path:
+                break
 
-        return None  # return none if no match is found
+        if not path:
+            logger.error("No matching video found")
+            return
+
+        # Adjusted start and end times
+        real_start_time = start_time + start_offset
+        real_end_time = real_start_time + duration if duration is not None else None
+
+        helper.trim_video(
+            input_path=path,
+            output_path=f"saved_snaps/original/{video_name}_{real_start_time}.mp4",
+            start_time=real_start_time,
+            end_time=real_end_time
+        )
+
+        helper.tracking_mode(
+            input_video_path=f"saved_snaps/original/{video_name}_{real_start_time}.mp4",
+            output_video_path=f"saved_snaps/tracked/{video_name}_{real_start_time}.mp4",
+            flag=1
+        )
+
+        if common.get_configs("delete_runs_files"):
+            shutil.rmtree(os.path.join("runs", "detect"))
 
     @staticmethod
     def scatter(df, x, y, color=None, symbol=None, size=None, text=None, trendline=None, hover_data=None,
