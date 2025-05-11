@@ -791,24 +791,9 @@ class Youtube_Helper:
         def process_videos(video_ids, existing_fps_list):
             video_ids = video_ids.strip("[]").split(",")
 
-            # Ensure existing_fps_list is a valid string or initialize as an empty list
-            # if isinstance(existing_fps_list, str) and existing_fps_list.strip():
-            #     try:
-            #         existing_fps = eval(existing_fps_list)  # Convert string to list
-            #     except Exception as e:
-            #         logger.error(f"Error parsing existing_fps_list: {e}")
-            #         existing_fps = [None] * len(video_ids)
-            # else:
-            #     existing_fps = [None] * len(video_ids)
-
             fps_values = []
             for i, video_id in enumerate(video_ids):
                 video_id = video_id.strip()
-                # Skip processing if the FPS value already exists
-                # if i < len(existing_fps) and existing_fps[i] is not None:
-                #     fps_values.append(existing_fps[i])
-                #     logger.info(f"Skipping video {video_id} as FPS is already available.")
-                # else:
                 fps = get_fps(video_id)
                 fps_values.append(fps)
             return str(fps_values)
