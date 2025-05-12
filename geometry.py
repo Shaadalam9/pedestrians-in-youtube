@@ -14,4 +14,3 @@ logger = CustomLogger(__name__)  # use custom logger
 class Geometry():
     def __init__(self) -> None:
         pass
-

@@ -10,19 +10,20 @@ import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from helper_script import Youtube_Helper
+from utils.algorithms import Algorithms
+from utils.values import Values
+from utils.wrappers import Wrappers
+from utils.plot import Plots
 import common
 from custom_logger import CustomLogger
 from logmod import logs
 import statistics
 import ast
 import pickle
-import plotly as py
-import pycountry
 from tqdm import tqdm
 import re
 import warnings
 from scipy.spatial import KDTree
-import shutil
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut, GeocoderUnavailable
 from datetime import datetime
@@ -34,6 +35,10 @@ logs(show_level=common.get_configs("logger_level"), show_color=True)
 logger = CustomLogger(__name__)  # use custom logger
 
 helper = Youtube_Helper()
+algorithms_class = Algorithms()
+values_class = Values()
+wrapper_class = Wrappers()
+plots_class = Plots()
 
 # set template for plotly output
 template = common.get_configs('plotly_template')
@@ -121,167 +126,6 @@ class Analysis():
         return num_groups
 
     @staticmethod
-    def save_plotly_figure(fig, filename, width=1600, height=900, scale=SCALE, save_final=True, save_png=True,
-                           save_eps=True):
-        """
-        Saves a Plotly figure as HTML, PNG, SVG, and EPS formats.
-
-        Args:
-            fig (plotly.graph_objs.Figure): Plotly figure object.
-            filename (str): Name of the file (without extension) to save.
-            width (int, optional): Width of the PNG and EPS images in pixels. Defaults to 1600.
-            height (int, optional): Height of the PNG and EPS images in pixels. Defaults to 900.
-            scale (int, optional): Scaling factor for the PNG image. Defaults to 3.
-            save_final (bool, optional): whether to save the "good" final figure.
-        """
-        # Create directory if it doesn't exist
-        output_folder = "_output"
-        output_final = "figures"
-        os.makedirs(output_folder, exist_ok=True)
-        os.makedirs(output_final, exist_ok=True)
-
-        # Save as HTML
-        logger.info(f"Saving html file for {filename}.")
-        py.offline.plot(fig, filename=os.path.join(output_folder, filename + ".html"))
-        # also save the final figure
-        if save_final:
-            py.offline.plot(fig, filename=os.path.join(output_final, filename + ".html"),  auto_open=False)
-
-        try:
-            # Save as PNG
-            if save_png:
-                logger.info(f"Saving png file for {filename}.")
-                fig.write_image(os.path.join(output_folder, filename + ".png"), width=width, height=height,
-                                scale=scale)
-                # also save the final figure
-                if save_final:
-                    shutil.copy(os.path.join(output_folder, filename + ".png"),
-                                os.path.join(output_final, filename + ".png"))
-
-            # Save as EPS
-            if save_eps:
-                logger.info(f"Saving eps file for {filename}.")
-                fig.write_image(os.path.join(output_folder, filename + ".eps"), width=width, height=height)
-                # also save the final figure
-                if save_final:
-                    shutil.copy(os.path.join(output_folder, filename + ".eps"),
-                                os.path.join(output_final, filename + ".eps"))
-        except ValueError:
-            logger.error(f"Value error raised when attempted to save image {filename}.")
-
-    @staticmethod
-    def adjust_annotation_positions(annotations):
-        """Adjusts the positions of annotations to avoid overlap.
-
-        Args:
-            annotations (list): List of dictionaries representing annotations.
-
-        Returns:
-            list: Adjusted annotations where positions are modified to avoid overlap.
-        """
-        adjusted_annotations = []
-
-        # Iterate through each annotation
-        for i, ann in enumerate(annotations):
-            adjusted_ann = ann.copy()
-
-            # Adjust x and y coordinates to avoid overlap with other annotations
-            for other_ann in adjusted_annotations:
-                if (abs(ann['x'] - other_ann['x']) < 0.2) and (abs(ann['y'] - other_ann['y']) < 0.2):
-                    adjusted_ann['y'] += 0.01  # Adjust y-coordinate (can be modified as needed)
-
-            # Append the adjusted annotation to the list
-            adjusted_annotations.append(adjusted_ann)
-
-        return adjusted_annotations
-
-    @staticmethod
-    def find_values_with_video_id(df, key):
-        """Extracts relevant data from a DataFrame based on a given key.
-
-        Args:
-            df (DataFrame): The DataFrame containing the data.
-            key (str): The key to search for in the DataFrame.
-
-        Returns:
-            tuple: A tuple containing information related to the key, including:
-                - Video ID
-                - Start time
-                - End time
-                - Time of day
-                - City
-                - State
-                - Country
-                - GDP per capita
-                - Population
-                - Population of the country
-                - Traffic mortality
-                - Continent
-                - Literacy rate
-                - Average height
-                - ISO-3 code for country
-        """
-
-        id, start_ = key.rsplit("_", 1)  # Splitting the key into video ID and start time
-
-        # Iterate through each row in the DataFrame
-        for index, row in df.iterrows():
-            # Extracting data from the DataFrame row
-            video_ids = [id.strip() for id in row["videos"].strip("[]").split(',')]
-            start_times = ast.literal_eval(row["start_time"])
-            end_times = ast.literal_eval(row["end_time"])
-            time_of_day = ast.literal_eval(row["time_of_day"])
-            city = row["city"]
-            state = row['state'] if not pd.isna(row['state']) else "unknown"
-            country = row["country"]
-            gdp = row["gmp"]
-            population = row["population_city"]
-            population_country = row["population_country"]
-            traffic_mortality = row["traffic_mortality"]
-            continent = row["continent"]
-            literacy_rate = row["literacy_rate"]
-            avg_height = row["avg_height"]
-            iso3 = row["iso3"]
-            fps_list = ast.literal_eval(row["fps_list"])
-
-            # Iterate through each video, start time, end time, and time of day
-            for video, start, end, time_of_day_, fps in zip(video_ids, start_times, end_times, time_of_day, fps_list):
-                # Assume FPS=30 for None
-                if not fps:
-                    fps = 30
-                # Check if the current video matches the specified ID
-                if video == id:
-                    logger.debug(f"Finding values for {video} start={start}, end={end}")
-                    counter = 0
-                    # Iterate through each start time
-                    for s in start:
-                        # Check if the start time matches the specified start time
-                        if int(start_) == s:
-                            # Calculate gpd per capita to avoid division by zero
-                            if population > 0:
-                                gpd_capita = gdp/population
-                            else:
-                                gpd_capita = 0
-                            # Return relevant information once found
-                            return (video,                      # 0
-                                    s,                          # 1
-                                    end[counter],               # 2
-                                    time_of_day_[counter],      # 3
-                                    city,                       # 4
-                                    state,                      # 5
-                                    country,                    # 6
-                                    gpd_capita,                 # 7
-                                    population,                 # 8
-                                    population_country,         # 9
-                                    traffic_mortality,          # 10
-                                    continent,                  # 11
-                                    literacy_rate,              # 12
-                                    avg_height,                 # 13
-                                    iso3,                       # 14
-                                    fps)                        # 15
-                        counter += 1
-
-    @staticmethod
     def calculate_total_seconds(df):
         """Calculates the total seconds of the total video according to mapping file."""
         grand_total_seconds = 0
@@ -329,76 +173,6 @@ class Analysis():
         unique_countries = set(df[value].unique())
 
         return unique_countries, len(unique_countries)
-
-    @staticmethod
-    def format_city_state(city_state):
-        """
-        Formats a city_state string or a list of strings in the format 'City_State'.
-        If the state is 'unknown', only the city is returned.
-        Handles cases where the format is incorrect or missing the '_'.
-
-        Args:
-            city_state (str or list): A single string or list of strings in the format 'City_State'.
-
-        Returns:
-            str or list: A formatted string or list of formatted strings in the format 'City, State' or 'City'.
-        """
-        if isinstance(city_state, str):  # If input is a single string
-            if "_" in city_state:
-                city, state = city_state.split("_", 1)
-                return f"{city}, {state}" if state.lower() != "unknown" else city
-            else:
-                return city_state  # Return as-is if no '_' in string
-        elif isinstance(city_state, list):  # If input is a list
-            formatted_list = []
-            for cs in city_state:
-                if "_" in cs:
-                    city, state = cs.split("_", 1)
-                    if state.lower() != "unknown":
-                        formatted_list.append(f"{city}, {state}")
-                    else:
-                        formatted_list.append(city)
-                else:
-                    formatted_list.append(cs)  # Append as-is if no '_'
-            return formatted_list
-        else:
-            raise TypeError("Input must be a string or a list of strings.")
-
-    @staticmethod
-    def get_value(df, column_name1, column_value1, column_name2, column_value2, target_column):
-        """
-        Retrieves a value from the target_column based on the condition
-        that both column_name1 matches column_value1 and column_name2 matches column_value2.
-
-        Parameters:
-        df (pandas.DataFrame): The DataFrame containing the mapping file.
-        column_name1 (str): The first column to search for the matching value.
-        column_value1 (str): The value to search for in column_name1.
-        column_name2 (str): The second column to search for the matching value.
-        column_value2 (str): The value to search for in column_name2. If "unknown", the value is treated as NaN.
-        target_column (str): The column from which to retrieve the corresponding value.
-
-        Returns:
-        Any: The value from target_column that corresponds to the matching values in both
-             column_name1 and column_name2.
-        """
-        # Treat column_value2 as NaN if it is "unknown"
-        if column_value2 == "unknown":
-            column_value2 = float('nan')
-
-        # Filter the DataFrame where both conditions are met
-        if pd.isna(column_value2):
-            result = df[(df[column_name1] == column_value1) & (df[column_name2].isna())][target_column]
-        else:
-            result = df[(df[column_name1] == column_value1) & (df[column_name2] == column_value2)][target_column]
-
-        # Check if the result is not empty (i.e., if there is a match)
-        if not result.empty:
-            # Return the first matched value
-            return result.values[0]
-        else:
-            # Return None if no matching value is found
-            return None
 
     @staticmethod
     def get_world_map(df_mapping):
@@ -517,7 +291,7 @@ class Analysis():
         fig.update_layout(font=dict(family=common.get_configs('font_family')))
 
         # Save and display the figure
-        Analysis.save_plotly_figure(fig, "world_map", save_final=True)
+        plots_class.save_plotly_figure(fig, "world_map", save_final=True)
 
     @staticmethod
     def get_mapbox_map(df, hover_data=None):
@@ -546,7 +320,7 @@ class Analysis():
                       size=common.get_configs('font_size'))  # update font size
         )
         # Save and display the figure
-        Analysis.save_plotly_figure(fig, "mapbox_map", save_final=True)
+        plots_class.save_plotly_figure(fig, "mapbox_map", save_final=True)
 
     @staticmethod
     def pedestrian_crossing(dataframe, min_x, max_x, person_id):
@@ -578,50 +352,6 @@ class Analysis():
         return crossed_ids
 
     @staticmethod
-    def time_to_cross(dataframe, ids, video_id):
-        """Calculates the time taken for each object with specified IDs to cross the road.
-
-        Args:
-            dataframe (DataFrame): The DataFrame (csv file) containing object data.
-            ids (list): A list of unique IDs of objects which are crossing the road.
-
-        Returns:
-            dict: A dictionary where keys are object IDs and values are the time taken for
-            each object to cross the road, in seconds.
-        """
-        if 'Frame Count' not in dataframe.columns:
-            return {}
-
-        result = Analysis.find_values_with_video_id(df_mapping, video_id)
-
-        # Check if the result is None (i.e., no matching data was found)
-        if result is not None:
-            # Unpack the result since it's not None
-            (video, start, end, time_of_day, city, state, country, gdp_, population, population_country,
-             traffic_mortality_, continent, literacy_rate, avg_height, iso3, fps) = result
-
-        # Initialise an empty dictionary to store time taken for each object to cross
-        var = {}
-
-        # Iterate through each object ID
-        for id in ids:
-            # Find the minimum and maximum x-coordinates for the object's movement
-            x_min = dataframe[dataframe["Unique Id"] == id]["X-center"].min()
-            x_max = dataframe[dataframe["Unique Id"] == id]["X-center"].max()
-
-            # Get a sorted group of entries for the current object ID
-            sorted_grp = dataframe[dataframe["Unique Id"] == id]
-
-            # Get the corresponding frame counts instead of index
-            x_min_frame = sorted_grp[sorted_grp['X-center'] == x_min]['Frame Count'].iloc[0]
-            x_max_frame = sorted_grp[sorted_grp['X-center'] == x_max]['Frame Count'].iloc[0]
-
-            time_taken = abs(x_max_frame - x_min_frame) / fps
-            var[id] = time_taken
-
-        return var
-
-    @staticmethod
     def calculate_cell_phones(df_mapping, dfs):
         """Plots the relationship between average cell phone usage per person detected vs. traffic mortality.
 
@@ -633,7 +363,7 @@ class Analysis():
         time_ = []
         for key, value in tqdm(dfs.items(), total=len(dfs)):
             # Extract relevant information using the find_values function
-            result = Analysis.find_values_with_video_id(df_mapping, key)
+            result = values_class.find_values_with_video_id(df_mapping, key)
 
             # Check if the result is None (i.e., no matching data was found)
             if result is not None:
@@ -710,7 +440,7 @@ class Analysis():
 
         # Iterate through each video DataFrame
         for key, value in tqdm(dfs.items(), total=len(dfs)):
-            result = Analysis.find_values_with_video_id(df_mapping, key)
+            result = values_class.find_values_with_video_id(df_mapping, key)
 
             # Check if the result is None (i.e., no matching data was found)
             if result is not None:
@@ -762,251 +492,9 @@ class Analysis():
                     new_value = len(vehicle_ids)
 
             layer[key] = new_value
-        info = self.city_wrapper(input_dict=layer, mapping=df_mapping)
-
-        # Update the information dictionary
-        # if f"{city}_{state}_{condition}" in info:
-        #     previous_value = info[f"{city}_{state}_{condition}"]
-        #     info[f"{city}_{state}_{condition}"] = (previous_value + new_value) / 2
-        #     continue
-        # else:
-        #     info[f"{city}_{state}_{condition}"] = new_value
+        info = wrapper_class.city_wrapper(input_dict=layer, mapping=df_mapping)
 
         return info
-
-    def city_wrapper(self, input_dict, mapping):
-        """
-        Processes an input dictionary of video IDs and their corresponding values, maps each video ID to metadata
-        using a provided mapping function, and builds an output dictionary keyed by city and condition.
-        Wrapes in the form of {city_condition: {video-id_start-time: {unique-id: parameter}}}
-
-        Args:
-            input_dict (dict): A dictionary where keys are video IDs and values are associated data.
-            mapping: A mapping resource or structure (currently unused in this function,
-                 possibly used internally by Analysis.find_values_with_video_id).
-
-        Returns:
-            dict: A dictionary where each key is a string formatted as "City_Condition" and
-                  each value is a dictionary of the original key-value pair from input_dict.
-        """
-
-        output = {}
-        for key, value in input_dict.items():
-            # Lookup metadata associated with the video ID
-            result = Analysis.find_values_with_video_id(df_mapping, key)
-
-            # Check if the result is None (i.e., no matching data was found)
-            if result is not None:
-                # Unpack the returned metadata
-                (_, start, end, condition, city, state, country, gdp_, population, population_country,
-                 traffic_mortality_, continent, literacy_rate, avg_height, iso3, fps) = result
-
-                # Create the grouping key
-                grouping_key = f"{city}_{state}_{condition}"
-
-                # Initialize the dictionary for the grouping key if it doesn't exist
-                if grouping_key not in output:
-                    output[grouping_key] = {}
-
-                # Add or update the entry for this video ID
-                output[grouping_key][key] = value
-
-        return output
-
-    def calculate_speed_of_crossing(self, df_mapping, dfs, data):
-        """
-        Calculate the walking speeds of individuals crossing in various videos
-        and organise them by city, state, and condition.
-
-        Args:
-            df_mapping (dataframe): A DataFrame mapping video IDs to metadata such as
-                city, state, country, and other contextual information.
-            dfs (dict): A dictionary where contains all the csv files extracted from YOLO.
-            data (dict): A dictionary where keys are video IDs and values are dictionaries
-                mapping person IDs to crossing durations.
-
-        Returns:
-            speed_dict (dict): A dictionary with keys formatted as 'city_state_condition' mapping to lists
-                of walking speeds (m/s) for each valid crossing.
-            all_speed (list): A flat list of all calculated walking speeds (m/s) across videos, including outliers.
-        """
-        time_ = []
-        speed_compelete = {}
-
-        # Create a dictionary to store country information for each city
-        city_country_map_ = {}
-
-        # Iterate over each video data
-        for key, df in tqdm(data.items(), total=len(data)):
-            speed_id_compelete = {}
-            if df == {}:  # Skip if there is no data
-                continue
-            result = Analysis.find_values_with_video_id(df_mapping, key)
-
-            # Check if the result is None (i.e., no matching data was found)
-            if result is not None:
-                (_, start, end, condition, city, state, country, gdp_, population, population_country,
-                 traffic_mortality_, continent, literacy_rate, avg_height, iso3, fps) = result
-
-                value = dfs.get(key)
-
-                # Store the country associated with each city
-                city_country_map_[f'{city}_{state}'] = iso3
-
-                # Calculate the duration of the video
-                duration = end - start
-                time_.append(duration)
-
-                grouped = value.groupby('Unique Id')
-                for id, time in df.items():
-                    grouped_with_id = grouped.get_group(id)
-                    mean_height = grouped_with_id['Height'].mean()
-                    min_x_center = grouped_with_id['X-center'].min()
-                    max_x_center = grouped_with_id['X-center'].max()
-
-                    ppm = mean_height / avg_height
-                    distance = (max_x_center - min_x_center) / ppm
-
-                    speed_ = (distance / time) / 100
-                    speed_id_compelete[id] = speed_
-
-                    # Taken from https://www.wikiwand.com/en/articles/Preferred_walking_speed
-                    # if speed_ > 1.42:  # Exclude outlier speeds
-
-                speed_compelete[key] = speed_id_compelete
-
-        output = self.city_wrapper(input_dict=speed_compelete, mapping=df_mapping)
-
-        return output
-
-    def avg_speed_of_crossing(self, df_mapping, dfs, data):
-        """
-        Calculate the average crossing speed for each city-condition combination.
-
-        This function uses `calculate_speed_of_crossing` to obtain a nested dictionary of speed values,
-        flattens the structure, and computes the average speed for each `city_condition`.
-
-        Args:
-            df_mapping (pd.DataFrame): Mapping DataFrame with city metadata.
-            dfs (dict): Dictionary of DataFrames for each video segment.
-            data (dict): Input data used to compute crossing speeds.
-
-        Returns:
-            dict: A dictionary where keys are city-condition strings and values are average speeds.
-        """
-        avg_speed = {}
-
-        speed_dict = self.calculate_speed_of_crossing(df_mapping, dfs, data)
-
-        for city_condition, value_1 in speed_dict.items():
-            box = []
-            for video_id, value_2 in value_1.items():
-                for unique_id, speed in value_2.items():
-                    box.append(speed)
-            avg_speed[city_condition] = (sum(box) / len(box))
-
-        return avg_speed
-
-    def time_to_start_cross(self, df_mapping, dfs, data, person_id=0):
-        """
-        Calculate the time to start crossing the road of individuals crossing in various videos
-        and organise them by city, state, and condition.
-
-        Args:
-            df_mapping (dataframe): A DataFrame mapping video IDs to metadata such as
-                city, state, country, and other contextual information.
-            dfs (dict): A dictionary where contains all the csv files extracted from YOLO.
-            data (dict): A dictionary where keys are video IDs and values are dictionaries
-                mapping person IDs to crossing durations.
-            person_id (int, optional): YOLO unique representation for person
-
-        Returns:
-            speed_dict (dict): A dictionary with keys formatted as 'city_state_condition' mapping to lists
-                of walking speeds (m/s) for each valid crossing.
-            all_speed (list): A flat list of all calculated walking speeds (m/s) across videos, including outliers.
-        """
-        time_compelete = {}
-
-        for key, df in tqdm(dfs.items(), total=len(dfs)):
-            data_cross = {}
-            time_id_complete = {}
-            crossed_ids = df[(df["YOLO_id"] == person_id)]
-
-            # Extract relevant information using the find_values function
-            result = Analysis.find_values_with_video_id(df_mapping, key)
-
-            # Check if the result is None (i.e., no matching data was found)
-            if result is not None:
-                (_, start, end, condition, city, state, country, gdp_, population, population_country,
-                 traffic_mortality_, continent, literacy_rate, avg_height, iso3, fps) = result
-
-                # Makes group based on Unique ID
-                crossed_ids_grouped = crossed_ids.groupby("Unique Id")
-
-                for unique_id, group_data in crossed_ids_grouped:
-                    x_values = group_data["X-center"].values
-                    initial_x = x_values[0]  # Initial x-value
-                    mean_height = group_data['Height'].mean()
-                    flag = 0
-                    margin = 0.1 * mean_height  # Margin for considering crossing event
-                    consecutive_frame = 0
-
-                    for i in range(0, len(x_values)-10, 10):
-                        if initial_x < 0.5:  # Check if crossing from left to right
-                            if (x_values[i] - margin <= x_values[i+10] <= x_values[i] + margin):
-                                consecutive_frame += 1
-                                if consecutive_frame == 3:  # Check for three consecutive frames
-                                    flag = 1
-                            elif flag == 1:
-                                data_cross[unique_id] = consecutive_frame
-                                break
-                            else:
-                                consecutive_frame = 0
-
-                        else:  # Check if crossing from right to left
-                            if (x_values[i] - margin >= x_values[i+10] >= x_values[i] + margin):
-                                consecutive_frame += 1
-                                if consecutive_frame == 3:  # Check for three consecutive frames
-                                    flag = 1
-                            elif flag == 1:
-                                data_cross[unique_id] = consecutive_frame
-                                break
-                            else:
-                                consecutive_frame = 0
-                    if consecutive_frame >= 3:
-                        time_id_complete[unique_id] = consecutive_frame
-
-                if len(data_cross) == 0:
-                    continue
-
-                time_compelete[key] = time_id_complete
-
-        output = self.city_wrapper(input_dict=time_compelete, mapping=df_mapping)
-
-        return output
-
-    def avg_time_to_start_cross(self, df_mapping, dfs, data):
-        avg_over_time = {}
-
-        output = self.time_to_start_cross(df_mapping, dfs, data)
-
-        for city_condition, value_1 in output.items():
-            box = []
-            for video_id, value_2 in value_1.items():
-                if value_2 is None:
-                    continue
-                else:
-                    result = Analysis.find_values_with_video_id(df_mapping, video_id)
-                    if result is not None:
-                        (_, start, end, condition, city, state, country, gdp_, population, population_country,
-                         traffic_mortality_, continent, literacy_rate, avg_height, iso3, fps) = result
-                        for unique_id, time in value_2.items():
-                            if time > 0:
-                                box.append(time/(fps/10))
-
-            avg_over_time[city_condition] = (sum(box) / len(box))
-
-        return avg_over_time
 
     def calculate_traffic_signs(self, df_mapping, dfs, normalised=True):
         """Plots traffic safety vs traffic mortality.
@@ -1021,7 +509,7 @@ class Analysis():
         for key, value in tqdm(dfs.items(), total=len(dfs)):
 
             # Extract relevant information using the find_values function
-            result = Analysis.find_values_with_video_id(df_mapping, key)
+            result = values_class.find_values_with_video_id(df_mapping, key)
 
             # Check if the result is None (i.e., no matching data was found)
             if result is not None:
@@ -1047,21 +535,7 @@ class Analysis():
                     count_ = len(instrument_ids)
 
             layer[key] = count_
-        info = self.city_wrapper(input_dict=layer, mapping=df_mapping)
-
-        # Update info dictionary with count normalized by duration
-        # if f'{city}_{state}_{condition}' in info:
-        #     old_count = info[f'{city}_{state}_{condition}']
-        #     new_count = (old_count * duration_.get(f'{city}_{state}_{condition}', 0)) + count_
-        #     if f'{city}_{state}_{condition}' in duration_:
-        #         duration_[f'{city}_{state}_{condition}'] = duration_.get(f'{city}_{state}_{condition}',
-        #                                                                          0) + count
-        #     else:
-        #         duration_[f'{city}_{state}_{condition}'] = count
-        #         info[f'{city}_{state}_{condition}'] = new_count / duration_.get(f'{city}_{state}_{condition}', 0)
-        #         continue
-        #     else:
-        #         info[f'{city}_{state}_{condition}'] = count_
+        info = wrapper_class.city_wrapper(input_dict=layer, mapping=df_mapping)
 
         return info
 
@@ -1086,7 +560,7 @@ class Analysis():
             counter_exists, counter_nt_exists = 0, 0
 
             # Extract relevant information using the find_values function
-            result = Analysis.find_values_with_video_id(df_mapping, key)
+            result = values_class.find_values_with_video_id(df_mapping, key)
 
             # Check if the result is None (i.e., no matching data was found)
             if result is not None:
@@ -1151,7 +625,7 @@ class Analysis():
             counter_exists, counter_nt_exists = 0, 0
 
             # Extract relevant information using the find_values function
-            result = Analysis.find_values_with_video_id(df_mapping, key)
+            result = values_class.find_values_with_video_id(df_mapping, key)
 
             # Check if the result is None (i.e., no matching data was found)
             if result is not None:
@@ -1215,7 +689,7 @@ class Analysis():
         count = {key: len(value['ids']) for key, value in pedestrian_crossing_count.items()}
 
         for key, df in count.items():
-            result = Analysis.find_values_with_video_id(df_mapping, key)
+            result = values_class.find_values_with_video_id(df_mapping, key)
 
             if result is not None:
                 (_, start, end, time_of_day, city, state, country, gdp_, population, population_country,
@@ -1261,8 +735,8 @@ class Analysis():
             city, state, condition = city_condition.split('_')
 
             # Get the country from the previously stored city_country_map
-            country = Analysis.get_value(df_mapping, "city", city, "state", state, "country")
-            iso_code = Analysis.get_value(df_mapping, "city", city, "state", state, "iso3")
+            country = values_class.get_value(df_mapping, "city", city, "state", state, "country")
+            iso_code = values_class.get_value(df_mapping, "city", city, "state", state, "iso3")
             if country or iso_code is not None:
 
                 # Initialize the city's dictionary if not already present
@@ -1290,11 +764,11 @@ class Analysis():
 
             logger.info("Top 5 cities with max |speed_0 - speed_1| differences:")
             for city, diff in top_5_max_speed:
-                logger.info(f"{Analysis.format_city_state(city)}: {diff}")
+                logger.info(f"{wrapper_class.format_city_state(city)}: {diff}")
 
             logger.info("Top 5 cities with min |speed_0 - speed_1| differences:")
             for city, diff in top_5_min_speed:
-                logger.info(f"{Analysis.format_city_state(city)}: {diff}")
+                logger.info(f"{wrapper_class.format_city_state(city)}: {diff}")
         else:
             logger.info("No valid speed_0 and speed_1 values found for comparison.")
 
@@ -1311,11 +785,11 @@ class Analysis():
 
             logger.info("Top 5 cities with max |time_0 - time_1| differences:")
             for city, diff in top_5_max:
-                logger.info(f"{Analysis.format_city_state(city)}: {diff}")
+                logger.info(f"{wrapper_class.format_city_state(city)}: {diff}")
 
             logger.info("Top 5 cities with min |time_0 - time_1| differences:")
             for city, diff in top_5_min:
-                logger.info(f"{Analysis.format_city_state(city)}: {diff}")
+                logger.info(f"{wrapper_class.format_city_state(city)}: {diff}")
         else:
             logger.info("No valid time_0 and time_1 values found for comparison.")
 
@@ -1332,8 +806,8 @@ class Analysis():
             max_speed_value_0 = filtered_dict_s_0[max_speed_city_0]["speed_0"]
             min_speed_value_0 = filtered_dict_s_0[min_speed_city_0]["speed_0"]
 
-            logger.info(f"City with max speed at day: {Analysis.format_city_state(max_speed_city_0)} with speed of {max_speed_value_0} m/s")  # noqa:E501
-            logger.info(f"City with min speed at day: {Analysis.format_city_state(min_speed_city_0)} with speed of {min_speed_value_0} m/s")  # noqa:E501
+            logger.info(f"City with max speed at day: {wrapper_class.format_city_state(max_speed_city_0)} with speed of {max_speed_value_0} m/s")  # noqa:E501
+            logger.info(f"City with min speed at day: {wrapper_class.format_city_state(min_speed_city_0)} with speed of {min_speed_value_0} m/s")  # noqa:E501
 
         if filtered_dict_s_1:
             max_speed_city_1 = max(filtered_dict_s_1, key=lambda city: filtered_dict_s_1[city]["speed_1"])
@@ -1341,8 +815,8 @@ class Analysis():
             max_speed_value_1 = filtered_dict_s_1[max_speed_city_1]["speed_1"]
             min_speed_value_1 = filtered_dict_s_1[min_speed_city_1]["speed_1"]
 
-            logger.info(f"City with max speed at night: {Analysis.format_city_state(max_speed_city_1)} with speed of {max_speed_value_1} m/s")  # noqa:E501
-            logger.info(f"City with min speed at night: {Analysis.format_city_state(min_speed_city_1)} with speed of {min_speed_value_1} m/s")  # noqa:E501
+            logger.info(f"City with max speed at night: {wrapper_class.format_city_state(max_speed_city_1)} with speed of {max_speed_value_1} m/s")  # noqa:E501
+            logger.info(f"City with min speed at night: {wrapper_class.format_city_state(min_speed_city_1)} with speed of {min_speed_value_1} m/s")  # noqa:E501
 
         # Find city with max and min time_0 and time_1
         if filtered_dict_t_0:
@@ -1351,8 +825,8 @@ class Analysis():
             max_time_value_0 = filtered_dict_t_0[max_time_city_0]["time_0"]
             min_time_value_0 = filtered_dict_t_0[min_time_city_0]["time_0"]
 
-            logger.info(f"City with max time at day: {Analysis.format_city_state(max_time_city_0)} with time of {max_time_value_0} s")  # noqa:E501
-            logger.info(f"City with min time at day: {Analysis.format_city_state(min_time_city_0)} with time of {min_time_value_0} s")  # noqa:E501
+            logger.info(f"City with max time at day: {wrapper_class.format_city_state(max_time_city_0)} with time of {max_time_value_0} s")  # noqa:E501
+            logger.info(f"City with min time at day: {wrapper_class.format_city_state(min_time_city_0)} with time of {min_time_value_0} s")  # noqa:E501
 
         if filtered_dict_t_1:
             max_time_city_1 = max(filtered_dict_t_1, key=lambda city: filtered_dict_t_1[city]["time_1"])
@@ -1360,8 +834,8 @@ class Analysis():
             max_time_value_1 = filtered_dict_t_1[max_time_city_1]["time_1"]
             min_time_value_1 = filtered_dict_t_1[min_time_city_1]["time_1"]
 
-            logger.info(f"City with max time at night: {Analysis.format_city_state(max_time_city_1)} with time of {max_time_value_1} s")  # noqa:E501
-            logger.info(f"City with min time at night: {Analysis.format_city_state(min_time_city_1)} with time of {min_time_value_1} s")  # noqa:E501
+            logger.info(f"City with max time at night: {wrapper_class.format_city_state(max_time_city_1)} with time of {max_time_value_1} s")  # noqa:E501
+            logger.info(f"City with min time at night: {wrapper_class.format_city_state(min_time_city_1)} with time of {min_time_value_1} s")  # noqa:E501
 
         # Extract valid speed and time values and calculate statistics
         speed_0_values = [data['speed_0'] for data in final_dict.values() if pd.notna(data['speed_0'])]
@@ -1457,8 +931,8 @@ class Analysis():
         # Plot left column (first half of cities)
         for i, city in enumerate(cities_ordered[:num_cities_per_col]):
             city_new, state = city.split('_')
-            iso_code = Analysis.get_value(df_mapping, "city", city_new, "state", state, "iso3")
-            city = Analysis.format_city_state(city)  # type: ignore
+            iso_code = values_class.get_value(df_mapping, "city", city_new, "state", state, "iso3")
+            city = wrapper_class.format_city_state(city)  # type: ignore
             # Row for speed (Day and Night)
             row = 2 * i + 1
             if day_avg_speed[i] is not None and night_avg_speed[i] is not None:
@@ -1524,8 +998,8 @@ class Analysis():
         # Similarly for the right column
         for i, city in enumerate(cities_ordered[num_cities_per_col:]):
             city_new, state = city.split('_')
-            iso_code = Analysis.get_value(df_mapping, "city", city_new, "state", state, "iso3")
-            city = Analysis.format_city_state(city)  # type: ignore
+            iso_code = values_class.get_value(df_mapping, "city", city_new, "state", state, "iso3")
+            city = wrapper_class.format_city_state(city)  # type: ignore
             row = 2 * i + 1
             idx = num_cities_per_col + i
             if day_avg_speed[idx] is not None and night_avg_speed[idx] is not None:
@@ -1716,8 +1190,8 @@ class Analysis():
         ]
 
         # Add the vertical legends at the top and bottom
-        Analysis.add_vertical_legend_annotations(fig, legend_items, x_position=legend_x, y_start=legend_y,
-                                                 spacing=legend_spacing, font_size=font_size_captions)
+        plots_class.add_vertical_legend_annotations(fig, legend_items, x_position=legend_x, y_start=legend_y,
+                                                    spacing=legend_spacing, font_size=font_size_captions)
 
         # Add a box around the first column (left side)
         fig.add_shape(
@@ -1776,8 +1250,8 @@ class Analysis():
 
         # Add annotations for country names dynamically for the left column
         for country, y_position in y_position_map_left.items():
-            iso2 = Analysis.iso3_to_iso2(country)
-            country = country + Analysis.iso2_to_flag(iso2)
+            iso2 = wrapper_class.iso3_to_iso2(country)
+            country = country + wrapper_class.iso2_to_flag(iso2)
             fig.add_annotation(
                 x=x_position_left,  # Left column x position
                 y=y_position,  # Calculated y position based on the city order
@@ -1793,8 +1267,8 @@ class Analysis():
 
         # Add annotations for country names dynamically for the right column
         for country, y_position in y_position_map_right.items():
-            iso2 = Analysis.iso3_to_iso2(country)
-            country = country + Analysis.iso2_to_flag(iso2)
+            iso2 = wrapper_class.iso3_to_iso2(country)
+            country = country + wrapper_class.iso2_to_flag(iso2)
             fig.add_annotation(
                 x=x_position_right,  # Right column x position
                 y=y_position,  # Calculated y position based on the city order
@@ -1823,8 +1297,8 @@ class Analysis():
         # todo: eps export hands
         # todo: png export hands
         fig.update_layout(margin=dict(l=80, r=80, t=x_axis_title_height, b=x_axis_title_height))
-        Analysis.save_plotly_figure(fig, "consolidated", height=TALL_FIG_HEIGHT*2, width=4960, scale=SCALE,
-                                    save_final=True, save_eps=False, save_png=False)
+        plots_class.save_plotly_figure(fig, "consolidated", height=TALL_FIG_HEIGHT*2, width=4960, scale=SCALE,
+                                       save_final=True, save_eps=False, save_png=False)
 
     @staticmethod
     def plot_speed_to_cross_by_alphabetical_order(df_mapping, font_size_captions=40, x_axis_title_height=110,
@@ -1849,8 +1323,9 @@ class Analysis():
             city, state, condition = city_condition.split('_')
 
             # Get the country from the previously stored city_country_map
-            country = Analysis.get_value(df_mapping, "city", city, "state", state, "country")
-            iso_code = Analysis.get_value(df_mapping, "city", city, "state", state, "iso3")
+            country = values_class.get_value(df_mapping, "city", city, "state", state, "country")
+            iso_code = values_class.get_value(df_mapping, "city", city, "state", state, "iso3")
+
             if country or iso_code is not None:
                 # Initialize the city's dictionary if not already present
                 if f'{city}_{state}' not in final_dict:
@@ -1895,8 +1370,8 @@ class Analysis():
         # Plot left column (first half of cities)
         for i, city in enumerate(cities_ordered[:num_cities_per_col]):
             city_new, state = city.split('_')
-            iso_code = Analysis.get_value(df_mapping, "city", city_new, "state", state, "iso3")
-            city = Analysis.format_city_state(city)  # type: ignore
+            iso_code = values_class.get_value(df_mapping, "city", city_new, "state", state, "iso3")
+            city = wrapper_class.format_city_state(city)  # type: ignore
             # Row for speed (Day and Night)
             row = i + 1
             if day_avg_speed[i] is not None and night_avg_speed[i] is not None:
@@ -1929,8 +1404,8 @@ class Analysis():
 
         for i, city in enumerate(cities_ordered[num_cities_per_col:]):
             city_new, state = city.split('_')
-            iso_code = Analysis.get_value(df_mapping, "city", city_new, "state", state, "iso3")
-            city = Analysis.format_city_state(city)  # type: ignore
+            iso_code = values_class.get_value(df_mapping, "city", city_new, "state", state, "iso3")
+            city = wrapper_class.format_city_state(city)  # type: ignore
             row = i + 1
             idx = num_cities_per_col + i
             if day_avg_speed[idx] is not None and night_avg_speed[idx] is not None:
@@ -2069,11 +1544,11 @@ class Analysis():
         ]
 
         # Add the vertical legends at the top and bottom
-        Analysis.add_vertical_legend_annotations(fig, legend_items,
-                                                 x_position=legend_x,
-                                                 y_start=legend_y,
-                                                 spacing=legend_spacing,
-                                                 font_size=font_size_captions)
+        plots_class.add_vertical_legend_annotations(fig, legend_items,
+                                                    x_position=legend_x,
+                                                    y_start=legend_y,
+                                                    spacing=legend_spacing,
+                                                    font_size=font_size_captions)
 
         # Add a box around the first column (left side)
         fig.add_shape(
@@ -2132,8 +1607,8 @@ class Analysis():
 
         # Add annotations for country names dynamically for the left column
         for country, y_position in y_position_map_left.items():
-            iso2 = Analysis.iso3_to_iso2(country)
-            country = country + Analysis.iso2_to_flag(iso2)
+            iso2 = wrapper_class.iso3_to_iso2(country)
+            country = country + wrapper_class.iso2_to_flag(iso2)
             fig.add_annotation(
                 x=x_position_left,  # Left column x position
                 y=y_position,  # Calculated y position based on the city order
@@ -2149,8 +1624,8 @@ class Analysis():
 
         # Add annotations for country names dynamically for the right column
         for country, y_position in y_position_map_right.items():
-            iso2 = Analysis.iso3_to_iso2(country)
-            country = country + Analysis.iso2_to_flag(iso2)
+            iso2 = wrapper_class.iso3_to_iso2(country)
+            country = country + wrapper_class.iso2_to_flag(iso2)
             fig.add_annotation(
                 x=x_position_right,  # Right column x position
                 y=y_position,  # Calculated y position based on the city order
@@ -2177,25 +1652,12 @@ class Analysis():
 
         # Final adjustments and display
         fig.update_layout(margin=dict(l=80, r=80, t=x_axis_title_height, b=10))
-        Analysis.save_plotly_figure(fig=fig,
-                                    filename="crossing_speed_alphabetical",
-                                    width=2480,
-                                    height=TALL_FIG_HEIGHT,
-                                    scale=SCALE,
-                                    save_final=True)
-
-    # Function to add vertical legend annotations
-    @staticmethod
-    def add_vertical_legend_annotations(fig, legend_items, x_position, y_start, spacing=0.03, font_size=50):
-        for i, item in enumerate(legend_items):
-            fig.add_annotation(
-                x=x_position,  # Use the x_position provided by the user
-                y=y_start - i * spacing,  # Adjust vertical position based on index and spacing
-                xref='paper', yref='paper', showarrow=False,
-                text=f'<span style="color:{item["color"]};">&#9632;</span> {item["name"]}',  # noqa:E501
-                font=dict(size=font_size),
-                xanchor='left', align='left'  # Ensure the text is left-aligned
-            )
+        plots_class.save_plotly_figure(fig=fig,
+                                       filename="crossing_speed_alphabetical",
+                                       width=2480,
+                                       height=TALL_FIG_HEIGHT,
+                                       scale=SCALE,
+                                       save_final=True)
 
     @staticmethod
     def plot_time_to_start_cross_by_alphabetical_order(df_mapping, font_size_captions=40, x_axis_title_height=110,
@@ -2220,8 +1682,8 @@ class Analysis():
             city, state, condition = city_condition.split('_')
 
             # Get the country from the previously stored city_country_map
-            country = Analysis.get_value(df_mapping, "city", city, "state", state, "country")
-            iso_code = Analysis.get_value(df_mapping, "city", city, "state", state, "iso3")
+            country = values_class.get_value(df_mapping, "city", city, "state", state, "country")
+            iso_code = values_class.get_value(df_mapping, "city", city, "state", state, "iso3")
             if country or iso_code is not None:
                 # Initialize the city's dictionary if not already present
                 if f'{city}_{state}' not in final_dict:
@@ -2265,8 +1727,8 @@ class Analysis():
         # Plot left column (first half of cities)
         for i, city in enumerate(cities_ordered[:num_cities_per_col]):
             city_new, state = city.split('_')
-            iso_code = Analysis.get_value(df_mapping, "city", city_new, "state", state, "iso3")
-            city = Analysis.format_city_state(city)  # type: ignore
+            iso_code = values_class.get_value(df_mapping, "city", city_new, "state", state, "iso3")
+            city = wrapper_class.format_city_state(city)  # type: ignore
             # Row for time (Day and Night)
             row = i + 1
             if day_time_dict[i] is not None and night_time_dict[i] is not None:
@@ -2300,8 +1762,8 @@ class Analysis():
         # Similarly for the right column
         for i, city in enumerate(cities_ordered[num_cities_per_col:]):
             city_new, state = city.split('_')
-            iso_code = Analysis.get_value(df_mapping, "city", city_new, "state", state, "iso3")
-            city = Analysis.format_city_state(city)  # type: ignore
+            iso_code = values_class.get_value(df_mapping, "city", city_new, "state", state, "iso3")
+            city = wrapper_class.format_city_state(city)  # type: ignore
             row = i + 1
             idx = num_cities_per_col + i
             if day_time_dict[idx] is not None and night_time_dict[idx] is not None:
@@ -2440,8 +1902,8 @@ class Analysis():
         ]
 
         # Add the vertical legends at the top and bottom
-        Analysis.add_vertical_legend_annotations(fig, legend_items, x_position=legend_x, y_start=legend_y,
-                                                 spacing=legend_spacing, font_size=font_size_captions)
+        plots_class.add_vertical_legend_annotations(fig, legend_items, x_position=legend_x, y_start=legend_y,
+                                                    spacing=legend_spacing, font_size=font_size_captions)
 
         # Add a box around the first column (left side)
         fig.add_shape(
@@ -2500,8 +1962,8 @@ class Analysis():
 
         # Add annotations for country names dynamically for the left column
         for country, y_position in y_position_map_left.items():
-            iso2 = Analysis.iso3_to_iso2(country)
-            country = country + Analysis.iso2_to_flag(iso2)
+            iso2 = wrapper_class.iso3_to_iso2(country)
+            country = country + wrapper_class.iso2_to_flag(iso2)
             fig.add_annotation(
                 x=x_position_left,  # Left column x position
                 y=y_position,  # Calculated y position based on the city order
@@ -2517,8 +1979,8 @@ class Analysis():
 
         # Add annotations for country names dynamically for the right column
         for country, y_position in y_position_map_right.items():
-            iso2 = Analysis.iso3_to_iso2(country)
-            country = country + Analysis.iso2_to_flag(iso2)
+            iso2 = wrapper_class.iso3_to_iso2(country)
+            country = country + wrapper_class.iso2_to_flag(iso2)
             fig.add_annotation(
                 x=x_position_right,  # Right column x position
                 y=y_position,  # Calculated y position based on the city order
@@ -2545,12 +2007,12 @@ class Analysis():
 
         # Final adjustments and display
         fig.update_layout(margin=dict(l=80, r=80, t=x_axis_title_height, b=10))
-        Analysis.save_plotly_figure(fig=fig,
-                                    filename="time_crossing_alphabetical",
-                                    width=2480,
-                                    height=TALL_FIG_HEIGHT,
-                                    scale=1,
-                                    save_final=True)
+        plots_class.save_plotly_figure(fig=fig,
+                                       filename="time_crossing_alphabetical",
+                                       width=2480,
+                                       height=TALL_FIG_HEIGHT,
+                                       scale=1,
+                                       save_final=True)
 
     @staticmethod
     def plot_speed_to_cross_by_average(df_mapping, font_size_captions=40, x_axis_title_height=150, legend_x=0.81,
@@ -2575,8 +2037,8 @@ class Analysis():
             city, state, condition = city_condition.split('_')
 
             # Get the country from the previously stored city_country_map
-            country = Analysis.get_value(df_mapping, "city", city, "state", state, "country")
-            iso_code = Analysis.get_value(df_mapping, "city", city, "state", state, "iso3")
+            country = values_class.get_value(df_mapping, "city", city, "state", state, "country")
+            iso_code = values_class.get_value(df_mapping, "city", city, "state", state, "iso3")
             if country or iso_code is not None:
                 # Initialize the city's dictionary if not already present
                 if f"{city}_{state}" not in final_dict:
@@ -2612,8 +2074,8 @@ class Analysis():
         # Plot left column (first half of cities)
         for i, city in enumerate(cities_ordered[:num_cities_per_col]):
             city_new, state = city.split('_')
-            iso_code = Analysis.get_value(df_mapping, "city", city_new, "state", state, "iso3")
-            city = Analysis.iso2_to_flag(Analysis.iso3_to_iso2(iso_code)) + " " + Analysis.format_city_state(city)   # type: ignore  # noqa: E501
+            iso_code = values_class.get_value(df_mapping, "city", city_new, "state", state, "iso3")
+            city = wrapper_class.iso2_to_flag(wrapper_class.iso3_to_iso2(iso_code)) + " " + wrapper_class.format_city_state(city)   # type: ignore  # noqa: E501
             row = i + 1
             if day_avg_speed[i] is not None and night_avg_speed[i] is not None:
                 value = (day_avg_speed[i] + night_avg_speed[i])/2
@@ -2645,8 +2107,8 @@ class Analysis():
 
         for i, city in enumerate(cities_ordered[num_cities_per_col:]):
             city_new, state = city.split('_')
-            iso_code = Analysis.get_value(df_mapping, "city", city_new, "state", state, "iso3")
-            city = Analysis.iso2_to_flag(Analysis.iso3_to_iso2(iso_code)) + " " + Analysis.format_city_state(city)   # type: ignore  # noqa: E501
+            iso_code = values_class.get_value(df_mapping, "city", city_new, "state", state, "iso3")
+            city = wrapper_class.iso2_to_flag(wrapper_class.iso3_to_iso2(iso_code)) + " " + wrapper_class.format_city_state(city)   # type: ignore  # noqa: E501
             row = i + 1
             idx = num_cities_per_col + i
             if day_avg_speed[idx] is not None and night_avg_speed[idx] is not None:
@@ -2785,11 +2247,11 @@ class Analysis():
         ]
 
         # Add the vertical legends at the top and bottom
-        Analysis.add_vertical_legend_annotations(fig, legend_items,
-                                                 x_position=legend_x,
-                                                 y_start=legend_y,
-                                                 spacing=legend_spacing,
-                                                 font_size=font_size_captions)
+        plots_class.add_vertical_legend_annotations(fig, legend_items,
+                                                    x_position=legend_x,
+                                                    y_start=legend_y,
+                                                    spacing=legend_spacing,
+                                                    font_size=font_size_captions)
 
         # Add a box around the first column (left side)
         fig.add_shape(
@@ -2855,8 +2317,8 @@ class Analysis():
 
         # Final adjustments and display
         fig.update_layout(margin=dict(l=10, r=10, t=x_axis_title_height, b=10))
-        Analysis.save_plotly_figure(fig, "crossing_speed_avg", width=2400, height=TALL_FIG_HEIGHT, scale=SCALE,
-                                    save_final=True)
+        plots_class.save_plotly_figure(fig, "crossing_speed_avg", width=2400, height=TALL_FIG_HEIGHT, scale=SCALE,
+                                       save_final=True)
 
     @staticmethod
     def plot_time_to_start_cross_by_average(df_mapping, font_size_captions=40, x_axis_title_height=110,
@@ -2877,8 +2339,8 @@ class Analysis():
             city, state, condition = city_condition.split('_')
 
             # Get the country from the previously stored city_country_map
-            country = Analysis.get_value(df_mapping, "city", city, "state", state, "country")
-            iso_code = Analysis.get_value(df_mapping, "city", city, "state", state, "iso3")
+            country = values_class.get_value(df_mapping, "city", city, "state", state, "country")
+            iso_code = values_class.get_value(df_mapping, "city", city, "state", state, "iso3")
             if country or iso_code is not None:
                 # Initialize the city's dictionary if not already present
                 if f"{city}_{state}" not in final_dict:
@@ -2916,8 +2378,8 @@ class Analysis():
         for i, city in enumerate(cities_ordered[:num_cities_per_col]):
             # Row for speed (Day and Night)
             city_new, state = city.split('_')
-            iso_code = Analysis.get_value(df_mapping, "city", city_new, "state", state, "iso3")
-            city = Analysis.iso2_to_flag(Analysis.iso3_to_iso2(iso_code)) + " " + Analysis.format_city_state(city)   # type: ignore  # noqa: E501
+            iso_code = values_class.get_value(df_mapping, "city", city_new, "state", state, "iso3")
+            city = wrapper_class.iso2_to_flag(wrapper_class.iso3_to_iso2(iso_code)) + " " + wrapper_class.format_city_state(city)   # type: ignore  # noqa: E501
             row = i + 1
             if day_time_dict[i] is not None and night_time_dict[i] is not None:
                 value = (day_time_dict[i] + night_time_dict[i])/2
@@ -2954,8 +2416,8 @@ class Analysis():
         # Similarly for the right column
         for i, city in enumerate(cities_ordered[num_cities_per_col:]):
             city_new, state = city.split('_')
-            iso_code = Analysis.get_value(df_mapping, "city", city_new, "state", state, "iso3")
-            city = Analysis.iso2_to_flag(Analysis.iso3_to_iso2(iso_code)) + " " + Analysis.format_city_state(city)   # type: ignore  # noqa: E501
+            iso_code = values_class.get_value(df_mapping, "city", city_new, "state", state, "iso3")
+            city = wrapper_class.iso2_to_flag(wrapper_class.iso3_to_iso2(iso_code)) + " " + wrapper_class.format_city_state(city)   # type: ignore  # noqa: E501
             row = i + 1
             idx = num_cities_per_col + i
             if day_time_dict[idx] is not None and night_time_dict[idx] is not None:
@@ -3094,23 +2556,11 @@ class Analysis():
         ]
 
         # Add the vertical legends at the top and bottom
-        Analysis.add_vertical_legend_annotations(fig, legend_items,
-                                                 x_position=legend_x,
-                                                 y_start=legend_y,
-                                                 spacing=legend_spacing,
-                                                 font_size=font_size_captions)
-
-        # # Add a box around the legend
-        # fig.add_shape(
-        #     type="rect", xref="paper", yref="paper",
-        #     x0=x_legend_position,  # Adjust x0 to control the left edge of the box
-        #     y0=y_legend_start_bottom + 0.02,  # Adjust y0 to control the top of the box
-        #     x1=x_legend_position + 0.06,  # Adjust x1 to control the right edge of the box
-        #     # Adjust y1 to control the bottom of the box
-        #     y1=y_legend_start_bottom - len(legend_items) * 0.03 + 0.0395,
-        #     line=dict(color="black", width=2),  # Black border for the box
-        #     fillcolor="rgba(255,255,255,0.7)"  # White fill with transparency
-        # )
+        plots_class.add_vertical_legend_annotations(fig, legend_items,
+                                                    x_position=legend_x,
+                                                    y_start=legend_y,
+                                                    spacing=legend_spacing,
+                                                    font_size=font_size_captions)
 
         # Add a box around the first column (left side)
         fig.add_shape(
@@ -3176,8 +2626,8 @@ class Analysis():
 
         # Final adjustments and display
         fig.update_layout(margin=dict(l=10, r=10, t=x_axis_title_height, b=10))
-        Analysis.save_plotly_figure(fig, "time_crossing_avg", width=2400, height=TALL_FIG_HEIGHT, scale=SCALE,
-                                    save_final=True)
+        plots_class.save_plotly_figure(fig, "time_crossing_avg", width=2400, height=TALL_FIG_HEIGHT, scale=SCALE,
+                                       save_final=True)
 
     @staticmethod
     def safe_average(values):
@@ -3198,8 +2648,8 @@ class Analysis():
             city, state, condition = city_condition.split('_')
 
             # Get the country from the previously stored city_country_map
-            country = Analysis.get_value(df_mapping, "city", city, "state", state, "country")
-            iso_code = Analysis.get_value(df_mapping, "city", city, "state", state, "iso3")
+            country = values_class.get_value(df_mapping, "city", city, "state", state, "country")
+            iso_code = values_class.get_value(df_mapping, "city", city, "state", state, "iso3")
             if country or iso_code is not None:
                 # Initialize the city's dictionary if not already present
                 if f"{city}_{state}" not in final_dict:
@@ -3207,8 +2657,8 @@ class Analysis():
                                                      "country": country, "iso": iso_code}
 
                 # normalise by total time and total number of detected persons
-                total_time = Analysis.get_value(df_mapping, "city", city, "state", state, "total_time")
-                person = Analysis.get_value(df_mapping, "city", city, "state", state, "person")
+                total_time = values_class.get_value(df_mapping, "city", city, "state", state, "total_time")
+                person = values_class.get_value(df_mapping, "city", city, "state", state, "person")
                 count = count / total_time / person
 
                 # Populate the corresponding speed based on the condition
@@ -3252,8 +2702,8 @@ class Analysis():
         # Plot left column (first half of cities)
         for i, city in enumerate(cities_ordered[:num_cities_per_col]):
             city_new, state = city.split('_')
-            iso_code = Analysis.get_value(df_mapping, "city", city_new, "state", state, "iso3")
-            city = Analysis.iso2_to_flag(Analysis.iso3_to_iso2(iso_code)) + " " + Analysis.format_city_state(city)   # type: ignore  # noqa: E501
+            iso_code = values_class.get_value(df_mapping, "city", city_new, "state", state, "iso3")
+            city = wrapper_class.iso2_to_flag(wrapper_class.iso3_to_iso2(iso_code)) + " " + wrapper_class.format_city_state(city)   # type: ignore  # noqa: E501
             row = i + 1
             if day_crossing[i] is not None and night_crossing[i] is not None:
                 value = round((day_crossing[i] + night_crossing[i])/2, 2)
@@ -3289,8 +2739,8 @@ class Analysis():
 
         for i, city in enumerate(cities_ordered[num_cities_per_col:]):
             city_new, state = city.split('_')
-            iso_code = Analysis.get_value(df_mapping, "city", city_new, "state", state, "iso3")
-            city = Analysis.iso2_to_flag(Analysis.iso3_to_iso2(iso_code)) + " " + Analysis.format_city_state(city)   # type: ignore  # noqa: E501
+            iso_code = values_class.get_value(df_mapping, "city", city_new, "state", state, "iso3")
+            city = wrapper_class.iso2_to_flag(wrapper_class.iso3_to_iso2(iso_code)) + " " + wrapper_class.format_city_state(city)   # type: ignore  # noqa: E501
             row = i + 1
             idx = num_cities_per_col + i
             if day_crossing[idx] is not None and night_crossing[idx] is not None:
@@ -3420,8 +2870,8 @@ class Analysis():
         ]
 
         # Add the vertical legends at the top and bottom
-        Analysis.add_vertical_legend_annotations(fig, legend_items, x_position=legend_x, y_start=legend_y,
-                                                 spacing=legend_spacing, font_size=font_size_captions)
+        plots_class.add_vertical_legend_annotations(fig, legend_items, x_position=legend_x, y_start=legend_y,
+                                                    spacing=legend_spacing, font_size=font_size_captions)
 
         # Add a box around the first column (left side)
         fig.add_shape(
@@ -3487,8 +2937,8 @@ class Analysis():
 
         # Final adjustments and display
         fig.update_layout(margin=dict(l=80, r=100, t=x_axis_title_height, b=180))
-        Analysis.save_plotly_figure(fig, "crossings_without_traffic_equipment_avg",
-                                    width=2480, height=TALL_FIG_HEIGHT, scale=SCALE, save_final=True)
+        plots_class.save_plotly_figure(fig, "crossings_without_traffic_equipment_avg",
+                                       width=2480, height=TALL_FIG_HEIGHT, scale=SCALE, save_final=True)
 
     @staticmethod
     def plot_crossing_with_traffic_light(df_mapping, font_size_captions=40, x_axis_title_height=150, legend_x=0.92,
@@ -3503,8 +2953,8 @@ class Analysis():
             city, state, condition = city_condition.split('_')
 
             # Get the country from the previously stored city_country_map
-            country = Analysis.get_value(df_mapping, "city", city, "state", state, "country")
-            iso_code = Analysis.get_value(df_mapping, "city", city, "state", state, "iso3")
+            country = values_class.get_value(df_mapping, "city", city, "state", state, "country")
+            iso_code = values_class.get_value(df_mapping, "city", city, "state", state, "iso3")
             if country or iso_code is not None:
                 # Initialize the city's dictionary if not already present
                 if f"{city}_{state}" not in final_dict:
@@ -3512,8 +2962,8 @@ class Analysis():
                                                      "country": country, "iso": iso_code}
 
                 # normalise by total time and total number of detected persons
-                total_time = Analysis.get_value(df_mapping, "city", city, "state", state, "total_time")
-                person = Analysis.get_value(df_mapping, "city", city, "state", state, "person")
+                total_time = values_class.get_value(df_mapping, "city", city, "state", state, "total_time")
+                person = values_class.get_value(df_mapping, "city", city, "state", state, "person")
                 count = count / total_time / person
 
                 # Populate the corresponding speed based on the condition
@@ -3560,8 +3010,8 @@ class Analysis():
         # Plot left column (first half of cities)
         for i, city in enumerate(cities_ordered[:num_cities_per_col]):
             city_new, state = city.split('_')
-            iso_code = Analysis.get_value(df_mapping, "city", city_new, "state", state, "iso3")
-            city = Analysis.iso2_to_flag(Analysis.iso3_to_iso2(iso_code)) + " " + Analysis.format_city_state(city)   # type: ignore  # noqa: E501
+            iso_code = values_class.get_value(df_mapping, "city", city_new, "state", state, "iso3")
+            city = wrapper_class.iso2_to_flag(wrapper_class.iso3_to_iso2(iso_code)) + " " + wrapper_class.format_city_state(city)   # type: ignore  # noqa: E501
             row = i + 1
             if day_crossing[i] is not None and night_crossing[i] is not None:
                 value = round((day_crossing[i] + night_crossing[i])/2, 2)
@@ -3597,8 +3047,8 @@ class Analysis():
 
         for i, city in enumerate(cities_ordered[num_cities_per_col:]):
             city_new, state = city.split('_')
-            iso_code = Analysis.get_value(df_mapping, "city", city_new, "state", state, "iso3")
-            city = Analysis.iso2_to_flag(Analysis.iso3_to_iso2(iso_code)) + " " + Analysis.format_city_state(city)   # type: ignore  # noqa: E501
+            iso_code = values_class.get_value(df_mapping, "city", city_new, "state", state, "iso3")
+            city = wrapper_class.iso2_to_flag(wrapper_class.iso3_to_iso2(iso_code)) + " " + wrapper_class.format_city_state(city)   # type: ignore  # noqa: E501
             row = i + 1
             idx = num_cities_per_col + i
             if day_crossing[idx] is not None and night_crossing[idx] is not None:
@@ -3728,19 +3178,8 @@ class Analysis():
         ]
 
         # Add the vertical legends at the top and bottom
-        Analysis.add_vertical_legend_annotations(fig, legend_items, x_position=legend_x, y_start=legend_y,
-                                                 spacing=legend_spacing, font_size=font_size_captions)
-
-        # # Add a box around the legend
-        # fig.add_shape(
-        #     type="rect", xref="paper", yref="paper",
-        #     x0=x_legend_position,  # Adjust x0 to control the left edge of the box
-        #     y0=y_legend_start_bottom + 0.01,  # Adjust y0 to control the top of the box
-        #     x1=x_legend_position + 0.125,  # Adjust x1 to control the right edge of the box
-        #     y1=y_legend_start_bottom - len(legend_items) * 0.03 + 0.02,  # Adjust y1 to control the bottom of the box
-        #     line=dict(color="black", width=2),  # Black border for the box
-        #     fillcolor="rgba(255,255,255,0.7)"  # White fill with transparency
-        # )
+        plots_class.add_vertical_legend_annotations(fig, legend_items, x_position=legend_x, y_start=legend_y,
+                                                    spacing=legend_spacing, font_size=font_size_captions)
 
         # Add a box around the first column (left side)
         fig.add_shape(
@@ -3806,8 +3245,8 @@ class Analysis():
 
         # Final adjustments and display
         fig.update_layout(margin=dict(l=80, r=100, t=x_axis_title_height, b=180))
-        Analysis.save_plotly_figure(fig, "crossings_with_traffic_equipment_avg", width=2480, height=TALL_FIG_HEIGHT,
-                                    scale=SCALE, save_final=True)
+        plots_class.save_plotly_figure(fig, "crossings_with_traffic_equipment_avg", width=2480, height=TALL_FIG_HEIGHT,
+                                       scale=SCALE, save_final=True)
 
     def compute_avg_variable_city(self, variable_city):
         """
@@ -3873,15 +3312,15 @@ class Analysis():
             city, state, condition = city_condition.split('_')
 
             # Get the country from the previously stored city_country_map
-            country = Analysis.get_value(df_mapping, "city", city, "state", state, "country")
-            iso_code = Analysis.get_value(df_mapping, "city", city, "state", state, "iso3")
-            continent = Analysis.get_value(df_mapping, "city", city, "state", state, "continent")
-            population_country = Analysis.get_value(df_mapping, "city", city, "state", state, "population_country")
-            gdp_city = Analysis.get_value(df_mapping, "city", city, "state", state, "gmp")
-            traffic_mortality = Analysis.get_value(df_mapping, "city", city, "state", state, "traffic_mortality")
-            literacy_rate = Analysis.get_value(df_mapping, "city", city, "state", state, "literacy_rate")
-            gini = Analysis.get_value(df_mapping, "city", city, "state", state, "gini")
-            traffic_index = Analysis.get_value(df_mapping, "city", city, "state", state, "traffic_index")
+            country = values_class.get_value(df_mapping, "city", city, "state", state, "country")
+            iso_code = values_class.get_value(df_mapping, "city", city, "state", state, "iso3")
+            continent = values_class.get_value(df_mapping, "city", city, "state", state, "continent")
+            population_country = values_class.get_value(df_mapping, "city", city, "state", state, "population_country")
+            gdp_city = values_class.get_value(df_mapping, "city", city, "state", state, "gmp")
+            traffic_mortality = values_class.get_value(df_mapping, "city", city, "state", state, "traffic_mortality")
+            literacy_rate = values_class.get_value(df_mapping, "city", city, "state", state, "literacy_rate")
+            gini = values_class.get_value(df_mapping, "city", city, "state", state, "gini")
+            traffic_index = values_class.get_value(df_mapping, "city", city, "state", state, "traffic_index")
 
             if country or iso_code is not None:
 
@@ -4029,7 +3468,7 @@ class Analysis():
         # update font family
         fig.update_layout(font=dict(family=common.get_configs('font_family')))
 
-        Analysis.save_plotly_figure(fig, "correlation_matrix_heatmap_day", save_final=True)
+        plots_class.save_plotly_figure(fig, "correlation_matrix_heatmap_day", save_final=True)
 
         # Generate the heatmap using Plotly
         fig = px.imshow(corr_matrix_night, text_auto=".2f",  # Display correlation values on heatmap  # type: ignore
@@ -4045,7 +3484,7 @@ class Analysis():
         # use value from config file
         fig.update_layout(font=dict(size=common.get_configs('font_size')))
 
-        Analysis.save_plotly_figure(fig, "correlation_matrix_heatmap_night", save_final=True)
+        plots_class.save_plotly_figure(fig, "correlation_matrix_heatmap_night", save_final=True)
 
         # Initialize a list to store rows of data (one row per city)
         data_rows = []
@@ -4142,7 +3581,7 @@ class Analysis():
         # use value from config file
         fig.update_layout(font=dict(size=common.get_configs('font_size')))
 
-        Analysis.save_plotly_figure(fig, "correlation_matrix_heatmap_averaged", save_final=True)
+        plots_class.save_plotly_figure(fig, "correlation_matrix_heatmap_averaged", save_final=True)
 
         # Continent Wise
 
@@ -4244,47 +3683,7 @@ class Analysis():
             # use value from config file
             fig.update_layout(font=dict(size=common.get_configs('font_size')))
 
-            Analysis.save_plotly_figure(fig, f"correlation_matrix_heatmap_{continents}", save_final=True)
-
-    @staticmethod
-    def iso2_to_flag(iso2):
-        """
-        Convert a 2-letter ISO country code to a corresponding emoji flag.
-
-        This uses Unicode regional indicator symbols to represent flags. For example, 'US' becomes 🇺🇸.
-
-        Args:
-            iso2 (str or None): Two-letter ISO country code (e.g., 'US'). If None, returns a placeholder.
-
-        Returns:
-            str: A flag emoji corresponding to the country code, or 🇽🇰 (Kosovo) as a fallback.
-        """
-        logger.debug(f"Converting iso2 {iso2} to flag.")
-        if iso2 is None:
-            # Return a placeholder or an empty string if the ISO-2 code is not available
-            logger.debug("Set ISO-2 to Kosovo.")
-            return "🇽🇰"
-        return chr(ord('🇦') + (ord(iso2[0]) - ord('A'))) + chr(ord('🇦') + (ord(iso2[1]) - ord('A')))
-
-    @staticmethod
-    def iso3_to_iso2(iso3_code):
-        """
-        Convert an ISO 3166-1 alpha-3 country code (e.g., 'USA') to an ISO 3166-1 alpha-2 code (e.g., 'US').
-
-        Args:
-            iso3_code (str): The three-letter country code (ISO alpha-3).
-
-        Returns:
-            str or None: The corresponding two-letter country code (ISO alpha-2),
-                         or None if the code is invalid or not found.
-        """
-        try:
-            # Look up the country using pycountry
-            country = pycountry.countries.get(alpha_3=iso3_code)
-            return country.alpha_2 if country else None
-        except (AttributeError, LookupError) as e:
-            logger.debug(f"Converting up ISO-3 {iso3_code} to ISO-2 returned error: {e}.")
-            return None
+            plots_class.save_plotly_figure(fig, f"correlation_matrix_heatmap_{continents}", save_final=True)
 
     @staticmethod
     def find_city_id(df, video_id, start_time):
@@ -4375,7 +3774,7 @@ class Analysis():
                         last_frame = filtered_df['Frame Count'].max()
 
                         # Look up the frame rate (fps) using the video_start_time
-                        result = Analysis.find_values_with_video_id(df_mapping, video_start_time)
+                        result = values_class.find_values_with_video_id(df_mapping, video_start_time)
 
                         # Check if the result is None (i.e., no matching data was found)
                         if result is not None:
@@ -4757,7 +4156,7 @@ class Analysis():
                 name_file = 'scatter_' + x + '-' + y
             # Final adjustments and display
             fig.update_layout(margin=dict(l=10, r=10, t=10, b=10))
-            Analysis.save_plotly_figure(fig, name_file, save_final=True)
+            plots_class.save_plotly_figure(fig, name_file, save_final=True)
         # open it in localhost instead
         else:
             fig.show()
@@ -4903,7 +4302,7 @@ class Analysis():
             if not name_file:
                 name_file = f"hist_{name}"
             fig.update_layout(margin=dict(l=10, r=10, t=10, b=10))
-            Analysis.save_plotly_figure(fig, name_file, save_final=True)
+            plots_class.save_plotly_figure(fig, name_file, save_final=True)
         else:
             fig.show()
 
@@ -4989,7 +4388,7 @@ if __name__ == "__main__":
             pedestrian_crossing_count[key] = {"ids": ids}
 
             # Saves the time to cross in form {name_time: {id(s): time(s)}}
-            data[key] = Analysis.time_to_cross(dfs[key], pedestrian_crossing_count[key]["ids"], key)
+            data[key] = algorithms_class.time_to_cross(dfs[key], pedestrian_crossing_count[key]["ids"], key)
 
             # Calculate the total number of different objects detected
             person_video = Analysis.count_object(dfs[key], 0)
@@ -5034,8 +4433,8 @@ if __name__ == "__main__":
 
         # Aggregated values
         logger.info("Calculating aggregated values for crossing speed.")
-        speed_values = analysis_class.calculate_speed_of_crossing(df_mapping, dfs, data)
-        avg_speed = analysis_class.avg_speed_of_crossing(df_mapping, dfs, data)
+        speed_values = algorithms_class.calculate_speed_of_crossing(df_mapping, dfs, data)
+        avg_speed = algorithms_class.avg_speed_of_crossing(df_mapping, dfs, data)
         # add to mapping file
         for key, value in tqdm(avg_speed.items(), total=len(avg_speed)):
             parts = key.split("_")
@@ -5064,8 +4463,8 @@ if __name__ == "__main__":
             )
         )
         logger.info("Calculating aggregated values for crossing decision time.")
-        time_values = analysis_class.time_to_start_cross(df_mapping, dfs, data)
-        avg_time = analysis_class.avg_time_to_start_cross(df_mapping, dfs, data)
+        time_values = algorithms_class.time_to_start_cross(df_mapping, dfs, data)
+        avg_time = algorithms_class.avg_time_to_start_cross(df_mapping, dfs, data)
         # add to mapping file
         for key, value in tqdm(avg_time.items(), total=len(avg_time)):
             parts = key.split("_")
@@ -5230,443 +4629,443 @@ if __name__ == "__main__":
     # Analysis.get_world_map(df_mapping)
     df = df_mapping.copy()  # copy df to manipulate for output
     df['state'] = df['state'].fillna('NA')  # Set state to NA
-    # Analysis.get_mapbox_map(df=df, hover_data=hover_data)  # mapbox map
-    # Analysis.get_world_map(df_mapping=df)  # map with countries
+    Analysis.get_mapbox_map(df=df, hover_data=hover_data)  # mapbox map
+    Analysis.get_world_map(df_mapping=df)  # map with countries
 
-    # # Amount of footage
-    # Analysis.scatter(df=df,
-    #                  x="total_time",
-    #                  y="person",
-    #                  color="continent",
-    #                  text="city",
-    #                  xaxis_title='Total time of footage (s)',
-    #                  yaxis_title='Number of detected pedestrians',
-    #                  pretty_text=False,
-    #                  marker_size=10,
-    #                  save_file=True,
-    #                  hover_data=hover_data,
-    #                  hover_name="city",
-    #                  legend_title="",
-    #                  legend_x=0.01,
-    #                  legend_y=1.0,
-    #                  label_distance_factor=5.0,
-    #                  marginal_x=None,  # type: ignore
-    #                  marginal_y=None)  # type: ignore
+    # Amount of footage
+    Analysis.scatter(df=df,
+                     x="total_time",
+                     y="person",
+                     color="continent",
+                     text="city",
+                     xaxis_title='Total time of footage (s)',
+                     yaxis_title='Number of detected pedestrians',
+                     pretty_text=False,
+                     marker_size=10,
+                     save_file=True,
+                     hover_data=hover_data,
+                     hover_name="city",
+                     legend_title="",
+                     legend_x=0.01,
+                     legend_y=1.0,
+                     label_distance_factor=5.0,
+                     marginal_x=None,  # type: ignore
+                     marginal_y=None)  # type: ignore
 
     Analysis.hist(data_index=22, name="speed", vlines=[1.42], save_file=True)
 
     # todo: ISO-3 codes next to figures shift. need to correct once "final" dataset is online
-    # Analysis.speed_and_time_to_start_cross(df_mapping,
-    #                                        x_axis_title_height=110,
-    #                                        font_size_captions=common.get_configs("font_size") + 8,
-    #                                        legend_x=0.9,
-    #                                        legend_y=0.01,
-    #                                        legend_spacing=0.0026)
-    # Analysis.plot_speed_to_cross_by_alphabetical_order(df_mapping,
-    #                                                    x_axis_title_height=60,
-    #                                                    font_size_captions=common.get_configs("font_size"),
-    #                                                    legend_x=0.97,
-    #                                                    legend_y=1.0,
-    #                                                    legend_spacing=0.004)
-    # Analysis.plot_time_to_start_cross_by_alphabetical_order(df_mapping,
-    #                                                         x_axis_title_height=60,
-    #                                                         font_size_captions=common.get_configs("font_size"),
-    #                                                         legend_x=0.97,
-    #                                                         legend_y=1.0,
-    #                                                         legend_spacing=0.004)
-    # Analysis.plot_speed_to_cross_by_average(df_mapping,
-    #                                         x_axis_title_height=60,
-    #                                         font_size_captions=common.get_configs("font_size"),
-    #                                         legend_x=0.97,
-    #                                         legend_y=1.0,
-    #                                         legend_spacing=0.004)
-    # Analysis.plot_time_to_start_cross_by_average(df_mapping,
-    #                                              x_axis_title_height=60,
-    #                                              font_size_captions=common.get_configs("font_size"),
-    #                                              legend_x=0.97,
-    #                                              legend_y=1.0,
-    #                                              legend_spacing=0.004)
-    # Analysis.correlation_matrix(df_mapping)
+    Analysis.speed_and_time_to_start_cross(df_mapping,
+                                           x_axis_title_height=110,
+                                           font_size_captions=common.get_configs("font_size") + 8,
+                                           legend_x=0.9,
+                                           legend_y=0.01,
+                                           legend_spacing=0.0026)
+    Analysis.plot_speed_to_cross_by_alphabetical_order(df_mapping,
+                                                       x_axis_title_height=60,
+                                                       font_size_captions=common.get_configs("font_size"),
+                                                       legend_x=0.97,
+                                                       legend_y=1.0,
+                                                       legend_spacing=0.004)
+    Analysis.plot_time_to_start_cross_by_alphabetical_order(df_mapping,
+                                                            x_axis_title_height=60,
+                                                            font_size_captions=common.get_configs("font_size"),
+                                                            legend_x=0.97,
+                                                            legend_y=1.0,
+                                                            legend_spacing=0.004)
+    Analysis.plot_speed_to_cross_by_average(df_mapping,
+                                            x_axis_title_height=60,
+                                            font_size_captions=common.get_configs("font_size"),
+                                            legend_x=0.97,
+                                            legend_y=1.0,
+                                            legend_spacing=0.004)
+    Analysis.plot_time_to_start_cross_by_average(df_mapping,
+                                                 x_axis_title_height=60,
+                                                 font_size_captions=common.get_configs("font_size"),
+                                                 legend_x=0.97,
+                                                 legend_y=1.0,
+                                                 legend_spacing=0.004)
+    Analysis.correlation_matrix(df_mapping)
 
-    # # Speed of crossing vs time to start crossing
-    # df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
-    # df = df[df["time_crossing"] != 0]
+    # Speed of crossing vs time to start crossing
+    df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
+    df = df[df["time_crossing"] != 0]
+    df['state'] = df['state'].fillna('NA')
+    Analysis.scatter(df=df,
+                     x="speed_crossing",
+                     y="time_crossing",
+                     color="continent",
+                     text="city",
+                     xaxis_title='Mean speed of crossing (in m/s)',
+                     yaxis_title='Mean time to start crossing (in s)',
+                     pretty_text=False,
+                     marker_size=10,
+                     save_file=True,
+                     hover_data=hover_data,
+                     hover_name="city",
+                     legend_title="",
+                     legend_x=0.01,
+                     legend_y=1.0,
+                     label_distance_factor=3.0,
+                     marginal_x=None,  # type: ignore
+                     marginal_y=None)  # type: ignore
+
+    # # Speed of crossing during daytime vs time to start crossing during daytime
+    # df = df_mapping[df_mapping["speed_crossing_day"] != 0].copy()
+    # df = df[df["time_crossing_day"] != 0]
     # df['state'] = df['state'].fillna('NA')
-    # Analysis.scatter(df=df,
-    #                  x="speed_crossing",
-    #                  y="time_crossing",
-    #                  color="continent",
-    #                  text="city",
-    #                  xaxis_title='Mean speed of crossing (in m/s)',
-    #                  yaxis_title='Mean time to start crossing (in s)',
-    #                  pretty_text=False,
-    #                  marker_size=10,
-    #                  save_file=True,
-    #                  hover_data=hover_data,
-    #                  hover_name="city",
-    #                  legend_title="",
-    #                  legend_x=0.01,
-    #                  legend_y=1.0,
-    #                  label_distance_factor=3.0,
-    #                  marginal_x=None,  # type: ignore
-    #                  marginal_y=None)  # type: ignore
+    Analysis.scatter(df=df,
+                     x="speed_crossing_day",
+                     y="time_crossing_day",
+                     color="continent",
+                     text="city",
+                     xaxis_title='Crossing speed during daytime (in m/s)',
+                     yaxis_title='Crossing decision time during daytime (in s)',
+                     pretty_text=False,
+                     marker_size=10,
+                     save_file=True,
+                     hover_data=hover_data,
+                     hover_name="city",
+                     legend_title="",
+                     legend_x=0.01,
+                     legend_y=1.0,
+                     label_distance_factor=3.0,
+                     marginal_x=None,  # type: ignore
+                     marginal_y=None)  # type: ignore
 
-    # # # Speed of crossing during daytime vs time to start crossing during daytime
-    # # df = df_mapping[df_mapping["speed_crossing_day"] != 0].copy()
-    # # df = df[df["time_crossing_day"] != 0]
-    # # df['state'] = df['state'].fillna('NA')
-    # Analysis.scatter(df=df,
-    #                  x="speed_crossing_day",
-    #                  y="time_crossing_day",
-    #                  color="continent",
-    #                  text="city",
-    #                  xaxis_title='Crossing speed during daytime (in m/s)',
-    #                  yaxis_title='Crossing decision time during daytime (in s)',
-    #                  pretty_text=False,
-    #                  marker_size=10,
-    #                  save_file=True,
-    #                  hover_data=hover_data,
-    #                  hover_name="city",
-    #                  legend_title="",
-    #                  legend_x=0.01,
-    #                  legend_y=1.0,
-    #                  label_distance_factor=3.0,
-    #                  marginal_x=None,  # type: ignore
-    #                  marginal_y=None)  # type: ignore
+    # Speed of crossing during night time vs time to start crossing during night time
+    df = df_mapping[df_mapping["speed_crossing_night"] != 0].copy()
+    df = df[df["time_crossing_night"] != 0]
+    df['state'] = df['state'].fillna('NA')
+    Analysis.scatter(df=df,
+                     x="speed_crossing_night",
+                     y="time_crossing_night",
+                     color="continent",
+                     text="city",
+                     xaxis_title='Crossing speed during night time (in m/s)',
+                     yaxis_title='Crossing decision time during night time (in s)',
+                     pretty_text=False,
+                     marker_size=10,
+                     save_file=True,
+                     hover_data=hover_data,
+                     hover_name="city",
+                     legend_title="",
+                     legend_x=0.87,
+                     legend_y=1.0,
+                     label_distance_factor=0.8,
+                     marginal_x=None,  # type: ignore
+                     marginal_y=None)  # type: ignore
 
-    # # Speed of crossing during night time vs time to start crossing during night time
-    # df = df_mapping[df_mapping["speed_crossing_night"] != 0].copy()
-    # df = df[df["time_crossing_night"] != 0]
-    # df['state'] = df['state'].fillna('NA')
-    # Analysis.scatter(df=df,
-    #                  x="speed_crossing_night",
-    #                  y="time_crossing_night",
-    #                  color="continent",
-    #                  text="city",
-    #                  xaxis_title='Crossing speed during night time (in m/s)',
-    #                  yaxis_title='Crossing decision time during night time (in s)',
-    #                  pretty_text=False,
-    #                  marker_size=10,
-    #                  save_file=True,
-    #                  hover_data=hover_data,
-    #                  hover_name="city",
-    #                  legend_title="",
-    #                  legend_x=0.87,
-    #                  legend_y=1.0,
-    #                  label_distance_factor=0.8,
-    #                  marginal_x=None,  # type: ignore
-    #                  marginal_y=None)  # type: ignore
+    # Time to start crossing vs population of city
+    df = df_mapping[df_mapping["time_crossing"] != 0].copy()
+    df = df[(df["population_city"].notna()) & (df["population_city"] != 0)]
+    df['state'] = df['state'].fillna('NA')
+    Analysis.scatter(df=df,
+                     x="time_crossing",
+                     y="population_city",
+                     color="continent",
+                     text="city",
+                     xaxis_title='Mean time to start crossing (in s)',
+                     yaxis_title='Population of city',
+                     pretty_text=False,
+                     marker_size=10,
+                     save_file=True,
+                     hover_data=hover_data,
+                     hover_name="city",
+                     legend_title="",
+                     legend_x=0.87,
+                     legend_y=1.0,
+                     label_distance_factor=2.0,
+                     marginal_x=None,  # type: ignore
+                     marginal_y=None)  # type: ignore
 
-    # # Time to start crossing vs population of city
-    # df = df_mapping[df_mapping["time_crossing"] != 0].copy()
-    # df = df[(df["population_city"].notna()) & (df["population_city"] != 0)]
-    # df['state'] = df['state'].fillna('NA')
-    # Analysis.scatter(df=df,
-    #                  x="time_crossing",
-    #                  y="population_city",
-    #                  color="continent",
-    #                  text="city",
-    #                  xaxis_title='Mean time to start crossing (in s)',
-    #                  yaxis_title='Population of city',
-    #                  pretty_text=False,
-    #                  marker_size=10,
-    #                  save_file=True,
-    #                  hover_data=hover_data,
-    #                  hover_name="city",
-    #                  legend_title="",
-    #                  legend_x=0.87,
-    #                  legend_y=1.0,
-    #                  label_distance_factor=2.0,
-    #                  marginal_x=None,  # type: ignore
-    #                  marginal_y=None)  # type: ignore
+    # Speed of crossing vs population of city
+    df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
+    df = df[(df["population_city"].notna()) & (df["population_city"] != 0)]
+    df['state'] = df['state'].fillna('NA')
+    Analysis.scatter(df=df,
+                     x="speed_crossing",
+                     y="population_city",
+                     color="continent",
+                     text="city",
+                     xaxis_title='Mean speed of crossing (in m/s)',
+                     yaxis_title='Population of city',
+                     pretty_text=False,
+                     marker_size=10,
+                     save_file=True,
+                     hover_data=hover_data,
+                     hover_name="city",
+                     legend_title="",
+                     legend_x=0.87,
+                     legend_y=1.0,
+                     label_distance_factor=3.0,
+                     marginal_x=None,  # type: ignore
+                     marginal_y=None)  # type: ignore
 
-    # # Speed of crossing vs population of city
-    # df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
-    # df = df[(df["population_city"].notna()) & (df["population_city"] != 0)]
-    # df['state'] = df['state'].fillna('NA')
-    # Analysis.scatter(df=df,
-    #                  x="speed_crossing",
-    #                  y="population_city",
-    #                  color="continent",
-    #                  text="city",
-    #                  xaxis_title='Mean speed of crossing (in m/s)',
-    #                  yaxis_title='Population of city',
-    #                  pretty_text=False,
-    #                  marker_size=10,
-    #                  save_file=True,
-    #                  hover_data=hover_data,
-    #                  hover_name="city",
-    #                  legend_title="",
-    #                  legend_x=0.87,
-    #                  legend_y=1.0,
-    #                  label_distance_factor=3.0,
-    #                  marginal_x=None,  # type: ignore
-    #                  marginal_y=None)  # type: ignore
+    # Time to start crossing vs population of city
+    df = df_mapping[df_mapping["time_crossing"] != 0].copy()
+    df = df[(df["traffic_mortality"].notna()) & (df["traffic_mortality"] != 0)]
+    df['state'] = df['state'].fillna('NA')
+    Analysis.scatter(df=df,
+                     x="time_crossing",
+                     y="traffic_mortality",
+                     color="continent",
+                     text="city",
+                     xaxis_title='Mean time to start crossing (in s)',
+                     yaxis_title='National traffic mortality rate (per 100,000 of population)',
+                     pretty_text=False,
+                     marker_size=10,
+                     save_file=True,
+                     hover_data=hover_data,
+                     hover_name="city",
+                     legend_title="",
+                     legend_x=0.87,
+                     legend_y=1.0,
+                     label_distance_factor=3.0,
+                     marginal_x=None,  # type: ignore
+                     marginal_y=None)  # type: ignore
 
-    # # Time to start crossing vs population of city
-    # df = df_mapping[df_mapping["time_crossing"] != 0].copy()
-    # df = df[(df["traffic_mortality"].notna()) & (df["traffic_mortality"] != 0)]
-    # df['state'] = df['state'].fillna('NA')
-    # Analysis.scatter(df=df,
-    #                  x="time_crossing",
-    #                  y="traffic_mortality",
-    #                  color="continent",
-    #                  text="city",
-    #                  xaxis_title='Mean time to start crossing (in s)',
-    #                  yaxis_title='National traffic mortality rate (per 100,000 of population)',
-    #                  pretty_text=False,
-    #                  marker_size=10,
-    #                  save_file=True,
-    #                  hover_data=hover_data,
-    #                  hover_name="city",
-    #                  legend_title="",
-    #                  legend_x=0.87,
-    #                  legend_y=1.0,
-    #                  label_distance_factor=3.0,
-    #                  marginal_x=None,  # type: ignore
-    #                  marginal_y=None)  # type: ignore
+    # Speed of crossing vs population of city
+    df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
+    df = df[(df["traffic_mortality"].notna()) & (df["traffic_mortality"] != 0)]
+    df['state'] = df['state'].fillna('NA')
+    Analysis.scatter(df=df,
+                     x="speed_crossing",
+                     y="traffic_mortality",
+                     color="continent",
+                     text="city",
+                     xaxis_title='Mean speed of crossing (in m/s)',
+                     yaxis_title='National traffic mortality rate (per 100,000 of population)',
+                     pretty_text=False,
+                     marker_size=10,
+                     save_file=True,
+                     hover_data=hover_data,
+                     hover_name="city",
+                     legend_title="",
+                     legend_x=0.87,
+                     legend_y=1.0,
+                     label_distance_factor=2.0,
+                     marginal_x=None,  # type: ignore
+                     marginal_y=None)  # type: ignore
 
-    # # Speed of crossing vs population of city
-    # df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
-    # df = df[(df["traffic_mortality"].notna()) & (df["traffic_mortality"] != 0)]
-    # df['state'] = df['state'].fillna('NA')
-    # Analysis.scatter(df=df,
-    #                  x="speed_crossing",
-    #                  y="traffic_mortality",
-    #                  color="continent",
-    #                  text="city",
-    #                  xaxis_title='Mean speed of crossing (in m/s)',
-    #                  yaxis_title='National traffic mortality rate (per 100,000 of population)',
-    #                  pretty_text=False,
-    #                  marker_size=10,
-    #                  save_file=True,
-    #                  hover_data=hover_data,
-    #                  hover_name="city",
-    #                  legend_title="",
-    #                  legend_x=0.87,
-    #                  legend_y=1.0,
-    #                  label_distance_factor=2.0,
-    #                  marginal_x=None,  # type: ignore
-    #                  marginal_y=None)  # type: ignore
+    # Time to start crossing vs population of city
+    df = df_mapping[df_mapping["time_crossing"] != 0].copy()
+    df = df[(df["literacy_rate"].notna()) & (df["literacy_rate"] != 0)]
+    df['state'] = df['state'].fillna('NA')
+    Analysis.scatter(df=df,
+                     x="time_crossing",
+                     y="literacy_rate",
+                     color="continent",
+                     text="city",
+                     xaxis_title='Mean time to start crossing (in s)',
+                     yaxis_title='Literacy rate',
+                     pretty_text=False,
+                     marker_size=10,
+                     save_file=True,
+                     hover_data=hover_data,
+                     hover_name="city",
+                     legend_title="",
+                     legend_x=0.87,
+                     legend_y=0.01,
+                     label_distance_factor=3.0,
+                     marginal_x=None,  # type: ignore
+                     marginal_y=None)  # type: ignore
 
-    # # Time to start crossing vs population of city
-    # df = df_mapping[df_mapping["time_crossing"] != 0].copy()
-    # df = df[(df["literacy_rate"].notna()) & (df["literacy_rate"] != 0)]
-    # df['state'] = df['state'].fillna('NA')
-    # Analysis.scatter(df=df,
-    #                  x="time_crossing",
-    #                  y="literacy_rate",
-    #                  color="continent",
-    #                  text="city",
-    #                  xaxis_title='Mean time to start crossing (in s)',
-    #                  yaxis_title='Literacy rate',
-    #                  pretty_text=False,
-    #                  marker_size=10,
-    #                  save_file=True,
-    #                  hover_data=hover_data,
-    #                  hover_name="city",
-    #                  legend_title="",
-    #                  legend_x=0.87,
-    #                  legend_y=0.01,
-    #                  label_distance_factor=3.0,
-    #                  marginal_x=None,  # type: ignore
-    #                  marginal_y=None)  # type: ignore
+    # Speed of crossing vs population of city
+    df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
+    df = df[(df["literacy_rate"].notna()) & (df["literacy_rate"] != 0)]
+    df['state'] = df['state'].fillna('NA')
+    Analysis.scatter(df=df,
+                     x="speed_crossing",
+                     y="literacy_rate",
+                     color="continent",
+                     text="city",
+                     xaxis_title='Mean speed of crossing (in m/s)',
+                     yaxis_title='Literacy rate',
+                     pretty_text=False,
+                     marker_size=10,
+                     save_file=True,
+                     hover_data=hover_data,
+                     hover_name="city",
+                     legend_title="",
+                     legend_x=0.87,
+                     legend_y=0.01,
+                     label_distance_factor=3.0,
+                     marginal_x=None,  # type: ignore
+                     marginal_y=None)  # type: ignore
 
-    # # Speed of crossing vs population of city
-    # df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
-    # df = df[(df["literacy_rate"].notna()) & (df["literacy_rate"] != 0)]
-    # df['state'] = df['state'].fillna('NA')
-    # Analysis.scatter(df=df,
-    #                  x="speed_crossing",
-    #                  y="literacy_rate",
-    #                  color="continent",
-    #                  text="city",
-    #                  xaxis_title='Mean speed of crossing (in m/s)',
-    #                  yaxis_title='Literacy rate',
-    #                  pretty_text=False,
-    #                  marker_size=10,
-    #                  save_file=True,
-    #                  hover_data=hover_data,
-    #                  hover_name="city",
-    #                  legend_title="",
-    #                  legend_x=0.87,
-    #                  legend_y=0.01,
-    #                  label_distance_factor=3.0,
-    #                  marginal_x=None,  # type: ignore
-    #                  marginal_y=None)  # type: ignore
+    # Time to start crossing vs population of city
+    df = df_mapping[df_mapping["time_crossing"] != 0].copy()
+    df = df[(df["gini"].notna()) & (df["gini"] != 0)]
+    df['state'] = df['state'].fillna('NA')
+    Analysis.scatter(df=df,
+                     x="time_crossing",
+                     y="gini",
+                     color="continent",
+                     text="city",
+                     xaxis_title='Mean time to start crossing (in s)',
+                     yaxis_title='Gini coefficient',
+                     pretty_text=False,
+                     marker_size=10,
+                     save_file=True,
+                     hover_data=hover_data,
+                     hover_name="city",
+                     legend_title="",
+                     legend_x=0.87,
+                     legend_y=1.0,
+                     label_distance_factor=3.0,
+                     marginal_x=None,  # type: ignore
+                     marginal_y=None)  # type: ignore
 
-    # # Time to start crossing vs population of city
-    # df = df_mapping[df_mapping["time_crossing"] != 0].copy()
-    # df = df[(df["gini"].notna()) & (df["gini"] != 0)]
-    # df['state'] = df['state'].fillna('NA')
-    # Analysis.scatter(df=df,
-    #                  x="time_crossing",
-    #                  y="gini",
-    #                  color="continent",
-    #                  text="city",
-    #                  xaxis_title='Mean time to start crossing (in s)',
-    #                  yaxis_title='Gini coefficient',
-    #                  pretty_text=False,
-    #                  marker_size=10,
-    #                  save_file=True,
-    #                  hover_data=hover_data,
-    #                  hover_name="city",
-    #                  legend_title="",
-    #                  legend_x=0.87,
-    #                  legend_y=1.0,
-    #                  label_distance_factor=3.0,
-    #                  marginal_x=None,  # type: ignore
-    #                  marginal_y=None)  # type: ignore
+    # Speed of crossing vs population of city
+    df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
+    df = df[(df["gini"].notna()) & (df["gini"] != 0)]
+    df['state'] = df['state'].fillna('NA')
+    Analysis.scatter(df=df,
+                     x="speed_crossing",
+                     y="gini",
+                     color="continent",
+                     text="city",
+                     xaxis_title='Mean speed of crossing (in m/s)',
+                     yaxis_title='Gini coefficient',
+                     pretty_text=False,
+                     marker_size=10,
+                     save_file=True,
+                     hover_data=hover_data,
+                     hover_name="city",
+                     legend_title="",
+                     legend_x=0.87,
+                     legend_y=1.0,
+                     label_distance_factor=2.0,
+                     marginal_x=None,  # type: ignore
+                     marginal_y=None)  # type: ignore
 
-    # # Speed of crossing vs population of city
-    # df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
-    # df = df[(df["gini"].notna()) & (df["gini"] != 0)]
-    # df['state'] = df['state'].fillna('NA')
-    # Analysis.scatter(df=df,
-    #                  x="speed_crossing",
-    #                  y="gini",
-    #                  color="continent",
-    #                  text="city",
-    #                  xaxis_title='Mean speed of crossing (in m/s)',
-    #                  yaxis_title='Gini coefficient',
-    #                  pretty_text=False,
-    #                  marker_size=10,
-    #                  save_file=True,
-    #                  hover_data=hover_data,
-    #                  hover_name="city",
-    #                  legend_title="",
-    #                  legend_x=0.87,
-    #                  legend_y=1.0,
-    #                  label_distance_factor=2.0,
-    #                  marginal_x=None,  # type: ignore
-    #                  marginal_y=None)  # type: ignore
+    # Time to start crossing vs population of city
+    df = df_mapping[df_mapping["time_crossing"] != 0].copy()
+    df = df[(df["traffic_index"].notna()) & (df["traffic_index"] != 0)]
+    df['state'] = df['state'].fillna('NA')
+    Analysis.scatter(df=df,
+                     x="time_crossing",
+                     y="traffic_index",
+                     color="continent",
+                     text="city",
+                     # size="gmp",
+                     xaxis_title='Mean time to start crossing (in s)',
+                     yaxis_title='Traffic index',
+                     pretty_text=False,
+                     marker_size=10,
+                     save_file=True,
+                     hover_data=hover_data,
+                     hover_name="city",
+                     legend_title="",
+                     legend_x=0.87,
+                     legend_y=1.0,
+                     label_distance_factor=2.0,
+                     marginal_x=None,  # type: ignore
+                     marginal_y=None)  # type: ignore
 
-    # # Time to start crossing vs population of city
-    # df = df_mapping[df_mapping["time_crossing"] != 0].copy()
-    # df = df[(df["traffic_index"].notna()) & (df["traffic_index"] != 0)]
-    # df['state'] = df['state'].fillna('NA')
-    # Analysis.scatter(df=df,
-    #                  x="time_crossing",
-    #                  y="traffic_index",
-    #                  color="continent",
-    #                  text="city",
-    #                  # size="gmp",
-    #                  xaxis_title='Mean time to start crossing (in s)',
-    #                  yaxis_title='Traffic index',
-    #                  pretty_text=False,
-    #                  marker_size=10,
-    #                  save_file=True,
-    #                  hover_data=hover_data,
-    #                  hover_name="city",
-    #                  legend_title="",
-    #                  legend_x=0.87,
-    #                  legend_y=1.0,
-    #                  label_distance_factor=2.0,
-    #                  marginal_x=None,  # type: ignore
-    #                  marginal_y=None)  # type: ignore
+    # Speed of crossing vs population of city
+    df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
+    df = df[df["traffic_index"] != 0]
+    df['state'] = df['state'].fillna('NA')
+    Analysis.scatter(df=df,
+                     x="speed_crossing",
+                     y="traffic_index",
+                     color="continent",
+                     text="city",
+                     xaxis_title='Mean speed of crossing (in m/s)',
+                     yaxis_title='Traffic index',
+                     pretty_text=False,
+                     marker_size=10,
+                     save_file=True,
+                     hover_data=hover_data,
+                     hover_name="city",
+                     legend_title="",
+                     legend_x=0.87,
+                     legend_y=1.0,
+                     label_distance_factor=2.0,
+                     marginal_x=None,  # type: ignore
+                     marginal_y=None)  # type: ignore
 
-    # # Speed of crossing vs population of city
-    # df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
-    # df = df[df["traffic_index"] != 0]
-    # df['state'] = df['state'].fillna('NA')
-    # Analysis.scatter(df=df,
-    #                  x="speed_crossing",
-    #                  y="traffic_index",
-    #                  color="continent",
-    #                  text="city",
-    #                  xaxis_title='Mean speed of crossing (in m/s)',
-    #                  yaxis_title='Traffic index',
-    #                  pretty_text=False,
-    #                  marker_size=10,
-    #                  save_file=True,
-    #                  hover_data=hover_data,
-    #                  hover_name="city",
-    #                  legend_title="",
-    #                  legend_x=0.87,
-    #                  legend_y=1.0,
-    #                  label_distance_factor=2.0,
-    #                  marginal_x=None,  # type: ignore
-    #                  marginal_y=None)  # type: ignore
+    # Speed of crossing vs detected mobile phones
+    df = df_mapping[df_mapping["time_crossing"] != 0].copy()
+    df['state'] = df['state'].fillna('NA')
+    df['cellphone_normalised'] = df['cellphone'] / df['total_time']
+    Analysis.scatter(df=df,
+                     x="time_crossing",
+                     y="cellphone_normalised",
+                     color="continent",
+                     text="city",
+                     xaxis_title='Mean time to start crossing (in s)',
+                     yaxis_title='Mobile phones detected (normalised over time)',
+                     pretty_text=False,
+                     marker_size=10,
+                     save_file=True,
+                     hover_data=hover_data,
+                     hover_name="city",
+                     legend_title="",
+                     legend_x=0.87,
+                     legend_y=1.0,
+                     label_distance_factor=3.0,
+                     marginal_x=None,  # type: ignore
+                     marginal_y=None)  # type: ignore
 
-    # # Speed of crossing vs detected mobile phones
-    # df = df_mapping[df_mapping["time_crossing"] != 0].copy()
-    # df['state'] = df['state'].fillna('NA')
-    # df['cellphone_normalised'] = df['cellphone'] / df['total_time']
-    # Analysis.scatter(df=df,
-    #                  x="time_crossing",
-    #                  y="cellphone_normalised",
-    #                  color="continent",
-    #                  text="city",
-    #                  xaxis_title='Mean time to start crossing (in s)',
-    #                  yaxis_title='Mobile phones detected (normalised over time)',
-    #                  pretty_text=False,
-    #                  marker_size=10,
-    #                  save_file=True,
-    #                  hover_data=hover_data,
-    #                  hover_name="city",
-    #                  legend_title="",
-    #                  legend_x=0.87,
-    #                  legend_y=1.0,
-    #                  label_distance_factor=3.0,
-    #                  marginal_x=None,  # type: ignore
-    #                  marginal_y=None)  # type: ignore
+    # Speed of crossing vs detected mobile phones
+    df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
+    df['state'] = df['state'].fillna('NA')
+    df['cellphone_normalised'] = df['cellphone'] / df['total_time']
+    Analysis.scatter(df=df,
+                     x="speed_crossing",
+                     y="cellphone_normalised",
+                     color="continent",
+                     text="city",
+                     xaxis_title='Mean speed of crossing (in m/s)',
+                     yaxis_title='Mobile phones detected (normalised over time)',
+                     pretty_text=False,
+                     marker_size=10,
+                     save_file=True,
+                     hover_data=hover_data,
+                     hover_name="city",
+                     legend_title="",
+                     legend_x=0.87,
+                     legend_y=1.0,
+                     label_distance_factor=3.0,
+                     marginal_x=None,  # type: ignore
+                     marginal_y=None)  # type: ignore
 
-    # # Speed of crossing vs detected mobile phones
-    # df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
-    # df['state'] = df['state'].fillna('NA')
-    # df['cellphone_normalised'] = df['cellphone'] / df['total_time']
-    # Analysis.scatter(df=df,
-    #                  x="speed_crossing",
-    #                  y="cellphone_normalised",
-    #                  color="continent",
-    #                  text="city",
-    #                  xaxis_title='Mean speed of crossing (in m/s)',
-    #                  yaxis_title='Mobile phones detected (normalised over time)',
-    #                  pretty_text=False,
-    #                  marker_size=10,
-    #                  save_file=True,
-    #                  hover_data=hover_data,
-    #                  hover_name="city",
-    #                  legend_title="",
-    #                  legend_x=0.87,
-    #                  legend_y=1.0,
-    #                  label_distance_factor=3.0,
-    #                  marginal_x=None,  # type: ignore
-    #                  marginal_y=None)  # type: ignore
-
-    # # Jaywalking
-    # Analysis.plot_crossing_without_traffic_light(df_mapping,
-    #                                              x_axis_title_height=60,
-    #                                              font_size_captions=common.get_configs("font_size"),
-    #                                              legend_x=0.97,
-    #                                              legend_y=1.0,
-    #                                              legend_spacing=0.004)
-    # Analysis.plot_crossing_with_traffic_light(df_mapping,
-    #                                           x_axis_title_height=60,
-    #                                           font_size_captions=common.get_configs("font_size"),
-    #                                           legend_x=0.97,
-    #                                           legend_y=1.0,
-    #                                           legend_spacing=0.004)
-    # # Crossing with and without traffic lights
-    # df = df_mapping.copy()
-    # df['state'] = df['state'].fillna('NA')
-    # df['with_trf_light_norm'] = (df['with_trf_light_day'] + df['with_trf_light_night']) / df['total_time'] / df['population_city']  # noqa: E501
-    # df['without_trf_light_norm'] = (df['without_trf_light_day'] + df['without_trf_light_night']) / df['total_time'] / df['population_city']  # noqa: E501
-    # Analysis.scatter(df=df,
-    #                  x="with_trf_light_norm",
-    #                  y="without_trf_light_norm",
-    #                  color="continent",
-    #                  text="city",
-    #                  xaxis_title='Crossing events with traffic lights (normalised)',
-    #                  yaxis_title='Crossing events without traffic lights (normalised)',
-    #                  pretty_text=False,
-    #                  marker_size=10,
-    #                  save_file=True,
-    #                  hover_data=hover_data,
-    #                  hover_name="city",
-    #                  legend_title="",
-    #                  legend_x=0.87,
-    #                  legend_y=1.0,
-    #                  label_distance_factor=3.0,
-    #                  marginal_x=None,  # type: ignore
-    #                  marginal_y=None)  # type: ignore
+    # Jaywalking
+    Analysis.plot_crossing_without_traffic_light(df_mapping,
+                                                 x_axis_title_height=60,
+                                                 font_size_captions=common.get_configs("font_size"),
+                                                 legend_x=0.97,
+                                                 legend_y=1.0,
+                                                 legend_spacing=0.004)
+    Analysis.plot_crossing_with_traffic_light(df_mapping,
+                                              x_axis_title_height=60,
+                                              font_size_captions=common.get_configs("font_size"),
+                                              legend_x=0.97,
+                                              legend_y=1.0,
+                                              legend_spacing=0.004)
+    # Crossing with and without traffic lights
+    df = df_mapping.copy()
+    df['state'] = df['state'].fillna('NA')
+    df['with_trf_light_norm'] = (df['with_trf_light_day'] + df['with_trf_light_night']) / df['total_time'] / df['population_city']  # noqa: E501
+    df['without_trf_light_norm'] = (df['without_trf_light_day'] + df['without_trf_light_night']) / df['total_time'] / df['population_city']  # noqa: E501
+    Analysis.scatter(df=df,
+                     x="with_trf_light_norm",
+                     y="without_trf_light_norm",
+                     color="continent",
+                     text="city",
+                     xaxis_title='Crossing events with traffic lights (normalised)',
+                     yaxis_title='Crossing events without traffic lights (normalised)',
+                     pretty_text=False,
+                     marker_size=10,
+                     save_file=True,
+                     hover_data=hover_data,
+                     hover_name="city",
+                     legend_title="",
+                     legend_x=0.87,
+                     legend_y=1.0,
+                     label_distance_factor=3.0,
+                     marginal_x=None,  # type: ignore
+                     marginal_y=None)  # type: ignore
