@@ -14,6 +14,7 @@ from utils.algorithms import Algorithms
 from utils.values import Values
 from utils.wrappers import Wrappers
 from utils.plot import Plots
+from utils.geometry import Geometry
 import common
 from custom_logger import CustomLogger
 from logmod import logs
@@ -39,6 +40,7 @@ algorithms_class = Algorithms()
 values_class = Values()
 wrapper_class = Wrappers()
 plots_class = Plots()
+geometry_class = Geometry()
 
 # set template for plotly output
 template = common.get_configs('plotly_template')
@@ -93,6 +95,10 @@ class Analysis():
                     try:
                         logger.debug(f"Adding file {file_path} to dfs.")
                         df = pd.read_csv(file_path)
+                        if common.get_configs("use_geometry_correction"):
+                            df = geometry_class.reassign_ids_directional_cross_fix(df,
+                                                                                   distance_threshold=0.02,
+                                                                                   yolo_ids=[0])
                         filename = os.path.splitext(file)[0]
                         key = filename  # includes both video id and suffix
                         dfs[key] = df
