@@ -176,9 +176,9 @@ class Analysis():
             tuple: A set of unique countries and the total count of unique countries.
         """
         # Extract unique countries from the 'country' column
-        unique_countries = set(df[value].unique())
+        unique_values = set(df[value].unique())
 
-        return unique_countries, len(unique_countries)
+        return unique_values, len(unique_values)
 
     @staticmethod
     def get_world_map(df_mapping):
