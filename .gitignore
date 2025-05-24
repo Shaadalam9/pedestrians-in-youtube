@@ -32,7 +32,7 @@ __pycache__/
 config
 secret
 mapping_queue.csv
-mapping-bkp.csv
+mapping_bkp.csv
 
 # Pickle files
 *.pickle

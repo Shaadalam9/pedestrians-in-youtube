@@ -33,7 +33,7 @@ def parse_flat_list(cell):
 
 # filenames
 base_file = 'mapping.csv'
-backup_file = 'mapping-bkp.csv'
+backup_file = 'mapping_bkp.csv'
 
 # create backup
 shutil.copyfile(base_file, backup_file)
