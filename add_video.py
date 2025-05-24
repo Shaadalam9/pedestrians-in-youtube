@@ -635,7 +635,10 @@ def get_traffic_index_lat_lon(lat, lon, api="tomtom"):
             if "flowSegmentData" in data:
                 current_speed = data["flowSegmentData"]["currentSpeed"]
                 free_flow_speed = data["flowSegmentData"]["freeFlowSpeed"]
-                traffic_index = round((1 - current_speed / free_flow_speed) * 100, 2)
+                try:  # free_flow_speed can be 0
+                    traffic_index = round((1 - current_speed / free_flow_speed) * 100, 2)
+                except ZeroDivisionError:
+                    traffic_index = 0.0 
                 return traffic_index
             else:
                 return 0.0
