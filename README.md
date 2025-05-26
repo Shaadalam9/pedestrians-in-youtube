@@ -73,6 +73,9 @@ Configuration of the project needs to be defined in `config`. Please use the `de
 - **`model`**: Specifies the YOLO model to use; supported/tested versions include `v8x` and `v11x`.
 - **`population_threshold`**: Specifies the minimum population a city must have to be included in the analysis.
 - **`footage_threshold`**: Specifies the minimum amount of footage required for a city to be included in the analysis.
+- **`min_city_population_percentage`**: Specifies the minimum proportion of a country’s population that a city must have to be included in the analysis.
+- **`min_speed`**: Specifies the minimum speed limit for pedestrian crossings to be included in the analysis.
+- **`max_speed`**: pecifies the maximum speed limit for pedestrian crossings to be included in the analysis.
 - **`countries_analyse`**: Lists the countries to be analysed.
 - **`confidence`**: Sets the confidence threshold parameter for YOLO.
 - **`update_ISO_code`**: Updates the ISO code of the country in the mapping file during analysis.

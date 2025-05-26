@@ -127,7 +127,7 @@ class Analysis():
 
                     # Only add the DataFrame if the required condition on 'values' is satisfied
                     if values is not None and values[8] is not None:
-                        total_seconds = values_class.calculate_total_seconds_for_city(df_mapping, values[4])
+                        total_seconds = values_class.calculate_total_seconds_for_city(df_mapping, values[4], values[5])
                         if total_seconds > common.get_configs("footage_threshold"):
                             dfs[filename] = df
 
@@ -4359,7 +4359,20 @@ if __name__ == "__main__":
     else:
         # Store the mapping file
         df_mapping = pd.read_csv(common.get_configs("mapping"))
-        df_mapping = df_mapping[df_mapping["population_city"] > common.get_configs("population_threshold")]
+
+        # Get the population threshold from the configuration
+        population_threshold = common.get_configs("population_threshold")
+
+        # Get the minimum percentage of country population from the configuration
+        min_percentage = common.get_configs("min_city_country_population_percentage")
+
+        # Filter df_mapping to include cities that meet either of the following criteria:
+        # 1. The city's population is greater than the threshold
+        # 2. The city's population is at least the minimum percentage of the country's population
+        df_mapping = df_mapping[
+            (df_mapping["population_city"] > population_threshold) |  # Condition 1
+            (df_mapping["population_city"] >= min_percentage * df_mapping["population_country"])  # Condition 2
+        ]
 
         # Limit countries if required
         countries_include = common.get_configs("countries_analyse")
@@ -4381,7 +4394,6 @@ if __name__ == "__main__":
 
         # Stores the content of the csv file in form of {name_time: content}
         dfs = Analysis.read_csv_files(common.get_configs('data'), df_mapping)
-        print("dfs--->", dfs)
 
         # add information for each city to then be appended to mapping
         df_mapping['person'] = 0

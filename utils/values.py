@@ -135,12 +135,15 @@ class Values():
             # Return None if no matching value is found
             return None
 
-    def calculate_total_seconds_for_city(self, df, city_name):
+    def calculate_total_seconds_for_city(self, df, city_name, state_name):
         """
-        Calculates the total seconds of video for a specific city according to mapping file.
+        Calculates the total seconds of video for a specific city and state according to mapping file.
         """
-        # Filter the DataFrame for the specific city
-        row = df[df['city'] == city_name]
+        # Filter the DataFrame for the specific city and state
+        if state_name.lower() == "unknown":
+            row = df[(df['city'] == city_name) & (pd.isna(df['state']))]
+        else:
+            row = df[(df['city'] == city_name) & (df['state'] == state_name)]
         if row.empty:
             return 0  # or raise an error if city not found
 
