@@ -41,7 +41,6 @@ class Values():
                 - Average height
                 - ISO-3 code for country
         """
-
         id, start_ = key.rsplit("_", 1)  # Splitting the key into video ID and start time
 
         # Iterate through each row in the DataFrame
