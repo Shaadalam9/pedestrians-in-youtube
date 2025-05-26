@@ -4380,12 +4380,13 @@ if __name__ == "__main__":
         logger.info("Analysing data.")
         for key, value in tqdm(dfs.items(), total=len(dfs)):
             # extract information for the csv file from mapping
+            logger.debug(f"{key}: fetching values.")
             video_id, start_index = key.rsplit("_", 1)  # split to extract id and index
             video_city_id = Analysis.find_city_id(df_mapping, video_id, int(start_index))
             video_city = df_mapping.loc[df_mapping["id"] == video_city_id, "city"].values[0]  # type:ignore
             video_state = df_mapping.loc[df_mapping["id"] == video_city_id, "state"].values[0]  # type:ignore
             video_country = df_mapping.loc[df_mapping["id"] == video_city_id, "country"].values[0]  # type:ignore
-            logger.debug(f"Analysing data from {key} from {video_city}, {video_state}, {video_country}.")
+            logger.debug(f"{key}: found values {video_city}, {video_state}, {video_country}.")
 
             # Get the number of number and unique id of the object crossing the road
             ids = Analysis.pedestrian_crossing(dfs[key], 0.45, 0.55, 0)
