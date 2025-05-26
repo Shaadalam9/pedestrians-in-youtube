@@ -80,7 +80,10 @@ class Analysis():
           - For each CSV file found, it will read the file into a pandas DataFrame.
           - Optionally apply geometry correction to the DataFrame if enabled in the configuration.
           - Look up additional values using the provided mapping and the file's base name.
-          - Add the DataFrame to the result dictionary if required conditions are met.
+          - Adds the DataFrame to the results only if:
+                - The mapping values exist and the population of the city is greater than the
+                    configured `footage_threshold,
+                - The total seconds are greater than the configured `footage_threshold`.
 
         Args:
             folder_paths (list[str]): List of folder paths containing the CSV files.
@@ -124,7 +127,9 @@ class Analysis():
 
                     # Only add the DataFrame if the required condition on 'values' is satisfied
                     if values is not None and values[8] is not None:
-                        dfs[filename] = df
+                        total_seconds = values_class.calculate_total_seconds_for_city(df_mapping, values[4])
+                        if total_seconds > common.get_configs("footage_threshold"):
+                            dfs[filename] = df
 
         return dfs
 
