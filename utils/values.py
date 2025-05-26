@@ -41,7 +41,6 @@ class Values():
                 - Average height
                 - ISO-3 code for country
         """
-
         id, start_ = key.rsplit("_", 1)  # Splitting the key into video ID and start time
 
         # Iterate through each row in the DataFrame
@@ -135,3 +134,27 @@ class Values():
         else:
             # Return None if no matching value is found
             return None
+
+    def calculate_total_seconds_for_city(self, df, city_name):
+        """
+        Calculates the total seconds of video for a specific city according to mapping file.
+        """
+        # Filter the DataFrame for the specific city
+        row = df[df['city'] == city_name]
+        if row.empty:
+            return 0  # or raise an error if city not found
+
+        row = row.iloc[0]  # get the first matching row
+
+        # Extracting data from the row
+        start_times = ast.literal_eval(row["start_time"])
+        end_times = ast.literal_eval(row["end_time"])
+
+        total_seconds = 0
+
+        # Iterate through each start time and end time
+        for start, end in zip(start_times, end_times):
+            for s, e in zip(start, end):
+                total_seconds += (int(e) - int(s))
+
+        return total_seconds

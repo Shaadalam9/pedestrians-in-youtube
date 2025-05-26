@@ -69,18 +69,31 @@ class Analysis():
         pass
 
     @staticmethod
-    def read_csv_files(folder_paths):
+    def read_csv_files(folder_paths, df_mapping):
         """
-        Reads all csv files in the specified folders and returns their contents as a dictionary.
+        Reads all CSV files in the specified folders, processes them if configured,
+        and returns their contents as a dictionary keyed by file name.
+
+        This function will:
+          - Iterate over the provided list of folder paths.
+          - For each folder, it will check if it exists and log a warning if not.
+          - For each CSV file found, it will read the file into a pandas DataFrame.
+          - Optionally apply geometry correction to the DataFrame if enabled in the configuration.
+          - Look up additional values using the provided mapping and the file's base name.
+          - Adds the DataFrame to the results only if:
+                - The mapping values exist and the population of the city is greater than the
+                    configured `footage_threshold,
+                - The total seconds are greater than the configured `footage_threshold`.
 
         Args:
-            folder_paths (list[str]): list of folder paths where the csv files are stored.
+            folder_paths (list[str]): List of folder paths containing the CSV files.
+            df_mapping (Any): A mapping object used to find values related to each file (for example, video IDs).
 
         Returns:
-            dict: a dictionary where keys are csv file names (with folder prefix) and values are dataframes
-            containing the content of each csv file.
+            dict: Dictionary where keys are the base file names (without extension),
+                  and values are the corresponding pandas DataFrames of each CSV file.
+                  Only files meeting all value requirements are included.
         """
-
         dfs = {}
         logger.info("reading csv files.")
 
@@ -94,16 +107,29 @@ class Analysis():
                     file_path = os.path.join(folder_path, file)
                     try:
                         logger.debug(f"Adding file {file_path} to dfs.")
+                        # Read the CSV into a DataFrame
                         df = pd.read_csv(file_path)
+
+                        # Optionally apply geometry correction if configured
                         if common.get_configs("use_geometry_correction"):
                             df = geometry_class.reassign_ids_directional_cross_fix(df,
                                                                                    distance_threshold=0.02,
                                                                                    yolo_ids=[0])
+
+                        # Extract the filename without extension
                         filename = os.path.splitext(file)[0]
-                        key = filename  # includes both video id and suffix
-                        dfs[key] = df
+
+                        # Find associated values using the mapping and the filename
+                        values = values_class.find_values_with_video_id(df_mapping, filename)
                     except Exception as e:
                         logger.error(f"Failed to read {file_path}: {e}.")
+                        continue  # Skip to the next file if reading fails
+
+                    # Only add the DataFrame if the required condition on 'values' is satisfied
+                    if values is not None and values[8] is not None:
+                        total_seconds = values_class.calculate_total_seconds_for_city(df_mapping, values[4])
+                        if total_seconds > common.get_configs("footage_threshold"):
+                            dfs[filename] = df
 
         return dfs
 
@@ -4333,6 +4359,7 @@ if __name__ == "__main__":
     else:
         # Store the mapping file
         df_mapping = pd.read_csv(common.get_configs("mapping"))
+        df_mapping = df_mapping[df_mapping["population_city"] > common.get_configs("population_threshold")]
 
         # Limit countries if required
         countries_include = common.get_configs("countries_analyse")
@@ -4353,7 +4380,9 @@ if __name__ == "__main__":
         logger.info("Total number of cities: {}.", number)
 
         # Stores the content of the csv file in form of {name_time: content}
-        dfs = Analysis.read_csv_files(common.get_configs('data'))
+        dfs = Analysis.read_csv_files(common.get_configs('data'), df_mapping)
+        print("dfs--->", dfs)
+
         # add information for each city to then be appended to mapping
         df_mapping['person'] = 0
         df_mapping['bicycle'] = 0

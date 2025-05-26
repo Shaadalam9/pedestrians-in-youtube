@@ -68,10 +68,11 @@ Configuration of the project needs to be defined in `config`. Please use the `de
 - **`delete_youtube_video`**: Deletes saved YouTube videos.
 - **`compress_youtube_video`**: Compresses YouTube videos (using the H.255 codec by default).
 - **`delete_runs_files`**: Deletes files containing YOLO output after analysis.
-- **`monitor_temp`**: Monitors the temperature of the device running the analysis.
 - **`check_missing_mapping`**: Identifies all the missing csv files.
 - **`client`**: Specifies the client type for downloading YouTube videos; accepted values are `"WEB"`, `"ANDROID"` or `"ios"`.
 - **`model`**: Specifies the YOLO model to use; supported/tested versions include `v8x` and `v11x`.
+- **`population_threshold`**: Specifies the minimum population a city must have to be included in the analysis.
+- **`footage_threshold`**: Specifies the minimum amount of footage required for a city to be included in the analysis.
 - **`countries_analyse`**: Lists the countries to be analysed.
 - **`confidence`**: Sets the confidence threshold parameter for YOLO.
 - **`update_ISO_code`**: Updates the ISO code of the country in the mapping file during analysis.
