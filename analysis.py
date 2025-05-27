@@ -110,11 +110,14 @@ class Analysis():
                         # Read the CSV into a DataFrame
                         df = pd.read_csv(file_path)
 
-                        # Optionally apply geometry correction if configured
-                        if common.get_configs("use_geometry_correction"):
-                            df = geometry_class.reassign_ids_directional_cross_fix(df,
-                                                                                   distance_threshold=0.02,
-                                                                                   yolo_ids=[0])
+                        # Optionally apply geometry correction if configured and not zero
+                        use_geom_correction = common.get_configs("use_geometry_correction")
+                        if use_geom_correction:
+                            df = geometry_class.reassign_ids_directional_cross_fix(
+                                df,
+                                distance_threshold=use_geom_correction,
+                                yolo_ids=[0]
+                                )
 
                         # Extract the filename without extension
                         filename = os.path.splitext(file)[0]
