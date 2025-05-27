@@ -4367,7 +4367,7 @@ if __name__ == "__main__":
         population_threshold = common.get_configs("population_threshold")
 
         # Get the minimum percentage of country population from the configuration
-        min_percentage = common.get_configs("min_city_country_population_percentage")
+        min_percentage = common.get_configs("min_city_population_percentage")
 
         # Filter df_mapping to include cities that meet either of the following criteria:
         # 1. The city's population is greater than the threshold
