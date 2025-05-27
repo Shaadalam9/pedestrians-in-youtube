@@ -4433,7 +4433,10 @@ if __name__ == "__main__":
             logger.debug(f"{key}: found values {video_city}, {video_state}, {video_country}.")
 
             # Get the number of number and unique id of the object crossing the road
-            ids = Analysis.pedestrian_crossing(dfs[key], 0.45, 0.55, 0)
+            ids = Analysis.pedestrian_crossing(dfs[key],
+                                               common.get_configs("boundary_left"),
+                                               common.get_configs("boundary_right"),
+                                               0)
 
             # Saving it in a dictionary in: {video-id_time: count, ids}
             pedestrian_crossing_count[key] = {"ids": ids}

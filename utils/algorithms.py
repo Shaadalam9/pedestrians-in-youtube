@@ -172,7 +172,8 @@ class Algorithms():
             for video_id, value_2 in value_1.items():
                 for unique_id, speed in value_2.items():
                     box.append(speed)
-            avg_speed[city_condition] = (sum(box) / len(box))
+            if len(box) > 0:
+                avg_speed[city_condition] = (sum(box) / len(box))
 
         return avg_speed
 
