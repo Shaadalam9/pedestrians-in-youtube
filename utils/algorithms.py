@@ -69,66 +69,81 @@ class Algorithms():
 
     def calculate_speed_of_crossing(self, df_mapping, dfs, data):
         """
-        Calculate the walking speeds of individuals crossing in various videos
-        and organise them by city, state, and condition.
+        Calculate and organize the walking speeds of individuals crossing in various videos,
+        grouping the results by city, state, and crossing condition.
 
         Args:
-            df_mapping (dataframe): A DataFrame mapping video IDs to metadata such as
-                city, state, country, and other contextual information.
-            dfs (dict): A dictionary where contains all the csv files extracted from YOLO.
-            data (dict): A dictionary where keys are video IDs and values are dictionaries
-                mapping person IDs to crossing durations.
+            df_mapping (pd.DataFrame): DataFrame mapping video IDs to metadata including
+                city, state, country, and other contextual details.
+            dfs (dict): Dictionary containing DataFrames extracted from YOLO for each video (keyed by video ID).
+            data (dict): Dictionary where keys are video IDs and values are dictionaries
+                mapping person IDs to crossing durations (in frames or seconds).
 
         Returns:
-            speed_dict (dict): A dictionary with keys formatted as 'city_state_condition' mapping to lists
-                of walking speeds (m/s) for each valid crossing.
-            all_speed (list): A flat list of all calculated walking speeds (m/s) across videos, including outliers.
+            dict: A dictionary where each key is a combination of 'city_state_condition'
+                mapping to a list of walking speeds (in m/s) for valid crossings.
         """
-        time_ = []
-        speed_compelete = {}
+        time_ = []  # List to store durations of videos (not used in output)
+        speed_compelete = {}  # Dictionary to hold valid speed results for each video
 
         # Create a dictionary to store country information for each city
         city_country_map_ = {}
 
-        # Iterate over each video data
+        # Iterate through all video IDs and their corresponding crossing data
         for key, df in tqdm(data.items(), total=len(data)):
-            speed_id_compelete = {}
+            speed_id_compelete = {}  # Store valid speeds for individuals in this video
+
             if df == {}:  # Skip if there is no data
                 continue
+
             result = values_class.find_values_with_video_id(df_mapping, key)
 
             # Check if the result is None (i.e., no matching data was found)
             if result is not None:
+                # Unpack video metadata (edit if order of unpacked variables changes)
                 (_, start, end, condition, city, state, country, gdp_, population, population_country,
                  traffic_mortality_, continent, literacy_rate, avg_height, iso3, fps) = result
 
-                value = dfs.get(key)
+                value = dfs.get(key)  # Get corresponding YOLO data
 
                 # Store the country associated with each city
                 city_country_map_[f'{city}_{state}'] = iso3
 
-                # Calculate the duration of the video
+                # Calculate total duration of the crossing segment in this video
                 duration = end - start
                 time_.append(duration)
 
+                # Group YOLO data by unique person ID
                 grouped = value.groupby('Unique Id')
+
+                # Loop through each individual's crossing data in this video
                 for id, time in df.items():
+                    # Get all frames for this person
                     grouped_with_id = grouped.get_group(id)
+
+                    # Calculate mean height of bounding box for this person
                     mean_height = grouped_with_id['Height'].mean()
+                    # Find minimum and maximum X-center positions to estimate path length
                     min_x_center = grouped_with_id['X-center'].min()
                     max_x_center = grouped_with_id['X-center'].max()
 
+                    # Estimate "pixels per meter" using average height and actual avg_height
                     ppm = mean_height / avg_height
+                    # Estimate real-world distance crossed (in centimeters)
                     distance = (max_x_center - min_x_center) / ppm
 
+                    # Calculate walking speed (meters per second)
                     speed_ = (distance / time) / 100
-                    speed_id_compelete[id] = speed_
 
-                    # Taken from https://www.wikiwand.com/en/articles/Preferred_walking_speed
-                    # if speed_ > 1.42:  # Exclude outlier speeds
+                    # Only include the speed if it's within configured bounds
+                    if common.get_configs("min_speed_limit") <= speed_ <= common.get_configs("max_speed_limit"):
+                        speed_id_compelete[id] = speed_
+                    # Otherwise, skip this crossing as an outlier
 
+                # Store all valid speeds for this video
                 speed_compelete[key] = speed_id_compelete
 
+        # Group and organize the results for downstream analysis/plotting
         output = wrapper_class.city_wrapper(input_dict=speed_compelete, mapping=df_mapping)
 
         return output
