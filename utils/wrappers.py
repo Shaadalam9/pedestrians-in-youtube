@@ -18,7 +18,7 @@ class Wrappers():
     def __init__(self) -> None:
         pass
 
-    def city_wrapper(self, input_dict, mapping):
+    def city_country_wrapper(self, input_dict, mapping):
         """
         Processes an input dictionary of video IDs and their corresponding values, maps each video ID to metadata
         using a provided mapping function, and builds an output dictionary keyed by city and condition.

@@ -144,7 +144,7 @@ class Algorithms():
                 speed_compelete[key] = speed_id_compelete
 
         # Group and organize the results for downstream analysis/plotting
-        output = wrapper_class.city_wrapper(input_dict=speed_compelete, mapping=df_mapping)
+        output = wrapper_class.city_country_wrapper(input_dict=speed_compelete, mapping=df_mapping)
 
         return output
 
@@ -251,7 +251,7 @@ class Algorithms():
 
                 time_compelete[key] = time_id_complete
 
-        output = wrapper_class.city_wrapper(input_dict=time_compelete, mapping=df_mapping)
+        output = wrapper_class.city_country_wrapper(input_dict=time_compelete, mapping=df_mapping)
 
         return output
 
