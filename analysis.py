@@ -104,6 +104,18 @@ class Analysis():
 
             for file in tqdm(os.listdir(folder_path)):
                 if file.endswith(".csv"):
+                    filename = os.path.splitext(file)[0]
+                    # Lookup values *before* reading CSV
+                    values = values_class.find_values_with_video_id(df_mapping, filename)
+                    if values is None or values[8] is None:
+                        continue  # Skip if mapping or required value is None
+
+                    total_seconds = values_class.calculate_total_seconds_for_city(
+                        df_mapping, values[4], values[5]
+                    )
+                    if total_seconds <= common.get_configs("footage_threshold"):
+                        continue  # Skip if not enough seconds
+
                     file_path = os.path.join(folder_path, file)
                     try:
                         logger.debug(f"Adding file {file_path} to dfs.")
@@ -117,22 +129,13 @@ class Analysis():
                                 df,
                                 distance_threshold=use_geom_correction,
                                 yolo_ids=[0]
-                                )
+                            )
 
-                        # Extract the filename without extension
-                        filename = os.path.splitext(file)[0]
-
-                        # Find associated values using the mapping and the filename
-                        values = values_class.find_values_with_video_id(df_mapping, filename)
+                        # Add the DataFrame to the dict
+                        dfs[filename] = df
                     except Exception as e:
                         logger.error(f"Failed to read {file_path}: {e}.")
                         continue  # Skip to the next file if reading fails
-
-                    # Only add the DataFrame if the required condition on 'values' is satisfied
-                    if values is not None and values[8] is not None:
-                        total_seconds = values_class.calculate_total_seconds_for_city(df_mapping, values[4], values[5])
-                        if total_seconds > common.get_configs("footage_threshold"):
-                            dfs[filename] = df
 
         return dfs
 
@@ -204,7 +207,6 @@ class Analysis():
         Returns:
             tuple: A set of unique countries and the total count of unique countries.
         """
-        # Extract unique countries from the 'country' column
         unique_values = set(df[value].unique())
 
         return unique_values, len(unique_values)
@@ -527,7 +529,7 @@ class Analysis():
                     new_value = len(vehicle_ids)
 
             layer[key] = new_value
-        info = wrapper_class.city_wrapper(input_dict=layer, mapping=df_mapping)
+        info = wrapper_class.city_country_wrapper(input_dict=layer, mapping=df_mapping)
 
         return info
 
@@ -570,7 +572,7 @@ class Analysis():
                     count_ = len(instrument_ids)
 
             layer[key] = count_
-        info = wrapper_class.city_wrapper(input_dict=layer, mapping=df_mapping)
+        info = wrapper_class.city_country_wrapper(input_dict=layer, mapping=df_mapping)
 
         return info
 

@@ -96,57 +96,76 @@ class Geometry():
         # Initialize ID counter for assigning new identities
         next_id = 0
 
-        # Dictionary to store active object tracks
-        # Format: {track_id: {'x': last_x_position, 'dir': motion_direction}}
-        active_tracks = {}
+        # Arrays to keep track state: track_id, x position, direction, last frame
+        track_ids = np.array([], dtype=int)      # Unique ID for each track
+        track_xs = np.array([], dtype=float)     # Last known X position
+        track_dirs = np.array([], dtype=int)     # Direction: 0=unknown, 1=right, -1=left
+        track_last_frames = np.array([], dtype=int)  # Last frame seen
 
-        # Iterate through each frame
-        for frame in sorted(df['Frame Count'].unique()):
-            # Get detections for this frame
-            frame_detections = df[df['Frame Count'] == frame].copy()
-            # X positions for all detections in this frame
-            detections = frame_detections[['X-center']].to_numpy().flatten()
+        # Group detections by frame for sequential processing
+        frame_groups = df.groupby('Frame Count')
 
-            # Track used detections and track IDs
-            assigned_detections = set()
-            used_track_ids = set()
+        # Process each frame in order
+        for frame, frame_detections in frame_groups:
+            # Indices (row numbers) of detections in current frame
+            det_indices = frame_detections.index.values
 
-            # Match each detection to a known track
-            for det_idx, x in enumerate(detections):
-                best_match_id = None
-                best_dist = distance_threshold + 1
+            # X positions of detections in current frame
+            det_xs = frame_detections['X-center'].values
+            n_tracks = len(track_ids)  # How many active tracks exist now?
+            n_dets = len(det_xs)       # How many detections in this frame?
 
-                for track_id, track in active_tracks.items():
-                    if track_id in used_track_ids:
-                        continue  # Skip if track already used in this frame
+            assigned_tracks = set()  # Which tracks have been matched this frame
+            assigned_dets = set()    # Which detections have already been matched
 
-                    prev_x = track['x']
-                    direction = track['dir']
-                    dx = x - prev_x
-                    dist = abs(dx)
+            # If there are any tracks and detections, try to match
+            if n_tracks > 0 and n_dets > 0:
+                # Calculate (tracks x detections) difference matrix
+                dx = det_xs[None, :] - track_xs[:, None]   # Shape: (n_tracks, n_dets)
+                dists = np.abs(dx)                         # Distance between each track and detection
 
-                    # Only consider matches that preserve direction
-                    if dist < best_dist:
-                        new_direction = np.sign(dx)
-                        if direction is None or new_direction == direction:
-                            best_match_id = track_id
-                            best_dist = dist
+                # Compute movement direction for each possible match
+                # np.sign(dx): -1 for left, 1 for right, 0 if same position
+                new_dirs = np.sign(dx).astype(int)
 
-                # Get original DataFrame index for this detection
-                det_index = frame_detections.index[det_idx]
+                # Check if matching is allowed:
+                # Allowed if track direction is unknown (0), or matches new direction
+                dir_mask = (track_dirs[:, None] == 0) | (track_dirs[:, None] == new_dirs)
 
-                if best_match_id is not None:
-                    # Assign detection to matched track
-                    df.at[det_index, 'New Id'] = best_match_id
-                    dx = x - active_tracks[best_match_id]['x']
-                    new_direction = np.sign(dx) if dx != 0 else active_tracks[best_match_id]['dir']
-                    active_tracks[best_match_id] = {'x': x, 'dir': new_direction}
-                    used_track_ids.add(best_match_id)
-                    assigned_detections.add(det_idx)
-                else:
-                    # No match found → create new track
-                    df.at[det_index, 'New Id'] = next_id
-                    active_tracks[next_id] = {'x': x, 'dir': None}
-                    next_id += 1
+                # Only match if within distance threshold and direction is consistent
+                can_match = (dists < distance_threshold) & dir_mask
 
+                # Try to assign detections to the nearest allowed track (greedy)
+                for det_idx in range(n_dets):
+                    # Which tracks could match this detection?
+                    candidates = np.where(can_match[:, det_idx])[0]
+                    if candidates.size > 0:
+                        # Pick the closest track among candidates
+                        best_track_idx = candidates[np.argmin(dists[candidates, det_idx])]
+                        if best_track_idx not in assigned_tracks:
+
+                            # Assign detection to this track
+                            df.at[det_indices[det_idx], 'New Id'] = track_ids[best_track_idx]
+
+                            # Update this track's info: new position, direction, frame
+                            # If new direction is 0 (no movement), keep old direction
+                            new_dir = new_dirs[best_track_idx, det_idx]
+                            track_dirs[best_track_idx] = new_dir if new_dir != 0 else track_dirs[best_track_idx]
+                            track_xs[best_track_idx] = det_xs[det_idx]
+                            track_last_frames[best_track_idx] = frame
+                            assigned_tracks.add(best_track_idx)
+                            assigned_dets.add(det_idx)
+
+            # For any detection not assigned, create a new track/ID
+            for det_idx in range(n_dets):
+                if det_idx not in assigned_dets:
+                    df.at[det_indices[det_idx], 'New Id'] = next_id
+                    # Add new track info to arrays
+                    track_ids = np.append(track_ids, next_id)
+                    track_xs = np.append(track_xs, det_xs[det_idx])
+                    track_dirs = np.append(track_dirs, 0)  # Start with unknown direction
+                    track_last_frames = np.append(track_last_frames, frame)
+                    next_id += 1  # Increment for the next new track
+
+        # All frames processed, DataFrame now has 'New Id' for each detection
         return df
