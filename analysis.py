@@ -331,12 +331,13 @@ class Analysis():
         plots_class.save_plotly_figure(fig, "world_map", save_final=True)
 
     @staticmethod
-    def get_mapbox_map(df, hover_data=None):
+    def get_mapbox_map(df, hover_data=None, file_name="mapbox_map"):
         """Generate world map with cities using mapbox.
 
         Args:
             df (dataframe): dataframe with mapping info.
             hover_data (list, optional): list of params to show on hover.
+            file_name (str, optional): name of file
         """
         # Draw map
         fig = px.scatter_map(df,
@@ -357,7 +358,7 @@ class Analysis():
                       size=common.get_configs('font_size'))  # update font size
         )
         # Save and display the figure
-        plots_class.save_plotly_figure(fig, "mapbox_map", save_final=True)
+        plots_class.save_plotly_figure(fig, file_name, save_final=True)
 
     @staticmethod
     def pedestrian_crossing(dataframe, min_x, max_x, person_id):
@@ -4364,6 +4365,16 @@ if __name__ == "__main__":
     else:
         # Store the mapping file
         df_mapping = pd.read_csv(common.get_configs("mapping"))
+
+        # Produce map with all data
+        df = df_mapping.copy()  # copy df to manipulate for output
+        df['state'] = df['state'].fillna('NA')  # Set state to NA
+        # Sort by continent and city, both in ascending order
+        df = df.sort_values(by=["continent", "city"], ascending=[True, True])
+        # Data to avoid showing on hover in scatter plots
+        columns_remove = ['videos', 'time_of_day', 'start_time', 'end_time', 'upload_date', 'fps_list', 'vehicle_type']
+        hover_data = list(set(df.columns) - set(columns_remove))
+        Analysis.get_mapbox_map(df=df, hover_data=hover_data, file_name='mapbox_map_all')  # mapbox map with all data
 
         # Get the population threshold from the configuration
         population_threshold = common.get_configs("population_threshold")
