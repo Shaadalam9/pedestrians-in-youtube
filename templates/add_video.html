@@ -548,19 +548,25 @@
                         <option value="2" {{ "selected" if vehicle_type_video == 2 else "" }}>2 (truck)</option>
                         <option value="3" {{ "selected" if vehicle_type_video == 3 else "" }}>3 (two-wheeler)</option>
                         <option value="4" {{ "selected" if vehicle_type_video == 4 else "" }}>4 (bicycle)</option>
+                        <option value="5" {{ "selected" if vehicle_type_video == 5 else "" }}>5 (automated car)</option>
+                        <option value="6" {{ "selected" if vehicle_type_video == 6 else "" }}>6 (automated bus)</option>
+                        <option value="7" {{ "selected" if vehicle_type_video == 7 else "" }}>7 (automated truck)</option>
+                        <option value="8" {{ "selected" if vehicle_type_video == 8 else "" }}>8 (automated two-wheeler)</option>
                     </select>
                 </div>
                 <div class="form-group">
                     <label for="start_time">Start time (seconds):</label>
-                    <input type="text" id="start_time" name="start_time" required type="number">
+                    <input type="number" id="start_time" name="start_time" required min="0" step="1">
                 </div>
+
                 <div class="form-group">
                     <label for="end_time">End time (seconds):</label>
-                    <input type="text" id="end_time" name="end_time" required type="number">
+                    <input type="number" id="end_time" name="end_time" required min="0" step="1">
                 </div>
+
                 <div class="form-group">
                     <label for="upload_date_video">Upload date:</label>
-                    <input type="text" id="upload_date_video" name="upload_date_video" value="{{ upload_date_video }}" required>
+                    <input type="number" id="upload_date_video" name="upload_date_video" value="{{ upload_date_video }}" required min="0" step="1">
                 </div>
                 <!-- <div class="form-group">
                     <label for="fps_video">FPS:</label>
