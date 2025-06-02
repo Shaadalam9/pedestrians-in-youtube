@@ -548,19 +548,25 @@
                         <option value="2" {{ "selected" if vehicle_type_video == 2 else "" }}>2 (truck)</option>
                         <option value="3" {{ "selected" if vehicle_type_video == 3 else "" }}>3 (two-wheeler)</option>
                         <option value="4" {{ "selected" if vehicle_type_video == 4 else "" }}>4 (bicycle)</option>
+                        <option value="5" {{ "selected" if vehicle_type_video == 5 else "" }}>5 (automated car)</option>
+                        <option value="6" {{ "selected" if vehicle_type_video == 6 else "" }}>6 (automated bus)</option>
+                        <option value="7" {{ "selected" if vehicle_type_video == 7 else "" }}>7 (automated truck)</option>
+                        <option value="8" {{ "selected" if vehicle_type_video == 8 else "" }}>8 (automated two-wheeler)</option>
                     </select>
                 </div>
                 <div class="form-group">
                     <label for="start_time">Start time (seconds):</label>
-                    <input type="text" id="start_time" name="start_time" required type="number">
+                    <input type="number" id="start_time" name="start_time" required min="0" step="1">
                 </div>
+
                 <div class="form-group">
                     <label for="end_time">End time (seconds):</label>
-                    <input type="text" id="end_time" name="end_time" required type="number">
+                    <input type="number" id="end_time" name="end_time" required min="1" step="1">
                 </div>
+
                 <div class="form-group">
                     <label for="upload_date_video">Upload date:</label>
-                    <input type="text" id="upload_date_video" name="upload_date_video" value="{{ upload_date_video }}" required>
+                    <input type="number" id="upload_date_video" name="upload_date_video" value="{{ upload_date_video }}" required min="0" step="1">
                 </div>
                 <!-- <div class="form-group">
                     <label for="fps_video">FPS:</label>
@@ -568,27 +574,28 @@
                 </div> -->
                 <div class="form-group">
                     <label for="lat">Latitude:</label>
-                    <input type="text" id="lat" name="lat" value="{{ existing_data['lat'] }}" type="number" pattern="-?[0-9]+(\.[0-9]+)?">
+                    <input type="number" id="lat" name="lat" value="{{ existing_data['lat'] }}" step="any">
                 </div>
                 <div class="form-group">
                     <label for="lon">Longitude:</label>
-                    <input type="text" id="lon" name="lon" value="{{ existing_data['lon'] }}" type="number" pattern="-?[0-9]+(\.[0-9]+)?">
+                    <input type="number" id="lon" name="lon" value="{{ existing_data['lon'] }}" step="any">
                 </div>
                 <div class="form-group">
                     <label for="gmp">GDP city (billion USD):</label>
-                    <input type="text" id="gmp" name="gmp" value="{{ existing_data['gmp'] }}" type="number" pattern="[0-9.]*">
+                    <input type="number" id="gmp" name="gmp" value="{{ existing_data['gmp'] }}" step="any">
                 </div>
                 <div class="form-group">
                     <label for="population_city">Population city:</label>
-                    <input type="text" id="population_city" name="population_city" value="{{ existing_data['population_city'] }}" type="number" pattern="[0-9.]*">
+                    <input type="number" id="population_city" name="population_city" value="{{ existing_data['population_city'] }}" step="any">
                 </div>
                 <div class="form-group">
                     <label for="population_country">Population country:</label>
-                    <input type="text" id="population_country" name="population_country" value="{{ existing_data['population_country'] }}" type="number" pattern="[0-9.]*">
+                    <input type="number" id="population_country" name="population_country" value="{{ existing_data['population_country'] }}" step="any">
                 </div>
+
                 <div class="form-group">
                     <label for="traffic_mortality">Traffic mortality:</label>
-                    <input type="text" id="traffic_mortality" name="traffic_mortality" value="{{ existing_data['traffic_mortality'] }}" type="number" pattern="[0-9.]*">
+                    <input type="number" id="traffic_mortality" name="traffic_mortality" value="{{ existing_data['traffic_mortality'] }}" step="any">
                 </div>
                 <div class="form-group">
                     <label for="continent">Continent:</label>
@@ -603,21 +610,20 @@
                 </div>
                 <div class="form-group">
                     <label for="literacy_rate">Literacy rate:</label>
-                    <input type="text" id="literacy_rate" name="literacy_rate" value="{{ existing_data['literacy_rate'] }}" type="number" pattern="[0-9.]*">
+                    <input type="number" id="literacy_rate" name="literacy_rate" value="{{ existing_data['literacy_rate'] }}" step="any">
                 </div>
                 <div class="form-group">
                     <label for="avg_height">Average height:</label>
-                    <input type="text" id="avg_height" name="avg_height" value="{{ existing_data['avg_height'] }}" type="number" pattern="[0-9.]*">
+                    <input type="number" id="avg_height" name="avg_height" value="{{ existing_data['avg_height'] }}" step="any">
                 </div>
                 <div class="form-group">
                     <label for="gini">Gini index:</label>
-                    <input type="text" id="gini" name="gini" value="{{ existing_data['gini'] }}" type="number" pattern="[0-9.]*">
+                    <input type="number" id="gini" name="gini" value="{{ existing_data['gini'] }}" step="any">
                 </div>
                 <div class="form-group">
                     <label for="traffic_index">Traffic index:</label>
-                    <input type="text" id="traffic_index" name="traffic_index" value="{{ existing_data['traffic_index'] }}" type="number" pattern="[0-9.]*">
+                    <input type="number" id="traffic_index" name="traffic_index" value="{{ existing_data['traffic_index'] }}" step="any">
                 </div>
-
                 <div class="form-group">
                     <button type="submit" name="submit_data">Submit</button>
                 </div>
