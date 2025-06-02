@@ -1,0 +1,64 @@
+import pandas as pd
+import ast
+from pytube import YouTube
+from tqdm import tqdm
+import common
+import re
+
+# Load the CSV
+df = pd.read_csv(common.get_configs("mapping"))
+
+
+def safe_parse(val):
+    if pd.isna(val) or not isinstance(val, str):
+        return []
+    val = val.strip()
+
+    # Case 1: properly formatted Python list (e.g., "['a','b']")
+    try:
+        return ast.literal_eval(val)
+    except Exception:
+        pass
+
+    # Case 2: malformed list like [abc,def] — parse with regex
+    if val.startswith('[') and val.endswith(']'):
+        inner = val[1:-1]
+        return [item.strip().strip("'\"") for item in inner.split(',') if item.strip()]
+    
+    return []
+
+
+def get_upload_date(video_id):
+    try:
+        yt = YouTube(f"https://www.youtube.com/watch?v={video_id}")
+        yt_date = yt.publish_date
+        print(f"Received date for https://www.youtube.com/watch?v={video_id} as {yt_date.strftime('%d%m%Y')}")
+        return yt_date.strftime('%d%m%Y') if yt_date else None
+    except Exception as e:
+        print(f"Error fetching date for {video_id}: {e}")
+        return None
+
+
+if __name__ == "__main__":
+    # Process each row
+    for idx, row in tqdm(df.iterrows(), total=len(df)):
+        video_ids = safe_parse(row['videos'])
+        upload_dates = safe_parse(row['upload_date'])
+
+        if len(upload_dates) != len(video_ids):
+            upload_dates = [None] * len(video_ids)  # fallback
+
+        updated_dates = []
+        for vid, date in zip(video_ids, upload_dates):
+            if date in [None, 'None', '', 'nan']:
+                correct_date = get_upload_date(vid)
+                updated_dates.append(correct_date if correct_date else None)
+            else:
+                updated_dates.append(date)
+
+        df.at[idx, 'upload_date'] = str(updated_dates)
+
+    # Save updated CSV
+    updated_csv_file = 'mapping_updated.csv'
+    df.to_csv(updated_csv_file, index=False)
+    print(f"Updated data saved to {updated_csv_file}")
