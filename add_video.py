@@ -4,7 +4,7 @@ from flask import Flask, request, render_template
 import pandas as pd
 import os
 import common
-from pytube import YouTube
+from pytubefix import YouTube
 import webbrowser
 from threading import Timer
 import random
@@ -29,7 +29,7 @@ def load_csv(file_path):
         return pd.DataFrame(columns=['city', 'state', 'country', 'iso3', 'videos', 'time_of_day',
                                      'vehicle_type', 'start_time', 'end_time', 'gmp',
                                      'population_city', 'population_country', 'traffic_mortality', 'continent',
-                                     'literacy_rate', 'avg_height', 'upload_date', 'fps_list', 'gini',
+                                     'literacy_rate', 'avg_height', 'upload_date', 'channel', 'fps_list', 'gini',
                                      'traffic_index'])
 
 
@@ -59,11 +59,13 @@ def form():
     literacy_rate = ''
     avg_height = ''
     upload_date_list = ''
+    channel_list = ''
     fps_list = ''
     vehicle_type_list = ''
     gini = ''
     traffic_index = ''
     upload_date_video = ''
+    channel_video = ''
     fps_video = '30'
     yt_title = ''
     yt_upload_date = ''
@@ -117,8 +119,8 @@ def form():
                 return render_template(
                     "add_video.html", message=f"Invalid YouTube URL: {e}", df=df, city=city, country=country,
                     state=state, video_url=video_url, video_id=video_id, existing_data=existing_data_row,
-                    fps_video=fps_video, upload_date_video=upload_date_video, yt_title=yt_title,
-                    yt_description=yt_description, yt_upload_date=yt_upload_date
+                    fps_video=fps_video, upload_date_video=upload_date_video, channel_video=channel_video,
+                    yt_title=yt_title, yt_description=yt_description, yt_upload_date=yt_upload_date
                 )
 
             # Check if city, state and country exist in the CSV
@@ -137,12 +139,15 @@ def form():
                 fps_list = [fps.strip('[]') for fps in fps_list]
                 upload_date_list = existing_data_row.get('upload_date', '').split(',')
                 upload_date_list = [upload_date.strip('[]') for upload_date in upload_date_list]
+                channel_list = existing_data_row.get('channel', '').split(',')
+                channel_list = [channel.strip('[]') for channel in channel_list]
                 vehicle_type_list = existing_data_row.get('vehicle_type', '').split(',')
                 vehicle_type_list = [vehicle_type.strip('[]') for vehicle_type in vehicle_type_list]
                 if video_id in videos_list:
                     position = videos_list.index(video_id)
                     fps_video = fps_list[position].strip()
                     upload_date_video = upload_date_list[position].strip()
+                    channel_video = channel_list[position].strip()
                     start_time_list = ast.literal_eval(existing_data_row.get('start_time', ''))
                     start_time_video = start_time_list[position]
                     end_time_list = ast.literal_eval(existing_data_row.get('end_time', ''))
@@ -177,6 +182,7 @@ def form():
                                      'literacy_rate': get_country_literacy_rate(iso3_code),
                                      'avg_height': get_country_average_height(iso3_code),
                                      'upload_date': [],
+                                     'channel': [],
                                      'fps_list': [],
                                      'vehicle_type': [],
                                      'gini': get_country_gini(country_data),
@@ -216,6 +222,7 @@ def form():
             literacy_rate = request.form.get('literacy_rate')
             avg_height = request.form.get('avg_height')
             upload_date_video = request.form.get('upload_date_video')
+            channel_video = request.form.get('channel_video')
             # fps_video = request.form.get('fps_video')
             fps_video = '30'
             vehicle_type_video = request.form.get('vehicle_type')
@@ -229,6 +236,7 @@ def form():
                 video_id = yt.video_id
                 # get info of video
                 yt_upload_date = yt.publish_date
+                yt_channel = yt.channel_id
                 for n in range(6):
                     try:
                         yt_stream = yt.streams.filter(only_audio=True).first()
@@ -246,8 +254,9 @@ def form():
                 return render_template(
                     "add_video.html", message=f"Invalid YouTube URL: {e}", df=df, city=city, country=country,
                     state=state, video_url=video_url, video_id=video_id, existing_data=existing_data_row,
-                    fps_video=fps_video, upload_date_video=upload_date_video, yt_title=yt_title,
-                    yt_description=yt_description, yt_upload_date=yt_upload_date
+                    fps_video=fps_video, upload_date_video=upload_date_video, channel_video=channel_video,
+                    yt_title=yt_title, yt_description=yt_description, yt_upload_date=yt_upload_date,
+                    yt_channel=yt_channel
                 )
 
             # Validate Time of Day and End Time > Start Time
@@ -286,6 +295,8 @@ def form():
                     fps_list = [fps.strip('[]') for fps in fps_list]
                     upload_date_list = df.at[idx, 'upload_date'].split(',') if pd.notna(df.at[idx, 'upload_date']) else []  # noqa: E501
                     upload_date_list = [upload_date.strip('[]') for upload_date in upload_date_list]
+                    channel_list = df.at[idx, 'channel'].split(',') if pd.notna(df.at[idx, 'channel']) else []  # noqa: E501
+                    channel_list = [channel.strip('[]') for channel in channel_list]
                     vehicle_type_list = df.at[idx, 'vehicle_type'].split(',') if pd.notna(df.at[idx, 'vehicle_type']) else []  # noqa: E501
                     vehicle_type_list = [vehicle_type.strip('[]') for vehicle_type in vehicle_type_list]
 
@@ -298,6 +309,7 @@ def form():
                         start_time_list.append([int(start_time[-1])])      # Append start time as integer
                         end_time_list.append([int(end_time[-1])])          # Append end time as integer
                         upload_date_list.append(int(upload_date_video))    # Append upload time as integer
+                        channel_list.append(int(channel_video))    # Append upload time as integer
                         fps_list.append(int(fps_video))                    # Append fps list as integer
                         vehicle_type_list.append(int(vehicle_type_video))  # Append vehicle type as integer
                     else:
@@ -310,6 +322,10 @@ def form():
                             upload_date_list[video_index] = int(upload_date_video)
                         else:
                             upload_date_list[video_index] = upload_date_video
+                        if channel_video != 'None':
+                            channel_list[video_index] = int(channel_video)
+                        else:
+                            channel_list[video_index] = channel_video
                         fps_list[video_index] = float(fps_video)
                         vehicle_type_list[video_index] = int(vehicle_type_video)
                     start_time_video = start_time_list[video_index]
@@ -360,6 +376,13 @@ def form():
                     upload_date_list = upload_date_list.replace('\'', '')
                     upload_date_list = upload_date_list.replace(' ', '')
                     df.at[idx, 'upload_date'] = upload_date_list
+                    for i in range(len(channel_list)):
+                        if channel_list[i] != 'None':
+                            channel_list[i] = int(channel_list[i])
+                    channel_list = str(channel_list)
+                    channel_list = channel_list.replace('\'', '')
+                    channel_list = channel_list.replace(' ', '')
+                    df.at[idx, 'upload_date'] = upload_date_list
                     fps_list = [30.0 if str(x).strip().lower() == 'none' else float(x) for x in fps_list]
                     fps_list = str(fps_list)
                     fps_list = fps_list.replace('\'', '')
@@ -401,6 +424,7 @@ def form():
                         'literacy_rate': literacy_rate,
                         'avg_height': avg_height,
                         'upload_date': '[' + upload_date_video.strip() + ']',
+                        'channel': '[' + channel_video.strip() + ']',
                         'fps_list': '[' + fps_video.strip() + ']',
                         'vehicle_type': '[' + vehicle_type_video.strip() + ']',
                         'gini': gini,
@@ -429,6 +453,9 @@ def form():
     if not upload_date_video and yt_upload_date:
         upload_date_video = yt_upload_date.strftime('%d%m%Y')
 
+    if not channel_video and yt_channel:
+        channel_video = yt_channel
+
     # Cast to int for checks
     vehicle_type_video = int(vehicle_type_video) if vehicle_type_video is not None else None
     time_of_day_video = int(time_of_day_video) if time_of_day_video is not None else None
@@ -436,9 +463,9 @@ def form():
     return render_template(
         "add_video.html", message=message, df=df, city=city, country=country, state=state, video_url=video_url,
         video_id=video_id, existing_data=existing_data_row, fps_video=fps_video, upload_date_video=upload_date_video,
-        timestamp=end_time_input, yt_title=yt_title, yt_description=yt_description, yt_upload_date=yt_upload_date,
-        start_time_video=start_time_video, end_time_video=end_time_video, vehicle_type_video=vehicle_type_video,
-        time_of_day_video=time_of_day_video
+        channel_video=channel_video, timestamp=end_time_input, yt_title=yt_title, yt_description=yt_description,
+        yt_upload_date=yt_upload_date, yt_channel=yt_channel, start_time_video=start_time_video,
+        end_time_video=end_time_video, vehicle_type_video=vehicle_type_video, time_of_day_video=time_of_day_video
     )
 
 
