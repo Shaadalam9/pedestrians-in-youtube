@@ -19,19 +19,20 @@ app = Flask(__name__)
 
 FILE_PATH = common.get_configs("mapping")     # mapping file
 
-height_data = pd.read_csv(os.path.join(common.root_dir, 'height_data.csv'))  # average height data
-age_data = pd.read_csv(os.path.join(common.root_dir, 'age_data.csv'))  # average height data
+# average height data from kaggle
+height_data = pd.read_csv(os.path.join(common.root_dir, 'height_data.csv'))
+# average age data from https://simplemaps.com/data/countries
+age_data = pd.read_csv(os.path.join(common.root_dir, 'countries.csv'))
 
 
 def load_csv(file_path):
     if os.path.exists(file_path):
         return pd.read_csv(file_path)
     else:
-        return pd.DataFrame(columns=['city', 'state', 'country', 'iso3', 'videos', 'time_of_day',
-                                     'vehicle_type', 'start_time', 'end_time', 'gmp',
-                                     'population_city', 'population_country', 'traffic_mortality', 'continent',
-                                     'literacy_rate', 'avg_height', 'avg_age', 'upload_date', 'channel', 'fps_list', 
-                                     'gini', 'traffic_index'])
+        return pd.DataFrame(columns=['city', 'state', 'country', 'iso3', 'videos', 'time_of_day', 'vehicle_type',
+                                     'start_time', 'end_time', 'gmp', 'population_city', 'population_country',
+                                     'traffic_mortality', 'continent', 'literacy_rate', 'avg_height', 'med_age',
+                                     'upload_date', 'channel', 'fps_list', 'gini', 'traffic_index'])
 
 
 def save_csv(df, file_path):
@@ -59,7 +60,7 @@ def form():
     continent = ''
     literacy_rate = ''
     avg_height = ''
-    avg_age = ''
+    med_age = ''
     upload_date_list = ''
     channel_list = ''
     fps_list = ''
@@ -185,7 +186,7 @@ def form():
                                      'continent': get_country_continent(country_data),
                                      'literacy_rate': get_country_literacy_rate(iso3_code),
                                      'avg_height': get_country_average_height(iso3_code),
-                                     'avg_age': get_country_average_age(iso3_code),
+                                     'med_age': get_country_median_age(iso2_code),
                                      'upload_date': [],
                                      'channel': [],
                                      'fps_list': [],
@@ -226,7 +227,7 @@ def form():
             continent = request.form.get('continent')
             literacy_rate = request.form.get('literacy_rate')
             avg_height = request.form.get('avg_height')
-            avg_age = request.form.get('avg_age')
+            med_age = request.form.get('med_age')
             upload_date_video = request.form.get('upload_date_video')
             channel_video = request.form.get('channel_video')
             # fps_video = request.form.get('fps_video')
@@ -367,10 +368,10 @@ def form():
                         df.at[idx, 'avg_height'] = float(avg_height)
                     else:
                         df.at[idx, 'avg_height'] = 0.0
-                    if avg_age:
-                        df.at[idx, 'avg_age'] = float(avg_age)
+                    if med_age:
+                        df.at[idx, 'med_age'] = float(med_age)
                     else:
-                        df.at[idx, 'avg_age'] = 0.0
+                        df.at[idx, 'med_age'] = 0.0
                     if lat:
                         df.at[idx, 'lat'] = float(lat)
                     else:
@@ -433,7 +434,7 @@ def form():
                         'continent': continent,
                         'literacy_rate': literacy_rate,
                         'avg_height': avg_height,
-                        'avg_age': avg_age,
+                        'med_age': med_age,
                         'upload_date': '[' + upload_date_video.strip() + ']',
                         'channel': '[' + channel_video.strip() + ']',
                         'fps_list': '[' + fps_video.strip() + ']',
@@ -615,10 +616,19 @@ def get_country_average_height(iso3_code):
         return 0.0
 
 
-# Fetch average age by ISO-3 code
-def get_country_average_age(iso3_code):
-    # todo: implement
-    return 0.0
+# Fetch average age by ISO-2 code
+def get_country_median_age(iso2_code):
+    try:
+        # Filter the dataset by country name
+        row = age_data[age_data['iso2'].str.lower() == iso2_code.lower()]
+        if not row.empty:
+            # Return median age
+            return row.iloc[0]['median_age']
+        else:
+            return 0.0
+    except Exception as e:
+        print(f"Error fetching height data: {e}")
+        return 0.0
 
 
 def get_gmp(city: str, state: str, iso3: str) -> float:
