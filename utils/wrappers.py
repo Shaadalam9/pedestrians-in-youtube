@@ -42,13 +42,15 @@ class Wrappers():
             # Check if the result is None (i.e., no matching data was found)
             if result is not None:
                 # Unpack the returned metadata
-                (_, start, end, condition, city, state, country, gdp_, population, population_country,
-                 traffic_mortality_, continent, literacy_rate, avg_height, iso3, fps) = result
+                condition = result[3]
+                city = result[4]
+                lat = result[6]
+                long = result[7]
 
                 # Create the grouping key
-                grouping_key = f"{city}_{state}_{condition}"
+                grouping_key = f"{city}_{lat}_{long}_{condition}"
 
-                # Initialize the dictionary for the grouping key if it doesn't exist
+                # Initialise the dictionary for the grouping key if it doesn't exist
                 if grouping_key not in output:
                     output[grouping_key] = {}
 
