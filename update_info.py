@@ -14,7 +14,7 @@ logs(show_level=common.get_configs("logger_level"), show_color=True)
 logger = CustomLogger(__name__)
 
 metadata_file = "mapping_metadata.csv"
-csv_headers = ["id", "video", "title", "upload_date", "channel", "views", "description", "chapters", "count",
+csv_headers = ["id", "video", "title", "upload_date", "channel", "views", "description", "chapters", "segments",
                "date_updated"]
 
 
@@ -62,7 +62,7 @@ def get_video_info(video_id):
         return {
             "video": video_id,
             "title": clean_text(title),
-            "upload_date": int(upload_date),
+            "upload_date": upload_date,
             "channel": clean_text(channel),
             "views": views,
             "description": clean_text(description),
@@ -113,8 +113,8 @@ if __name__ == "__main__":
     current_id = last_id
     for vid in tqdm(videos_to_fetch):
         info = get_video_info(vid)
-        info["count"] = video_count.get(vid, 1)
-        info["date_updated"] = int(now)
+        info["segments"] = video_count.get(vid, 1)
+        info["date_updated"] = now
         current_id += 1
         info["id"] = current_id
 
