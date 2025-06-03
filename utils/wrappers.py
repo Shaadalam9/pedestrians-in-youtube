@@ -4,6 +4,7 @@ from logmod import logs
 import warnings
 from .values import Values
 import pycountry
+import math
 
 # Suppress the specific FutureWarning
 warnings.filterwarnings("ignore", category=FutureWarning, module="plotly")
@@ -42,13 +43,15 @@ class Wrappers():
             # Check if the result is None (i.e., no matching data was found)
             if result is not None:
                 # Unpack the returned metadata
-                (_, start, end, condition, city, state, country, gdp_, population, population_country,
-                 traffic_mortality_, continent, literacy_rate, avg_height, iso3, fps) = result
+                condition = result[3]
+                city = result[4]
+                lat = result[6]
+                long = result[7]
 
                 # Create the grouping key
-                grouping_key = f"{city}_{state}_{condition}"
+                grouping_key = f"{city}_{lat}_{long}_{condition}"
 
-                # Initialize the dictionary for the grouping key if it doesn't exist
+                # Initialise the dictionary for the grouping key if it doesn't exist
                 if grouping_key not in output:
                     output[grouping_key] = {}
 
@@ -57,38 +60,68 @@ class Wrappers():
 
         return output
 
-    def format_city_state(self, city_state):
+    def process_city_string(self, city, df_mapping):
         """
-        Formats a city_state string or a list of strings in the format 'City_State'.
-        If the state is 'unknown', only the city is returned.
-        Handles cases where the format is incorrect or missing the '_'.
+        Splits a city string into its components, retrieves the state using provided helper classes,
+        and formats the city string with its state.
 
         Args:
-            city_state (str or list): A single string or list of strings in the format 'City_State'.
+            city (str): The city string in the format "city_lat_long", e.g., "Chicago_41.8781_-87.6298".
+            df_mapping: The DataFrame or mapping object required by values_class.get_value.
+            values_class: An object/class with a get_value method to retrieve data such as state.
+            wrapper_class: An object/class with a format_city_lat_lon method to format the city string.
 
         Returns:
-            str or list: A formatted string or list of formatted strings in the format 'City, State' or 'City'.
+            str: The formatted city string with its state, as returned by wrapper_class.format_city_lat_lon.
         """
-        if isinstance(city_state, str):  # If input is a single string
-            if "_" in city_state:
-                city, state = city_state.split("_", 1)
-                return f"{city}, {state}" if state.lower() != "unknown" else city
+        # Split the city string into city name, latitude, and longitude
+        city_new, lat, long = city.split('_')
+
+        # Use values_class to retrieve the state associated with the city and coordinates
+        state = values_class.get_value(df_mapping, "city", city_new, "lat", float(lat), "state")
+
+        # Use wrapper_class to format the city string with state (ignoring type checking if needed)
+        formatted_city = self.format_city_lat_lon(city, state)  # type: ignore
+
+        return formatted_city
+
+    def format_city_lat_lon(self, city_lat_lon, state):
+        """
+        Formats the city from a city_latitude_longitude string or list,
+        returning '{city}, {state}' if state is provided and not nan, else just '{city}'.
+
+        Args:
+            city_lat_lon (str or list): String or list of 'City_Latitude_Longitude'.
+            state (str or list): Corresponding state(s), can be 'nan'.
+
+        Returns:
+            str or list: Formatted string(s).
+        """
+
+        def is_nan(value):
+            # Handles both float('nan') and string 'nan'
+            return value is None or (isinstance(value, float) and math.isnan(value)) or (
+                isinstance(value, str) and value.lower() == 'nan')
+
+        def format_single(city_entry, state_entry):
+            city = city_entry.split("_")[0] if "_" in city_entry else city_entry
+            if not is_nan(state_entry):
+                return f"{city}, {state_entry}"
             else:
-                return city_state  # Return as-is if no '_' in string
-        elif isinstance(city_state, list):  # If input is a list
-            formatted_list = []
-            for cs in city_state:
-                if "_" in cs:
-                    city, state = cs.split("_", 1)
-                    if state.lower() != "unknown":
-                        formatted_list.append(f"{city}, {state}")
-                    else:
-                        formatted_list.append(city)
-                else:
-                    formatted_list.append(cs)  # Append as-is if no '_'
-            return formatted_list
+                return city
+
+        if isinstance(city_lat_lon, str):
+            # Expecting state as str as well
+            return format_single(city_lat_lon, state)
+
+        elif isinstance(city_lat_lon, list):
+            # Expecting state as list
+            if not isinstance(state, list) or len(city_lat_lon) != len(state):
+                raise ValueError("city_lat_lon and state must both be lists of the same length.")
+            return [format_single(c, s) for c, s in zip(city_lat_lon, state)]
+
         else:
-            raise TypeError("Input must be a string or a list of strings.")
+            raise TypeError("city_lat_lon must be a string or a list of strings.")
 
     def iso2_to_flag(self, iso2):
         """

@@ -43,8 +43,7 @@ class Algorithms():
         # Check if the result is None (i.e., no matching data was found)
         if result is not None:
             # Unpack the result since it's not None
-            (video, start, end, time_of_day, city, state, country, gdp_, population, population_country,
-             traffic_mortality_, continent, literacy_rate, avg_height, iso3, fps) = result
+            fps = result[17]
 
         # Initialise an empty dictionary to store time taken for each object to cross
         var = {}
@@ -69,7 +68,7 @@ class Algorithms():
 
     def calculate_speed_of_crossing(self, df_mapping, dfs, data):
         """
-        Calculate and organize the walking speeds of individuals crossing in various videos,
+        Calculate and organise the walking speeds of individuals crossing in various videos,
         grouping the results by city, state, and crossing condition.
 
         Args:
@@ -101,13 +100,18 @@ class Algorithms():
             # Check if the result is None (i.e., no matching data was found)
             if result is not None:
                 # Unpack video metadata (edit if order of unpacked variables changes)
-                (_, start, end, condition, city, state, country, gdp_, population, population_country,
-                 traffic_mortality_, continent, literacy_rate, avg_height, iso3, fps) = result
+                start = result[1]
+                end = result[2]
+                city = result[4]
+                lat = result[6]
+                long = result[7]
+                avg_height = result[15]
+                iso3 = result[16]
 
                 value = dfs.get(key)  # Get corresponding YOLO data
 
                 # Store the country associated with each city
-                city_country_map_[f'{city}_{state}'] = iso3
+                city_country_map_[f'{city}_{lat}_{long}'] = iso3
 
                 # Calculate total duration of the crossing segment in this video
                 duration = end - start
@@ -123,6 +127,7 @@ class Algorithms():
 
                     # Calculate mean height of bounding box for this person
                     mean_height = grouped_with_id['Height'].mean()
+
                     # Find minimum and maximum X-center positions to estimate path length
                     min_x_center = grouped_with_id['X-center'].min()
                     max_x_center = grouped_with_id['X-center'].max()
@@ -143,7 +148,7 @@ class Algorithms():
                 # Store all valid speeds for this video
                 speed_compelete[key] = speed_id_compelete
 
-        # Group and organize the results for downstream analysis/plotting
+        # Group and organise the results for downstream analysis/plotting
         output = wrapper_class.city_country_wrapper(input_dict=speed_compelete, mapping=df_mapping)
 
         return output
@@ -207,8 +212,6 @@ class Algorithms():
 
             # Check if the result is None (i.e., no matching data was found)
             if result is not None:
-                (_, start, end, condition, city, state, country, gdp_, population, population_country,
-                 traffic_mortality_, continent, literacy_rate, avg_height, iso3, fps) = result
 
                 # Makes group based on Unique ID
                 crossed_ids_grouped = crossed_ids.groupby("Unique Id")
@@ -268,8 +271,7 @@ class Algorithms():
                 else:
                     result = values_class.find_values_with_video_id(df_mapping, video_id)
                     if result is not None:
-                        (_, start, end, condition, city, state, country, gdp_, population, population_country,
-                         traffic_mortality_, continent, literacy_rate, avg_height, iso3, fps) = result
+                        fps = result[17]
                         for unique_id, time in value_2.items():
                             if time > 0:
                                 box.append(time/(fps/10))
