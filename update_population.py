@@ -17,8 +17,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 # Load the CSV file
-csv_file = 'mapping.csv'
-data = pd.read_csv(csv_file)
+data = pd.read_csv(common.get_configs("mapping"))
 
 # Create a session with retries for better error handling
 session = requests.Session()
