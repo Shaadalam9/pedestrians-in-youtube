@@ -95,7 +95,7 @@ class Analysis():
                   Only files meeting all value requirements are included.
         """
         dfs = {}
-        logger.info("reading csv files.")
+        logger.info("Reading csv files.")
 
         for folder_path in folder_paths:
             if not os.path.exists(folder_path):
@@ -105,9 +105,10 @@ class Analysis():
             for file in tqdm(os.listdir(folder_path)):
                 if file.endswith(".csv"):
                     filename = os.path.splitext(file)[0]
+
                     # Lookup values *before* reading CSV
                     values = values_class.find_values_with_video_id(df_mapping, filename)
-                    if values is None or values[8] is None:
+                    if values is None:
                         continue  # Skip if mapping or required value is None
 
                     total_seconds = values_class.calculate_total_seconds_for_city(
@@ -136,7 +137,6 @@ class Analysis():
                     except Exception as e:
                         logger.error(f"Failed to read {file_path}: {e}.")
                         continue  # Skip to the next file if reading fails
-
         return dfs
 
     @staticmethod
@@ -184,7 +184,9 @@ class Analysis():
 
     @staticmethod
     def calculate_total_videos(df):
-        """Calculates the total number of videos in the mapping file."""
+        """
+        Calculates the total number of videos in the mapping file.
+        """
         total_videos = set()
         # Iterate through each row in the DataFrame
         for index, row in df.iterrows():
@@ -199,7 +201,8 @@ class Analysis():
 
     @staticmethod
     def get_unique_values(df, value):
-        """Calculates the number of unique countries from a DataFrame.
+        """
+        Calculates the number of unique countries from a DataFrame.
 
         Args:
             df (DataFrame): A DataFrame containing the CSV data.
@@ -406,8 +409,14 @@ class Analysis():
             # Check if the result is None (i.e., no matching data was found)
             if result is not None:
                 # Unpack the result since it's not None
-                (video, start, end, time_of_day, city, state, country, gdp_, population, population_country,
-                 traffic_mortality_, continent, literacy_rate, avg_height, iso3, fps) = result
+                start = result[1]
+                end = result[2]
+                condition = result[3]
+                city = result[4]
+                lat = result[6]
+                long = result[7]
+
+                city_id_format = f'{city}_{lat}_{long}_{condition}'
 
                 # Count the number of mobile objects in the video
                 mobile_ids = Analysis.count_object(value, 67)
@@ -419,38 +428,33 @@ class Analysis():
                 # Count the number of people in the video
                 num_person = Analysis.count_object(value, 0)
 
-                # Extract the time of day
-                condition = time_of_day
-
                 # Calculate average cell phones detected per person
                 if num_person == 0 or mobile_ids == 0:
                     continue
 
                 # Update the information dictionary
-                if f"{city}_{state}_{condition}" in info:
-                    previous_value = info[f"{city}_{state}_{condition}"]
+                if city_id_format in info:
+                    previous_value = info[city_id_format]
                     # Extracting the old number of detected mobiles
-                    previous_value = previous_value * no_person[f"{city}_{state}_{condition}"] * total_time[
-                        f"{city}_{state}_{condition}"] / 1000 / 60
+                    previous_value = previous_value * no_person[city_id_format] * total_time[city_id_format] / 1000 / 60  # noqa: E501
 
                     # Summing up the previous value and the new value
                     total_value = previous_value + mobile_ids
-                    no_person[f"{city}_{state}_{condition}"] += num_person
-                    total_time[f"{city}_{state}_{condition}"] += duration
+                    no_person[city_id_format] += num_person
+                    total_time[city_id_format] += duration
 
                     # Normalising with respect to total person detected and time
-                    info[f"{city}_{state}_{condition}"] = (((total_value * 60) / total_time[
-                        f"{city}_{state}_{condition}"]) / no_person[f"{city}_{state}_{condition}"]) * 1000
+                    info[city_id_format] = (((total_value * 60) / total_time[city_id_format]) / no_person[city_id_format]) * 1000  # noqa: E501
                     continue  # Skip saving the variable in plotting variables
                 else:
-                    no_person[f"{city}_{state}_{condition}"] = num_person
-                    total_time[f"{city}_{state}_{condition}"] = duration
+                    no_person[city_id_format] = num_person
+                    total_time[city_id_format] = duration
 
                     """Normalising the detection with respect to time and numvber of person in the video.
                     Multiplied by 1000 to increase the value to look better in plotting."""
 
                     avg_cell_phone = (((mobile_ids * 60) / time_[-1]) / num_person) * 1000
-                    info[f"{city}_{state}_{condition}"] = avg_cell_phone
+                    info[city_id_format] = avg_cell_phone
 
             else:
                 # Handle the case where no data was found for the given key
@@ -483,8 +487,8 @@ class Analysis():
             # Check if the result is None (i.e., no matching data was found)
             if result is not None:
                 # Unpack the result since it's not None
-                (video, start, end, time_of_day, city, state, country, gdp_, population, population_country,
-                 traffic_mortality_, continent, literacy_rate, avg_height, iso3, fps) = result
+                start = result[1]
+                end = result[2]
 
                 # Calculate the duration of the video
                 duration = end - start
@@ -551,8 +555,8 @@ class Analysis():
 
             # Check if the result is None (i.e., no matching data was found)
             if result is not None:
-                (_, start, end, time_of_day, city, state, country, gdp_, population, population_country,
-                 traffic_mortality_, continent, literacy_rate, avg_height, iso3, fps) = result
+                start = result[1]
+                end = result[2]
 
                 dataframe = value
                 duration = end - start
@@ -603,18 +607,19 @@ class Analysis():
             # Check if the result is None (i.e., no matching data was found)
             if result is not None:
 
-                (_, start, end, time_of_day, city, state, country, gdp_, population, population_country,
-                 traffic_mortality_, continent, literacy_rate, avg_height, iso3, fps) = result
-
-                # Extract the time of day
-                condition = time_of_day
+                start = result[1]
+                end = result[2]
+                condition = result[3]
+                city = result[4]
+                lat = result[6]
+                long = result[7]
 
                 # Calculate the duration of the video
                 duration = end - start
-                if f'{city}_{state}_{condition}' in time_:
-                    time_[f'{city}_{state}_{condition}'] += duration
+                if f'{city}_{lat}_{long}_{condition}' in time_:
+                    time_[f'{city}_{lat}_{long}_{condition}'] += duration
                 else:
-                    time_[f'{city}_{state}_{condition}'] = duration
+                    time_[f'{city}_{lat}_{long}_{condition}'] = duration
 
                 value = dfs.get(key)
 
@@ -634,10 +639,10 @@ class Analysis():
                     if yolo_id_9_not_exists:
                         counter_nt_exists += 1
 
-                counter_1[f'{city}_{state}_{condition}'] = counter_1.get(f'{city}_{state}_{condition}',
-                                                                         0) + counter_exists
-                counter_2[f'{city}_{state}_{condition}'] = counter_2.get(f'{city}_{state}_{condition}',
-                                                                         0) + counter_nt_exists
+                counter_1[f'{city}_{lat}_{long}_{condition}'] = counter_1.get(f'{city}_{lat}_{long}_{condition}',
+                                                                              0) + counter_exists
+                counter_2[f'{city}_{lat}_{long}_{condition}'] = counter_2.get(f'{city}_{lat}_{long}_{condition}',
+                                                                              0) + counter_nt_exists
         return counter_1, counter_2, time_
 
     # TODO: combine methods for looking at crossing events with/without traffic lights
@@ -667,9 +672,12 @@ class Analysis():
 
             # Check if the result is None (i.e., no matching data was found)
             if result is not None:
-
-                (_, start, end, time_of_day, city, state, country, gdp_, population, population_country,
-                 traffic_mortality_, continent, literacy_rate, avg_height, iso3, fps) = result
+                start = result[1]
+                end = result[2]
+                condition = result[3]
+                city = result[4]
+                lat = result[6]
+                long = result[7]
 
                 # Calculate the duration of the video
                 duration = end - start
@@ -699,26 +707,25 @@ class Analysis():
                 # Normalising the counters
                 var_exist[key] = ((counter_exists * 60) / time_[-1])
                 var_nt_exist[key] = ((counter_nt_exists * 60) / time_[-1])
+                city_id_format = f'{city}_{lat}_{long}_{condition}'
 
-                counter_1[f'{city}_{state}_{condition}'] = counter_1.get(f'{city}_{state}_{condition}',
-                                                                         0) + var_exist[key]
-                counter_2[f'{city}_{state}_{condition}'] = counter_2.get(f'{city}_{state}_{condition}',
-                                                                         0) + var_nt_exist[key]
+                counter_1[city_id_format] = counter_1.get(city_id_format, 0) + var_exist[key]
+                counter_2[city_id_format] = counter_2.get(city_id_format, 0) + var_nt_exist[key]
 
-                if (counter_1[f'{city}_{state}_{condition}'] + counter_2[f'{city}_{state}_{condition}']) == 0:
+                if (counter_1[city_id_format] + counter_2[city_id_format]) == 0:
                     # Gives an error of division by 0
                     continue
                 else:
-                    if f'{city}_{state}_{condition}' in ratio:
-                        ratio[f'{city}_{state}_{condition}'] = ((counter_2[f'{city}_{state}_{condition}'] * 100) /
-                                                                (counter_1[f'{city}_{state}_{condition}'] +
-                                                                counter_2[f'{city}_{state}_{condition}']))
+                    if city_id_format in ratio:
+                        ratio[city_id_format] = ((counter_2[city_id_format] * 100) /
+                                                 (counter_1[city_id_format] +
+                                                  counter_2[city_id_format]))
                         continue
                     # If already present, the array below will be filled multiple times
                     else:
-                        ratio[f'{city}_{state}_{condition}'] = ((counter_2[f'{city}_{state}_{condition}'] * 100) /
-                                                                (counter_1[f'{city}_{state}_{condition}'] +
-                                                                counter_2[f'{city}_{state}_{condition}']))
+                        ratio[city_id_format] = ((counter_2[city_id_format] * 100) /
+                                                 (counter_1[city_id_format] +
+                                                  counter_2[city_id_format]))
         return ratio
 
     @staticmethod
@@ -730,11 +737,13 @@ class Analysis():
             result = values_class.find_values_with_video_id(df_mapping, key)
 
             if result is not None:
-                (_, start, end, time_of_day, city, state, country, gdp_, population, population_country,
-                 traffic_mortality_, continent, literacy_rate, avg_height, iso3, fps) = result
+                condition = result[3]
+                city = result[4]
+                lat = result[6]
+                long = result[7]
 
                 # Create the city_time_key (city + time_of_day)
-                city_time_key = f'{city}_{state}_{time_of_day}'
+                city_time_key = f'{city}_{lat}_{long}_{condition}'
 
                 # Add the count to the corresponding city_time_key in the final dict
                 if city_time_key in final:
@@ -745,7 +754,6 @@ class Analysis():
         return final
 
     # Plotting functions:
-    # TODO: xtick and labels shown incorrectly
     @staticmethod
     def speed_and_time_to_start_cross(df_mapping, font_size_captions=40, x_axis_title_height=150, legend_x=0.81,
                                       legend_y=0.98, legend_spacing=0.02):
@@ -770,23 +778,23 @@ class Analysis():
 
         # Now populate the final_dict with city-wise data
         for city_condition, speed in tqdm(avg_speed.items()):
-            city, state, condition = city_condition.split('_')
+            city, lat, long, condition = city_condition.split('_')
 
             # Get the country from the previously stored city_country_map
-            country = values_class.get_value(df_mapping, "city", city, "state", state, "country")
-            iso_code = values_class.get_value(df_mapping, "city", city, "state", state, "iso3")
+            country = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "country")
+            iso_code = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "iso3")
             if country or iso_code is not None:
 
-                # Initialize the city's dictionary if not already present
-                if f'{city}_{state}' not in final_dict:
-                    final_dict[f"{city}_{state}"] = {
+                # Initialise the city's dictionary if not already present
+                if f'{city}_{lat}_{long}' not in final_dict:
+                    final_dict[f"{city}_{lat}_{long}"] = {
                         "speed_0": None, "speed_1": None, "time_0": None, "time_1": None,
                         "country": country, "iso": iso_code}
 
                 # Populate the corresponding speed and time based on the condition
-                final_dict[f"{city}_{state}"][f"speed_{condition}"] = speed
-                if f'{city}_{state}_{condition}' in avg_time:
-                    final_dict[f"{city}_{state}"][f"time_{condition}"] = avg_time[f'{city}_{state}_{condition}']
+                final_dict[f"{city}_{lat}_{long}"][f"speed_{condition}"] = speed
+                if f'{city}_{lat}_{long}_{condition}' in avg_time:
+                    final_dict[f"{city}_{lat}_{long}"][f"time_{condition}"] = avg_time[f'{city}_{lat}_{long}_{condition}']  # noqa: E501
 
         # Extract all valid speed_0 and speed_1 values along with their corresponding cities
         diff_speed_values = [(f'{city}', abs(data['speed_0'] - data['speed_1']))
@@ -800,13 +808,15 @@ class Analysis():
             top_5_max_speed = sorted_diff_speed_values[:5]  # Top 5 maximum differences
             top_5_min_speed = sorted_diff_speed_values[-5:]  # Top 5 minimum differences (including possible zeroes)
 
-            logger.info("Top 5 cities with max |speed_0 - speed_1| differences:")
+            logger.info("Top 5 cities with max |speed at day - speed at night| differences:")
             for city, diff in top_5_max_speed:
-                logger.info(f"{wrapper_class.format_city_state(city)}: {diff}")
+                city_state = wrapper_class.process_city_string(city, df_mapping)
+                logger.info(f"{city_state}: {diff}")
 
-            logger.info("Top 5 cities with min |speed_0 - speed_1| differences:")
+            logger.info("Top 5 cities with min |speed at day - speed at night| differences:")
             for city, diff in top_5_min_speed:
-                logger.info(f"{wrapper_class.format_city_state(city)}: {diff}")
+                city_state = wrapper_class.process_city_string(city, df_mapping)
+                logger.info(f"{city_state}: {diff}")
         else:
             logger.info("No valid speed_0 and speed_1 values found for comparison.")
 
@@ -823,11 +833,13 @@ class Analysis():
 
             logger.info("Top 5 cities with max |time_0 - time_1| differences:")
             for city, diff in top_5_max:
-                logger.info(f"{wrapper_class.format_city_state(city)}: {diff}")
+                city_state = wrapper_class.process_city_string(city, df_mapping)
+                logger.info(f"{city_state}: {diff}")
 
             logger.info("Top 5 cities with min |time_0 - time_1| differences:")
             for city, diff in top_5_min:
-                logger.info(f"{wrapper_class.format_city_state(city)}: {diff}")
+                city_state = wrapper_class.process_city_string(city, df_mapping)
+                logger.info(f"{city_state}: {diff}")
         else:
             logger.info("No valid time_0 and time_1 values found for comparison.")
 
@@ -844,8 +856,8 @@ class Analysis():
             max_speed_value_0 = filtered_dict_s_0[max_speed_city_0]["speed_0"]
             min_speed_value_0 = filtered_dict_s_0[min_speed_city_0]["speed_0"]
 
-            logger.info(f"City with max speed at day: {wrapper_class.format_city_state(max_speed_city_0)} with speed of {max_speed_value_0} m/s")  # noqa:E501
-            logger.info(f"City with min speed at day: {wrapper_class.format_city_state(min_speed_city_0)} with speed of {min_speed_value_0} m/s")  # noqa:E501
+            logger.info(f"City with max speed at day: {wrapper_class.process_city_string(max_speed_city_0, df_mapping)} with speed of {max_speed_value_0} m/s")  # noqa:E501
+            logger.info(f"City with min speed at day: {wrapper_class.process_city_string(min_speed_city_0, df_mapping)} with speed of {min_speed_value_0} m/s")  # noqa:E501
 
         if filtered_dict_s_1:
             max_speed_city_1 = max(filtered_dict_s_1, key=lambda city: filtered_dict_s_1[city]["speed_1"])
@@ -853,8 +865,8 @@ class Analysis():
             max_speed_value_1 = filtered_dict_s_1[max_speed_city_1]["speed_1"]
             min_speed_value_1 = filtered_dict_s_1[min_speed_city_1]["speed_1"]
 
-            logger.info(f"City with max speed at night: {wrapper_class.format_city_state(max_speed_city_1)} with speed of {max_speed_value_1} m/s")  # noqa:E501
-            logger.info(f"City with min speed at night: {wrapper_class.format_city_state(min_speed_city_1)} with speed of {min_speed_value_1} m/s")  # noqa:E501
+            logger.info(f"City with max speed at night: {wrapper_class.process_city_string(max_speed_city_1, df_mapping)} with speed of {max_speed_value_1} m/s")  # noqa:E501
+            logger.info(f"City with min speed at night: {wrapper_class.process_city_string(min_speed_city_1, df_mapping)} with speed of {min_speed_value_1} m/s")  # noqa:E501
 
         # Find city with max and min time_0 and time_1
         if filtered_dict_t_0:
@@ -863,8 +875,8 @@ class Analysis():
             max_time_value_0 = filtered_dict_t_0[max_time_city_0]["time_0"]
             min_time_value_0 = filtered_dict_t_0[min_time_city_0]["time_0"]
 
-            logger.info(f"City with max time at day: {wrapper_class.format_city_state(max_time_city_0)} with time of {max_time_value_0} s")  # noqa:E501
-            logger.info(f"City with min time at day: {wrapper_class.format_city_state(min_time_city_0)} with time of {min_time_value_0} s")  # noqa:E501
+            logger.info(f"City with max time at day: {wrapper_class.process_city_string(max_time_city_0, df_mapping)} with time of {max_time_value_0} s")  # noqa:E501
+            logger.info(f"City with min time at day: {wrapper_class.process_city_string(min_time_city_0, df_mapping)} with time of {min_time_value_0} s")  # noqa:E501
 
         if filtered_dict_t_1:
             max_time_city_1 = max(filtered_dict_t_1, key=lambda city: filtered_dict_t_1[city]["time_1"])
@@ -872,8 +884,8 @@ class Analysis():
             max_time_value_1 = filtered_dict_t_1[max_time_city_1]["time_1"]
             min_time_value_1 = filtered_dict_t_1[min_time_city_1]["time_1"]
 
-            logger.info(f"City with max time at night: {wrapper_class.format_city_state(max_time_city_1)} with time of {max_time_value_1} s")  # noqa:E501
-            logger.info(f"City with min time at night: {wrapper_class.format_city_state(min_time_city_1)} with time of {min_time_value_1} s")  # noqa:E501
+            logger.info(f"City with max time at night: {wrapper_class.process_city_string(max_time_city_1, df_mapping)} with time of {max_time_value_1} s")  # noqa:E501
+            logger.info(f"City with min time at night: {wrapper_class.process_city_string(min_time_city_1, df_mapping)} with time of {min_time_value_1} s")  # noqa:E501
 
         # Extract valid speed and time values and calculate statistics
         speed_0_values = [data['speed_0'] for data in final_dict.values() if pd.notna(data['speed_0'])]
@@ -916,8 +928,8 @@ class Analysis():
         # Extract city, condition, and count_ from the info dictionary
         cities, conditions_, counts = [], [], []
         for key, value in tqdm(avg_time.items()):
-            city, state, condition = key.split('_')
-            cities.append(f'{city}_{state}')
+            city, lat, long, condition = key.split('_')
+            cities.append(f'{city}_{lat}_{long}')
             conditions_.append(condition)
             counts.append(value)
 
@@ -950,12 +962,9 @@ class Analysis():
         assert len(cities_ordered) == len(day_avg_speed) == len(night_avg_speed) == len(
             day_time_dict) == len(night_time_dict), "Lengths of lists don't match!"
 
-        # Make sure the lengths match
-        # assert len(cities) == len(day_avg_speed) == len(night_avg_speed) == len(
-        #     day_time_dict) == len(night_time_dict), "Lengths of lists don't match!"
-
         # Determine how many cities will be in each column
         num_cities_per_col = len(cities_ordered) // 2 + len(cities_ordered) % 2  # Split cities into two groups
+
         # Define a base height per row and calculate total figure height
         TALL_FIG_HEIGHT = num_cities_per_col * BASE_HEIGHT_PER_ROW
 
@@ -968,9 +977,8 @@ class Analysis():
 
         # Plot left column (first half of cities)
         for i, city in enumerate(cities_ordered[:num_cities_per_col]):
-            city_new, state = city.split('_')
-            iso_code = values_class.get_value(df_mapping, "city", city_new, "state", state, "iso3")
-            city = wrapper_class.format_city_state(city)  # type: ignore
+            city = wrapper_class.process_city_string(city, df_mapping)
+
             # Row for speed (Day and Night)
             row = 2 * i + 1
             if day_avg_speed[i] is not None and night_avg_speed[i] is not None:
@@ -1035,9 +1043,8 @@ class Analysis():
 
         # Similarly for the right column
         for i, city in enumerate(cities_ordered[num_cities_per_col:]):
-            city_new, state = city.split('_')
-            iso_code = values_class.get_value(df_mapping, "city", city_new, "state", state, "iso3")
-            city = wrapper_class.format_city_state(city)  # type: ignore
+            city = wrapper_class.process_city_string(city, df_mapping)
+
             row = 2 * i + 1
             idx = num_cities_per_col + i
             if day_avg_speed[idx] is not None and night_avg_speed[idx] is not None:
@@ -1332,11 +1339,15 @@ class Analysis():
         fig.update_layout(font=dict(family=common.get_configs('font_family')))
 
         # Final adjustments and display
-        # todo: eps export hands
-        # todo: png export hands
         fig.update_layout(margin=dict(l=80, r=80, t=x_axis_title_height, b=x_axis_title_height))
-        plots_class.save_plotly_figure(fig, "consolidated", height=TALL_FIG_HEIGHT*2, width=4960, scale=SCALE,
-                                       save_final=True, save_eps=False, save_png=False)
+        plots_class.save_plotly_figure(fig,
+                                       "consolidated",
+                                       height=TALL_FIG_HEIGHT*2,
+                                       width=4960,
+                                       scale=SCALE,
+                                       save_final=True,
+                                       save_eps=False,
+                                       save_png=False)
 
     @staticmethod
     def plot_speed_to_cross_by_alphabetical_order(df_mapping, font_size_captions=40, x_axis_title_height=110,
@@ -1358,19 +1369,20 @@ class Analysis():
 
         # Now populate the final_dict with city-wise speed data
         for city_condition, speed in tqdm(avg_speed.items()):
-            city, state, condition = city_condition.split('_')
+            city, lat, long, condition = city_condition.split('_')
 
             # Get the country from the previously stored city_country_map
-            country = values_class.get_value(df_mapping, "city", city, "state", state, "country")
-            iso_code = values_class.get_value(df_mapping, "city", city, "state", state, "iso3")
+            country = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "country")
+            iso_code = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "iso3")
 
             if country or iso_code is not None:
                 # Initialize the city's dictionary if not already present
-                if f'{city}_{state}' not in final_dict:
-                    final_dict[f'{city}_{state}'] = {"speed_0": None, "speed_1": None,
-                                                     "country": country, "iso": iso_code}
+                if f'{city}_{lat}_{long}' not in final_dict:
+                    final_dict[f'{city}_{lat}_{long}'] = {"speed_0": None, "speed_1": None,
+                                                          "country": country, "iso": iso_code}
+
                 # Populate the corresponding speed based on the condition
-                final_dict[f'{city}_{state}'][f"speed_{condition}"] = speed
+                final_dict[f'{city}_{lat}_{long}'][f"speed_{condition}"] = speed
 
         # Extract unique cities
         cities = list(set([key.split('_')[0] for key in final_dict.keys()]))
@@ -1407,9 +1419,8 @@ class Analysis():
 
         # Plot left column (first half of cities)
         for i, city in enumerate(cities_ordered[:num_cities_per_col]):
-            city_new, state = city.split('_')
-            iso_code = values_class.get_value(df_mapping, "city", city_new, "state", state, "iso3")
-            city = wrapper_class.format_city_state(city)  # type: ignore
+            city = wrapper_class.process_city_string(city, df_mapping)
+
             # Row for speed (Day and Night)
             row = i + 1
             if day_avg_speed[i] is not None and night_avg_speed[i] is not None:
@@ -1441,9 +1452,7 @@ class Analysis():
                     textfont=dict(size=14, color='white')), row=row, col=1)
 
         for i, city in enumerate(cities_ordered[num_cities_per_col:]):
-            city_new, state = city.split('_')
-            iso_code = values_class.get_value(df_mapping, "city", city_new, "state", state, "iso3")
-            city = wrapper_class.format_city_state(city)  # type: ignore
+            city = wrapper_class.process_city_string(city, df_mapping)
             row = i + 1
             idx = num_cities_per_col + i
             if day_avg_speed[idx] is not None and night_avg_speed[idx] is not None:
@@ -1695,6 +1704,7 @@ class Analysis():
                                        width=2480,
                                        height=TALL_FIG_HEIGHT,
                                        scale=SCALE,
+                                       save_eps=False,
                                        save_final=True)
 
     @staticmethod
@@ -1717,18 +1727,19 @@ class Analysis():
 
         # Now populate the final_dict with city-wise data
         for city_condition, time in tqdm(avg_time.items()):
-            city, state, condition = city_condition.split('_')
+            city, lat, long, condition = city_condition.split('_')
 
             # Get the country from the previously stored city_country_map
-            country = values_class.get_value(df_mapping, "city", city, "state", state, "country")
-            iso_code = values_class.get_value(df_mapping, "city", city, "state", state, "iso3")
+            country = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "country")
+            iso_code = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "iso3")
+
             if country or iso_code is not None:
-                # Initialize the city's dictionary if not already present
-                if f'{city}_{state}' not in final_dict:
-                    final_dict[f'{city}_{state}'] = {"time_0": None, "time_1": None,
-                                                     "country": country, "iso": iso_code}
+                # Initialise the city's dictionary if not already present
+                if f'{city}_{lat}_{long}' not in final_dict:
+                    final_dict[f'{city}_{lat}_{long}'] = {"time_0": None, "time_1": None,
+                                                          "country": country, "iso": iso_code}
                 # Populate the corresponding time based on the condition
-                final_dict[f'{city}_{state}'][f"time_{condition}"] = time
+                final_dict[f'{city}_{lat}_{long}'][f"time_{condition}"] = time
 
         # Extract unique cities
         cities = list(set([key.split('_')[0] for key in final_dict.keys()]))
@@ -1764,9 +1775,8 @@ class Analysis():
 
         # Plot left column (first half of cities)
         for i, city in enumerate(cities_ordered[:num_cities_per_col]):
-            city_new, state = city.split('_')
-            iso_code = values_class.get_value(df_mapping, "city", city_new, "state", state, "iso3")
-            city = wrapper_class.format_city_state(city)  # type: ignore
+            city = wrapper_class.process_city_string(city, df_mapping)
+
             # Row for time (Day and Night)
             row = i + 1
             if day_time_dict[i] is not None and night_time_dict[i] is not None:
@@ -1799,9 +1809,8 @@ class Analysis():
 
         # Similarly for the right column
         for i, city in enumerate(cities_ordered[num_cities_per_col:]):
-            city_new, state = city.split('_')
-            iso_code = values_class.get_value(df_mapping, "city", city_new, "state", state, "iso3")
-            city = wrapper_class.format_city_state(city)  # type: ignore
+            city = wrapper_class.process_city_string(city, df_mapping)
+
             row = i + 1
             idx = num_cities_per_col + i
             if day_time_dict[idx] is not None and night_time_dict[idx] is not None:
@@ -2050,6 +2059,7 @@ class Analysis():
                                        width=2480,
                                        height=TALL_FIG_HEIGHT,
                                        scale=1,
+                                       save_eps=False,
                                        save_final=True)
 
     @staticmethod
@@ -2072,18 +2082,19 @@ class Analysis():
 
         # Now populate the final_dict with city-wise speed data
         for city_condition, speed in tqdm(avg_speed.items()):
-            city, state, condition = city_condition.split('_')
+            city, lat, long, condition = city_condition.split('_')
 
             # Get the country from the previously stored city_country_map
-            country = values_class.get_value(df_mapping, "city", city, "state", state, "country")
-            iso_code = values_class.get_value(df_mapping, "city", city, "state", state, "iso3")
+            country = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "country")
+            iso_code = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "iso3")
+
             if country or iso_code is not None:
-                # Initialize the city's dictionary if not already present
-                if f"{city}_{state}" not in final_dict:
-                    final_dict[f"{city}_{state}"] = {"speed_0": None, "speed_1": None,
-                                                     "country": country, "iso": iso_code}
+                # Initialise the city's dictionary if not already present
+                if f"{city}_{lat}_{long}" not in final_dict:
+                    final_dict[f"{city}_{lat}_{long}"] = {"speed_0": None, "speed_1": None,
+                                                          "country": country, "iso": iso_code}
                 # Populate the corresponding speed based on the condition
-                final_dict[f"{city}_{state}"][f"speed_{condition}"] = speed
+                final_dict[f"{city}_{lat}_{long}"][f"speed_{condition}"] = speed
 
         # Sort cities by the sum of speed_0 and speed_1 values
         cities_ordered = sorted(
@@ -2111,9 +2122,12 @@ class Analysis():
 
         # Plot left column (first half of cities)
         for i, city in enumerate(cities_ordered[:num_cities_per_col]):
-            city_new, state = city.split('_')
-            iso_code = values_class.get_value(df_mapping, "city", city_new, "state", state, "iso3")
-            city = wrapper_class.iso2_to_flag(wrapper_class.iso3_to_iso2(iso_code)) + " " + wrapper_class.format_city_state(city)   # type: ignore  # noqa: E501
+            city_new, lat, long = city.split('_')
+            iso_code = values_class.get_value(df_mapping, "city", city_new, "lat", float(lat), "iso3")
+            city = wrapper_class.process_city_string(city, df_mapping)
+
+            city = wrapper_class.iso2_to_flag(wrapper_class.iso3_to_iso2(iso_code)) + " " + city   # type: ignore
+
             row = i + 1
             if day_avg_speed[i] is not None and night_avg_speed[i] is not None:
                 value = (day_avg_speed[i] + night_avg_speed[i])/2
@@ -2144,9 +2158,12 @@ class Analysis():
                     text=[''], textfont=dict(size=14, color='white')), row=row, col=1)
 
         for i, city in enumerate(cities_ordered[num_cities_per_col:]):
-            city_new, state = city.split('_')
-            iso_code = values_class.get_value(df_mapping, "city", city_new, "state", state, "iso3")
-            city = wrapper_class.iso2_to_flag(wrapper_class.iso3_to_iso2(iso_code)) + " " + wrapper_class.format_city_state(city)   # type: ignore  # noqa: E501
+            city_new, lat, long = city.split('_')
+            iso_code = values_class.get_value(df_mapping, "city", city_new, "lat", float(lat), "iso3")
+            city = wrapper_class.process_city_string(city, df_mapping)
+
+            city = wrapper_class.iso2_to_flag(wrapper_class.iso3_to_iso2(iso_code)) + " " + city   # type: ignore
+
             row = i + 1
             idx = num_cities_per_col + i
             if day_avg_speed[idx] is not None and night_avg_speed[idx] is not None:
@@ -2355,7 +2372,12 @@ class Analysis():
 
         # Final adjustments and display
         fig.update_layout(margin=dict(l=10, r=10, t=x_axis_title_height, b=10))
-        plots_class.save_plotly_figure(fig, "crossing_speed_avg", width=2400, height=TALL_FIG_HEIGHT, scale=SCALE,
+        plots_class.save_plotly_figure(fig,
+                                       "crossing_speed_avg",
+                                       width=2400,
+                                       height=TALL_FIG_HEIGHT,
+                                       scale=SCALE,
+                                       save_eps=False,
                                        save_final=True)
 
     @staticmethod
@@ -2374,18 +2396,20 @@ class Analysis():
 
         # Now populate the final_dict with city-wise speed data
         for city_condition, time in tqdm(avg_time.items()):
-            city, state, condition = city_condition.split('_')
+            city, lat, long, condition = city_condition.split('_')
 
             # Get the country from the previously stored city_country_map
-            country = values_class.get_value(df_mapping, "city", city, "state", state, "country")
-            iso_code = values_class.get_value(df_mapping, "city", city, "state", state, "iso3")
+            country = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "country")
+            iso_code = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "iso3")
             if country or iso_code is not None:
-                # Initialize the city's dictionary if not already present
-                if f"{city}_{state}" not in final_dict:
-                    final_dict[f"{city}_{state}"] = {"time_0": None,
-                                                     "time_1": None, "country": country, "iso": iso_code}
+                # Initialise the city's dictionary if not already present
+                if f"{city}_{lat}_{long}" not in final_dict:
+                    final_dict[f"{city}_{lat}_{long}"] = {"time_0": None,
+                                                          "time_1": None,
+                                                          "country": country,
+                                                          "iso": iso_code}
                 # Populate the corresponding speed based on the condition
-                final_dict[f"{city}_{state}"][f"time_{condition}"] = time
+                final_dict[f"{city}_{lat}_{long}"][f"time_{condition}"] = time
 
         # Sort cities by the sum of speed_0 and speed_1 values
         cities_ordered = sorted(
@@ -2415,9 +2439,12 @@ class Analysis():
         # Plot left column (first half of cities)
         for i, city in enumerate(cities_ordered[:num_cities_per_col]):
             # Row for speed (Day and Night)
-            city_new, state = city.split('_')
-            iso_code = values_class.get_value(df_mapping, "city", city_new, "state", state, "iso3")
-            city = wrapper_class.iso2_to_flag(wrapper_class.iso3_to_iso2(iso_code)) + " " + wrapper_class.format_city_state(city)   # type: ignore  # noqa: E501
+            city_new, lat, long = city.split('_')
+            iso_code = values_class.get_value(df_mapping, "city", city_new, "lat", float(lat), "iso3")
+            city = wrapper_class.process_city_string(city, df_mapping)
+
+            city = wrapper_class.iso2_to_flag(wrapper_class.iso3_to_iso2(iso_code)) + " " + city   # type: ignore
+
             row = i + 1
             if day_time_dict[i] is not None and night_time_dict[i] is not None:
                 value = (day_time_dict[i] + night_time_dict[i])/2
@@ -2453,9 +2480,12 @@ class Analysis():
 
         # Similarly for the right column
         for i, city in enumerate(cities_ordered[num_cities_per_col:]):
-            city_new, state = city.split('_')
-            iso_code = values_class.get_value(df_mapping, "city", city_new, "state", state, "iso3")
-            city = wrapper_class.iso2_to_flag(wrapper_class.iso3_to_iso2(iso_code)) + " " + wrapper_class.format_city_state(city)   # type: ignore  # noqa: E501
+            city_new, lat, long = city.split('_')
+            iso_code = values_class.get_value(df_mapping, "city", city_new, "lat", float(lat), "iso3")
+            city = wrapper_class.process_city_string(city, df_mapping)
+
+            city = wrapper_class.iso2_to_flag(wrapper_class.iso3_to_iso2(iso_code)) + " " + city   # type: ignore
+
             row = i + 1
             idx = num_cities_per_col + i
             if day_time_dict[idx] is not None and night_time_dict[idx] is not None:
@@ -2664,7 +2694,12 @@ class Analysis():
 
         # Final adjustments and display
         fig.update_layout(margin=dict(l=10, r=10, t=x_axis_title_height, b=10))
-        plots_class.save_plotly_figure(fig, "time_crossing_avg", width=2400, height=TALL_FIG_HEIGHT, scale=SCALE,
+        plots_class.save_plotly_figure(fig,
+                                       "time_crossing_avg",
+                                       width=2400,
+                                       height=TALL_FIG_HEIGHT,
+                                       scale=SCALE,
+                                       save_eps=False,
                                        save_final=True)
 
     @staticmethod
@@ -2683,24 +2718,24 @@ class Analysis():
         without_trf_light = data_tuple[28]
         # Now populate the final_dict with city-wise speed data
         for city_condition, count in without_trf_light.items():
-            city, state, condition = city_condition.split('_')
+            city, lat, long, condition = city_condition.split('_')
 
             # Get the country from the previously stored city_country_map
-            country = values_class.get_value(df_mapping, "city", city, "state", state, "country")
-            iso_code = values_class.get_value(df_mapping, "city", city, "state", state, "iso3")
+            country = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "country")
+            iso_code = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "iso3")
             if country or iso_code is not None:
-                # Initialize the city's dictionary if not already present
-                if f"{city}_{state}" not in final_dict:
-                    final_dict[f"{city}_{state}"] = {"without_trf_light_0": None, "without_trf_light_1": None,
-                                                     "country": country, "iso": iso_code}
+                # Initialise the city's dictionary if not already present
+                if f"{city}_{lat}_{long}" not in final_dict:
+                    final_dict[f"{city}_{lat}_{long}"] = {"without_trf_light_0": None, "without_trf_light_1": None,
+                                                          "country": country, "iso": iso_code}
 
                 # normalise by total time and total number of detected persons
-                total_time = values_class.get_value(df_mapping, "city", city, "state", state, "total_time")
-                person = values_class.get_value(df_mapping, "city", city, "state", state, "person")
+                total_time = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "total_time")
+                person = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "person")
                 count = count / total_time / person
 
                 # Populate the corresponding speed based on the condition
-                final_dict[f"{city}_{state}"][f"without_trf_light_{condition}"] = count
+                final_dict[f"{city}_{lat}_{long}"][f"without_trf_light_{condition}"] = count
 
         # Multiply each of the numeric speed values by 10^6
         for city_key, data in final_dict.items():
@@ -2739,9 +2774,12 @@ class Analysis():
 
         # Plot left column (first half of cities)
         for i, city in enumerate(cities_ordered[:num_cities_per_col]):
-            city_new, state = city.split('_')
-            iso_code = values_class.get_value(df_mapping, "city", city_new, "state", state, "iso3")
-            city = wrapper_class.iso2_to_flag(wrapper_class.iso3_to_iso2(iso_code)) + " " + wrapper_class.format_city_state(city)   # type: ignore  # noqa: E501
+            city_new, lat, long = city.split('_')
+            iso_code = values_class.get_value(df_mapping, "city", city_new, "lat", float(lat), "iso3")
+            city = wrapper_class.process_city_string(city, df_mapping)
+
+            city = wrapper_class.iso2_to_flag(wrapper_class.iso3_to_iso2(iso_code)) + " " + city   # type: ignore
+
             row = i + 1
             if day_crossing[i] is not None and night_crossing[i] is not None:
                 value = round((day_crossing[i] + night_crossing[i])/2, 2)
@@ -2776,9 +2814,12 @@ class Analysis():
                     text=[''], textfont=dict(size=14, color='white')), row=row, col=1)
 
         for i, city in enumerate(cities_ordered[num_cities_per_col:]):
-            city_new, state = city.split('_')
-            iso_code = values_class.get_value(df_mapping, "city", city_new, "state", state, "iso3")
-            city = wrapper_class.iso2_to_flag(wrapper_class.iso3_to_iso2(iso_code)) + " " + wrapper_class.format_city_state(city)   # type: ignore  # noqa: E501
+            city_new, lat, long = city.split('_')
+            iso_code = values_class.get_value(df_mapping, "city", city_new, "lat", float(lat), "iso3")
+            city = wrapper_class.process_city_string(city, df_mapping)
+
+            city = wrapper_class.iso2_to_flag(wrapper_class.iso3_to_iso2(iso_code)) + " " + city   # type: ignore
+
             row = i + 1
             idx = num_cities_per_col + i
             if day_crossing[idx] is not None and night_crossing[idx] is not None:
@@ -2975,8 +3016,13 @@ class Analysis():
 
         # Final adjustments and display
         fig.update_layout(margin=dict(l=80, r=100, t=x_axis_title_height, b=180))
-        plots_class.save_plotly_figure(fig, "crossings_without_traffic_equipment_avg",
-                                       width=2480, height=TALL_FIG_HEIGHT, scale=SCALE, save_final=True)
+        plots_class.save_plotly_figure(fig,
+                                       "crossings_without_traffic_equipment_avg",
+                                       width=2480,
+                                       height=TALL_FIG_HEIGHT,
+                                       scale=SCALE,
+                                       save_eps=False,
+                                       save_final=True)
 
     @staticmethod
     def plot_crossing_with_traffic_light(df_mapping, font_size_captions=40, x_axis_title_height=150, legend_x=0.92,
@@ -2988,24 +3034,24 @@ class Analysis():
         with_trf_light = data_tuple[27]
         # Now populate the final_dict with city-wise speed data
         for city_condition, count in with_trf_light.items():
-            city, state, condition = city_condition.split('_')
+            city, lat, long, condition = city_condition.split('_')
 
             # Get the country from the previously stored city_country_map
-            country = values_class.get_value(df_mapping, "city", city, "state", state, "country")
-            iso_code = values_class.get_value(df_mapping, "city", city, "state", state, "iso3")
+            country = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "country")
+            iso_code = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "iso3")
             if country or iso_code is not None:
                 # Initialize the city's dictionary if not already present
-                if f"{city}_{state}" not in final_dict:
-                    final_dict[f"{city}_{state}"] = {"with_trf_light_0": None, "with_trf_light_1": None,
-                                                     "country": country, "iso": iso_code}
+                if f"{city}_{lat}_{long}" not in final_dict:
+                    final_dict[f"{city}_{lat}_{long}"] = {"with_trf_light_0": None, "with_trf_light_1": None,
+                                                          "country": country, "iso": iso_code}
 
                 # normalise by total time and total number of detected persons
-                total_time = values_class.get_value(df_mapping, "city", city, "state", state, "total_time")
-                person = values_class.get_value(df_mapping, "city", city, "state", state, "person")
+                total_time = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "total_time")
+                person = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "person")
                 count = count / total_time / person
 
                 # Populate the corresponding speed based on the condition
-                final_dict[f"{city}_{state}"][f"with_trf_light_{condition}"] = count
+                final_dict[f"{city}_{lat}_{long}"][f"with_trf_light_{condition}"] = count
 
         # Multiply each of the numeric speed values by 10^6
         for city_key, data in final_dict.items():
@@ -3047,9 +3093,12 @@ class Analysis():
 
         # Plot left column (first half of cities)
         for i, city in enumerate(cities_ordered[:num_cities_per_col]):
-            city_new, state = city.split('_')
-            iso_code = values_class.get_value(df_mapping, "city", city_new, "state", state, "iso3")
-            city = wrapper_class.iso2_to_flag(wrapper_class.iso3_to_iso2(iso_code)) + " " + wrapper_class.format_city_state(city)   # type: ignore  # noqa: E501
+            city_new, lat, long = city.split('_')
+            iso_code = values_class.get_value(df_mapping, "city", city_new, "lat", float(lat), "iso3")
+            city = wrapper_class.process_city_string(city, df_mapping)
+
+            city = wrapper_class.iso2_to_flag(wrapper_class.iso3_to_iso2(iso_code)) + " " + city   # type: ignore
+
             row = i + 1
             if day_crossing[i] is not None and night_crossing[i] is not None:
                 value = round((day_crossing[i] + night_crossing[i])/2, 2)
@@ -3084,9 +3133,12 @@ class Analysis():
                     text=[''], textfont=dict(size=14, color='white')), row=row, col=1)
 
         for i, city in enumerate(cities_ordered[num_cities_per_col:]):
-            city_new, state = city.split('_')
-            iso_code = values_class.get_value(df_mapping, "city", city_new, "state", state, "iso3")
-            city = wrapper_class.iso2_to_flag(wrapper_class.iso3_to_iso2(iso_code)) + " " + wrapper_class.format_city_state(city)   # type: ignore  # noqa: E501
+            city_new, lat, long = city.split('_')
+            iso_code = values_class.get_value(df_mapping, "city", city_new, "lat", float(lat), "iso3")
+            city = wrapper_class.process_city_string(city, df_mapping)
+
+            city = wrapper_class.iso2_to_flag(wrapper_class.iso3_to_iso2(iso_code)) + " " + city   # type: ignore
+
             row = i + 1
             idx = num_cities_per_col + i
             if day_crossing[idx] is not None and night_crossing[idx] is not None:
@@ -3283,8 +3335,13 @@ class Analysis():
 
         # Final adjustments and display
         fig.update_layout(margin=dict(l=80, r=100, t=x_axis_title_height, b=180))
-        plots_class.save_plotly_figure(fig, "crossings_with_traffic_equipment_avg", width=2480, height=TALL_FIG_HEIGHT,
-                                       scale=SCALE, save_final=True)
+        plots_class.save_plotly_figure(fig,
+                                       "crossings_with_traffic_equipment_avg",
+                                       width=2480,
+                                       height=TALL_FIG_HEIGHT,
+                                       scale=SCALE,
+                                       save_eps=False,
+                                       save_final=True)
 
     def compute_avg_variable_city(self, variable_city):
         """
@@ -3347,24 +3404,24 @@ class Analysis():
 
         # Now populate the final_dict with city-wise data
         for city_condition, speed in avg_speed.items():
-            city, state, condition = city_condition.split('_')
+            city, lat, long, condition = city_condition.split('_')
 
             # Get the country from the previously stored city_country_map
-            country = values_class.get_value(df_mapping, "city", city, "state", state, "country")
-            iso_code = values_class.get_value(df_mapping, "city", city, "state", state, "iso3")
-            continent = values_class.get_value(df_mapping, "city", city, "state", state, "continent")
-            population_country = values_class.get_value(df_mapping, "city", city, "state", state, "population_country")
-            gdp_city = values_class.get_value(df_mapping, "city", city, "state", state, "gmp")
-            traffic_mortality = values_class.get_value(df_mapping, "city", city, "state", state, "traffic_mortality")
-            literacy_rate = values_class.get_value(df_mapping, "city", city, "state", state, "literacy_rate")
-            gini = values_class.get_value(df_mapping, "city", city, "state", state, "gini")
-            traffic_index = values_class.get_value(df_mapping, "city", city, "state", state, "traffic_index")
+            country = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "country")
+            iso_code = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "iso3")
+            continent = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "continent")
+            population_country = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "population_country")  # noqa: E501
+            gdp_city = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "gmp")
+            traffic_mortality = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "traffic_mortality")  # noqa: E501
+            literacy_rate = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "literacy_rate")
+            gini = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "gini")
+            traffic_index = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "traffic_index")
 
             if country or iso_code is not None:
 
                 # Initialize the city's dictionary if not already present
-                if f'{city}_{state}' not in final_dict:
-                    final_dict[f'{city}_{state}'] = {
+                if f'{city}_{lat}_{long}' not in final_dict:
+                    final_dict[f'{city}_{lat}_{long}'] = {
                         "avg_speed_0": None, "avg_speed_1": None, "avg_time_0": None, "avg_time_1": None,
                         "speed_val_0": None, "speed_val_1": None, "time_val_0": None, "time_val_1": None,
                         "ped_cross_city_0": 0, "ped_cross_city_1": 0,
@@ -3378,64 +3435,64 @@ class Analysis():
                     }
 
                 # Populate the corresponding speed and time based on the condition
-                final_dict[f'{city}_{state}'][f"avg_speed_{condition}"] = speed
-                if f'{city}_{state}_{condition}' in avg_time:
-                    final_dict[f'{city}_{state}'][f"avg_time_{condition}"] = avg_time.get(
-                        f'{city}_{state}_{condition}', None)
-                    final_dict[f'{city}_{state}'][f"time_val_{condition}"] = time_values.get(
-                        f'{city}_{state}_{condition}', None)
-                    final_dict[f'{city}_{state}'][f"speed_val_{condition}"] = speed_values.get(
-                        f'{city}_{state}_{condition}', None)
-                    final_dict[f'{city}_{state}'][f"time_val_{condition}"] = time_values.get(
-                        f'{city}_{state}_{condition}', None)
-                    final_dict[f'{city}_{state}'][f"ped_cross_city_{condition}"] = ped_cross_city.get(
-                        f'{city}_{state}_{condition}', None)
+                final_dict[f'{city}_{lat}_{long}'][f"avg_speed_{condition}"] = speed
+                if f'{city}_{lat}_{long}_{condition}' in avg_time:
+                    final_dict[f'{city}_{lat}_{long}'][f"avg_time_{condition}"] = avg_time.get(
+                        f'{city}_{lat}_{long}_{condition}', None)
+                    final_dict[f'{city}_{lat}_{long}'][f"time_val_{condition}"] = time_values.get(
+                        f'{city}_{lat}_{long}_{condition}', None)
+                    final_dict[f'{city}_{lat}_{long}'][f"speed_val_{condition}"] = speed_values.get(
+                        f'{city}_{lat}_{long}_{condition}', None)
+                    final_dict[f'{city}_{lat}_{long}'][f"time_val_{condition}"] = time_values.get(
+                        f'{city}_{lat}_{long}_{condition}', None)
+                    final_dict[f'{city}_{lat}_{long}'][f"ped_cross_city_{condition}"] = ped_cross_city.get(
+                        f'{city}_{lat}_{long}_{condition}', None)
 
                     avg_person_city = analysis_class.compute_avg_variable_city(person_city)
-                    final_dict[f'{city}_{state}'][f"person_city_{condition}"] = avg_person_city.get(
-                        f'{city}_{state}_{condition}', 0)
+                    final_dict[f'{city}_{lat}_{long}'][f"person_city_{condition}"] = avg_person_city.get(
+                        f'{city}_{lat}_{long}_{condition}', 0)
 
                     avg_bicycle_city = analysis_class.compute_avg_variable_city(bicycle_city)
-                    final_dict[f'{city}_{state}'][f"bicycle_city_{condition}"] = avg_bicycle_city.get(
-                        f'{city}_{state}_{condition}', 0)
+                    final_dict[f'{city}_{lat}_{long}'][f"bicycle_city_{condition}"] = avg_bicycle_city.get(
+                        f'{city}_{lat}_{long}_{condition}', 0)
 
                     avg_car_city = analysis_class.compute_avg_variable_city(car_city)
-                    final_dict[f'{city}_{state}'][f"car_city_{condition}"] = avg_car_city.get(
-                        f'{city}_{state}_{condition}', 0)
+                    final_dict[f'{city}_{lat}_{long}'][f"car_city_{condition}"] = avg_car_city.get(
+                        f'{city}_{lat}_{long}_{condition}', 0)
 
                     avg_motorcycle_city = analysis_class.compute_avg_variable_city(motorcycle_city)
-                    final_dict[f'{city}_{state}'][f"motorcycle_city_{condition}"] = avg_motorcycle_city.get(
-                        f'{city}_{state}_{condition}', 0)
+                    final_dict[f'{city}_{lat}_{long}'][f"motorcycle_city_{condition}"] = avg_motorcycle_city.get(
+                        f'{city}_{lat}_{long}_{condition}', 0)
 
                     avg_bus_city = analysis_class.compute_avg_variable_city(bus_city)
-                    final_dict[f'{city}_{state}'][f"bus_city_{condition}"] = avg_bus_city.get(
-                        f'{city}_{state}_{condition}', 0)
+                    final_dict[f'{city}_{lat}_{long}'][f"bus_city_{condition}"] = avg_bus_city.get(
+                        f'{city}_{lat}_{long}_{condition}', 0)
 
                     avg_truck_city = analysis_class.compute_avg_variable_city(truck_city)
-                    final_dict[f'{city}_{state}'][f"truck_city_{condition}"] = avg_truck_city.get(
-                        f'{city}_{state}_{condition}', 0)
+                    final_dict[f'{city}_{lat}_{long}'][f"truck_city_{condition}"] = avg_truck_city.get(
+                        f'{city}_{lat}_{long}_{condition}', 0)
 
-                    final_dict[f'{city}_{state}'][f"cross_evnt_city_{condition}"] = cross_evnt_city.get(
-                        f'{city}_{state}_{condition}', 0)
+                    final_dict[f'{city}_{lat}_{long}'][f"cross_evnt_city_{condition}"] = cross_evnt_city.get(
+                        f'{city}_{lat}_{long}_{condition}', 0)
 
                     avg_vehicle_city = analysis_class.compute_avg_variable_city(vehicle_city)
-                    final_dict[f'{city}_{state}'][f"vehicle_city_{condition}"] = avg_vehicle_city.get(
-                        f'{city}_{state}_{condition}', None)
+                    final_dict[f'{city}_{lat}_{long}'][f"vehicle_city_{condition}"] = avg_vehicle_city.get(
+                        f'{city}_{lat}_{long}_{condition}', None)
 
-                    final_dict[f'{city}_{state}'][f"cellphone_city_{condition}"] = cellphone_city.get(
-                        f'{city}_{state}_{condition}', 0)
+                    final_dict[f'{city}_{lat}_{long}'][f"cellphone_city_{condition}"] = cellphone_city.get(
+                        f'{city}_{lat}_{long}_{condition}', 0)
 
                     avg_trf_sign_city = analysis_class.compute_avg_variable_city(trf_sign_city)
-                    final_dict[f'{city}_{state}'][f"trf_sign_city_{condition}"] = avg_trf_sign_city.get(
-                        f'{city}_{state}_{condition}', 0)
+                    final_dict[f'{city}_{lat}_{long}'][f"trf_sign_city_{condition}"] = avg_trf_sign_city.get(
+                        f'{city}_{lat}_{long}_{condition}', 0)
 
-                    final_dict[f'{city}_{state}'][f"traffic_mortality_{condition}"] = traffic_mortality
-                    final_dict[f'{city}_{state}'][f"literacy_rate_{condition}"] = literacy_rate
-                    final_dict[f'{city}_{state}'][f"gini_{condition}"] = gini
-                    final_dict[f'{city}_{state}'][f"traffic_index_{condition}"] = traffic_index
-                    final_dict[f'{city}_{state}'][f"continent_{condition}"] = continent
+                    final_dict[f'{city}_{lat}_{long}'][f"traffic_mortality_{condition}"] = traffic_mortality
+                    final_dict[f'{city}_{lat}_{long}'][f"literacy_rate_{condition}"] = literacy_rate
+                    final_dict[f'{city}_{lat}_{long}'][f"gini_{condition}"] = gini
+                    final_dict[f'{city}_{lat}_{long}'][f"traffic_index_{condition}"] = traffic_index
+                    final_dict[f'{city}_{lat}_{long}'][f"continent_{condition}"] = continent
                     if gdp_city is not None:
-                        final_dict[f'{city}_{state}'][f"gmp_{condition}"] = gdp_city/population_country
+                        final_dict[f'{city}_{lat}_{long}'][f"gmp_{condition}"] = gdp_city/population_country
 
         # Initialize an empty list to store the rows for the DataFrame
         data_day, data_night = [], []
@@ -3623,7 +3680,7 @@ class Analysis():
 
         # Continent Wise
 
-        # Initialize a list to store rows of data (one row per city)
+        # Initialise a list to store rows of data (one row per city)
         data_rows = []
 
         # Assuming `conditions` is a list of conditions you are working with
@@ -3632,7 +3689,7 @@ class Analysis():
 
         # Iterate over each city and condition
         for city in final_dict:
-            # Initialize a dictionary to store the values for the current row
+            # Initialise a dictionary to store the values for the current row
             row_data = {}
 
             # For each condition
@@ -3780,6 +3837,8 @@ class Analysis():
             None. Video clips are saved to disk in 'saved_snaps/original' and 'saved_snaps/tracked'.
         """
         data = self.find_min_max_video(var_dict, num=num)
+        if common.get_configs('min_max_videos') is False:
+            return data
 
         # Process only the 'max' speed segments
         for city_data in data['max'].values():
@@ -3850,6 +3909,8 @@ class Analysis():
 
                     except FileNotFoundError as e:
                         logger.error(f"Error: {e}")
+
+        return data
 
     def draw_yolo_boxes_on_video(self, df, fps, video_path, output_path):
         """
@@ -4006,10 +4067,10 @@ class Analysis():
         all_speeds = []
 
         # Flatten the nested dictionary and collect tuples of (speed, city_state_cond, video_id, unique_id)
-        for city_state_cond, videos in var_dict.items():
+        for city_lat_long_cond, videos in var_dict.items():
             for video_id, unique_dict in videos.items():
                 for unique_id, speed in unique_dict.items():
-                    all_speeds.append((speed, city_state_cond, video_id, unique_id))
+                    all_speeds.append((speed, city_lat_long_cond, video_id, unique_id))
 
         # Use heapq to efficiently get the top and bottom N entries based on speed
         top_n = heapq.nlargest(num, all_speeds, key=lambda x: x[0])
@@ -4018,8 +4079,8 @@ class Analysis():
         # Helper function to rebuild the nested structure from a list of tuples
         def format_result(entries):
             temp_result = defaultdict(lambda: defaultdict(dict))
-            for speed, city_state_cond, video_id, unique_id in entries:
-                temp_result[city_state_cond][video_id][unique_id] = speed
+            for speed, city_lat_long_cond, video_id, unique_id in entries:
+                temp_result[city_lat_long_cond][video_id][unique_id] = speed
 
             # Convert defaultdicts to regular dicts for clean output
             return {
@@ -4369,8 +4430,10 @@ if __name__ == "__main__":
         # Produce map with all data
         df = df_mapping.copy()  # copy df to manipulate for output
         df['state'] = df['state'].fillna('NA')  # Set state to NA
+
         # Sort by continent and city, both in ascending order
         df = df.sort_values(by=["continent", "city"], ascending=[True, True])
+
         # Data to avoid showing on hover in scatter plots
         columns_remove = ['videos', 'time_of_day', 'start_time', 'end_time', 'upload_date', 'fps_list', 'vehicle_type']
         hover_data = list(set(df.columns) - set(columns_remove))
@@ -4502,12 +4565,18 @@ if __name__ == "__main__":
         logger.info("Calculating aggregated values for crossing speed.")
         speed_values = algorithms_class.calculate_speed_of_crossing(df_mapping, dfs, data)
         avg_speed = algorithms_class.avg_speed_of_crossing(df_mapping, dfs, data)
-        # add to mapping file
+
+        # Add to mapping file
         for key, value in tqdm(avg_speed.items(), total=len(avg_speed)):
             parts = key.split("_")
-            city = parts[0]  # First part is always the city
-            state = parts[1] if parts[1] != "unknown" else np.nan  # Second part is the state, unless it's "unknown"
-            time_of_day = int(parts[2])  # Third part is the time-of-day
+            city = parts[0]  # First part is city
+            lat = parts[1]  # Second part is latitude
+            long = parts[2]  # Third part is longitude
+            time_of_day = int(parts[3])  # Fourth part is the time-of-day
+
+            # state = parts[1] if parts[1] != "unknown" else np.nan
+            state = values_class.get_value(df_mapping, "city", city, "lat", lat, "state")
+
             if not time_of_day:  # day
                 df_mapping.loc[
                     (df_mapping["city"] == city) &
@@ -4520,6 +4589,7 @@ if __name__ == "__main__":
                     ((df_mapping["state"] == state) | (pd.isna(df_mapping["state"]) & pd.isna(state))),
                     "speed_crossing_night"
                 ] = float(value)  # Explicitly cast speed to float
+
         # calculate average values
         df_mapping["speed_crossing"] = np.where(
             (df_mapping["speed_crossing_day"] > 0) & (df_mapping["speed_crossing_night"] > 0),
@@ -4532,12 +4602,15 @@ if __name__ == "__main__":
         logger.info("Calculating aggregated values for crossing decision time.")
         time_values = algorithms_class.time_to_start_cross(df_mapping, dfs, data)
         avg_time = algorithms_class.avg_time_to_start_cross(df_mapping, dfs, data)
+
         # add to mapping file
         for key, value in tqdm(avg_time.items(), total=len(avg_time)):
             parts = key.split("_")
-            city = parts[0]  # First part is always the city
-            state = parts[1] if parts[1] != "unknown" else np.nan  # Second part is the state, unless it's "unknown"
-            time_of_day = int(parts[2])  # Third part is the time-of-day
+            city = parts[0]  # First part is city
+            lat = parts[1]  # Second part is latitude
+            long = parts[2]  # Third part is longitude
+            time_of_day = int(parts[3])  # Fourth part is the time-of-day
+
             if not time_of_day:  # day
                 df_mapping.loc[
                     (df_mapping["city"] == city) &
@@ -4550,6 +4623,7 @@ if __name__ == "__main__":
                     ((df_mapping["state"] == state) | (pd.isna(df_mapping["state"]) & pd.isna(state))),
                     "time_crossing_night"
                 ] = float(value)  # Explicitly cast speed to float
+
         # calculate average values
         df_mapping["time_crossing"] = np.where(
             (df_mapping["time_crossing_day"] > 0) & (df_mapping["time_crossing_night"] > 0),
@@ -4592,9 +4666,11 @@ if __name__ == "__main__":
         with_trf_light, without_trf_light, _ = Analysis.crossing_event_wt_traffic_equipment(df_mapping, dfs, data)
         for key, value in with_trf_light.items():
             parts = key.split("_")
-            city = parts[0]  # First part is always the city
-            state = parts[1] if parts[1] != "unknown" else np.nan  # Second part is the state, unless it's "unknown"
-            time_of_day = int(parts[2])  # Third part is the time-of-day
+            city = parts[0]  # First part is city
+            lat = parts[1]  # Second part is latitude
+            long = parts[2]  # Third part is longitude
+            time_of_day = int(parts[3])  # Fourth part is the time-of-day
+
             if not time_of_day:  # day
                 df_mapping.loc[
                     (df_mapping["city"] == city) &
@@ -4607,12 +4683,15 @@ if __name__ == "__main__":
                     ((df_mapping["state"] == state) | (pd.isna(df_mapping["state"]) & pd.isna(state))),
                     "with_trf_light_night"
                 ] = int(value)  # Explicitly cast to int
+
         # add to mapping file
         for key, value in without_trf_light.items():
             parts = key.split("_")
-            city = parts[0]  # First part is always the city
-            state = parts[1] if parts[1] != "unknown" else np.nan  # Second part is the state, unless it's "unknown"
-            time_of_day = int(parts[2])  # Third part is the time-of-day
+            city = parts[0]  # First part is city
+            lat = parts[1]  # Second part is latitude
+            long = parts[2]  # Third part is longitude
+            time_of_day = int(parts[3])  # Fourth part is the time-of-day
+
             if not time_of_day:  # day
                 df_mapping.loc[
                     (df_mapping["city"] == city) &
@@ -4625,8 +4704,10 @@ if __name__ == "__main__":
                     ((df_mapping["state"] == state) | (pd.isna(df_mapping["state"]) & pd.isna(state))),
                     "without_trf_light_night"
                 ] = int(value)  # Explicitly cast to int
+
         # Add column with count of videos
         df_mapping["total_videos"] = df_mapping["videos"].apply(lambda x: len(x.strip("[]").split(",")) if x.strip("[]") else 0)  # noqa: E501
+
         # Get lat and lon for cities
         logger.info("Fetching lat and lon coordinates for cities.")
         for index, row in tqdm(df_mapping.iterrows(), total=len(df_mapping)):

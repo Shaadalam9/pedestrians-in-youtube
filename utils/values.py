@@ -52,6 +52,8 @@ class Values():
             time_of_day = ast.literal_eval(row["time_of_day"])
             city = row["city"]
             state = row['state'] if not pd.isna(row['state']) else "unknown"
+            latitude = row["lat"]
+            longitude = row["lon"]
             country = row["country"]
             gdp = row["gmp"]
             population = row["population_city"]
@@ -88,16 +90,18 @@ class Values():
                                     time_of_day_[counter],      # 3
                                     city,                       # 4
                                     state,                      # 5
-                                    country,                    # 6
-                                    gpd_capita,                 # 7
-                                    population,                 # 8
-                                    population_country,         # 9
-                                    traffic_mortality,          # 10
-                                    continent,                  # 11
-                                    literacy_rate,              # 12
-                                    avg_height,                 # 13
-                                    iso3,                       # 14
-                                    fps)                        # 15
+                                    latitude,                   # 6
+                                    longitude,                  # 7
+                                    country,                    # 8
+                                    gpd_capita,                 # 9
+                                    population,                 # 10
+                                    population_country,         # 11
+                                    traffic_mortality,          # 12
+                                    continent,                  # 13
+                                    literacy_rate,              # 14
+                                    avg_height,                 # 15
+                                    iso3,                       # 16
+                                    fps)                        # 17
                         counter += 1
 
     def get_value(self, df, column_name1, column_value1, column_name2, column_value2, target_column):
