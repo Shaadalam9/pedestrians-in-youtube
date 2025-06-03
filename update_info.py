@@ -3,30 +3,35 @@ import pandas as pd
 import ast
 from pytubefix import YouTube
 from tqdm import tqdm
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
+import csv
 import common
-from datetime import timedelta
 from custom_logger import CustomLogger
 from logmod import logs
 
 logs(show_level=common.get_configs("logger_level"), show_color=True)
-logger = CustomLogger(__name__)  # use custom logger
+logger = CustomLogger(__name__)
 
+metadata_file = "mapping_metadata.csv"
+csv_headers = ["video", "title", "upload_date", "channel", "views", "description", "chapters", "count", "date_updated"]
 
 def safe_parse(val):
-    if pd.isna(val) or not isinstance(val, str):
-        return []
-    val = val.strip()
-    try:
-        return ast.literal_eval(val)
-    except Exception:
-        pass
-    if val.startswith('[') and val.endswith(']'):
-        inner = val[1:-1]
-        return [item.strip().strip("'\"") for item in inner.split(',') if item.strip()]
+    if isinstance(val, str):
+        try:
+            return ast.literal_eval(val)
+        except Exception:
+            if val.startswith('[') and val.endswith(']'):
+                inner = val[1:-1]
+                return [item.strip().strip("'\"") for item in inner.split(',') if item.strip()]
     return []
 
+def clean_text(val):
+    if isinstance(val, list) or isinstance(val, dict):
+        return str(val)
+    if val is None or (isinstance(val, float) and pd.isna(val)):
+        return ""
+    return str(val).replace('\n', ' ').replace('\r', ' ').replace('"', '""').strip()
 
 def get_video_info(video_id):
     try:
@@ -34,7 +39,9 @@ def get_video_info(video_id):
         title = yt.title
         description = yt.description
         channel = yt.channel_id
+        views = yt.views
         upload_date = yt.publish_date.strftime('%d%m%Y') if yt.publish_date else None
+
         chapters = []
         if yt.chapters:
             for c in yt.chapters:
@@ -45,35 +52,32 @@ def get_video_info(video_id):
                     })
                 except Exception as e:
                     logger.error(f"⚠️ failed to extract chapter info in {video_id}: {e}")
-        logger.info(f"✅ fetched: {video_id} | title: {title} | upload: {upload_date} | channel: {channel} | " +
-                    f"| chapters: {chapters}")
-        logger.debug(f"description: {description}")
+
+        logger.info(f"✅ fetched: {video_id} | title: {title} | upload: {upload_date} | channel: {channel} | views: {views}")
         return {
             "video": video_id,
-            "title": title,
+            "title": clean_text(title),
             "upload_date": upload_date,
-            "channel": channel,
-            "description": description,
-            "chapters": chapters,
-            
+            "channel": clean_text(channel),
+            "views": views,
+            "description": clean_text(description),
+            "chapters": clean_text(chapters),
         }
     except Exception as e:
         logger.info(f"❌ failed to fetch {video_id}: {e}")
         return {
             "video": video_id,
-            "title": None,
-            "upload_date": None,
-            "channel": None,
-            "description": None,
-            "chapters": [],   
+            "title": "",
+            "upload_date": "",
+            "channel": "",
+            "views": "",
+            "description": "",
+            "chapters": "",
         }
 
-
 if __name__ == "__main__":
-    # load mapping csv
     df = pd.read_csv(common.get_configs("mapping"))
 
-    # collect all video ids from mapping
     all_video_ids = []
     for row in df['videos']:
         vids = safe_parse(row)
@@ -82,39 +86,27 @@ if __name__ == "__main__":
     video_count = pd.Series(all_video_ids).value_counts().to_dict()
     unique_video_ids = list(video_count.keys())
 
-    # load existing metadata if present
-    metadata_file = "mapping_metadata.csv"
     if os.path.exists(metadata_file):
-        existing_df = pd.read_csv(metadata_file, converters={"chapters": ast.literal_eval})
+        existing_df = pd.read_csv(metadata_file)
         existing_ids = set(existing_df['video'].tolist())
         logger.info(f"🗃️ found {len(existing_ids)} videos in existing metadata")
     else:
-        existing_df = pd.DataFrame()
+        with open(metadata_file, 'w', newline='', encoding='utf-8') as f:
+            writer = csv.DictWriter(f, fieldnames=csv_headers, quoting=csv.QUOTE_ALL, escapechar='\\')
+            writer.writeheader()
         existing_ids = set()
+        logger.info("📁 created new metadata file")
 
-    # only fetch missing ones
     videos_to_fetch = [vid for vid in unique_video_ids if vid not in existing_ids]
     logger.info(f"🔍 fetching data for {len(videos_to_fetch)} new videos")
 
-    # get today's date
     now = datetime.now().strftime('%d%m%Y')
 
-    # fetch new metadata
-    new_records = []
     for vid in tqdm(videos_to_fetch):
         info = get_video_info(vid)
         info["count"] = video_count.get(vid, 1)
         info["date_updated"] = now
-        new_records.append(info)
 
-    # merge and save
-    if new_records:
-        new_df = pd.DataFrame(new_records)
-        final_df = pd.concat([existing_df, new_df], ignore_index=True)
-        logger.info(f"💾 added {len(new_records)} new records")
-    else:
-        final_df = existing_df
-        logger.info("✅ no new videos to update")
-
-    final_df.to_csv(metadata_file, index=False)
-    logger.info(f"✅ updated metadata saved to {metadata_file}")
+        with open(metadata_file, 'a', newline='', encoding='utf-8') as f:
+            writer = csv.DictWriter(f, fieldnames=csv_headers, quoting=csv.QUOTE_ALL, escapechar='\\')
+            writer.writerow(info)
