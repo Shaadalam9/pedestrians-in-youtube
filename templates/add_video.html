@@ -569,8 +569,8 @@
                     <input type="number" id="upload_date_video" name="upload_date_video" value="{{ upload_date_video }}" required min="0" step="1">
                 </div>
                 <div class="form-group">
-                    <label for="channel">Channel:</label>
-                    <input type="text" id="channel" name="channel" value="{{ channel_video }}" required>
+                    <label for="channel_video">Channel:</label>
+                    <input type="text" id="channel_video" name="channel_video" value="{{ channel_video }}" required>
                 </div>
                 <!-- <div class="form-group">
                     <label for="fps_video">FPS:</label>
@@ -621,6 +621,10 @@
                     <input type="number" id="avg_height" name="avg_height" value="{{ existing_data['avg_height'] }}" step="any">
                 </div>
                 <div class="form-group">
+                    <label for="avg_age">Average age:</label>
+                    <input type="number" id="avg_age" name="avg_age" value="{{ existing_data['avg_age'] }}" step="any">
+                </div>
+                <div class="form-group">
                     <label for="gini">Gini index:</label>
                     <input type="number" id="gini" name="gini" value="{{ existing_data['gini'] }}" step="any">
                 </div>
@@ -649,7 +653,7 @@
                 <iframe id="embeddedVideo" src="https://www.youtube.com/embed/{{ video_id }}?start={{ timestamp }}&enablejsapi=1&autoplay=1&mute=1" frameborder="0" allowfullscreen allow="autoplay"></iframe>
                 <p class="short_row">Current time: <span id="currentTime">0</span> s. <strong>ID:</strong> <span id="videoTitle">{{ video_id }}</span>. <strong>Upload date:</strong> <span id="videoUploadDate">{{ yt_upload_date }}</span>.</p>
                 <p class="short_row"><strong>Start time</strong>: {{ start_time_video }}</p>
-                <p class="short_row"><strong>End time &nbsp;&nbsp;</strong>: {{ end_time_video }}</p>
+                <p class="short_row"><strong>End time</strong>: {{ end_time_video }}</p>
                 <p class="short_row"><strong>Description:</strong> <span id="videoDescription">{{ yt_description }}</span></p>
                 <!-- Map -->
                 <div id="map"></div>

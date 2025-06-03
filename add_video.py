@@ -29,7 +29,7 @@ def load_csv(file_path):
         return pd.DataFrame(columns=['city', 'state', 'country', 'iso3', 'videos', 'time_of_day',
                                      'vehicle_type', 'start_time', 'end_time', 'gmp',
                                      'population_city', 'population_country', 'traffic_mortality', 'continent',
-                                     'literacy_rate', 'avg_height', 'upload_date', 'channel', 'fps_list', 'gini',
+                                     'literacy_rate', 'avg_height', 'avg_age', 'upload_date', 'channel', 'fps_list', 'gini',
                                      'traffic_index'])
 
 
@@ -58,6 +58,7 @@ def form():
     continent = ''
     literacy_rate = ''
     avg_height = ''
+    avg_age = ''
     upload_date_list = ''
     channel_list = ''
     fps_list = ''
@@ -183,6 +184,7 @@ def form():
                                      'continent': get_country_continent(country_data),
                                      'literacy_rate': get_country_literacy_rate(iso3_code),
                                      'avg_height': get_country_average_height(iso3_code),
+                                     'avg_age': get_country_average_age(iso3_code),
                                      'upload_date': [],
                                      'channel': [],
                                      'fps_list': [],
@@ -223,6 +225,7 @@ def form():
             continent = request.form.get('continent')
             literacy_rate = request.form.get('literacy_rate')
             avg_height = request.form.get('avg_height')
+            avg_age = request.form.get('avg_age')
             upload_date_video = request.form.get('upload_date_video')
             channel_video = request.form.get('channel_video')
             # fps_video = request.form.get('fps_video')
@@ -311,7 +314,7 @@ def form():
                         start_time_list.append([int(start_time[-1])])      # Append start time as integer
                         end_time_list.append([int(end_time[-1])])          # Append end time as integer
                         upload_date_list.append(int(upload_date_video))    # Append upload time as integer
-                        channel_list.append(int(channel_video))    # Append upload time as integer
+                        channel_list.append(channel_video)                 # Append channel
                         fps_list.append(int(fps_video))                    # Append fps list as integer
                         vehicle_type_list.append(int(vehicle_type_video))  # Append vehicle type as integer
                     else:
@@ -320,12 +323,13 @@ def form():
                         time_of_day_list[video_index].append(int(time_of_day[-1]))  # Append new time of day
                         start_time_list[video_index].append(int(start_time[-1]))    # Append new start time
                         end_time_list[video_index].append(int(end_time[-1]))        # Append new end time
+                        print(channel_list)
                         if upload_date_video != 'None':
                             upload_date_list[video_index] = int(upload_date_video)
                         else:
                             upload_date_list[video_index] = upload_date_video
                         if channel_video != 'None':
-                            channel_list[video_index] = int(channel_video)
+                            channel_list[video_index] = channel_video
                         else:
                             channel_list[video_index] = channel_video
                         fps_list[video_index] = float(fps_video)
@@ -363,6 +367,10 @@ def form():
                         df.at[idx, 'avg_height'] = float(avg_height)
                     else:
                         df.at[idx, 'avg_height'] = 0.0
+                    if avg_age:
+                        df.at[idx, 'avg_age'] = float(avg_age)
+                    else:
+                        df.at[idx, 'avg_age'] = 0.0
                     if lat:
                         df.at[idx, 'lat'] = float(lat)
                     else:
@@ -380,7 +388,7 @@ def form():
                     df.at[idx, 'upload_date'] = upload_date_list
                     for i in range(len(channel_list)):
                         if channel_list[i] != 'None':
-                            channel_list[i] = int(channel_list[i])
+                            channel_list[i] = channel_list[i]
                     channel_list = str(channel_list)
                     channel_list = channel_list.replace('\'', '')
                     channel_list = channel_list.replace(' ', '')
@@ -425,6 +433,7 @@ def form():
                         'continent': continent,
                         'literacy_rate': literacy_rate,
                         'avg_height': avg_height,
+                        'avg_age': avg_age,
                         'upload_date': '[' + upload_date_video.strip() + ']',
                         'channel': '[' + channel_video.strip() + ']',
                         'fps_list': '[' + fps_video.strip() + ']',
@@ -604,6 +613,11 @@ def get_country_average_height(iso3_code):
     except Exception as e:
         print(f"Error fetching height data: {e}")
         return 0.0
+
+# Fetch average age by ISO-3 code
+def get_country_average_age(iso3_code):
+    # todo: implement
+    return 0.0
 
 
 def get_gmp(city: str, state: str, iso3: str) -> float:

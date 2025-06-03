@@ -46,7 +46,8 @@ def get_video_info(video_id):
                 except Exception as e:
                     logger.error(f"⚠️ failed to extract chapter info in {video_id}: {e}")
         logger.info(f"✅ fetched: {video_id} | title: {title} | upload: {upload_date} | channel: {channel} | " +
-                    f"description: {description} | chapters: {chapters}")
+                    f"| chapters: {chapters}")
+        logger.debug(f"description: {description}")
         return {
             "video": video_id,
             "title": title,
