@@ -20,6 +20,7 @@ app = Flask(__name__)
 FILE_PATH = common.get_configs("mapping")     # mapping file
 
 height_data = pd.read_csv(os.path.join(common.root_dir, 'height_data.csv'))  # average height data
+age_data = pd.read_csv(os.path.join(common.root_dir, 'age_data.csv'))  # average height data
 
 
 def load_csv(file_path):
@@ -29,8 +30,8 @@ def load_csv(file_path):
         return pd.DataFrame(columns=['city', 'state', 'country', 'iso3', 'videos', 'time_of_day',
                                      'vehicle_type', 'start_time', 'end_time', 'gmp',
                                      'population_city', 'population_country', 'traffic_mortality', 'continent',
-                                     'literacy_rate', 'avg_height', 'avg_age', 'upload_date', 'channel', 'fps_list', 'gini',
-                                     'traffic_index'])
+                                     'literacy_rate', 'avg_height', 'avg_age', 'upload_date', 'channel', 'fps_list', 
+                                     'gini', 'traffic_index'])
 
 
 def save_csv(df, file_path):
@@ -323,7 +324,6 @@ def form():
                         time_of_day_list[video_index].append(int(time_of_day[-1]))  # Append new time of day
                         start_time_list[video_index].append(int(start_time[-1]))    # Append new start time
                         end_time_list[video_index].append(int(end_time[-1]))        # Append new end time
-                        print(channel_list)
                         if upload_date_video != 'None':
                             upload_date_list[video_index] = int(upload_date_video)
                         else:
@@ -392,7 +392,7 @@ def form():
                     channel_list = str(channel_list)
                     channel_list = channel_list.replace('\'', '')
                     channel_list = channel_list.replace(' ', '')
-                    df.at[idx, 'upload_date'] = upload_date_list
+                    df.at[idx, 'channel'] = channel_list
                     fps_list = [30.0 if str(x).strip().lower() == 'none' else float(x) for x in fps_list]
                     fps_list = str(fps_list)
                     fps_list = fps_list.replace('\'', '')
@@ -613,6 +613,7 @@ def get_country_average_height(iso3_code):
     except Exception as e:
         print(f"Error fetching height data: {e}")
         return 0.0
+
 
 # Fetch average age by ISO-3 code
 def get_country_average_age(iso3_code):
