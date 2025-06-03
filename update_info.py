@@ -7,6 +7,11 @@ from datetime import datetime
 import os
 import common
 from datetime import timedelta
+from custom_logger import CustomLogger
+from logmod import logs
+
+logs(show_level=common.get_configs("logger_level"), show_color=True)
+logger = CustomLogger(__name__)  # use custom logger
 
 
 def safe_parse(val):
@@ -28,6 +33,7 @@ def get_video_info(video_id):
         yt = YouTube(f"https://www.youtube.com/watch?v={video_id}")
         title = yt.title
         description = yt.description
+        channel = yt.channel_id
         upload_date = yt.publish_date.strftime('%d%m%Y') if yt.publish_date else None
         chapters = []
         if yt.chapters:
@@ -38,23 +44,27 @@ def get_video_info(video_id):
                         "timestamp": str(timedelta(seconds=c.start_seconds))
                     })
                 except Exception as e:
-                    print(f"⚠️ failed to extract chapter info in {video_id}: {e}")
-        print(f"✅ fetched: {video_id} | title: {title} | upload: {upload_date} | chapters: {chapters}")
+                    logger.error(f"⚠️ failed to extract chapter info in {video_id}: {e}")
+        logger.info(f"✅ fetched: {video_id} | title: {title} | upload: {upload_date} | channel: {channel} | " +
+                    f"description: {description} | chapters: {chapters}")
         return {
             "video": video_id,
             "title": title,
+            "upload_date": upload_date,
+            "channel": channel,
             "description": description,
             "chapters": chapters,
-            "upload_date": upload_date,
+            
         }
     except Exception as e:
-        print(f"❌ failed to fetch {video_id}: {e}")
+        logger.info(f"❌ failed to fetch {video_id}: {e}")
         return {
             "video": video_id,
             "title": None,
-            "description": None,
-            "chapters": [],
             "upload_date": None,
+            "channel": None,
+            "description": None,
+            "chapters": [],   
         }
 
 
@@ -76,14 +86,14 @@ if __name__ == "__main__":
     if os.path.exists(metadata_file):
         existing_df = pd.read_csv(metadata_file, converters={"chapters": ast.literal_eval})
         existing_ids = set(existing_df['video'].tolist())
-        print(f"🗃️ found {len(existing_ids)} videos in existing metadata")
+        logger.info(f"🗃️ found {len(existing_ids)} videos in existing metadata")
     else:
         existing_df = pd.DataFrame()
         existing_ids = set()
 
     # only fetch missing ones
     videos_to_fetch = [vid for vid in unique_video_ids if vid not in existing_ids]
-    print(f"🔍 fetching data for {len(videos_to_fetch)} new videos")
+    logger.info(f"🔍 fetching data for {len(videos_to_fetch)} new videos")
 
     # get today's date
     now = datetime.now().strftime('%d%m%Y')
@@ -100,10 +110,10 @@ if __name__ == "__main__":
     if new_records:
         new_df = pd.DataFrame(new_records)
         final_df = pd.concat([existing_df, new_df], ignore_index=True)
-        print(f"💾 added {len(new_records)} new records")
+        logger.info(f"💾 added {len(new_records)} new records")
     else:
         final_df = existing_df
-        print("✅ no new videos to update")
+        logger.info("✅ no new videos to update")
 
     final_df.to_csv(metadata_file, index=False)
-    print(f"✅ updated metadata saved to {metadata_file}")
+    logger.info(f"✅ updated metadata saved to {metadata_file}")

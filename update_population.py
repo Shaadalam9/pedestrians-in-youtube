@@ -6,7 +6,11 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 import urllib3
 import time
+from custom_logger import CustomLogger
+from logmod import logs
 
+logs(show_level=common.get_configs("logger_level"), show_color=True)
+logger = CustomLogger(__name__)  # use custom logger
 
 # Suppress InsecureRequestWarning
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)

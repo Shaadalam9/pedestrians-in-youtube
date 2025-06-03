@@ -4,6 +4,11 @@ import ast
 from pytubefix import YouTube
 from tqdm import tqdm
 import common
+from custom_logger import CustomLogger
+from logmod import logs
+
+logs(show_level=common.get_configs("logger_level"), show_color=True)
+logger = CustomLogger(__name__)  # use custom logger
 
 
 def safe_parse(val):
@@ -27,10 +32,10 @@ def get_channel_id(video_id):
     try:
         yt = YouTube(f"https://www.youtube.com/watch?v={video_id}")
         yt_channel = yt.channel_id
-        print(f"✅ channel for https://www.youtube.com/watch?v={video_id} → {yt_channel}")
+        logger.info(f"✅ channel for https://www.youtube.com/watch?v={video_id} → {yt_channel}")
         return yt_channel
     except Exception as e:
-        print(f"❌ error fetching channel ID for {video_id}: {e}")
+        logger.error(f"❌ error fetching channel ID for {video_id}: {e}")
         return None
 
 
@@ -64,4 +69,4 @@ if __name__ == "__main__":
     # Save updated CSV
     output_file = 'mapping_with_channels.csv'
     df.to_csv(output_file, index=False)
-    print(f"\n✅ updated data with clean channel list saved to {output_file}")
+    logger.info(f"\n✅ updated data with clean channel list saved to {output_file}")

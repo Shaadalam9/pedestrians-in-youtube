@@ -4,9 +4,11 @@ import ast
 from pytube import YouTube
 from tqdm import tqdm
 import common
+from custom_logger import CustomLogger
+from logmod import logs
 
-# Load the CSV
-df = pd.read_csv(common.get_configs("mapping"))
+logs(show_level=common.get_configs("logger_level"), show_color=True)
+logger = CustomLogger(__name__)  # use custom logger
 
 
 def safe_parse(val):
@@ -32,14 +34,17 @@ def get_upload_date(video_id):
     try:
         yt = YouTube(f"https://www.youtube.com/watch?v={video_id}")
         yt_date = yt.publish_date
-        print(f"Received date for https://www.youtube.com/watch?v={video_id} as {yt_date.strftime('%d%m%Y')}")
+        logger.info(f"Received date for https://www.youtube.com/watch?v={video_id} as {yt_date.strftime('%d%m%Y')}")
         return yt_date.strftime('%d%m%Y') if yt_date else None
     except Exception as e:
-        print(f"Error fetching date for {video_id}: {e}")
+        logger.error(f"Error fetching date for {video_id}: {e}")
         return None
 
 
 if __name__ == "__main__":
+    # Load the CSV
+    df = pd.read_csv(common.get_configs("mapping"))
+
     # Process each row
     for idx, row in tqdm(df.iterrows(), total=len(df)):
         video_ids = safe_parse(row['videos'])
@@ -61,4 +66,4 @@ if __name__ == "__main__":
     # Save updated CSV
     updated_csv_file = 'mapping_updated.csv'
     df.to_csv(updated_csv_file, index=False)
-    print(f"Updated data saved to {updated_csv_file}")
+    logger.info(f"Updated data saved to {updated_csv_file}")
