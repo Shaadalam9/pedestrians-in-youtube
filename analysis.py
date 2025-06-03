@@ -808,13 +808,15 @@ class Analysis():
             top_5_max_speed = sorted_diff_speed_values[:5]  # Top 5 maximum differences
             top_5_min_speed = sorted_diff_speed_values[-5:]  # Top 5 minimum differences (including possible zeroes)
 
-            logger.info("Top 5 cities with max |speed_0 - speed_1| differences:")
+            logger.info("Top 5 cities with max |speed at day - speed at night| differences:")
             for city, diff in top_5_max_speed:
-                logger.info(f"{wrapper_class.format_city_state(city)}: {diff}")
+                city_state = wrapper_class.process_city_string(city, df_mapping)
+                logger.info(f"{city_state}: {diff}")
 
-            logger.info("Top 5 cities with min |speed_0 - speed_1| differences:")
+            logger.info("Top 5 cities with min |speed at day - speed at night| differences:")
             for city, diff in top_5_min_speed:
-                logger.info(f"{wrapper_class.format_city_state(city)}: {diff}")
+                city_state = wrapper_class.process_city_string(city, df_mapping)
+                logger.info(f"{city_state}: {diff}")
         else:
             logger.info("No valid speed_0 and speed_1 values found for comparison.")
 
@@ -831,11 +833,13 @@ class Analysis():
 
             logger.info("Top 5 cities with max |time_0 - time_1| differences:")
             for city, diff in top_5_max:
-                logger.info(f"{wrapper_class.format_city_state(city)}: {diff}")
+                city_state = wrapper_class.process_city_string(city, df_mapping)
+                logger.info(f"{city_state}: {diff}")
 
             logger.info("Top 5 cities with min |time_0 - time_1| differences:")
             for city, diff in top_5_min:
-                logger.info(f"{wrapper_class.format_city_state(city)}: {diff}")
+                city_state = wrapper_class.process_city_string(city, df_mapping)
+                logger.info(f"{city_state}: {diff}")
         else:
             logger.info("No valid time_0 and time_1 values found for comparison.")
 
@@ -852,8 +856,8 @@ class Analysis():
             max_speed_value_0 = filtered_dict_s_0[max_speed_city_0]["speed_0"]
             min_speed_value_0 = filtered_dict_s_0[min_speed_city_0]["speed_0"]
 
-            logger.info(f"City with max speed at day: {wrapper_class.format_city_state(max_speed_city_0)} with speed of {max_speed_value_0} m/s")  # noqa:E501
-            logger.info(f"City with min speed at day: {wrapper_class.format_city_state(min_speed_city_0)} with speed of {min_speed_value_0} m/s")  # noqa:E501
+            logger.info(f"City with max speed at day: {wrapper_class.process_city_string(max_speed_city_0, df_mapping)} with speed of {max_speed_value_0} m/s")  # noqa:E501
+            logger.info(f"City with min speed at day: {wrapper_class.process_city_string(min_speed_city_0, df_mapping)} with speed of {min_speed_value_0} m/s")  # noqa:E501
 
         if filtered_dict_s_1:
             max_speed_city_1 = max(filtered_dict_s_1, key=lambda city: filtered_dict_s_1[city]["speed_1"])
@@ -861,8 +865,8 @@ class Analysis():
             max_speed_value_1 = filtered_dict_s_1[max_speed_city_1]["speed_1"]
             min_speed_value_1 = filtered_dict_s_1[min_speed_city_1]["speed_1"]
 
-            logger.info(f"City with max speed at night: {wrapper_class.format_city_state(max_speed_city_1)} with speed of {max_speed_value_1} m/s")  # noqa:E501
-            logger.info(f"City with min speed at night: {wrapper_class.format_city_state(min_speed_city_1)} with speed of {min_speed_value_1} m/s")  # noqa:E501
+            logger.info(f"City with max speed at night: {wrapper_class.process_city_string(max_speed_city_1, df_mapping)} with speed of {max_speed_value_1} m/s")  # noqa:E501
+            logger.info(f"City with min speed at night: {wrapper_class.process_city_string(min_speed_city_1, df_mapping)} with speed of {min_speed_value_1} m/s")  # noqa:E501
 
         # Find city with max and min time_0 and time_1
         if filtered_dict_t_0:
@@ -871,8 +875,8 @@ class Analysis():
             max_time_value_0 = filtered_dict_t_0[max_time_city_0]["time_0"]
             min_time_value_0 = filtered_dict_t_0[min_time_city_0]["time_0"]
 
-            logger.info(f"City with max time at day: {wrapper_class.format_city_state(max_time_city_0)} with time of {max_time_value_0} s")  # noqa:E501
-            logger.info(f"City with min time at day: {wrapper_class.format_city_state(min_time_city_0)} with time of {min_time_value_0} s")  # noqa:E501
+            logger.info(f"City with max time at day: {wrapper_class.process_city_string(max_time_city_0, df_mapping)} with time of {max_time_value_0} s")  # noqa:E501
+            logger.info(f"City with min time at day: {wrapper_class.process_city_string(min_time_city_0, df_mapping)} with time of {min_time_value_0} s")  # noqa:E501
 
         if filtered_dict_t_1:
             max_time_city_1 = max(filtered_dict_t_1, key=lambda city: filtered_dict_t_1[city]["time_1"])
@@ -880,8 +884,8 @@ class Analysis():
             max_time_value_1 = filtered_dict_t_1[max_time_city_1]["time_1"]
             min_time_value_1 = filtered_dict_t_1[min_time_city_1]["time_1"]
 
-            logger.info(f"City with max time at night: {wrapper_class.format_city_state(max_time_city_1)} with time of {max_time_value_1} s")  # noqa:E501
-            logger.info(f"City with min time at night: {wrapper_class.format_city_state(min_time_city_1)} with time of {min_time_value_1} s")  # noqa:E501
+            logger.info(f"City with max time at night: {wrapper_class.process_city_string(max_time_city_1, df_mapping)} with time of {max_time_value_1} s")  # noqa:E501
+            logger.info(f"City with min time at night: {wrapper_class.process_city_string(min_time_city_1, df_mapping)} with time of {min_time_value_1} s")  # noqa:E501
 
         # Extract valid speed and time values and calculate statistics
         speed_0_values = [data['speed_0'] for data in final_dict.values() if pd.notna(data['speed_0'])]
@@ -958,12 +962,9 @@ class Analysis():
         assert len(cities_ordered) == len(day_avg_speed) == len(night_avg_speed) == len(
             day_time_dict) == len(night_time_dict), "Lengths of lists don't match!"
 
-        # Make sure the lengths match
-        # assert len(cities) == len(day_avg_speed) == len(night_avg_speed) == len(
-        #     day_time_dict) == len(night_time_dict), "Lengths of lists don't match!"
-
         # Determine how many cities will be in each column
         num_cities_per_col = len(cities_ordered) // 2 + len(cities_ordered) % 2  # Split cities into two groups
+
         # Define a base height per row and calculate total figure height
         TALL_FIG_HEIGHT = num_cities_per_col * BASE_HEIGHT_PER_ROW
 
@@ -976,9 +977,8 @@ class Analysis():
 
         # Plot left column (first half of cities)
         for i, city in enumerate(cities_ordered[:num_cities_per_col]):
-            city_new, lat, long = city.split('_')
-            iso_code = values_class.get_value(df_mapping, "city", city_new, "lat", lat, "iso3")
-            city = wrapper_class.format_city_state(city)  # type: ignore
+            city = wrapper_class.process_city_string(city, df_mapping)
+
             # Row for speed (Day and Night)
             row = 2 * i + 1
             if day_avg_speed[i] is not None and night_avg_speed[i] is not None:
@@ -1043,9 +1043,8 @@ class Analysis():
 
         # Similarly for the right column
         for i, city in enumerate(cities_ordered[num_cities_per_col:]):
-            city_new, lat, long = city.split('_')
-            iso_code = values_class.get_value(df_mapping, "city", city_new, "lat", lat, "iso3")
-            city = wrapper_class.format_city_state(city)  # type: ignore
+            city = wrapper_class.process_city_string(city, df_mapping)
+
             row = 2 * i + 1
             idx = num_cities_per_col + i
             if day_avg_speed[idx] is not None and night_avg_speed[idx] is not None:
@@ -1340,11 +1339,15 @@ class Analysis():
         fig.update_layout(font=dict(family=common.get_configs('font_family')))
 
         # Final adjustments and display
-        # todo: eps export hands
-        # todo: png export hands
         fig.update_layout(margin=dict(l=80, r=80, t=x_axis_title_height, b=x_axis_title_height))
-        plots_class.save_plotly_figure(fig, "consolidated", height=TALL_FIG_HEIGHT*2, width=4960, scale=SCALE,
-                                       save_final=True, save_eps=False, save_png=False)
+        plots_class.save_plotly_figure(fig,
+                                       "consolidated",
+                                       height=TALL_FIG_HEIGHT*2,
+                                       width=4960,
+                                       scale=SCALE,
+                                       save_final=True,
+                                       save_eps=False,
+                                       save_png=False)
 
     @staticmethod
     def plot_speed_to_cross_by_alphabetical_order(df_mapping, font_size_captions=40, x_axis_title_height=110,
@@ -1416,9 +1419,7 @@ class Analysis():
 
         # Plot left column (first half of cities)
         for i, city in enumerate(cities_ordered[:num_cities_per_col]):
-            city_new, lat, long = city.split('_')
-            iso_code = values_class.get_value(df_mapping, "city", city_new, "lat", float(lat), "iso3")
-            city = wrapper_class.format_city_state(city)  # type: ignore
+            city = wrapper_class.process_city_string(city, df_mapping)
 
             # Row for speed (Day and Night)
             row = i + 1
@@ -1451,9 +1452,7 @@ class Analysis():
                     textfont=dict(size=14, color='white')), row=row, col=1)
 
         for i, city in enumerate(cities_ordered[num_cities_per_col:]):
-            city_new, lat, long = city.split('_')
-            iso_code = values_class.get_value(df_mapping, "city", city_new, "lat", lat, "iso3")
-            city = wrapper_class.format_city_state(city)  # type: ignore
+            city = wrapper_class.process_city_string(city, df_mapping)
             row = i + 1
             idx = num_cities_per_col + i
             if day_avg_speed[idx] is not None and night_avg_speed[idx] is not None:
@@ -1705,6 +1704,7 @@ class Analysis():
                                        width=2480,
                                        height=TALL_FIG_HEIGHT,
                                        scale=SCALE,
+                                       save_eps=False,
                                        save_final=True)
 
     @staticmethod
@@ -1775,9 +1775,7 @@ class Analysis():
 
         # Plot left column (first half of cities)
         for i, city in enumerate(cities_ordered[:num_cities_per_col]):
-            city_new, lat, long = city.split('_')
-            iso_code = values_class.get_value(df_mapping, "city", city_new, "lat", float(lat), "iso3")
-            city = wrapper_class.format_city_state(city)  # type: ignore
+            city = wrapper_class.process_city_string(city, df_mapping)
 
             # Row for time (Day and Night)
             row = i + 1
@@ -1811,9 +1809,8 @@ class Analysis():
 
         # Similarly for the right column
         for i, city in enumerate(cities_ordered[num_cities_per_col:]):
-            city_new, lat, long = city.split('_')
-            iso_code = values_class.get_value(df_mapping, "city", city_new, "lat", float(lat), "iso3")
-            city = wrapper_class.format_city_state(city)  # type: ignore
+            city = wrapper_class.process_city_string(city, df_mapping)
+
             row = i + 1
             idx = num_cities_per_col + i
             if day_time_dict[idx] is not None and night_time_dict[idx] is not None:
@@ -2062,6 +2059,7 @@ class Analysis():
                                        width=2480,
                                        height=TALL_FIG_HEIGHT,
                                        scale=1,
+                                       save_eps=False,
                                        save_final=True)
 
     @staticmethod
@@ -2126,7 +2124,10 @@ class Analysis():
         for i, city in enumerate(cities_ordered[:num_cities_per_col]):
             city_new, lat, long = city.split('_')
             iso_code = values_class.get_value(df_mapping, "city", city_new, "lat", float(lat), "iso3")
-            city = wrapper_class.iso2_to_flag(wrapper_class.iso3_to_iso2(iso_code)) + " " + wrapper_class.format_city_state(city)   # type: ignore  # noqa: E501
+            city = wrapper_class.process_city_string(city, df_mapping)
+
+            city = wrapper_class.iso2_to_flag(wrapper_class.iso3_to_iso2(iso_code)) + " " + city   # type: ignore
+
             row = i + 1
             if day_avg_speed[i] is not None and night_avg_speed[i] is not None:
                 value = (day_avg_speed[i] + night_avg_speed[i])/2
@@ -2159,7 +2160,10 @@ class Analysis():
         for i, city in enumerate(cities_ordered[num_cities_per_col:]):
             city_new, lat, long = city.split('_')
             iso_code = values_class.get_value(df_mapping, "city", city_new, "lat", float(lat), "iso3")
-            city = wrapper_class.iso2_to_flag(wrapper_class.iso3_to_iso2(iso_code)) + " " + wrapper_class.format_city_state(city)   # type: ignore  # noqa: E501
+            city = wrapper_class.process_city_string(city, df_mapping)
+
+            city = wrapper_class.iso2_to_flag(wrapper_class.iso3_to_iso2(iso_code)) + " " + city   # type: ignore
+
             row = i + 1
             idx = num_cities_per_col + i
             if day_avg_speed[idx] is not None and night_avg_speed[idx] is not None:
@@ -2368,7 +2372,12 @@ class Analysis():
 
         # Final adjustments and display
         fig.update_layout(margin=dict(l=10, r=10, t=x_axis_title_height, b=10))
-        plots_class.save_plotly_figure(fig, "crossing_speed_avg", width=2400, height=TALL_FIG_HEIGHT, scale=SCALE,
+        plots_class.save_plotly_figure(fig,
+                                       "crossing_speed_avg",
+                                       width=2400,
+                                       height=TALL_FIG_HEIGHT,
+                                       scale=SCALE,
+                                       save_eps=False,
                                        save_final=True)
 
     @staticmethod
@@ -2432,7 +2441,10 @@ class Analysis():
             # Row for speed (Day and Night)
             city_new, lat, long = city.split('_')
             iso_code = values_class.get_value(df_mapping, "city", city_new, "lat", float(lat), "iso3")
-            city = wrapper_class.iso2_to_flag(wrapper_class.iso3_to_iso2(iso_code)) + " " + wrapper_class.format_city_state(city)   # type: ignore  # noqa: E501
+            city = wrapper_class.process_city_string(city, df_mapping)
+
+            city = wrapper_class.iso2_to_flag(wrapper_class.iso3_to_iso2(iso_code)) + " " + city   # type: ignore
+
             row = i + 1
             if day_time_dict[i] is not None and night_time_dict[i] is not None:
                 value = (day_time_dict[i] + night_time_dict[i])/2
@@ -2470,7 +2482,10 @@ class Analysis():
         for i, city in enumerate(cities_ordered[num_cities_per_col:]):
             city_new, lat, long = city.split('_')
             iso_code = values_class.get_value(df_mapping, "city", city_new, "lat", float(lat), "iso3")
-            city = wrapper_class.iso2_to_flag(wrapper_class.iso3_to_iso2(iso_code)) + " " + wrapper_class.format_city_state(city)   # type: ignore  # noqa: E501
+            city = wrapper_class.process_city_string(city, df_mapping)
+
+            city = wrapper_class.iso2_to_flag(wrapper_class.iso3_to_iso2(iso_code)) + " " + city   # type: ignore
+
             row = i + 1
             idx = num_cities_per_col + i
             if day_time_dict[idx] is not None and night_time_dict[idx] is not None:
@@ -2679,7 +2694,12 @@ class Analysis():
 
         # Final adjustments and display
         fig.update_layout(margin=dict(l=10, r=10, t=x_axis_title_height, b=10))
-        plots_class.save_plotly_figure(fig, "time_crossing_avg", width=2400, height=TALL_FIG_HEIGHT, scale=SCALE,
+        plots_class.save_plotly_figure(fig,
+                                       "time_crossing_avg",
+                                       width=2400,
+                                       height=TALL_FIG_HEIGHT,
+                                       scale=SCALE,
+                                       save_eps=False,
                                        save_final=True)
 
     @staticmethod
@@ -2710,8 +2730,8 @@ class Analysis():
                                                           "country": country, "iso": iso_code}
 
                 # normalise by total time and total number of detected persons
-                total_time = values_class.get_value(df_mapping, "city", city, "state", state, "total_time")
-                person = values_class.get_value(df_mapping, "city", city, "state", state, "person")
+                total_time = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "total_time")
+                person = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "person")
                 count = count / total_time / person
 
                 # Populate the corresponding speed based on the condition
@@ -2756,7 +2776,10 @@ class Analysis():
         for i, city in enumerate(cities_ordered[:num_cities_per_col]):
             city_new, lat, long = city.split('_')
             iso_code = values_class.get_value(df_mapping, "city", city_new, "lat", float(lat), "iso3")
-            city = wrapper_class.iso2_to_flag(wrapper_class.iso3_to_iso2(iso_code)) + " " + wrapper_class.format_city_state(city)   # type: ignore  # noqa: E501
+            city = wrapper_class.process_city_string(city, df_mapping)
+
+            city = wrapper_class.iso2_to_flag(wrapper_class.iso3_to_iso2(iso_code)) + " " + city   # type: ignore
+
             row = i + 1
             if day_crossing[i] is not None and night_crossing[i] is not None:
                 value = round((day_crossing[i] + night_crossing[i])/2, 2)
@@ -2793,7 +2816,10 @@ class Analysis():
         for i, city in enumerate(cities_ordered[num_cities_per_col:]):
             city_new, lat, long = city.split('_')
             iso_code = values_class.get_value(df_mapping, "city", city_new, "lat", float(lat), "iso3")
-            city = wrapper_class.iso2_to_flag(wrapper_class.iso3_to_iso2(iso_code)) + " " + wrapper_class.format_city_state(city)   # type: ignore  # noqa: E501
+            city = wrapper_class.process_city_string(city, df_mapping)
+
+            city = wrapper_class.iso2_to_flag(wrapper_class.iso3_to_iso2(iso_code)) + " " + city   # type: ignore
+
             row = i + 1
             idx = num_cities_per_col + i
             if day_crossing[idx] is not None and night_crossing[idx] is not None:
@@ -2990,8 +3016,13 @@ class Analysis():
 
         # Final adjustments and display
         fig.update_layout(margin=dict(l=80, r=100, t=x_axis_title_height, b=180))
-        plots_class.save_plotly_figure(fig, "crossings_without_traffic_equipment_avg",
-                                       width=2480, height=TALL_FIG_HEIGHT, scale=SCALE, save_final=True)
+        plots_class.save_plotly_figure(fig,
+                                       "crossings_without_traffic_equipment_avg",
+                                       width=2480,
+                                       height=TALL_FIG_HEIGHT,
+                                       scale=SCALE,
+                                       save_eps=False,
+                                       save_final=True)
 
     @staticmethod
     def plot_crossing_with_traffic_light(df_mapping, font_size_captions=40, x_axis_title_height=150, legend_x=0.92,
@@ -3064,7 +3095,10 @@ class Analysis():
         for i, city in enumerate(cities_ordered[:num_cities_per_col]):
             city_new, lat, long = city.split('_')
             iso_code = values_class.get_value(df_mapping, "city", city_new, "lat", float(lat), "iso3")
-            city = wrapper_class.iso2_to_flag(wrapper_class.iso3_to_iso2(iso_code)) + " " + wrapper_class.format_city_state(city)   # type: ignore  # noqa: E501
+            city = wrapper_class.process_city_string(city, df_mapping)
+
+            city = wrapper_class.iso2_to_flag(wrapper_class.iso3_to_iso2(iso_code)) + " " + city   # type: ignore
+
             row = i + 1
             if day_crossing[i] is not None and night_crossing[i] is not None:
                 value = round((day_crossing[i] + night_crossing[i])/2, 2)
@@ -3099,9 +3133,12 @@ class Analysis():
                     text=[''], textfont=dict(size=14, color='white')), row=row, col=1)
 
         for i, city in enumerate(cities_ordered[num_cities_per_col:]):
-            city_new, state = city.split('_')
-            iso_code = values_class.get_value(df_mapping, "city", city_new, "state", state, "iso3")
-            city = wrapper_class.iso2_to_flag(wrapper_class.iso3_to_iso2(iso_code)) + " " + wrapper_class.format_city_state(city)   # type: ignore  # noqa: E501
+            city_new, lat, long = city.split('_')
+            iso_code = values_class.get_value(df_mapping, "city", city_new, "lat", float(lat), "iso3")
+            city = wrapper_class.process_city_string(city, df_mapping)
+
+            city = wrapper_class.iso2_to_flag(wrapper_class.iso3_to_iso2(iso_code)) + " " + city   # type: ignore
+
             row = i + 1
             idx = num_cities_per_col + i
             if day_crossing[idx] is not None and night_crossing[idx] is not None:
@@ -3298,8 +3335,13 @@ class Analysis():
 
         # Final adjustments and display
         fig.update_layout(margin=dict(l=80, r=100, t=x_axis_title_height, b=180))
-        plots_class.save_plotly_figure(fig, "crossings_with_traffic_equipment_avg", width=2480, height=TALL_FIG_HEIGHT,
-                                       scale=SCALE, save_final=True)
+        plots_class.save_plotly_figure(fig,
+                                       "crossings_with_traffic_equipment_avg",
+                                       width=2480,
+                                       height=TALL_FIG_HEIGHT,
+                                       scale=SCALE,
+                                       save_eps=False,
+                                       save_final=True)
 
     def compute_avg_variable_city(self, variable_city):
         """
@@ -4735,30 +4777,30 @@ if __name__ == "__main__":
     # Analysis.get_world_map(df_mapping)
     df = df_mapping.copy()  # copy df to manipulate for output
     df['state'] = df['state'].fillna('NA')  # Set state to NA
-    # Analysis.get_mapbox_map(df=df, hover_data=hover_data)  # mapbox map
-    # Analysis.get_world_map(df_mapping=df)  # map with countries
+    Analysis.get_mapbox_map(df=df, hover_data=hover_data)  # mapbox map
+    Analysis.get_world_map(df_mapping=df)  # map with countries
 
     # Amount of footage
-    # Analysis.scatter(df=df,
-    #                  x="total_time",
-    #                  y="person",
-    #                  color="continent",
-    #                  text="city",
-    #                  xaxis_title='Total time of footage (s)',
-    #                  yaxis_title='Number of detected pedestrians',
-    #                  pretty_text=False,
-    #                  marker_size=10,
-    #                  save_file=True,
-    #                  hover_data=hover_data,
-    #                  hover_name="city",
-    #                  legend_title="",
-    #                  legend_x=0.01,
-    #                  legend_y=1.0,
-    #                  label_distance_factor=5.0,
-    #                  marginal_x=None,  # type: ignore
-    #                  marginal_y=None)  # type: ignore
+    Analysis.scatter(df=df,
+                     x="total_time",
+                     y="person",
+                     color="continent",
+                     text="city",
+                     xaxis_title='Total time of footage (s)',
+                     yaxis_title='Number of detected pedestrians',
+                     pretty_text=False,
+                     marker_size=10,
+                     save_file=True,
+                     hover_data=hover_data,
+                     hover_name="city",
+                     legend_title="",
+                     legend_x=0.01,
+                     legend_y=1.0,
+                     label_distance_factor=5.0,
+                     marginal_x=None,  # type: ignore
+                     marginal_y=None)  # type: ignore
 
-    # Analysis.hist(data_index=22, name="speed", vlines=[1.42], save_file=True)
+    Analysis.hist(data_index=22, name="speed", vlines=[1.42], save_file=True)
 
     # todo: ISO-3 codes next to figures shift. need to correct once "final" dataset is online
     Analysis.speed_and_time_to_start_cross(df_mapping,
