@@ -69,6 +69,7 @@ def form():
     fps_video = '30'
     yt_title = ''
     yt_upload_date = ''
+    yt_channel = ''
     yt_description = ''
     start_time_video = []
     end_time_video = []
@@ -103,6 +104,7 @@ def form():
                 video_id = yt.video_id
                 # get info of video
                 yt_upload_date = yt.publish_date
+                yt_channel = yt.channel_id
                 for n in range(6):
                     try:
                         yt_stream = yt.streams.filter(only_audio=True).first()
