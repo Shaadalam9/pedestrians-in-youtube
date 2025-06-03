@@ -1,3 +1,4 @@
+# by Pavlo Bazilinskyy <pavlo.bazilinskyy@gmail.com>
 import pandas as pd
 import ast
 from pytubefix import YouTube
@@ -33,33 +34,34 @@ def get_channel_id(video_id):
         return None
 
 
-# Load the CSV
-df = pd.read_csv(common.get_configs("mapping"))
+if __name__ == "__main__":
+    # Load the CSV
+    df = pd.read_csv(common.get_configs("mapping"))
 
-# Ensure 'channel' column exists
-if 'channel' not in df.columns:
-    df['channel'] = ''
+    # Ensure 'channel' column exists
+    if 'channel' not in df.columns:
+        df['channel'] = ''
 
-for idx, row in tqdm(df.iterrows(), total=len(df)):
-    video_ids = safe_parse(row['videos'])
-    channel_ids = safe_parse(row['channel'])
+    for idx, row in tqdm(df.iterrows(), total=len(df)):
+        video_ids = safe_parse(row['videos'])
+        channel_ids = safe_parse(row['channel'])
 
-    # make sure the list lengths match
-    if len(channel_ids) != len(video_ids):
-        channel_ids = [None] * len(video_ids)
+        # make sure the list lengths match
+        if len(channel_ids) != len(video_ids):
+            channel_ids = [None] * len(video_ids)
 
-    updated_channels = []
-    for vid, ch in zip(video_ids, channel_ids):
-        if ch in [None, 'None', '', 'nan']:
-            ch_id = get_channel_id(vid)
-            updated_channels.append(ch_id if ch_id else None)
-        else:
-            updated_channels.append(ch)
+        updated_channels = []
+        for vid, ch in zip(video_ids, channel_ids):
+            if ch in [None, 'None', '', 'nan']:
+                ch_id = get_channel_id(vid)
+                updated_channels.append(ch_id if ch_id else None)
+            else:
+                updated_channels.append(ch)
 
-    # store clean list format like [UCabc,UCxyz]
-    df.at[idx, 'channel'] = f"[{','.join([c for c in updated_channels if c])}]"
+        # store clean list format like [UCabc,UCxyz]
+        df.at[idx, 'channel'] = f"[{','.join([c for c in updated_channels if c])}]"
 
-# Save updated CSV
-output_file = 'mapping_with_channels.csv'
-df.to_csv(output_file, index=False)
-print(f"\n✅ updated data with clean channel list saved to {output_file}")
+    # Save updated CSV
+    output_file = 'mapping_with_channels.csv'
+    df.to_csv(output_file, index=False)
+    print(f"\n✅ updated data with clean channel list saved to {output_file}")

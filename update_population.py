@@ -1,3 +1,4 @@
+# by Pavlo Bazilinskyy <pavlo.bazilinskyy@gmail.com>
 import pandas as pd
 import requests
 import common

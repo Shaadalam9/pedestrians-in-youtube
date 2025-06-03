@@ -1,9 +1,9 @@
+# by Pavlo Bazilinskyy <pavlo.bazilinskyy@gmail.com>
 import pandas as pd
 import ast
 from pytube import YouTube
 from tqdm import tqdm
 import common
-import re
 
 # Load the CSV
 df = pd.read_csv(common.get_configs("mapping"))
