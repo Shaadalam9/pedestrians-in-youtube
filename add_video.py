@@ -67,7 +67,7 @@ def form():
     vehicle_type_list = ''
     gini = ''
     traffic_index = ''
-    upload_date_video = ''
+    upload_date_video = 'None'
     channel_video = ''
     fps_video = '30'
     yt_title = ''
@@ -106,21 +106,24 @@ def form():
                 yt = YouTube(video_url)
                 video_id = yt.video_id
                 # get info of video
+                # todo: fetching upload date of video fails (with pytubefix?)
                 yt_upload_date = yt.publish_date
                 yt_channel = yt.channel_id
-                for n in range(6):
-                    try:
-                        yt_stream = yt.streams.filter(only_audio=True).first()
-                        yt_stream.download(output_path='_output')
-                        yt_title = yt.title
-                    except:  # noqa: E722
-                        continue
+                # todo: fetching title of video fails
+                # for n in range(6):
+                #     try:
+                #         yt_stream = yt.streams.filter(only_audio=True).first()
+                #         yt_stream.download(output_path='_output')
+                #         yt_title = yt.title
+                #     except:  # noqa: E722
+                #         continue
                 for n in range(6):
                     try:
                         yt_description = yt.initial_data["engagementPanels"][n]["engagementPanelSectionListRenderer"]["content"]["structuredDescriptionContentRenderer"]["items"][1]["expandableVideoDescriptionBodyRenderer"]["attributedDescriptionBodyText"]["content"]  # noqa: E501
                     except:  # noqa: E722
                         continue
             except Exception as e:
+                print(e)
                 return render_template(
                     "add_video.html", message=f"Invalid YouTube URL: {e}", df=df, city=city, country=country,
                     state=state, video_url=video_url, video_id=video_id, existing_data=existing_data_row,
@@ -243,15 +246,18 @@ def form():
                 video_id = yt.video_id
                 # get info of video
                 yt_upload_date = yt.publish_date
+                # in case getting upload date fails
+                if not yt_upload_date:
+                    yt_upload_date = 'None'
                 yt_channel = yt.channel_id
-                for n in range(6):
-                    try:
-                        yt_stream = yt.streams.filter(only_audio=True).first()
-                        yt_stream.download(output_path='_output')
-                        # getting title is not stable
-                        yt_title = yt.title
-                    except:  # noqa: E722
-                        continue
+                # for n in range(6):
+                #     try:
+                #         yt_stream = yt.streams.filter(only_audio=True).first()
+                #         yt_stream.download(output_path='_output')
+                #         # getting title is not stable
+                #         yt_title = yt.title
+                #     except:  # noqa: E722
+                #         continue
                 for n in range(6):
                     try:
                         yt_description = yt.initial_data["engagementPanels"][n]["engagementPanelSectionListRenderer"]["content"]["structuredDescriptionContentRenderer"]["items"][1]["expandableVideoDescriptionBodyRenderer"]["attributedDescriptionBodyText"]["content"]  # noqa: E501
@@ -315,8 +321,12 @@ def form():
                         time_of_day_list.append([int(time_of_day[-1])])    # Append time of day as integer
                         start_time_list.append([int(start_time[-1])])      # Append start time as integer
                         end_time_list.append([int(end_time[-1])])          # Append end time as integer
-                        upload_date_list.append(int(upload_date_video))    # Append upload time as integer
-                        channel_list.append(channel_video)                 # Append channel
+                        # Append upload time as integer
+                        if upload_date_video != 'None':
+                            upload_date_list.append(int(upload_date_video))
+                        else:
+                            upload_date_list.append(None)
+                        channel_list.append(channel_video)                 
                         fps_list.append(int(fps_video))                    # Append fps list as integer
                         vehicle_type_list.append(int(vehicle_type_video))  # Append vehicle type as integer
                     else:
@@ -329,10 +339,7 @@ def form():
                             upload_date_list[video_index] = int(upload_date_video)
                         else:
                             upload_date_list[video_index] = upload_date_video
-                        if channel_video != 'None':
-                            channel_list[video_index] = channel_video
-                        else:
-                            channel_list[video_index] = channel_video
+                        channel_list[video_index] = channel_video
                         fps_list[video_index] = float(fps_video)
                         vehicle_type_list[video_index] = int(vehicle_type_video)
                     start_time_video = start_time_list[video_index]
