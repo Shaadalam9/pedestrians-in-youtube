@@ -1701,4 +1701,5 @@ id,city,state,country,iso3,continent,lat,lon,gmp,population_city,population_coun
 1700,Jackson,GA,United States,USA,North America,34.1282559,-83.5753386,0.0,153701.0,329484123.0,12.7,0.0,170.0,38.5,41.4,0.0,[mMY5Ma-FLwU],[[0]],[[0]],[[709]],[0],[09122022],[30],[UC-ZnfVaa54FcjzRphhrPWZw]
 1701,Alicante,,Spain,ESP,Europe,38.3436365,-0.4881708,0.0,334757.0,47351567.0,3.9,99.0,169.0,46.3,34.7,0.0,[jUp1oLkZgxw],[[0]],[[98]],[[2808]],[0],[18042022],[30],[UCOTltJnsvy8V9ku46nARF6w]
 1702,Puerto de la cruz,,Spain,ESP,Europe,28.4159024,-16.5532956,0.0,32219.0,47351567.0,3.9,99.0,169.0,46.3,34.7,0.0,"[f9FZ4ZRQT1I,1wyIDVTprVs]","[[0], [0]]","[[7], [1]]","[[1875], [1498]]","[3,0]","[3052023,6052024]","[30,30]","[UCux6mFOpqP60sQp3WLY62Ug,UCux6mFOpqP60sQp3WLY62Ug]"
-1703,Los Cristianos,,Spain,ESP,Europe,28.0526298,-16.717,0.0,23,47351567,3.9,99,169,46.3,34.7,0.0,[40HLhELXXOw],[[0]],[[16]],[[2910]],[0],[19122021],[30],[UCPl4eMC1vwm1NIfV82LNPcw]
+1703,Los Cristianos,,Spain,ESP,Europe,28.0526298,-16.717,0.0,23.0,47351567.0,3.9,99.0,169.0,46.3,34.7,0.0,[40HLhELXXOw],[[0]],[[16]],[[2910]],[0],[19122021],[30],[UCPl4eMC1vwm1NIfV82LNPcw]
+1704,Tenerife,,Spain,ESP,Europe,28.2935785,-16.6214471,0.0,204856,47351567,3.9,99,169,46.3,34.7,0.0,[kmXQiP9RQxA],[[0]],[[1]],[[2671]],[0],[23072020],[30],[UCH-Ewlw8HyZrvSdGxgf0PQw]
