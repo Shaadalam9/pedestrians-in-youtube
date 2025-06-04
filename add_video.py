@@ -67,7 +67,7 @@ def form():
     vehicle_type_list = ''
     gini = ''
     traffic_index = ''
-    upload_date_video = 'None'
+    upload_date_video = ''
     channel_video = ''
     fps_video = '30'
     yt_title = ''
@@ -109,9 +109,10 @@ def form():
                 # todo: fetching upload date of video fails (with pytubefix?)
                 yt_upload_date = yt.publish_date
                 # in case getting upload date fails
-                if not yt_upload_date:
-                    yt_upload_date = 'None'
+                # if not yt_upload_date:
+                #     yt_upload_date = 'None'
                 yt_channel = yt.channel_id
+                print("1", upload_date_video, yt_upload_date)
                 # todo: fetching title of video fails
                 # for n in range(6):
                 #     try:
@@ -249,9 +250,10 @@ def form():
                 # get info of video
                 yt_upload_date = yt.publish_date
                 # in case getting upload date fails
-                if not yt_upload_date:
-                    yt_upload_date = 'None'
+                # if not yt_upload_date:
+                #     yt_upload_date = 'None'
                 yt_channel = yt.channel_id
+                print("2", upload_date_video, yt_upload_date)
                 # for n in range(6):
                 #     try:
                 #         yt_stream = yt.streams.filter(only_audio=True).first()
@@ -274,7 +276,7 @@ def form():
                     yt_channel=yt_channel
                 )
 
-            # Validate Time of Day and End Time > Start Time
+            # Validation checks
             if any(t not in ['0', '1'] for t in time_of_day):
                 message = "Time of day must be either 0 or 1."
             elif any(v not in ['0', '1', '2', '3', '4', '5', '6', '7', '8'] for v in vehicle_type_video):
@@ -324,6 +326,7 @@ def form():
                         start_time_list.append([int(start_time[-1])])      # Append start time as integer
                         end_time_list.append([int(end_time[-1])])          # Append end time as integer
                         # Append upload time as integer
+                        print("4", upload_date_video, yt_upload_date)
                         if upload_date_video != 'None':
                             upload_date_list.append(int(upload_date_video))
                         else:
@@ -337,6 +340,7 @@ def form():
                         time_of_day_list[video_index].append(int(time_of_day[-1]))  # Append new time of day
                         start_time_list[video_index].append(int(start_time[-1]))    # Append new start time
                         end_time_list[video_index].append(int(end_time[-1]))        # Append new end time
+                        print("5", upload_date_video, yt_upload_date)
                         if upload_date_video != 'None':
                             upload_date_list[video_index] = int(upload_date_video)
                         else:
@@ -473,7 +477,7 @@ def form():
 
     if not upload_date_video and yt_upload_date:
         upload_date_video = yt_upload_date.strftime('%d%m%Y')
-    print(upload_date_video, yt_upload_date)
+    print("5", upload_date_video, yt_upload_date)
 
     if not channel_video and yt_channel:
         channel_video = yt_channel
