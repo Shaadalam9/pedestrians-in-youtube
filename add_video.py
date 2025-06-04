@@ -108,6 +108,9 @@ def form():
                 # get info of video
                 # todo: fetching upload date of video fails (with pytubefix?)
                 yt_upload_date = yt.publish_date
+                # in case getting upload date fails
+                if not yt_upload_date:
+                    yt_upload_date = 'None'
                 yt_channel = yt.channel_id
                 # todo: fetching title of video fails
                 # for n in range(6):
@@ -123,7 +126,6 @@ def form():
                     except:  # noqa: E722
                         continue
             except Exception as e:
-                print(e)
                 return render_template(
                     "add_video.html", message=f"Invalid YouTube URL: {e}", df=df, city=city, country=country,
                     state=state, video_url=video_url, video_id=video_id, existing_data=existing_data_row,
@@ -471,6 +473,7 @@ def form():
 
     if not upload_date_video and yt_upload_date:
         upload_date_video = yt_upload_date.strftime('%d%m%Y')
+    print(upload_date_video, yt_upload_date)
 
     if not channel_video and yt_channel:
         channel_video = yt_channel
