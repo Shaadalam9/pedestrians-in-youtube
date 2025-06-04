@@ -124,7 +124,7 @@ class Analysis():
 
                         # Optionally apply geometry correction if configured and not zero
                         use_geom_correction = common.get_configs("use_geometry_correction")
-                        if use_geom_correction:
+                        if use_geom_correction != 0:
                             df = geometry_class.reassign_ids_directional_cross_fix(
                                 df,
                                 distance_threshold=use_geom_correction,
@@ -3780,6 +3780,8 @@ class Analysis():
             None. Video clips are saved to disk in 'saved_snaps/original' and 'saved_snaps/tracked'.
         """
         data = self.find_min_max_video(var_dict, num=num)
+        if common.get_configs("min_max_videos") is False:
+            return data
 
         # Process only the 'max' speed segments
         for city_data in data['max'].values():
@@ -3850,6 +3852,7 @@ class Analysis():
 
                     except FileNotFoundError as e:
                         logger.error(f"Error: {e}")
+        return data
 
     def draw_yolo_boxes_on_video(self, df, fps, video_path, output_path):
         """
@@ -4459,10 +4462,13 @@ if __name__ == "__main__":
 
             # Calculate the total number of different objects detected
             person_video = Analysis.count_object(dfs[key], 0)
+            print("person: ", person_video)
             person_counter += person_video
             df_mapping.loc[df_mapping["id"] == video_city_id, "person"] += person_video
 
             bicycle_video = Analysis.count_object(dfs[key], 1)
+            print(dfs[key])
+            print("bicycle", bicycle_video)
             bicycle_counter += bicycle_video
             df_mapping.loc[df_mapping["id"] == video_city_id, "bicycle"] += bicycle_video
 

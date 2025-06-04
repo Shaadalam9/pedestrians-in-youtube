@@ -1,5 +1,6 @@
 # by Shadab Alam <md_shadab_alam@outlook.com>
 import numpy as np
+import pandas as pd
 import common
 from custom_logger import CustomLogger
 from logmod import logs
@@ -16,156 +17,220 @@ class Geometry():
     def __init__(self) -> None:
         pass
 
-    def reassign_ids_directional_cross_fix(self, df, distance_threshold=0.05, yolo_ids=None):
+    def reassign_ids_directional_cross_fix(self, df, distance_threshold=0.05, yolo_ids=None, history_frames=3):
         """
-        Reassigns object tracking IDs to correct for identity switches when objects cross paths,
-        using consistent X-axis movement and optional class filtering.
+        Reassigns object tracking IDs to correct for identity switches (ID swaps)
+        when objects cross paths (even in same or opposite directions, e.g., overtaking),
+        using consistent X-axis movement, short-term movement history, and optional class filtering.
 
-        This function is designed for post-processing YOLO (or similar) tracking outputs in video data,
-        where objects may switch tracking IDs after crossing each other. The algorithm matches
-        detections across frames based on spatial proximity along the X-axis and maintains consistent
-        movement direction to reduce erroneous ID swaps. Each detection is assigned a new 'New Id'
-        that attempts to reflect the real-world object more consistently over time.
+        This function post-processes YOLO (or similar) tracking outputs in video data,
+        where objects may switch tracking IDs after crossing or overtaking each other.
+        The algorithm matches detections across frames based on spatial proximity along
+        the X-axis, recent movement trajectory, and maintains consistent movement patterns
+        to reduce erroneous ID swaps. Each detection is assigned a new 'Unique Id'
+        that reflects the real-world object more consistently over time.
 
-        Main Features:
-        --------------
-        - Iterates through frames in temporal order and attempts to associate detections with existing tracks.
-        - Tracks are maintained by their most recent X position and direction of movement.
-        - A detection is matched to an existing track only if it is within a specified maximum normalized X distance
-            ("distance_threshold") and moving in the same direction as the track's historical movement.
-        - If no suitable track is found, the detection starts a new track (gets a new ID).
-        - Optionally, tracks can be restricted to specific YOLO class IDs (e.g., only 'person' objects).
+        Main Features
+        -------------
+        - Processes all detections, but applies the fix only to specified YOLO classes (`yolo_ids`).
+        - Tracks are matched by X-center position, movement direction, and short-term X history.
+        - Overtaking (objects moving in the same direction but swapping positions/IDs) is handled
+            using multi-frame X trajectory matching.
+        - All other (non-target) classes are preserved unchanged, and their IDs are never altered.
 
         Parameters
         ----------
         df : pandas.DataFrame
-            DataFrame of detection and tracking data, with the following required columns:
-                - 'YOLO_id'    : Integer class ID from YOLO detector.
-                - 'X-center'   : Normalized X coordinate of bounding box center (0.0 to 1.0).
-                - 'Y-center'   : Normalized Y coordinate of bounding box center (not used by this function).
-                - 'Width'      : Bounding box width (not used here).
-                - 'Height'     : Bounding box height (not used here).
-                - 'Unique Id'  : Original tracking ID (not used in new ID assignment).
-                - 'Frame Count': Frame number (must be sortable in time order).
+            Must include columns:
+                - 'YOLO_id'    : YOLO class ID for each detection.
+                - 'X-center'   : Normalized X center of bounding box (0 to 1).
+                - 'Unique Id'  : YOLO's original object/tracking ID for each detection.
+                - 'Frame Count': Frame number (sortable in time order).
+            All other columns are preserved.
 
         distance_threshold : float, optional
             Maximum allowed normalized X distance (0 to 1) to associate a detection with an existing track.
-            Detections farther apart than this threshold are not considered part of the same object.
-            The default (0.05) means detections within 5% of the frame width can be matched.
-
-            **Note:** Setting this threshold too low can cause excessive fragmentation of tracks (new IDs
-            created too often). Setting it too high can cause unrelated objects to be merged under the same ID.
+            (Default: 0.05, i.e., detections within 5% of frame width can be matched).
 
         yolo_ids : list of int or None, optional
-            List of YOLO class IDs to include in processing. Only detections with 'YOLO_id' in this list
-            will be tracked and reassigned. If None, all detected object classes are included.
+            YOLO class IDs to apply the fix to. Others remain unchanged. If None, all detected classes are fixed.
+
+        history_frames : int, optional
+            Number of previous frames to use for X-trajectory matching during assignment.
+            Higher values help with longer, smoother trajectories but may fail if objects change direction often.
 
         Returns
         -------
         pandas.DataFrame
-            Copy of the input DataFrame with an added 'New Id' column. This column contains the
-            corrected object tracking IDs, designed to minimize identity switches due to objects
-            crossing paths. All other columns from the original DataFrame are preserved.
+            Copy of the input DataFrame with:
+                - 'Unique Id'      : The **corrected** identity for each detection (stable over time).
+                - 'old_unique_id'  : The original YOLO 'Unique Id' for reference.
+            All other columns are preserved.
 
         Limitations & Notes
         -------------------
-        - This method assumes objects move mainly along the X-axis, and swaps are most common there.
-            It is not suitable for arbitrary or erratic movement patterns, or for scenes where Y-axis
-            motion is dominant.
-        - The 'New Id' assignments are completely independent of the original 'Unique Id' values.
-            The original IDs are not used or preserved; the new IDs are based only on this function's logic.
-        - If you want to keep the original IDs, use them directly without running this function.
+        - This method assumes objects mostly move along the X-axis and their movement is smooth.
+        - For non-target YOLO classes, no corrections are applied; their 'Unique Id' remains unchanged.
+        - The corrected 'Unique Id' for each object remains constant across frames, even if YOLO swaps IDs
+            during crossing or overtaking.
 
         Example Usage
         -------------
         >>> df = ...  # Your YOLO tracking output as a DataFrame
         >>> result = reassign_ids_directional_cross_fix(df, distance_threshold=0.04, yolo_ids=[0])
-        >>> print(result[['Frame Count', 'YOLO_id', 'X-center', 'New Id']])
+        >>> print(result[['Frame Count', 'YOLO_id', 'X-center', 'Unique Id', 'old_unique_id']])
         """
 
-        # Load the CSV and sort it by frame number to process in time order
-        df = df.sort_values(by='Frame Count')
+        # --- STEP 1: INITIALISE OUTPUT AND PROCESSING MASK ---
 
-        # If filtering by specific YOLO classes, keep only those rows
+        # Work on a copy of the DataFrame to avoid mutating user data
+        df = df.copy()
+
+        # Initialise new column 'New Id' as the original YOLO Unique Id; will be replaced for fixed classes
+        df['New Id'] = df['Unique Id']
+
+        # Build a boolean mask: True for rows to fix (in yolo_ids), False for rows to leave untouched
         if yolo_ids is not None:
-            df = df[df['YOLO_id'].isin(yolo_ids)]
+            mask = df['YOLO_id'].isin(yolo_ids)
+        else:
+            mask = pd.Series(True, index=df.index)  # If None, fix all classes
 
-        # Create a new column to store the updated, corrected tracking ID
-        df['New Id'] = -1
+        # Select and sort only the relevant subset (target classes), ordered by frame
+        df_fix = df[mask].sort_values(by='Frame Count').copy()
 
-        # Initialize ID counter for assigning new identities
-        next_id = 0
+        # Set placeholder value for the new IDs in these rows
+        df_fix['New Id'] = -1
 
-        # Arrays to keep track state: track_id, x position, direction, last frame
-        track_ids = np.array([], dtype=int)      # Unique ID for each track
-        track_xs = np.array([], dtype=float)     # Last known X position
-        track_dirs = np.array([], dtype=int)     # Direction: 0=unknown, 1=right, -1=left
-        track_last_frames = np.array([], dtype=int)  # Last frame seen
+        # --- STEP 2: PRECOMPUTE DETECTION X-HISTORY DICTIONARY ---
 
-        # Group detections by frame for sequential processing
-        frame_groups = df.groupby('Frame Count')
+        # This dictionary allows instant O(1) lookup of a detection's X-center by (Unique Id, Frame Count)
+        # Example: det_hist_dict[(42, 100)] returns the X-center for Unique Id 42 in frame 100
+        det_hist_dict = {
+            (row['Unique Id'], row['Frame Count']): row['X-center']
+            for idx, row in df_fix.iterrows()
+        }
 
-        # Process each frame in order
-        for frame, frame_detections in frame_groups:
-            # Indices (row numbers) of detections in current frame
-            det_indices = frame_detections.index.values
+        # --- STEP 3: TRACK MANAGEMENT SETUP ---
 
-            # X positions of detections in current frame
-            det_xs = frame_detections['X-center'].values
-            n_tracks = len(track_ids)  # How many active tracks exist now?
-            n_dets = len(det_xs)       # How many detections in this frame?
+        # List of all active tracks. Each track is a dict:
+        #  - 'unique_id':  the original Unique Id (which is stable and used as the corrected ID)
+        #  - 'xs':         list of recent X-center positions for trajectory comparison
+        #  - 'frames':     list of corresponding frame numbers for those Xs
+        tracks = []
 
-            assigned_tracks = set()  # Which tracks have been matched this frame
-            assigned_dets = set()    # Which detections have already been matched
+        # Optional: mapping from unique_id to track index (could help with custom matching logic)
+        track_id_map = {}
 
-            # If there are any tracks and detections, try to match
-            if n_tracks > 0 and n_dets > 0:
-                # Calculate (tracks x detections) difference matrix
-                dx = det_xs[None, :] - track_xs[:, None]   # Shape: (n_tracks, n_dets)
-                dists = np.abs(dx)                         # Distance between each track and detection
+        # --- STEP 4: MAIN FRAMEWISE ASSOCIATION LOOP ---
 
-                # Compute movement direction for each possible match
-                # np.sign(dx): -1 for left, 1 for right, 0 if same position
-                new_dirs = np.sign(dx).astype(int)
+        # Go through frames in chronological order for correct temporal association
+        frame_numbers = sorted(df_fix['Frame Count'].unique())
 
-                # Check if matching is allowed:
-                # Allowed if track direction is unknown (0), or matches new direction
-                dir_mask = (track_dirs[:, None] == 0) | (track_dirs[:, None] == new_dirs)
+        for frame in frame_numbers:
+            # --- 4A: GET DETECTIONS IN THIS FRAME ---
+            detections = df_fix[df_fix['Frame Count'] == frame]
+            det_indices = detections.index.values        # Row indices in df_fix for current frame
+            det_xs = detections['X-center'].values       # X-center for each detection in this frame
+            det_unique_ids = detections['Unique Id'].values  # Original YOLO Unique Id for each detection
+            n_dets = len(det_xs)
 
-                # Only match if within distance threshold and direction is consistent
-                can_match = (dists < distance_threshold) & dir_mask
+            # Sets to keep track of which tracks/detections have already been matched in this frame
+            assigned_tracks = set()
+            assigned_dets = set()
 
-                # Try to assign detections to the nearest allowed track (greedy)
+            # --- 4B: MATCH EXISTING TRACKS TO DETECTIONS (TRAJECTORY ASSOCIATION) ---
+            if tracks:  # Only run if we have existing tracks to match to
+
+                # Array of each track's last X-center (to compute proximity quickly)
+                last_xs = np.array([track['xs'][-1] for track in tracks])
+
+                # Compute absolute X difference for all track/detection pairs
+                # dists[i, j] = |last_xs[i] - det_xs[j]|
+                dists = np.abs(last_xs[:, None] - det_xs[None, :])
+
+                # Loop over each detection to find the best track
                 for det_idx in range(n_dets):
-                    # Which tracks could match this detection?
-                    candidates = np.where(can_match[:, det_idx])[0]
-                    if candidates.size > 0:
-                        # Pick the closest track among candidates
-                        best_track_idx = candidates[np.argmin(dists[candidates, det_idx])]
-                        if best_track_idx not in assigned_tracks:
+                    best_track = None       # Index of best-matching track
+                    best_score = float('inf')  # Lower = better match
+                    this_uid = det_unique_ids[det_idx]
 
-                            # Assign detection to this track
-                            df.at[det_indices[det_idx], 'New Id'] = track_ids[best_track_idx]
+                    # --- 4B1: BUILD SHORT-TERM X-TRAJECTORY FOR THIS DETECTION ---
+                    det_hist = []
 
-                            # Update this track's info: new position, direction, frame
-                            # If new direction is 0 (no movement), keep old direction
-                            new_dir = new_dirs[best_track_idx, det_idx]
-                            track_dirs[best_track_idx] = new_dir if new_dir != 0 else track_dirs[best_track_idx]
-                            track_xs[best_track_idx] = det_xs[det_idx]
-                            track_last_frames[best_track_idx] = frame
-                            assigned_tracks.add(best_track_idx)
-                            assigned_dets.add(det_idx)
+                    # Look back up to history_frames in time (including this frame)
+                    for back in range(history_frames-1, -1, -1):
+                        key = (this_uid, frame - back)
+                        if key in det_hist_dict:
+                            # Append that frame's X-center if present
+                            det_hist.append(det_hist_dict[key])
+                    # det_hist: [x(t-n), ..., x(t-1), x(t)]
 
-            # For any detection not assigned, create a new track/ID
+                    # --- 4B2: COMPARE TO EACH TRACK ---
+                    for t_idx, track in enumerate(tracks):
+                        if t_idx in assigned_tracks:
+                            continue  # Skip if this track has already been matched this frame
+
+                        # Only consider tracks close in X-center for this frame
+                        if dists[t_idx, det_idx] >= distance_threshold:
+                            continue
+
+                        # Extract the last len(det_hist) Xs from this track for fair comparison
+                        track_hist = track['xs'][-len(det_hist):] if len(det_hist) > 0 else []
+
+                        # Compute trajectory score (mean absolute diff), if both histories are long enough
+                        if len(det_hist) > 1 and len(track_hist) == len(det_hist):
+                            traj_score = np.mean(np.abs(np.array(det_hist) - np.array(track_hist)))
+                        elif len(track_hist) > 0:
+                            traj_score = abs(track_hist[-1] - det_xs[det_idx])
+                        else:
+                            traj_score = dists[t_idx, det_idx]
+
+                        # Greedy: assign to the best match (lowest score)
+                        if traj_score < best_score:
+                            best_score = traj_score
+                            best_track = t_idx
+
+                    # --- 4B3: ASSIGN DETECTION TO BEST TRACK IF FOUND ---
+                    if best_track is not None and best_track not in assigned_tracks:
+                        # Update 'New Id' for this detection to the track's unique_id (which is the original identity)
+                        df_fix.at[det_indices[det_idx], 'New Id'] = tracks[best_track]['unique_id']
+
+                        # Update the matched track's history with this detection's data
+                        tracks[best_track]['xs'].append(det_xs[det_idx])
+                        tracks[best_track]['frames'].append(frame)
+
+                        # Only keep the last 'history_frames' points to keep memory bounded
+                        if len(tracks[best_track]['xs']) > history_frames:
+                            tracks[best_track]['xs'] = tracks[best_track]['xs'][-history_frames:]
+                            tracks[best_track]['frames'] = tracks[best_track]['frames'][-history_frames:]
+
+                        # Mark this track/detection as matched for this frame
+                        assigned_tracks.add(best_track)
+                        assigned_dets.add(det_idx)
+
+            # --- 4C: CREATE NEW TRACKS FOR UNMATCHED DETECTIONS ---
             for det_idx in range(n_dets):
                 if det_idx not in assigned_dets:
-                    df.at[det_indices[det_idx], 'New Id'] = next_id
-                    # Add new track info to arrays
-                    track_ids = np.append(track_ids, next_id)
-                    track_xs = np.append(track_xs, det_xs[det_idx])
-                    track_dirs = np.append(track_dirs, 0)  # Start with unknown direction
-                    track_last_frames = np.append(track_last_frames, frame)
-                    next_id += 1  # Increment for the next new track
+                    # This detection did not match any existing track, so create a new track for it
+                    this_uid = det_unique_ids[det_idx]
+                    df_fix.at[det_indices[det_idx], 'New Id'] = this_uid  # Use the detection's original Unique Id
+                    track = {
+                        'unique_id': this_uid,
+                        'xs': [det_xs[det_idx]],  # Start new X history
+                        'frames': [frame]         # Start new frame history
+                    }
+                    tracks.append(track)
+                    track_id_map[this_uid] = len(tracks) - 1  # Optional, in case you want O(1) lookup later
 
-        # All frames processed, DataFrame now has 'New Id' for each detection
+        # --- STEP 5: COPY CORRECTED IDS INTO THE ORIGINAL DATAFRAME ---
+
+        # Only update the processed rows (the target YOLO classes) with their new IDs
+        df.loc[df_fix.index, 'New Id'] = df_fix['New Id']
+
+        # --- STEP 6: FINAL COLUMN RENAMING FOR OUTPUT ---
+
+        # Rename the original YOLO 'Unique Id' to 'old_unique_id' (for reference),
+        # and the fixed, stable IDs to 'Unique Id'
+        df = df.rename(columns={'Unique Id': 'old_unique_id', 'New Id': 'Unique Id'})
+
         return df
