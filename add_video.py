@@ -112,7 +112,6 @@ def form():
                 # if not yt_upload_date:
                 #     yt_upload_date = 'None'
                 yt_channel = yt.channel_id
-                print("1", upload_date_video, yt_upload_date)
                 # todo: fetching title of video fails
                 # for n in range(6):
                 #     try:
@@ -253,7 +252,6 @@ def form():
                 # if not yt_upload_date:
                 #     yt_upload_date = 'None'
                 yt_channel = yt.channel_id
-                print("2", upload_date_video, yt_upload_date)
                 # for n in range(6):
                 #     try:
                 #         yt_stream = yt.streams.filter(only_audio=True).first()
@@ -326,8 +324,7 @@ def form():
                         start_time_list.append([int(start_time[-1])])      # Append start time as integer
                         end_time_list.append([int(end_time[-1])])          # Append end time as integer
                         # Append upload time as integer
-                        print("4", upload_date_video, yt_upload_date)
-                        if upload_date_video != 'None':
+                        if upload_date_video != 'None' and upload_date_video is not None:
                             upload_date_list.append(int(upload_date_video))
                         else:
                             upload_date_list.append(None)
@@ -340,13 +337,12 @@ def form():
                         time_of_day_list[video_index].append(int(time_of_day[-1]))  # Append new time of day
                         start_time_list[video_index].append(int(start_time[-1]))    # Append new start time
                         end_time_list[video_index].append(int(end_time[-1]))        # Append new end time
-                        print("5", upload_date_video, yt_upload_date)
-                        if upload_date_video != 'None':
+                        if upload_date_video != 'None' and upload_date_video is not None:
                             upload_date_list[video_index] = int(upload_date_video)
                         else:
-                            upload_date_list[video_index] = upload_date_video
+                            upload_date_list[video_index] = None
                         channel_list[video_index] = channel_video
-                        fps_list[video_index] = float(fps_video)
+                        fps_list[video_index] = int(fps_video)
                         vehicle_type_list[video_index] = int(vehicle_type_video)
                     start_time_video = start_time_list[video_index]
                     end_time_video = end_time_list[video_index]
@@ -407,7 +403,7 @@ def form():
                     channel_list = channel_list.replace('\'', '')
                     channel_list = channel_list.replace(' ', '')
                     df.at[idx, 'channel'] = channel_list
-                    fps_list = [30.0 if str(x).strip().lower() == 'none' else float(x) for x in fps_list]
+                    fps_list = [30 if str(x).strip().lower() == 'none' else int(x) for x in fps_list]
                     fps_list = str(fps_list)
                     fps_list = fps_list.replace('\'', '')
                     fps_list = fps_list.replace(' ', '')
@@ -477,7 +473,6 @@ def form():
 
     if not upload_date_video and yt_upload_date:
         upload_date_video = yt_upload_date.strftime('%d%m%Y')
-    print("5", upload_date_video, yt_upload_date)
 
     if not channel_video and yt_channel:
         channel_video = yt_channel
