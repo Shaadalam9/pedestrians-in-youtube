@@ -1526,7 +1526,7 @@ id,city,state,country,iso3,continent,lat,lon,gmp,population_city,population_coun
 1525,Lauterbrunnen,BE,Switzerland,CHE,Europe,46.5939043,7.9078016,0.0,2646.0,8654622.0,2.2,0.0,172.0,44.0,33.1,0.0,[lCQK_Kyiw-Q],[[0]],[[448]],[[655]],[0],[02072022],[30],[UCBcVQr-07MH-p9e2kRTdB3A]
 1526,Dorchester,,United Kingdom,GBR,Europe,50.7132064,-2.4371229,0.0,16879.0,67215293.0,3.2,0.0,171.0,40.6,35.1,0.0,[JjqRxVV5X7Q],[[0]],[[28]],[[330]],[0],[29042022],[30],[UCBcVQr-07MH-p9e2kRTdB3A]
 1527,Portesham,,United Kingdom,GBR,Europe,50.6712127743201,-2.5632615681992,0.0,566.0,67215293.0,3.2,0.0,171.0,40.6,35.1,0.0,[JjqRxVV5X7Q],[[0]],[[975]],[[1120]],[0],[29042022],[30],[UCBcVQr-07MH-p9e2kRTdB3A]
-1528,Abbotsbury,,United Kingdom,GBR,Europe,50.665474326585105,-2.59996884633223,0.0,451.0,67215293.0,3.2,0.0,171.0,40.6,35.1,0.0,[JjqRxVV5X7Q],[[0]],[[1211]],[[1380]],[0],[29042022],[30],[UCBcVQr-07MH-p9e2kRTdB3A]
+1528,Abbotsbury,,United Kingdom,GBR,Europe,50.66547432658511,-2.59996884633223,0.0,451.0,67215293.0,3.2,0.0,171.0,40.6,35.1,0.0,[JjqRxVV5X7Q],[[0]],[[1211]],[[1380]],[0],[29042022],[30],[UCBcVQr-07MH-p9e2kRTdB3A]
 1529,Burton Bradstock,,United Kingdom,GBR,Europe,50.703851,-2.728207,0.0,682.0,67215293.0,3.2,0.0,171.0,40.6,35.1,0.0,[JjqRxVV5X7Q],[[0]],[[1912]],[[2064]],[0],[29042022],[30],[UCBcVQr-07MH-p9e2kRTdB3A]
 1530,Bridport,,United Kingdom,GBR,Europe,50.733785,-2.7589005,0.0,13737.0,67215293.0,3.2,0.0,171.0,40.6,35.1,0.0,[JjqRxVV5X7Q],[[0]],[[2146]],[[2288]],[0],[29042022],[30],[UCBcVQr-07MH-p9e2kRTdB3A]
 1531,Chideock,,United Kingdom,GBR,Europe,50.7324097,-2.8190687,0.0,686.0,67215293.0,3.2,0.0,171.0,40.6,35.1,0.0,[JjqRxVV5X7Q],[[0]],[[2387]],[[2587]],[0],[29042022],[30],[UCBcVQr-07MH-p9e2kRTdB3A]
@@ -1699,3 +1699,4 @@ id,city,state,country,iso3,continent,lat,lon,gmp,population_city,population_coun
 1698,Perry,MO,United States,USA,North America,37.7107349,-89.8430248,0.0,10455.0,329484123.0,12.7,0.0,170.0,38.5,41.4,0.0,[1wNgAtKomC8],"[[0,0]]","[[2197,2624]]","[[2334,2694]]",[0],[14052015],[30],[UCvXBX22haZ_duNMSo9Bs4EA]
 1699,Bismarck,ND,United States,USA,North America,46.808327,-100.783739,0.0,75092.0,329484123.0,12.7,0.0,170.0,38.5,41.4,0.0,[z94BH4uSj7k],[[0]],[[0]],[[1805]],[0],[06072021],[30],[UCcNOhWjBEx6OjoDUCdevfVA]
 1700,Jackson,GA,United States,USA,North America,34.1282559,-83.5753386,0.0,153701.0,329484123.0,12.7,0.0,170.0,38.5,41.4,0.0,[mMY5Ma-FLwU],[[0]],[[0]],[[709]],[0],[09122022],[30],[UC-ZnfVaa54FcjzRphhrPWZw]
+1701,Alicante,,Spain,ESP,Europe,38.3436365,-0.4881708,0.0,334757,47351567,3.9,99,169,46.3,34.7,0.0,[jUp1oLkZgxw],[[0]],[[98]],[[2808]],[0],[18042022],[30],[UCOTltJnsvy8V9ku46nARF6w]
