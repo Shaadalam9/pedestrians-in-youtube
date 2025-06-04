@@ -1703,4 +1703,5 @@ id,city,state,country,iso3,continent,lat,lon,gmp,population_city,population_coun
 1702,Puerto de la cruz,,Spain,ESP,Europe,28.4159024,-16.5532956,0.0,32219.0,47351567.0,3.9,99.0,169.0,46.3,34.7,0.0,"[f9FZ4ZRQT1I,1wyIDVTprVs]","[[0], [0]]","[[7], [1]]","[[1875], [1498]]","[3,0]","[3052023,6052024]","[30,30]","[UCux6mFOpqP60sQp3WLY62Ug,UCux6mFOpqP60sQp3WLY62Ug]"
 1703,Los Cristianos,,Spain,ESP,Europe,28.0526298,-16.717,0.0,23.0,47351567.0,3.9,99.0,169.0,46.3,34.7,0.0,[40HLhELXXOw],[[0]],[[16]],[[2910]],[0],[19122021],[30],[UCPl4eMC1vwm1NIfV82LNPcw]
 1704,Tenerife,,Spain,ESP,Europe,28.2935785,-16.6214471,0.0,204856.0,47351567.0,3.9,99.0,169.0,46.3,34.7,0.0,[kmXQiP9RQxA],[[0]],[[1]],[[2671]],[0],[23072020],[30],[UCH-Ewlw8HyZrvSdGxgf0PQw]
-1705,Puerto de La Cruz,,Spain,ESP,Europe,28.4159024,-16.5532956,0.0,32219,47351567,3.9,99,169,46.3,34.7,0.0,[ac6bk1cuM2g],[[0]],[[10]],[[1382]],[0],[01022021],[30],[UCg1sAFKjbgemJnIODXe_2BQ]
+1705,Puerto de La Cruz,,Spain,ESP,Europe,28.4159024,-16.5532956,0.0,32219.0,47351567.0,3.9,99.0,169.0,46.3,34.7,0.0,[ac6bk1cuM2g],[[0]],[[10]],[[1382]],[0],[01022021],[30],[UCg1sAFKjbgemJnIODXe_2BQ]
+1706,La Oratava,,Spain,ESP,Europe,0.0,0.0,0.0,42546.0,47351567.0,3.9,99.0,169.0,46.3,34.7,0.0,[Cdxvatltv8k],"[[0, 0]]","[[7, 7]]","[[1166, 1163]]",[0],[27012021],[30],[UCg1sAFKjbgemJnIODXe_2BQ]
