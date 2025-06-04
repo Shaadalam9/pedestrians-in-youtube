@@ -1706,4 +1706,4 @@ id,city,state,country,iso3,continent,lat,lon,gmp,population_city,population_coun
 1705,Puerto de La Cruz,,Spain,ESP,Europe,28.4159024,-16.5532956,0.0,32219.0,47351567.0,3.9,99.0,169.0,46.3,34.7,0.0,[ac6bk1cuM2g],[[0]],[[10]],[[1382]],[0],[01022021],[30],[UCg1sAFKjbgemJnIODXe_2BQ]
 1706,La Oratava,,Spain,ESP,Europe,0.0,0.0,0.0,42546.0,47351567.0,3.9,99.0,169.0,46.3,34.7,0.0,[Cdxvatltv8k],"[[0, 0]]","[[7, 7]]","[[1166, 1163]]",[0],[27012021],[30],[UCg1sAFKjbgemJnIODXe_2BQ]
 1707,Puerto de Santiago,,Spain,ESP,Europe,28.2379511,-16.8408365,0.0,600.0,47351567.0,3.9,99.0,169.0,46.3,34.7,7.69,[T_BNbPlskP0],[[0]],[[251]],[[1337]],[0],[14012021],[30],[UCzzGsm1Z2TAvUAUO4JDm4Zw]
-1708,Santa Cruz,,Spain,ESP,Europe,28.467178,-16.2507843,0.0,204856,47351567,3.9,99,169,46.3,34.7,8.93,[EVkt_5s7uMo],[[0]],[[8]],[[944]],[0],[31052021],[30],[UCoQLymKupvDo7QJbryaeDiA]
+1708,Santa Cruz,,Spain,ESP,Europe,28.467178,-16.2507843,0.0,204856.0,47351567.0,3.9,99.0,169.0,46.3,34.7,8.93,"[EVkt_5s7uMo,qW7DcJZa_N0]","[[0], [0]]","[[8], [8]]","[[944], [537]]","[0,0]","[31052021,6022021]","[30,30]","[UCoQLymKupvDo7QJbryaeDiA,UC3Au_dJEQdVd4sEgVkI_eJQ]"
