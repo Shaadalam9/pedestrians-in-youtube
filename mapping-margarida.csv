@@ -1721,4 +1721,5 @@ id,city,state,country,iso3,continent,lat,lon,gmp,population_city,population_coun
 1720,Santa Cruz de Tenerife,,Spain,ESP,Europe,28.467178,-16.2507843,0.0,204856.0,47351567.0,3.9,99.0,169.0,46.3,34.7,12.73,"[axT0Y8oeOSg,Ursi0ZIeI1k]","[[0], [0]]","[[20], [1]]","[[1721], [2483]]","[0,0]","[7022021,4012021]","[30,30]","[UC3Au_dJEQdVd4sEgVkI_eJQ,UCzzGsm1Z2TAvUAUO4JDm4Zw]"
 1721,Bahia San Antonio Ibiza,,Spain,ESP,Europe,38.9782563,1.3071859,0.0,0.0,47351567.0,3.9,99.0,169.0,46.3,34.7,0.0,[B2V8IEn2L5M],[[0]],[[9]],[[1355]],[0],[19102022],[30],[UCIQ546tvdMxkdeyG7_FR8Tg]
 1722,Portalegre,,Portugal,PRT,Europe,39.290734,-7.439315,0.0,127018.0,10305564.0,8.2,96.78,168.0,46.0,33.5,0.0,[etLuK_vYh94],[[0]],[[151]],[[1824]],[0],[15042023],[30],[UCjHIDjcJxVVRW4VOIG7g8xA]
-1723,Santa Maria da Feira,,Portugal,PRT,Europe,40.9254179,-8.5426688,0.0,139312,10305564,8.2,96.78,168,46.0,33.5,0.0,[OjqBbyBpn5g],[[0]],[[60]],[[941]],[0],[26052022],[30],[UCgIITpxLKjww_oSMEqz2pTQ]
+1723,Santa Maria da Feira,,Portugal,PRT,Europe,40.9254179,-8.5426688,0.0,139312.0,10305564.0,8.2,96.78,168.0,46.0,33.5,0.0,[OjqBbyBpn5g],[[0]],[[60]],[[941]],[0],[26052022],[30],[UCgIITpxLKjww_oSMEqz2pTQ]
+1724,Vila Franca de Xira,,Portugal,PRT,Europe,38.951399,-8.990249,0.0,137529,10305564,8.2,96.78,168,46.0,33.5,0.0,[rgKOkv-MqMc],[[0]],[[40]],[[1407]],[0],[28032023],[30],[UCjHIDjcJxVVRW4VOIG7g8xA]
