@@ -1717,4 +1717,5 @@ id,city,state,country,iso3,continent,lat,lon,gmp,population_city,population_coun
 1716,Sintra,,Portugal,PRT,Europe,38.79846,-9.3881,0.0,26193.0,10305564.0,8.2,96.78,168.0,46.0,33.5,41.94,"[Oac_2vPkXGs,ViY1eNfWQag]","[[0], [0]]","[[54], [388]]","[[1661], [1469]]","[0,0]","[29012022,6082020]","[30,30]","[UCjHIDjcJxVVRW4VOIG7g8xA,UCzzGsm1Z2TAvUAUO4JDm4Zw]"
 1717,Odemira,,Portugal,PRT,Europe,37.5976,-8.6422,0.0,26066.0,10305564.0,8.2,96.78,168.0,46.0,33.5,9.3,[WJnU9Ja-xuw],[[0]],[[24]],[[204]],[0],[18072020],[30],[UC-HzBzPbmLB2SeCO7PewN_w]
 1718,Guimarães,,Portugal,PRT,Europe,41.4417677,-8.2955712,0.0,40604.0,10305564.0,8.2,96.78,168.0,46.0,33.5,32.0,[-67zWKi4jHU],[[0]],[[5]],[[2473]],[0],[16102022],[30],[UCzoCpezqOeWkuai0HnKIo3g]
-1719,Mora de Toledo,,Spain,ESP,Europe,39.683223,-3.7727849,0.0,10554,47351567,3.9,99,169,46.3,34.7,0.0,[zkxNdIH40c8],[[0]],[[25]],[[1214]],[0],[15022021],[30],[UCg1sAFKjbgemJnIODXe_2BQ]
+1719,Mora de Toledo,,Spain,ESP,Europe,39.683223,-3.7727849,0.0,10554.0,47351567.0,3.9,99.0,169.0,46.3,34.7,0.0,[zkxNdIH40c8],[[0]],[[25]],[[1214]],[0],[15022021],[30],[UCg1sAFKjbgemJnIODXe_2BQ]
+1720,Santa Cruz de Tenerife,,Spain,ESP,Europe,28.467178,-16.2507843,0.0,204856,47351567,3.9,99,169,46.3,34.7,12.73,[axT0Y8oeOSg],[[0]],[[20]],[[1721]],[0],[07022021],[30],[UC3Au_dJEQdVd4sEgVkI_eJQ]
