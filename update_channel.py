@@ -59,7 +59,7 @@ if __name__ == "__main__":
         for vid, ch in zip(video_ids, channel_ids):
             if ch in [None, 'None', '', 'nan']:
                 ch_id = get_channel_id(vid)
-                updated_channels.append(ch_id if ch_id else None)
+                updated_channels.append(ch_id if ch_id else 'None')
             else:
                 updated_channels.append(ch)
 

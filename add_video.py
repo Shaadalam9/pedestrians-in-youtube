@@ -106,15 +106,20 @@ def form():
                 yt = YouTube(video_url)
                 video_id = yt.video_id
                 # get info of video
+                # todo: fetching upload date of video fails (with pytubefix?)
                 yt_upload_date = yt.publish_date
+                # in case getting upload date fails
+                # if not yt_upload_date:
+                #     yt_upload_date = 'None'
                 yt_channel = yt.channel_id
-                for n in range(6):
-                    try:
-                        yt_stream = yt.streams.filter(only_audio=True).first()
-                        yt_stream.download(output_path='_output')
-                        yt_title = yt.title
-                    except:  # noqa: E722
-                        continue
+                # todo: fetching title of video fails
+                # for n in range(6):
+                #     try:
+                #         yt_stream = yt.streams.filter(only_audio=True).first()
+                #         yt_stream.download(output_path='_output')
+                #         yt_title = yt.title
+                #     except:  # noqa: E722
+                #         continue
                 for n in range(6):
                     try:
                         yt_description = yt.initial_data["engagementPanels"][n]["engagementPanelSectionListRenderer"]["content"]["structuredDescriptionContentRenderer"]["items"][1]["expandableVideoDescriptionBodyRenderer"]["attributedDescriptionBodyText"]["content"]  # noqa: E501
@@ -243,15 +248,18 @@ def form():
                 video_id = yt.video_id
                 # get info of video
                 yt_upload_date = yt.publish_date
+                # in case getting upload date fails
+                # if not yt_upload_date:
+                #     yt_upload_date = 'None'
                 yt_channel = yt.channel_id
-                for n in range(6):
-                    try:
-                        yt_stream = yt.streams.filter(only_audio=True).first()
-                        yt_stream.download(output_path='_output')
-                        # getting title is not stable
-                        yt_title = yt.title
-                    except:  # noqa: E722
-                        continue
+                # for n in range(6):
+                #     try:
+                #         yt_stream = yt.streams.filter(only_audio=True).first()
+                #         yt_stream.download(output_path='_output')
+                #         # getting title is not stable
+                #         yt_title = yt.title
+                #     except:  # noqa: E722
+                #         continue
                 for n in range(6):
                     try:
                         yt_description = yt.initial_data["engagementPanels"][n]["engagementPanelSectionListRenderer"]["content"]["structuredDescriptionContentRenderer"]["items"][1]["expandableVideoDescriptionBodyRenderer"]["attributedDescriptionBodyText"]["content"]  # noqa: E501
@@ -266,7 +274,7 @@ def form():
                     yt_channel=yt_channel
                 )
 
-            # Validate Time of Day and End Time > Start Time
+            # Validation checks
             if any(t not in ['0', '1'] for t in time_of_day):
                 message = "Time of day must be either 0 or 1."
             elif any(v not in ['0', '1', '2', '3', '4', '5', '6', '7', '8'] for v in vehicle_type_video):
@@ -315,8 +323,12 @@ def form():
                         time_of_day_list.append([int(time_of_day[-1])])    # Append time of day as integer
                         start_time_list.append([int(start_time[-1])])      # Append start time as integer
                         end_time_list.append([int(end_time[-1])])          # Append end time as integer
-                        upload_date_list.append(int(upload_date_video))    # Append upload time as integer
-                        channel_list.append(channel_video)                 # Append channel
+                        # Append upload time as integer
+                        if upload_date_video != 'None' and upload_date_video is not None:
+                            upload_date_list.append(int(upload_date_video))
+                        else:
+                            upload_date_list.append(None)
+                        channel_list.append(channel_video)                 
                         fps_list.append(int(fps_video))                    # Append fps list as integer
                         vehicle_type_list.append(int(vehicle_type_video))  # Append vehicle type as integer
                     else:
@@ -325,15 +337,12 @@ def form():
                         time_of_day_list[video_index].append(int(time_of_day[-1]))  # Append new time of day
                         start_time_list[video_index].append(int(start_time[-1]))    # Append new start time
                         end_time_list[video_index].append(int(end_time[-1]))        # Append new end time
-                        if upload_date_video != 'None':
+                        if upload_date_video != 'None' and upload_date_video is not None:
                             upload_date_list[video_index] = int(upload_date_video)
                         else:
-                            upload_date_list[video_index] = upload_date_video
-                        if channel_video != 'None':
-                            channel_list[video_index] = channel_video
-                        else:
-                            channel_list[video_index] = channel_video
-                        fps_list[video_index] = float(fps_video)
+                            upload_date_list[video_index] = None
+                        channel_list[video_index] = channel_video
+                        fps_list[video_index] = int(fps_video)
                         vehicle_type_list[video_index] = int(vehicle_type_video)
                     start_time_video = start_time_list[video_index]
                     end_time_video = end_time_list[video_index]
@@ -394,7 +403,7 @@ def form():
                     channel_list = channel_list.replace('\'', '')
                     channel_list = channel_list.replace(' ', '')
                     df.at[idx, 'channel'] = channel_list
-                    fps_list = [30.0 if str(x).strip().lower() == 'none' else float(x) for x in fps_list]
+                    fps_list = [30 if str(x).strip().lower() == 'none' else int(x) for x in fps_list]
                     fps_list = str(fps_list)
                     fps_list = fps_list.replace('\'', '')
                     fps_list = fps_list.replace(' ', '')
