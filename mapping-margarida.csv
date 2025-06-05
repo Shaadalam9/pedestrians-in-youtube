@@ -1723,4 +1723,5 @@ id,city,state,country,iso3,continent,lat,lon,gmp,population_city,population_coun
 1722,Portalegre,,Portugal,PRT,Europe,39.290734,-7.439315,0.0,127018.0,10305564.0,8.2,96.78,168.0,46.0,33.5,0.0,[etLuK_vYh94],[[0]],[[151]],[[1824]],[0],[15042023],[30],[UCjHIDjcJxVVRW4VOIG7g8xA]
 1723,Santa Maria da Feira,,Portugal,PRT,Europe,40.9254179,-8.5426688,0.0,139312.0,10305564.0,8.2,96.78,168.0,46.0,33.5,0.0,[OjqBbyBpn5g],[[0]],[[60]],[[941]],[0],[26052022],[30],[UCgIITpxLKjww_oSMEqz2pTQ]
 1724,Vila Franca de Xira,,Portugal,PRT,Europe,38.951399,-8.990249,0.0,137529.0,10305564.0,8.2,96.78,168.0,46.0,33.5,0.0,[rgKOkv-MqMc],[[0]],[[40]],[[1407]],[0],[28032023],[30],[UCjHIDjcJxVVRW4VOIG7g8xA]
-1725,Badajoz,,Spain,ESP,Europe,38.878187,-6.9701115,0.0,148334,47351567,3.9,99,169,46.3,34.7,0.0,[eWAvTvUb5R8],[[0]],[[42]],[[1892]],[0],[26102024],[30],[UC62XLEy4ZRTL2q8YzOJBDow]
+1725,Badajoz,,Spain,ESP,Europe,38.878187,-6.9701115,0.0,148334.0,47351567.0,3.9,99.0,169.0,46.3,34.7,0.0,[eWAvTvUb5R8],[[0]],[[42]],[[1892]],[0],[26102024],[30],[UC62XLEy4ZRTL2q8YzOJBDow]
+1726,Zaragoza,,Spain,ESP,Europe,41.6521342,-0.8809428,0.0,675301,47351567,3.9,99,169,46.3,34.7,0.0,[HlYeZD-qaM8],[[0]],[[13]],[[1680]],[0],[23032024],[30],[UCJQ4a1vGJz6v746ZmzzB0kg]
