@@ -120,12 +120,13 @@ class Analysis():
                     file_path = os.path.join(folder_path, file)
                     try:
                         logger.debug(f"Adding file {file_path} to dfs.")
+
                         # Read the CSV into a DataFrame
                         df = pd.read_csv(file_path)
 
                         # Optionally apply geometry correction if configured and not zero
                         use_geom_correction = common.get_configs("use_geometry_correction")
-                        if use_geom_correction:
+                        if use_geom_correction != 0:
                             df = geometry_class.reassign_ids_directional_cross_fix(
                                 df,
                                 distance_threshold=use_geom_correction,
@@ -1326,11 +1327,13 @@ class Analysis():
                 bgcolor='rgba(255,255,255,0.8)',  # Background color for visibility
                 # bordercolor="black",  # Border for visibility
             )
+
         fig.update_yaxes(
             tickfont=dict(size=14, color="black"),
             showticklabels=True,  # Ensure city names are visible
             ticklabelposition='inside',  # Move the tick labels inside the bars
         )
+
         fig.update_xaxes(
             tickangle=0,  # No rotation or small rotation for the x-axis
         )
@@ -1340,6 +1343,7 @@ class Analysis():
 
         # Final adjustments and display
         fig.update_layout(margin=dict(l=80, r=80, t=x_axis_title_height, b=x_axis_title_height))
+
         plots_class.save_plotly_figure(fig,
                                        "consolidated",
                                        height=TALL_FIG_HEIGHT*2,
@@ -1348,1359 +1352,6 @@ class Analysis():
                                        save_final=True,
                                        save_eps=False,
                                        save_png=False)
-
-    @staticmethod
-    def plot_speed_to_cross_by_alphabetical_order(df_mapping, font_size_captions=40, x_axis_title_height=110,
-                                                  legend_x=0.92, legend_y=0.015, legend_spacing=0.02):
-        logger.info("Plotting plot_speed_to_cross_by_alphabetical_order")
-        final_dict = {}
-        with open(file_results, 'rb') as file:
-            data_tuple = pickle.load(file)
-
-        avg_speed = data_tuple[25]
-
-        # Remove the cities where the values are "nan"
-        avg_speed = {key: value for key, value in avg_speed.items() if not (isinstance(
-            value, float) and math.isnan(value))}
-
-        # Check if 'speed' is valid
-        if avg_speed is None:
-            raise ValueError("'speed' returned None, please check the input data or calculations.")
-
-        # Now populate the final_dict with city-wise speed data
-        for city_condition, speed in tqdm(avg_speed.items()):
-            city, lat, long, condition = city_condition.split('_')
-
-            # Get the country from the previously stored city_country_map
-            country = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "country")
-            iso_code = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "iso3")
-
-            if country or iso_code is not None:
-                # Initialize the city's dictionary if not already present
-                if f'{city}_{lat}_{long}' not in final_dict:
-                    final_dict[f'{city}_{lat}_{long}'] = {"speed_0": None, "speed_1": None,
-                                                          "country": country, "iso": iso_code}
-
-                # Populate the corresponding speed based on the condition
-                final_dict[f'{city}_{lat}_{long}'][f"speed_{condition}"] = speed
-
-        # Extract unique cities
-        cities = list(set([key.split('_')[0] for key in final_dict.keys()]))
-
-        country_city_map = {}
-        for city, info in final_dict.items():
-            country = info['iso']
-            if country not in country_city_map:
-                country_city_map[country] = []
-            country_city_map[country].append(city)
-
-        # Flatten the city list based on country groupings
-        cities_ordered = []
-        for country in sorted(country_city_map.keys()):  # Sort countries alphabetically
-            cities_in_country = sorted(country_city_map[country])  # Sort cities within each country alphabetically
-            cities_ordered.extend(cities_in_country)
-
-        # Prepare data for day and night stacking
-        day_avg_speed = [final_dict[city]['speed_0'] for city in cities_ordered]
-        night_avg_speed = [final_dict[city]['speed_1'] for city in cities_ordered]
-
-        # Determine how many cities will be in each column
-        num_cities_per_col = len(cities_ordered) // 2 + len(cities_ordered) % 2  # Split cities into two groups
-
-        # Define a base height per row and calculate total figure height
-        TALL_FIG_HEIGHT = num_cities_per_col * BASE_HEIGHT_PER_ROW
-
-        fig = make_subplots(
-            rows=num_cities_per_col, cols=2,  # Two columns
-            vertical_spacing=0.0005,  # Reduce the vertical spacing
-            horizontal_spacing=0.01,  # Reduce horizontal spacing between columns
-            row_heights=[1.0] * (num_cities_per_col),
-        )
-
-        # Plot left column (first half of cities)
-        for i, city in enumerate(cities_ordered[:num_cities_per_col]):
-            city = wrapper_class.process_city_string(city, df_mapping)
-
-            # Row for speed (Day and Night)
-            row = i + 1
-            if day_avg_speed[i] is not None and night_avg_speed[i] is not None:
-                value = (day_avg_speed[i] + night_avg_speed[i])/2
-                fig.add_trace(go.Bar(
-                    x=[day_avg_speed[i]], y=[f'{city} {value:.2f}'], orientation='h',
-                    name=f"{city} speed during day", marker=dict(color=bar_colour_1), text=[''],
-                    textposition='inside', insidetextanchor='start', showlegend=False,
-                    textfont=dict(size=14, color='white')), row=row, col=1)
-                fig.add_trace(go.Bar(
-                    x=[night_avg_speed[i]], y=[f'{city} {value:.2f}'], orientation='h',
-                    name=f"{city} speed during night", marker=dict(color=bar_colour_2),
-                    text=[''], textposition='inside', showlegend=False), row=row, col=1)
-
-            elif day_avg_speed[i] is not None:  # Only day data available
-                value = day_avg_speed[i]
-                fig.add_trace(go.Bar(
-                    x=[day_avg_speed[i]], y=[f'{city} {value:.2f}'], orientation='h',
-                    name=f"{city} speed during day", marker=dict(color=bar_colour_1), text=[''],
-                    textposition='inside', insidetextanchor='start', showlegend=False,
-                    textfont=dict(size=14, color='white')), row=row, col=1)
-
-            elif night_avg_speed[i] is not None:  # Only night data available
-                value = night_avg_speed[i]
-                fig.add_trace(go.Bar(
-                    x=[night_avg_speed[i]], y=[f'{city} {value:.2f}'], orientation='h',
-                    name=f"{city} speed during night", marker=dict(color=bar_colour_2), text=[''],
-                    textposition='inside', insidetextanchor='start', showlegend=False,
-                    textfont=dict(size=14, color='white')), row=row, col=1)
-
-        for i, city in enumerate(cities_ordered[num_cities_per_col:]):
-            city = wrapper_class.process_city_string(city, df_mapping)
-            row = i + 1
-            idx = num_cities_per_col + i
-            if day_avg_speed[idx] is not None and night_avg_speed[idx] is not None:
-                value = (day_avg_speed[idx] + night_avg_speed[idx])/2
-                fig.add_trace(go.Bar(
-                    x=[day_avg_speed[idx]], y=[f'{city} {value:.2f}'], orientation='h',
-                    name=f"{city} speed during day", marker=dict(color=bar_colour_1), text=[''],
-                    textposition='inside', insidetextanchor='start', showlegend=False,
-                    textfont=dict(size=14, color='white')), row=row, col=2)
-                fig.add_trace(go.Bar(
-                    x=[night_avg_speed[idx]], y=[f'{city} {value:.2f}'], orientation='h',
-                    name=f"{city} speed during night", marker=dict(color=bar_colour_2),
-                    text=[''], textposition='inside', showlegend=False), row=row, col=2)
-
-            elif day_avg_speed[idx] is not None:
-                value = day_avg_speed[idx]
-                fig.add_trace(go.Bar(
-                    x=[day_avg_speed[idx]], y=[f'{city} {value:.2f}'], orientation='h',
-                    name=f"{city} speed during day", marker=dict(color=bar_colour_1), text=[''],
-                    textposition='inside', insidetextanchor='start', showlegend=False,
-                    textfont=dict(size=14, color='white')), row=row, col=2)
-
-            elif night_avg_speed[idx] is not None:
-                value = night_avg_speed[idx]
-                fig.add_trace(go.Bar(
-                    x=[night_avg_speed[idx]], y=[f'{city} {value:.2f}'], orientation='h',
-                    name=f"{city} speed during night", marker=dict(color=bar_colour_2), text=[''],
-                    textposition='inside', insidetextanchor='start', showlegend=False,
-                    textfont=dict(size=14, color='white')), row=row, col=2)
-
-        # Calculate the maximum value across all data to use as x-axis range
-        max_value_speed = max([
-            (day_avg_speed[i] if day_avg_speed[i] is not None else 0) +
-            (night_avg_speed[i] if night_avg_speed[i] is not None else 0)
-            for i in range(len(cities))
-        ]) if cities else 0
-
-        # Identify the last row for each column where the last city is plotted
-        last_row_left_column = num_cities_per_col * 2  # The last row in the left column
-        last_row_right_column = (len(cities) - num_cities_per_col) * 2  # The last row in the right column
-        first_row_left_column = 1  # The first row in the left column
-        first_row_right_column = 1  # The first row in the right column
-
-        # Update the loop for updating x-axes based on max values for speed and time
-        for i in range(1, num_cities_per_col * 2 + 1):  # Loop through all rows in both columns
-            # Update x-axis for the left column (top for speed, bottom for time)
-            if i % 2 == 1:  # Odd rows (representing speed)
-                fig.update_xaxes(
-                    range=[0, max_value_speed], row=i, col=1,
-                    showticklabels=(i == first_row_left_column),
-                    side='top', showgrid=False
-                )
-            else:  # Even rows (representing time)
-                fig.update_xaxes(
-                    range=[0, max_value_speed], row=i, col=1,
-                    showticklabels=(i == last_row_left_column),
-                    side='bottom', showgrid=False
-                )
-
-            # Update x-axis for the right column (top for speed, bottom for time)
-            if i % 2 == 1:  # Odd rows (representing speed)
-                fig.update_xaxes(
-                    range=[0, max_value_speed], row=i, col=2,  # Use speed max value for top axis
-                    showticklabels=(i == first_row_right_column),
-                    side='top', showgrid=False
-                )
-            else:  # Even rows (representing time)
-                fig.update_xaxes(
-                    range=[0, max_value_speed], row=i, col=2,  # Use time max value for bottom axis
-                    showticklabels=(i == last_row_right_column),
-                    side='bottom', showgrid=False
-                )
-
-        # Set the x-axis labels (title_text) only for the last row and the first row
-        fig.update_xaxes(
-            title=dict(text="Mean speed of crossing (in m/s)", font=dict(size=font_size_captions)),
-            tickfont=dict(size=font_size_captions),
-            ticks='outside',
-            ticklen=10,
-            tickwidth=2,
-            tickcolor='black',
-            row=1,
-            col=1
-        )
-
-        fig.update_xaxes(
-            title=dict(text="Mean speed of crossing (in m/s)", font=dict(size=font_size_captions)),
-            tickfont=dict(size=font_size_captions),
-            ticks='outside',
-            ticklen=10,
-            tickwidth=2,
-            tickcolor='black',
-            row=1,
-            col=2
-        )
-
-        # Update both y-axes (for left and right columns) to hide the tick labels
-        fig.update_yaxes(showticklabels=False)
-
-        # Ensure no gridlines are shown on x-axes and y-axes
-        fig.update_xaxes(showgrid=False)
-        fig.update_yaxes(showgrid=False)
-
-        # Update layout to hide the main legend and adjust margins
-        fig.update_layout(
-            plot_bgcolor='white', paper_bgcolor='white', barmode='stack',
-            height=TALL_FIG_HEIGHT, width=2480, showlegend=False,  # Hide the default legend
-            margin=dict(t=150, b=150), bargap=0, bargroupgap=0
-        )
-
-        # Manually add gridlines using `shapes`
-        x_grid_values = [0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8]  # Define the gridline positions on the x-axis
-        for x in x_grid_values:
-            fig.add_shape(
-                type="line",
-                x0=x, y0=0, x1=x, y1=1,  # Set the position of the gridlines
-                xref='x', yref='paper',  # Ensure gridlines span the whole chart (yref='paper' spans full height)
-                line=dict(color="darkgray", width=1),  # Customize the appearance of the gridlines
-                layer="above"  # Draw the gridlines above the bars
-            )
-
-        # Manually add gridlines using `shapes` for the right column (x-axis 'x2')
-        for x in x_grid_values:
-            fig.add_shape(
-                type="line",
-                x0=x, y0=0, x1=x, y1=1,  # Set the position of the gridlines
-                xref='x2', yref='paper',  # Apply to right column (x-axis 'x2')
-                line=dict(color="darkgray", width=1),  # Customize the appearance of the gridlines
-                layer="above"  # Draw the gridlines above the bars
-            )
-
-        # Define the legend items
-        legend_items = [
-            {"name": "Day", "color": bar_colour_1},
-            {"name": "Night", "color": bar_colour_2},
-        ]
-
-        # Add the vertical legends at the top and bottom
-        plots_class.add_vertical_legend_annotations(fig, legend_items,
-                                                    x_position=legend_x,
-                                                    y_start=legend_y,
-                                                    spacing=legend_spacing,
-                                                    font_size=font_size_captions)
-
-        # Add a box around the first column (left side)
-        fig.add_shape(
-            type="rect", xref="paper", yref="paper",
-            x0=0, y0=1, x1=0.495, y1=0.0,
-            line=dict(color="black", width=2)  # Black border for the box
-        )
-
-        # Add a box around the second column (right side)
-        fig.add_shape(
-            type="rect", xref="paper", yref="paper",
-            x0=0.505, y0=1, x1=1, y1=0.0,
-            line=dict(color="black", width=2)  # Black border for the box
-        )
-
-        # Create an ordered list of unique countries based on the cities in final_dict
-        country_city_map = {}
-        for city, info in final_dict.items():
-            country = info['iso']
-            if country not in country_city_map:
-                country_city_map[country] = []
-            country_city_map[country].append(city)
-
-        # Split cities into left and right columns
-        left_column_cities = cities_ordered[:num_cities_per_col]
-        right_column_cities = cities_ordered[num_cities_per_col:]
-
-        # Adjust x positioning for the left and right columns
-        x_position_left = 0.0  # Position for the left column
-        x_position_right = 1.0  # Position for the right column
-        font_size = FLAG_SIZE  # Font size for visibility
-
-        # Initialize variables for dynamic y positioning for both columns
-        current_row_left = 1  # Start from the first row for the left column
-        current_row_right = 1  # Start from the first row for the right column
-        y_position_map_left = {}  # Store y positions for each country (left column)
-        y_position_map_right = {}  # Store y positions for each country (right column)
-
-        # Calculate the y positions dynamically for the left column
-        for city in left_column_cities:
-            country = final_dict[city]['iso']
-
-            if country not in y_position_map_left:  # Add the country label once per country
-                y_position_map_left[country] = 1 - (current_row_left - 1) / ((len(left_column_cities)-1.12) * 2)
-
-            current_row_left += 2  # Increment the row for each city (speed and time take two rows)
-
-        # Calculate the y positions dynamically for the right column
-        for city in right_column_cities:
-            country = final_dict[city]['iso']
-
-            if country not in y_position_map_right:  # Add the country label once per country
-                y_position_map_right[country] = 1 - (current_row_right - 1) / ((len(right_column_cities)-1.12) * 2)
-
-            current_row_right += 2  # Increment the row for each city (speed and time take two rows)
-
-        # Add annotations for country names dynamically for the left column
-        for country, y_position in y_position_map_left.items():
-            iso2 = wrapper_class.iso3_to_iso2(country)
-            country = country + wrapper_class.iso2_to_flag(iso2)
-            fig.add_annotation(
-                x=x_position_left,  # Left column x position
-                y=y_position,  # Calculated y position based on the city order
-                xref="paper", yref="paper",
-                text=country,  # Country name
-                showarrow=False,
-                font=dict(size=font_size, color="black"),
-                xanchor='right',
-                align='right',
-                bgcolor='rgba(255,255,255,0.8)',  # Background color for visibility
-                # bordercolor="black",  # Border for visibility
-            )
-
-        # Add annotations for country names dynamically for the right column
-        for country, y_position in y_position_map_right.items():
-            iso2 = wrapper_class.iso3_to_iso2(country)
-            country = country + wrapper_class.iso2_to_flag(iso2)
-            fig.add_annotation(
-                x=x_position_right,  # Right column x position
-                y=y_position,  # Calculated y position based on the city order
-                xref="paper", yref="paper",
-                text=country,  # Country name
-                showarrow=False,
-                font=dict(size=font_size, color="black"),
-                xanchor='left',
-                align='left',
-                bgcolor='rgba(255,255,255,0.8)',  # Background color for visibility
-                # bordercolor="black",  # Border for visibility
-            )
-        fig.update_yaxes(
-            tickfont=dict(size=TEXT_SIZE, color="black"),
-            showticklabels=True,  # Ensure city names are visible
-            ticklabelposition='inside',  # Move the tick labels inside the bars
-        )
-        fig.update_xaxes(
-            tickangle=0,  # No rotation or small rotation for the x-axis
-        )
-
-        # update font family
-        fig.update_layout(font=dict(family=common.get_configs('font_family')))
-
-        # Final adjustments and display
-        fig.update_layout(margin=dict(l=80, r=80, t=x_axis_title_height, b=10))
-        plots_class.save_plotly_figure(fig=fig,
-                                       filename="crossing_speed_alphabetical",
-                                       width=2480,
-                                       height=TALL_FIG_HEIGHT,
-                                       scale=SCALE,
-                                       save_eps=False,
-                                       save_final=True)
-
-    @staticmethod
-    def plot_time_to_start_cross_by_alphabetical_order(df_mapping, font_size_captions=40, x_axis_title_height=110,
-                                                       legend_x=0.92, legend_y=0.02, legend_spacing=0.01):
-        logger.info("Plotting plot_time_to_start_cross_by_alphabetical_order.")
-        final_dict = {}
-        with open(file_results, 'rb') as file:
-            data_tuple = pickle.load(file)
-
-        avg_time = data_tuple[24]
-
-        # Remove the cities where the values are "nan"
-        avg_time = {key: value for key, value in avg_time.items() if not (isinstance(
-            value, float) and math.isnan(value))}
-
-        # Check if both 'speed' and 'time' are valid dictionaries
-        if avg_time is None:
-            raise ValueError("'time' returned None, please check the input data or calculations.")
-
-        # Now populate the final_dict with city-wise data
-        for city_condition, time in tqdm(avg_time.items()):
-            city, lat, long, condition = city_condition.split('_')
-
-            # Get the country from the previously stored city_country_map
-            country = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "country")
-            iso_code = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "iso3")
-
-            if country or iso_code is not None:
-                # Initialise the city's dictionary if not already present
-                if f'{city}_{lat}_{long}' not in final_dict:
-                    final_dict[f'{city}_{lat}_{long}'] = {"time_0": None, "time_1": None,
-                                                          "country": country, "iso": iso_code}
-                # Populate the corresponding time based on the condition
-                final_dict[f'{city}_{lat}_{long}'][f"time_{condition}"] = time
-
-        # Extract unique cities
-        cities = list(set([key.split('_')[0] for key in final_dict.keys()]))
-
-        country_city_map = {}
-        for city, info in final_dict.items():
-            country = info['iso']
-            if country not in country_city_map:
-                country_city_map[country] = []
-            country_city_map[country].append(city)
-
-        # Flatten the city list based on country groupings
-        cities_ordered = []
-        for country in sorted(country_city_map.keys()):  # Sort countries alphabetically
-            cities_in_country = sorted(country_city_map[country])  # Sort cities within each country alphabetically
-            cities_ordered.extend(cities_in_country)
-
-        # Prepare data for day and night stacking
-        day_time_dict = [final_dict[city]['time_0'] for city in cities_ordered]
-        night_time_dict = [final_dict[city]['time_1'] for city in cities_ordered]
-
-        # Determine how many cities will be in each column
-        num_cities_per_col = len(cities_ordered) // 2 + len(cities_ordered) % 2  # Split cities into two groups
-        # Define a base height per row and calculate total figure height
-        TALL_FIG_HEIGHT = num_cities_per_col * BASE_HEIGHT_PER_ROW
-
-        fig = make_subplots(
-            rows=num_cities_per_col, cols=2,  # Two columns
-            vertical_spacing=0.0005,  # Reduce the vertical spacing
-            horizontal_spacing=0.01,  # Reduce horizontal spacing between columns
-            row_heights=[1.0] * (num_cities_per_col),
-        )
-
-        # Plot left column (first half of cities)
-        for i, city in enumerate(cities_ordered[:num_cities_per_col]):
-            city = wrapper_class.process_city_string(city, df_mapping)
-
-            # Row for time (Day and Night)
-            row = i + 1
-            if day_time_dict[i] is not None and night_time_dict[i] is not None:
-                value = (day_time_dict[i] + night_time_dict[i])/2
-                fig.add_trace(go.Bar(
-                    x=[day_time_dict[i]], y=[f'{city} {value:.2f}'], orientation='h',
-                    name=f"{city} time during day", marker=dict(color=bar_colour_1), text=[''],
-                    textposition='inside', insidetextanchor='start', showlegend=False,
-                    textfont=dict(size=14, color='white')), row=row, col=1)
-                fig.add_trace(go.Bar(
-                    x=[night_time_dict[i]], y=[f'{city} {value:.2f}'], orientation='h',
-                    name=f"{city} time during night", marker=dict(color=bar_colour_2), text=[''],
-                    textposition='inside', showlegend=False), row=row, col=1)
-
-            elif day_time_dict[i] is not None:  # Only day time data available
-                value = day_time_dict[i]
-                fig.add_trace(go.Bar(
-                    x=[day_time_dict[i]], y=[f'{city} {value:.2f}'], orientation='h',
-                    name=f"{city} time during day", marker=dict(color=bar_colour_1), text=[''],
-                    textposition='inside', insidetextanchor='start', showlegend=False,
-                    textfont=dict(size=14, color='white')), row=row, col=1)
-
-            elif night_time_dict[i] is not None:  # Only night time data available
-                value = night_time_dict[i]
-                fig.add_trace(go.Bar(
-                    x=[night_time_dict[i]], y=[f'{city} {value:.2f}'], orientation='h',
-                    name=f"{city} time during night", marker=dict(color=bar_colour_2), text=[''],
-                    textposition='inside', insidetextanchor='start', showlegend=False,
-                    textfont=dict(size=14, color='white')), row=row, col=1)
-
-        # Similarly for the right column
-        for i, city in enumerate(cities_ordered[num_cities_per_col:]):
-            city = wrapper_class.process_city_string(city, df_mapping)
-
-            row = i + 1
-            idx = num_cities_per_col + i
-            if day_time_dict[idx] is not None and night_time_dict[idx] is not None:
-                value = (day_time_dict[idx] + day_time_dict[idx])/2
-                fig.add_trace(go.Bar(
-                    x=[day_time_dict[idx]], y=[f'{city} {value:.2f}'], orientation='h',
-                    name=f"{city} time during day", marker=dict(color=bar_colour_1), text=[''],
-                    textposition='inside', insidetextanchor='start', showlegend=False,
-                    textfont=dict(size=14, color='white')), row=row, col=2)
-                fig.add_trace(go.Bar(
-                    x=[night_time_dict[idx]], y=[f'{city} {value:.2f}'], orientation='h',
-                    name=f"{city} time during night", marker=dict(color=bar_colour_2), text=[''],
-                    textposition='inside', showlegend=False), row=row, col=2)
-
-            elif day_time_dict[idx] is not None:  # Only day time data available
-                value = day_time_dict[idx]
-                fig.add_trace(go.Bar(
-                    x=[day_time_dict[idx]], y=[f'{city} {value:.2f}'], orientation='h',
-                    name=f"{city} time during day", marker=dict(color=bar_colour_1), text=[''],
-                    textposition='inside', insidetextanchor='start', showlegend=False,
-                    textfont=dict(size=14, color='white')), row=row, col=2)
-
-            elif night_time_dict[idx] is not None:  # Only night time data available
-                value = night_time_dict[idx]
-                fig.add_trace(go.Bar(
-                    x=[night_time_dict[idx]], y=[f'{city} {value:.2f}'], orientation='h',
-                    name=f"{city} time during night", marker=dict(color=bar_colour_2), text=[''],
-                    textposition='inside', insidetextanchor='start', showlegend=False,
-                    textfont=dict(size=14, color='white')), row=row, col=2)
-
-        # Calculate the maximum value across all data to use as x-axis range
-        max_value_time = max([
-            (day_time_dict[i] if day_time_dict[i] is not None else 0) +
-            (night_time_dict[i] if night_time_dict[i] is not None else 0)
-            for i in range(len(cities))
-        ]) if cities else 0
-
-        # Identify the last row for each column where the last city is plotted
-        last_row_left_column = num_cities_per_col * 2  # The last row in the left column
-        last_row_right_column = (len(cities) - num_cities_per_col) * 2  # The last row in the right column
-        first_row_left_column = 1  # The first row in the left column
-        first_row_right_column = 1  # The first row in the right column
-
-        # Update the loop for updating x-axes based on max values for speed and time
-        for i in range(1, num_cities_per_col * 2 + 1):  # Loop through all rows in both columns
-            # Update x-axis for the left column (top for speed, bottom for time)
-            if i % 2 == 1:  # Odd rows (representing speed)
-                fig.update_xaxes(
-                    range=[0, max_value_time], row=i, col=1,
-                    showticklabels=(i == first_row_left_column),
-                    side='top', showgrid=False
-                )
-            else:  # Even rows (representing time)
-                fig.update_xaxes(
-                    range=[0, max_value_time], row=i, col=1,
-                    showticklabels=(i == last_row_left_column),
-                    side='bottom', showgrid=False
-                )
-
-            # Update x-axis for the right column (top for speed, bottom for time)
-            if i % 2 == 1:  # Odd rows (representing speed)
-                fig.update_xaxes(
-                    range=[0, max_value_time], row=i, col=2,  # Use speed max value for top axis
-                    showticklabels=(i == first_row_right_column),
-                    side='top', showgrid=False
-                )
-            else:  # Even rows (representing time)
-                fig.update_xaxes(
-                    range=[0, max_value_time], row=i, col=2,  # Use time max value for bottom axis
-                    showticklabels=(i == last_row_right_column),
-                    side='bottom', showgrid=False
-                )
-
-        # Set the x-axis labels (title_text) only for the last row and the first row
-        fig.update_xaxes(
-            title=dict(text="Mean time to start crossing (in s)", font=dict(size=font_size_captions)),
-            tickfont=dict(size=font_size_captions),
-            ticks='outside',
-            ticklen=10,
-            tickwidth=2,
-            tickcolor='black',
-            row=1,
-            col=1
-        )
-
-        fig.update_xaxes(
-            title=dict(text="Mean time to start crossing (in s)", font=dict(size=font_size_captions)),
-            tickfont=dict(size=font_size_captions),
-            ticks='outside',
-            ticklen=10,
-            tickwidth=2,
-            tickcolor='black',
-            row=1,
-            col=2
-        )
-
-        # Update both y-axes (for left and right columns) to hide the tick labels
-        fig.update_yaxes(showticklabels=False)
-
-        # Ensure no gridlines are shown on x-axes and y-axes
-        fig.update_xaxes(showgrid=False)
-        fig.update_yaxes(showgrid=False)
-
-        # Update layout to hide the main legend and adjust margins
-        fig.update_layout(
-            plot_bgcolor='white', paper_bgcolor='white', barmode='stack',
-            height=TALL_FIG_HEIGHT, width=2480, showlegend=False,  # Hide the default legend
-            margin=dict(t=150, b=150), bargap=0, bargroupgap=0
-        )
-
-        # Manually add gridlines using `shapes`
-        x_grid_values = [2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22]  # Define the gridline positions on the x-axis
-        for x in x_grid_values:
-            fig.add_shape(
-                type="line",
-                x0=x, y0=0, x1=x, y1=1,  # Set the position of the gridlines
-                xref='x', yref='paper',  # Ensure gridlines span the whole chart (yref='paper' spans full height)
-                line=dict(color="darkgray", width=1),  # Customize the appearance of the gridlines
-                layer="above"  # Draw the gridlines above the bars
-            )
-
-        # Manually add gridlines using `shapes` for the right column (x-axis 'x2')
-        for x in x_grid_values:
-            fig.add_shape(
-                type="line",
-                x0=x, y0=0, x1=x, y1=1,  # Set the position of the gridlines
-                xref='x2', yref='paper',  # Apply to right column (x-axis 'x2')
-                line=dict(color="darkgray", width=1),  # Customize the appearance of the gridlines
-                layer="above"  # Draw the gridlines above the bars
-            )
-
-        # Define the legend items
-        legend_items = [
-            {"name": "Day", "color": bar_colour_1},
-            {"name": "Night", "color": bar_colour_2},
-        ]
-
-        # Add the vertical legends at the top and bottom
-        plots_class.add_vertical_legend_annotations(fig, legend_items, x_position=legend_x, y_start=legend_y,
-                                                    spacing=legend_spacing, font_size=font_size_captions)
-
-        # Add a box around the first column (left side)
-        fig.add_shape(
-            type="rect", xref="paper", yref="paper",
-            x0=0, y0=1, x1=0.495, y1=0.0,
-            line=dict(color="black", width=2)  # Black border for the box
-        )
-
-        # Add a box around the second column (right side)
-        fig.add_shape(
-            type="rect", xref="paper", yref="paper",
-            x0=0.505, y0=1, x1=1, y1=0.0,
-            line=dict(color="black", width=2)  # Black border for the box
-        )
-
-        # Create an ordered list of unique countries based on the cities in final_dict
-        country_city_map = {}
-        for city, info in final_dict.items():
-            country = info['iso']
-            if country not in country_city_map:
-                country_city_map[country] = []
-            country_city_map[country].append(city)
-
-        # Split cities into left and right columns
-        left_column_cities = cities_ordered[:num_cities_per_col]
-        right_column_cities = cities_ordered[num_cities_per_col:]
-
-        # Adjust x positioning for the left and right columns
-        x_position_left = 0.0  # Position for the left column
-        x_position_right = 1.0  # Position for the right column
-        font_size = FLAG_SIZE  # Font size for visibility
-
-        # Initialize variables for dynamic y positioning for both columns
-        current_row_left = 1  # Start from the first row for the left column
-        current_row_right = 1  # Start from the first row for the right column
-        y_position_map_left = {}  # Store y positions for each country (left column)
-        y_position_map_right = {}  # Store y positions for each country (right column)
-
-        # Calculate the y positions dynamically for the left column
-        for city in left_column_cities:
-            country = final_dict[city]['iso']
-
-            if country not in y_position_map_left:  # Add the country label once per country
-                y_position_map_left[country] = 1 - (current_row_left - 1) / ((len(left_column_cities)-1.12) * 2)
-
-            current_row_left += 2  # Increment the row for each city (speed and time take two rows)
-
-        # Calculate the y positions dynamically for the right column
-        for city in right_column_cities:
-            country = final_dict[city]['iso']
-
-            if country not in y_position_map_right:  # Add the country label once per country
-                y_position_map_right[country] = 1 - (current_row_right - 1) / ((len(right_column_cities)-1.12) * 2)
-
-            current_row_right += 2  # Increment the row for each city (speed and time take two rows)
-
-        # Add annotations for country names dynamically for the left column
-        for country, y_position in y_position_map_left.items():
-            iso2 = wrapper_class.iso3_to_iso2(country)
-            country = country + wrapper_class.iso2_to_flag(iso2)
-            fig.add_annotation(
-                x=x_position_left,  # Left column x position
-                y=y_position,  # Calculated y position based on the city order
-                xref="paper", yref="paper",
-                text=country,  # Country name
-                showarrow=False,
-                font=dict(size=font_size, color="black"),
-                xanchor='right',
-                align='right',
-                bgcolor='rgba(255,255,255,0.8)',  # Background color for visibility
-                # bordercolor="black",  # Border for visibility
-            )
-
-        # Add annotations for country names dynamically for the right column
-        for country, y_position in y_position_map_right.items():
-            iso2 = wrapper_class.iso3_to_iso2(country)
-            country = country + wrapper_class.iso2_to_flag(iso2)
-            fig.add_annotation(
-                x=x_position_right,  # Right column x position
-                y=y_position,  # Calculated y position based on the city order
-                xref="paper", yref="paper",
-                text=country,  # Country name
-                showarrow=False,
-                font=dict(size=font_size, color="black"),
-                xanchor='left',
-                align='left',
-                bgcolor='rgba(255,255,255,0.8)',  # Background color for visibility
-                # bordercolor="black",  # Border for visibility
-            )
-        fig.update_yaxes(
-            tickfont=dict(size=TEXT_SIZE, color="black"),
-            showticklabels=True,  # Ensure city names are visible
-            ticklabelposition='inside',  # Move the tick labels inside the bars
-        )
-        fig.update_xaxes(
-            tickangle=0,  # No rotation or small rotation for the x-axis
-        )
-
-        # update font family
-        fig.update_layout(font=dict(family=common.get_configs('font_family')))
-
-        # Final adjustments and display
-        fig.update_layout(margin=dict(l=80, r=80, t=x_axis_title_height, b=10))
-        plots_class.save_plotly_figure(fig=fig,
-                                       filename="time_crossing_alphabetical",
-                                       width=2480,
-                                       height=TALL_FIG_HEIGHT,
-                                       scale=1,
-                                       save_eps=False,
-                                       save_final=True)
-
-    @staticmethod
-    def plot_speed_to_cross_by_average(df_mapping, font_size_captions=40, x_axis_title_height=150, legend_x=0.81,
-                                       legend_y=0.98, legend_spacing=0.02):
-        logger.info("Plotting plot_speed_to_cross_by_average.")
-        final_dict = {}
-        with open(file_results, 'rb') as file:
-            data_tuple = pickle.load(file)
-
-        avg_speed = data_tuple[25]
-
-        # Remove the cities where the values are "nan"
-        avg_speed = {key: value for key, value in avg_speed.items() if not (
-            isinstance(value, float) and math.isnan(value))}
-
-        # Check if 'speed' is valid
-        if avg_speed is None:
-            raise ValueError("'speed' returned None, please check the input data or calculations.")
-
-        # Now populate the final_dict with city-wise speed data
-        for city_condition, speed in tqdm(avg_speed.items()):
-            city, lat, long, condition = city_condition.split('_')
-
-            # Get the country from the previously stored city_country_map
-            country = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "country")
-            iso_code = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "iso3")
-
-            if country or iso_code is not None:
-                # Initialise the city's dictionary if not already present
-                if f"{city}_{lat}_{long}" not in final_dict:
-                    final_dict[f"{city}_{lat}_{long}"] = {"speed_0": None, "speed_1": None,
-                                                          "country": country, "iso": iso_code}
-                # Populate the corresponding speed based on the condition
-                final_dict[f"{city}_{lat}_{long}"][f"speed_{condition}"] = speed
-
-        # Sort cities by the sum of speed_0 and speed_1 values
-        cities_ordered = sorted(
-            final_dict.keys(),
-            key=lambda city: (final_dict[city]["speed_0"] or 0) + (
-                final_dict[city]["speed_1"] or 0), reverse=True)
-        # Extract unique cities
-        cities = list(set([key.split('_')[0] for key in final_dict.keys()]))
-
-        # Prepare data for day and night stacking
-        day_avg_speed = [final_dict[city]['speed_0'] for city in cities_ordered]
-        night_avg_speed = [final_dict[city]['speed_1'] for city in cities_ordered]
-
-        # Determine how many cities will be in each column
-        num_cities_per_col = len(cities_ordered) // 2 + len(cities_ordered) % 2  # Split cities into two groups
-        # Define a base height per row and calculate total figure height
-        TALL_FIG_HEIGHT = num_cities_per_col * BASE_HEIGHT_PER_ROW
-
-        fig = make_subplots(
-            rows=num_cities_per_col, cols=2,  # Two columns
-            vertical_spacing=0.0005,  # Reduce the vertical spacing
-            horizontal_spacing=0.01,  # Reduce horizontal spacing between columns
-            row_heights=[1.0] * (num_cities_per_col),
-        )
-
-        # Plot left column (first half of cities)
-        for i, city in enumerate(cities_ordered[:num_cities_per_col]):
-            city_new, lat, long = city.split('_')
-            iso_code = values_class.get_value(df_mapping, "city", city_new, "lat", float(lat), "iso3")
-            city = wrapper_class.process_city_string(city, df_mapping)
-
-            city = wrapper_class.iso2_to_flag(wrapper_class.iso3_to_iso2(iso_code)) + " " + city   # type: ignore
-
-            row = i + 1
-            if day_avg_speed[i] is not None and night_avg_speed[i] is not None:
-                value = (day_avg_speed[i] + night_avg_speed[i])/2
-                fig.add_trace(go.Bar(
-                    x=[day_avg_speed[i]], y=[f'{city} {value:.2f}'], orientation='h',
-                    name=f"{city} speed during day", marker=dict(color=bar_colour_1), text=[''],
-                    textposition='inside', insidetextanchor='start', showlegend=False,
-                    textfont=dict(size=14, color='white')), row=row, col=1)
-                fig.add_trace(go.Bar(
-                    x=[night_avg_speed[i]], y=[f'{city} {value:.2f}'], orientation='h',
-                    name=f"{city} speed during night", marker=dict(color=bar_colour_2),
-                    text=[''], textposition='inside', showlegend=False), row=row, col=1)
-
-            elif day_avg_speed[i] is not None:  # Only day data available
-                value = (day_avg_speed[i])/2
-                fig.add_trace(go.Bar(
-                    x=[day_avg_speed[i]], y=[f'{city} {value:.2f}'], orientation='h',
-                    name=f"{city} speed during day", marker=dict(color=bar_colour_1), text=[''],
-                    textposition='inside', insidetextanchor='start', showlegend=False,
-                    textfont=dict(size=14, color='white')), row=row, col=1)
-
-            elif night_avg_speed[i] is not None:  # Only night data available
-                value = (night_avg_speed[i])/2
-                fig.add_trace(go.Bar(
-                    x=[night_avg_speed[i]], y=[f'{city} {value:.2f}'], orientation='h',
-                    name=f"{city} speed during night", marker=dict(color=bar_colour_2),
-                    textposition='inside', insidetextanchor='start', showlegend=False,
-                    text=[''], textfont=dict(size=14, color='white')), row=row, col=1)
-
-        for i, city in enumerate(cities_ordered[num_cities_per_col:]):
-            city_new, lat, long = city.split('_')
-            iso_code = values_class.get_value(df_mapping, "city", city_new, "lat", float(lat), "iso3")
-            city = wrapper_class.process_city_string(city, df_mapping)
-
-            city = wrapper_class.iso2_to_flag(wrapper_class.iso3_to_iso2(iso_code)) + " " + city   # type: ignore
-
-            row = i + 1
-            idx = num_cities_per_col + i
-            if day_avg_speed[idx] is not None and night_avg_speed[idx] is not None:
-                value = (day_avg_speed[idx] + night_avg_speed[idx])/2
-                fig.add_trace(go.Bar(
-                    x=[day_avg_speed[idx]], y=[f'{city} {value:.2f}'], orientation='h',
-                    name=f"{city} speed during day", marker=dict(color=bar_colour_1), text=[''],
-                    textposition='inside', insidetextanchor='start', showlegend=False,
-                    textfont=dict(size=14, color='white')), row=row, col=2)
-                fig.add_trace(go.Bar(
-                    x=[night_avg_speed[idx]], y=[f'{city} {value:.2f}'], orientation='h',
-                    name=f"{city} speed during night", marker=dict(color=bar_colour_2),
-                    text=[''], textposition='inside', showlegend=False), row=row, col=2)
-
-            elif day_avg_speed[idx] is not None:
-                value = (day_avg_speed[idx])/2
-                fig.add_trace(go.Bar(
-                    x=[day_avg_speed[idx]], y=[f'{city} {value:.2f}'], orientation='h',
-                    name=f"{city} speed during day", marker=dict(color=bar_colour_1), text=[''],
-                    textposition='inside', insidetextanchor='start', showlegend=False,
-                    textfont=dict(size=14, color='white')), row=row, col=2)
-
-            elif night_avg_speed[idx] is not None:
-                value = (night_avg_speed[idx])/2
-                fig.add_trace(go.Bar(
-                    x=[night_avg_speed[idx]], y=[f'{city} {value:.2f}'], orientation='h',
-                    name=f"{city} speed during night", marker=dict(color=bar_colour_2),
-                    textposition='inside', insidetextanchor='start', showlegend=False,
-                    text=[''], textfont=dict(size=14, color='white')), row=row, col=2)
-
-        # Calculate the maximum value across all data to use as x-axis range
-        max_value_speed = max([
-            (day_avg_speed[i] if day_avg_speed[i] is not None else 0) +
-            (night_avg_speed[i] if night_avg_speed[i] is not None else 0)
-            for i in range(len(cities))
-        ]) if cities else 0
-
-        # Identify the last row for each column where the last city is plotted
-        last_row_left_column = num_cities_per_col * 2  # The last row in the left column
-        last_row_right_column = (len(cities) - num_cities_per_col) * 2  # The last row in the right column
-        first_row_left_column = 1  # The first row in the left column
-        first_row_right_column = 1  # The first row in the right column
-
-        # Update the loop for updating x-axes based on max values for speed and time
-        for i in range(1, num_cities_per_col * 2 + 1):  # Loop through all rows in both columns
-            # Update x-axis for the left column (top for speed, bottom for time)
-            if i % 2 == 1:  # Odd rows (representing speed)
-                fig.update_xaxes(
-                    range=[0, max_value_speed], row=i, col=1,
-                    showticklabels=(i == first_row_left_column),
-                    side='top', showgrid=False
-                )
-            else:  # Even rows (representing time)
-                fig.update_xaxes(
-                    range=[0, max_value_speed], row=i, col=1,
-                    showticklabels=(i == last_row_left_column),
-                    side='bottom', showgrid=False
-                )
-
-            # Update x-axis for the right column (top for speed, bottom for time)
-            if i % 2 == 1:  # Odd rows (representing speed)
-                fig.update_xaxes(
-                    range=[0, max_value_speed], row=i, col=2,  # Use speed max value for top axis
-                    showticklabels=(i == first_row_right_column),
-                    side='top', showgrid=False
-                )
-            else:  # Even rows (representing time)
-                fig.update_xaxes(
-                    range=[0, max_value_speed], row=i, col=2,  # Use time max value for bottom axis
-                    showticklabels=(i == last_row_right_column),
-                    side='bottom', showgrid=False
-                )
-
-        # Set the x-axis labels (title_text) only for the last row and the first row
-        fig.update_xaxes(
-            title=dict(text="Mean speed of crossing (in m/s)", font=dict(size=font_size_captions)),
-            tickfont=dict(size=font_size_captions),
-            ticks='outside',
-            ticklen=10,
-            tickwidth=2,
-            tickcolor='black',
-            row=1,
-            col=1
-        )
-
-        fig.update_xaxes(
-            title=dict(text="Mean speed of crossing (in m/s)", font=dict(size=font_size_captions)),
-            tickfont=dict(size=font_size_captions),
-            ticks='outside',
-            ticklen=10,
-            tickwidth=2,
-            tickcolor='black',
-            row=1,
-            col=2
-        )
-
-        # Update both y-axes (for left and right columns) to hide the tick labels
-        fig.update_yaxes(showticklabels=False)
-
-        # Ensure no gridlines are shown on x-axes and y-axes
-        fig.update_xaxes(showgrid=False)
-        fig.update_yaxes(showgrid=False)
-
-        # Update layout to hide the main legend and adjust margins
-        fig.update_layout(
-            plot_bgcolor='white', paper_bgcolor='white', barmode='stack',
-            height=TALL_FIG_HEIGHT, width=2480, showlegend=False,  # Hide the default legend
-            margin=dict(t=150, b=150), bargap=0, bargroupgap=0
-        )
-
-        # Manually add gridlines using `shapes`
-        x_grid_values = [0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8]  # Define the gridline positions on the x-axis
-        for x in x_grid_values:
-            fig.add_shape(
-                type="line",
-                x0=x, y0=0, x1=x, y1=1,  # Set the position of the gridlines
-                xref='x', yref='paper',  # Ensure gridlines span the whole chart (yref='paper' spans full height)
-                line=dict(color="darkgray", width=1),  # Customize the appearance of the gridlines
-                layer="above"  # Draw the gridlines above the bars
-            )
-
-        # Manually add gridlines using `shapes` for the right column (x-axis 'x2')
-        for x in x_grid_values:
-            fig.add_shape(
-                type="line",
-                x0=x, y0=0, x1=x, y1=1,  # Set the position of the gridlines
-                xref='x2', yref='paper',  # Apply to right column (x-axis 'x2')
-                line=dict(color="darkgray", width=1),  # Customize the appearance of the gridlines
-                layer="above"  # Draw the gridlines above the bars
-            )
-
-        # Define the legend items
-        legend_items = [
-            {"name": "Day", "color": bar_colour_1},
-            {"name": "Night", "color": bar_colour_2},
-        ]
-
-        # Add the vertical legends at the top and bottom
-        plots_class.add_vertical_legend_annotations(fig, legend_items,
-                                                    x_position=legend_x,
-                                                    y_start=legend_y,
-                                                    spacing=legend_spacing,
-                                                    font_size=font_size_captions)
-
-        # Add a box around the first column (left side)
-        fig.add_shape(
-            type="rect", xref="paper", yref="paper",
-            x0=0, y0=1, x1=0.495, y1=0.0,
-            line=dict(color="black", width=2)  # Black border for the box
-        )
-
-        # Add a box around the second column (right side)
-        fig.add_shape(
-            type="rect", xref="paper", yref="paper",
-            x0=0.505, y0=1, x1=1, y1=0.0,
-            line=dict(color="black", width=2)  # Black border for the box
-        )
-
-        # Create an ordered list of unique countries based on the cities in final_dict
-        country_city_map = {}
-        for city, info in final_dict.items():
-            country = info['iso']
-            if country not in country_city_map:
-                country_city_map[country] = []
-            country_city_map[country].append(city)
-
-        # Split cities into left and right columns
-        left_column_cities = cities_ordered[:num_cities_per_col]
-        right_column_cities = cities_ordered[num_cities_per_col:]
-
-        # Initialize variables for dynamic y positioning for both columns
-        current_row_left = 1  # Start from the first row for the left column
-        current_row_right = 1  # Start from the first row for the right column
-        y_position_map_left = {}  # Store y positions for each country (left column)
-        y_position_map_right = {}  # Store y positions for each country (right column)
-
-        # Calculate the y positions dynamically for the left column
-        for city in left_column_cities:
-            country = final_dict[city]['iso']
-
-            if country not in y_position_map_left:  # Add the country label once per country
-                y_position_map_left[country] = 1 - (current_row_left - 1) / (len(left_column_cities) * 2)
-
-            current_row_left += 2  # Increment the row for each city (speed and time take two rows)
-
-        # Calculate the y positions dynamically for the right column
-        for city in right_column_cities:
-            country = final_dict[city]['iso']
-
-            if country not in y_position_map_right:  # Add the country label once per country
-                y_position_map_right[country] = 1 - (current_row_right - 1) / (len(right_column_cities) * 2)
-
-            current_row_right += 2  # Increment the row for each city (speed and time take two rows)
-
-        fig.update_yaxes(
-            tickfont=dict(size=TEXT_SIZE, color="black"),
-            showticklabels=True,  # Ensure city names are visible
-            ticklabelposition='inside',  # Move the tick labels inside the bars
-        )
-        fig.update_xaxes(
-            tickangle=0,  # No rotation or small rotation for the x-axis
-        )
-
-        # update font family
-        fig.update_layout(font=dict(family=common.get_configs('font_family')))
-
-        # Final adjustments and display
-        fig.update_layout(margin=dict(l=10, r=10, t=x_axis_title_height, b=10))
-        plots_class.save_plotly_figure(fig,
-                                       "crossing_speed_avg",
-                                       width=2400,
-                                       height=TALL_FIG_HEIGHT,
-                                       scale=SCALE,
-                                       save_eps=False,
-                                       save_final=True)
-
-    @staticmethod
-    def plot_time_to_start_cross_by_average(df_mapping, font_size_captions=40, x_axis_title_height=110,
-                                            legend_x=0.81, legend_y=0.98, legend_spacing=0.02):
-        logger.info("Plotting plot_time_to_start_cross_by_average.")
-        final_dict = {}
-        with open(file_results, 'rb') as file:
-            data_tuple = pickle.load(file)
-
-        avg_time = data_tuple[24]
-
-        # Check if both 'speed' and 'time' are valid dictionaries
-        if avg_time is None:
-            raise ValueError("'time' returned None, please check the input data or calculations.")
-
-        # Now populate the final_dict with city-wise speed data
-        for city_condition, time in tqdm(avg_time.items()):
-            city, lat, long, condition = city_condition.split('_')
-
-            # Get the country from the previously stored city_country_map
-            country = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "country")
-            iso_code = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "iso3")
-            if country or iso_code is not None:
-                # Initialise the city's dictionary if not already present
-                if f"{city}_{lat}_{long}" not in final_dict:
-                    final_dict[f"{city}_{lat}_{long}"] = {"time_0": None,
-                                                          "time_1": None,
-                                                          "country": country,
-                                                          "iso": iso_code}
-                # Populate the corresponding speed based on the condition
-                final_dict[f"{city}_{lat}_{long}"][f"time_{condition}"] = time
-
-        # Sort cities by the sum of speed_0 and speed_1 values
-        cities_ordered = sorted(
-            final_dict.keys(),
-            key=lambda city: (final_dict[city]["time_0"] or 0) + (final_dict[city]["time_1"] or 0),
-            reverse=True
-        )
-        # Extract unique cities
-        cities = list(set([key.split('_')[0] for key in final_dict.keys()]))
-
-        # Prepare data for day and night stacking
-        day_time_dict = [final_dict[city]['time_0'] for city in cities_ordered]
-        night_time_dict = [final_dict[city]['time_1'] for city in cities_ordered]
-
-        # Determine how many cities will be in each column
-        num_cities_per_col = len(cities_ordered) // 2 + len(cities_ordered) % 2  # Split cities into two groups
-        # Define a base height per row and calculate total figure height
-        TALL_FIG_HEIGHT = num_cities_per_col * BASE_HEIGHT_PER_ROW
-
-        fig = make_subplots(
-            rows=num_cities_per_col, cols=2,  # Two columns
-            vertical_spacing=0.0005,  # Reduce the vertical spacing
-            horizontal_spacing=0.01,  # Reduce horizontal spacing between columns
-            row_heights=[1.0] * (num_cities_per_col),
-        )
-
-        # Plot left column (first half of cities)
-        for i, city in enumerate(cities_ordered[:num_cities_per_col]):
-            # Row for speed (Day and Night)
-            city_new, lat, long = city.split('_')
-            iso_code = values_class.get_value(df_mapping, "city", city_new, "lat", float(lat), "iso3")
-            city = wrapper_class.process_city_string(city, df_mapping)
-
-            city = wrapper_class.iso2_to_flag(wrapper_class.iso3_to_iso2(iso_code)) + " " + city   # type: ignore
-
-            row = i + 1
-            if day_time_dict[i] is not None and night_time_dict[i] is not None:
-                value = (day_time_dict[i] + night_time_dict[i])/2
-                fig.add_trace(go.Bar(
-                    x=[day_time_dict[i]], y=[f'{city} {value:.2f}'], orientation='h',
-                    # name=f"{city} time during day", marker=dict(color='#FF6692'),
-                    name=f"{city} time during day", marker=dict(color=bar_colour_1),
-                    text=[''], textposition='inside', insidetextanchor='start', showlegend=False,
-                    textfont=dict(size=14, color='white')), row=row, col=1)
-                fig.add_trace(go.Bar(
-                    x=[night_time_dict[i]], y=[f'{city} {value:.2f}'], orientation='h',
-                    name=f"{city} time during night", marker=dict(color=bar_colour_2),
-                    # name=f"{city} time during night", marker=dict(color='#B6E880'), text=[''],
-                    textposition='inside', showlegend=False), row=row, col=1)
-
-            elif day_time_dict[i] is not None:  # Only day time data available
-                value = (day_time_dict[i])/2
-                fig.add_trace(go.Bar(
-                    x=[day_time_dict[i]], y=[f'{city} {value:.2f}'], orientation='h',
-                    name=f"{city} time during day", marker=dict(color=bar_colour_1),
-                    # name=f"{city} time during day", marker=dict(color='#FF6692'),
-                    text=[''], textposition='inside', insidetextanchor='start', showlegend=False,
-                    textfont=dict(size=14, color='white')), row=row, col=1)
-
-            elif night_time_dict[i] is not None:  # Only night time data available
-                value = (night_time_dict[i])/2
-                fig.add_trace(go.Bar(
-                    x=[night_time_dict[i]], y=[f'{city} {value:.2f}'], orientation='h',
-                    name=f"{city} time during night", marker=dict(color=bar_colour_2),
-                    # name=f"{city} time during night", marker=dict(color='#B6E880'),
-                    text=[''], textposition='inside', insidetextanchor='start', showlegend=False,
-                    textfont=dict(size=14, color='white')), row=row, col=1)
-
-        # Similarly for the right column
-        for i, city in enumerate(cities_ordered[num_cities_per_col:]):
-            city_new, lat, long = city.split('_')
-            iso_code = values_class.get_value(df_mapping, "city", city_new, "lat", float(lat), "iso3")
-            city = wrapper_class.process_city_string(city, df_mapping)
-
-            city = wrapper_class.iso2_to_flag(wrapper_class.iso3_to_iso2(iso_code)) + " " + city   # type: ignore
-
-            row = i + 1
-            idx = num_cities_per_col + i
-            if day_time_dict[idx] is not None and night_time_dict[idx] is not None:
-                value = (day_time_dict[idx] + night_time_dict[idx])/2
-                fig.add_trace(go.Bar(
-                    x=[day_time_dict[idx]], y=[f'{city} {value:.2f}'], orientation='h',
-                    name=f"{city} time during day", marker=dict(color=bar_colour_1),
-                    text=[''], textposition='inside', insidetextanchor='start', showlegend=False,
-                    textfont=dict(size=14, color='white')), row=row, col=2)
-                fig.add_trace(go.Bar(
-                    x=[night_time_dict[idx]], y=[f'{city} {value:.2f}'], orientation='h',
-                    name=f"{city} time during night", marker=dict(color=bar_colour_2), text=[''],
-                    textposition='inside', showlegend=False), row=row, col=2)
-
-            elif day_time_dict[idx] is not None:  # Only day time data available
-                value = (day_time_dict[idx])/2
-                fig.add_trace(go.Bar(
-                    x=[day_time_dict[idx]], y=[f'{city} {value:.2f}'], orientation='h',
-                    name=f"{city} time during day", marker=dict(color=bar_colour_1),
-                    text=[''], textposition='inside', insidetextanchor='start', showlegend=False,
-                    textfont=dict(size=14, color='white')), row=row, col=2)
-
-            elif night_time_dict[idx] is not None:  # Only night time data available
-                value = (night_time_dict[idx])/2
-                fig.add_trace(go.Bar(
-                    x=[night_time_dict[idx]], y=[f'{city} {value:.2f}'], orientation='h',
-                    name=f"{city} time during night", marker=dict(color=bar_colour_2),
-                    text=[''], textposition='inside', insidetextanchor='start', showlegend=False,
-                    textfont=dict(size=14, color='white')), row=row, col=2)
-
-        # Calculate the maximum value across all data to use as x-axis range
-        max_value_speed = max([
-            (day_time_dict[i] if day_time_dict[i] is not None else 0) +
-            (night_time_dict[i] if night_time_dict[i] is not None else 0)
-            for i in range(len(cities))
-        ]) if cities else 0
-
-        # Identify the last row for each column where the last city is plotted
-        last_row_left_column = num_cities_per_col * 2  # The last row in the left column
-        last_row_right_column = (len(cities) - num_cities_per_col) * 2  # The last row in the right column
-        first_row_left_column = 1  # The first row in the left column
-        first_row_right_column = 1  # The first row in the right column
-
-        # Update the loop for updating x-axes based on max values for time
-        for i in range(1, num_cities_per_col * 2 + 1):  # Loop through all rows in both columns
-            # Update x-axis for the left column
-            if i % 2 == 1:  # Odd rows
-                fig.update_xaxes(
-                    range=[0, max_value_speed], row=i, col=1,
-                    showticklabels=(i == first_row_left_column),
-                    side='top', showgrid=True
-                )
-            else:  # Even rows (representing time)
-                fig.update_xaxes(
-                    range=[0, max_value_speed], row=i, col=1,
-                    showticklabels=(i == last_row_left_column),
-                    side='bottom', showgrid=True
-                )
-
-            # Update x-axis for the right column
-            if i % 2 == 1:  # Odd rows
-                fig.update_xaxes(
-                    range=[0, max_value_speed], row=i, col=2,  # Use time max value for top axis
-                    showticklabels=(i == first_row_right_column),
-                    side='top', showgrid=True
-                )
-            else:  # Even rows
-                fig.update_xaxes(
-                    range=[0, max_value_speed], row=i, col=2,  # Use time max value for bottom axis
-                    showticklabels=(i == last_row_right_column),
-                    side='bottom', showgrid=True
-                )
-
-        # Set the x-axis labels (title_text) only for the last row and the first row
-        fig.update_xaxes(
-            title=dict(text="Mean time to start crossing (in s)", font=dict(size=font_size_captions)),
-            tickfont=dict(size=font_size_captions),
-            ticks='outside',
-            ticklen=10,
-            tickwidth=2,
-            tickcolor='black',
-            row=1,
-            col=1
-        )
-
-        fig.update_xaxes(
-            title=dict(text="Mean time to start crossing (in s)", font=dict(size=font_size_captions)),
-            tickfont=dict(size=font_size_captions),
-            ticks='outside',
-            ticklen=10,
-            tickwidth=2,
-            tickcolor='black',
-            row=1,
-            col=2
-        )
-
-        # Update both y-axes (for left and right columns) to hide the tick labels
-        fig.update_yaxes(showticklabels=False)
-
-        # Ensure no gridlines are shown on x-axes and y-axes
-        fig.update_xaxes(showgrid=False)
-        fig.update_yaxes(showgrid=False)
-
-        # Update layout to hide the main legend and adjust margins
-        fig.update_layout(
-            plot_bgcolor='white', paper_bgcolor='white', barmode='stack',
-            height=TALL_FIG_HEIGHT, width=2480, showlegend=False,  # Hide the default legend
-            margin=dict(t=150, b=150), bargap=0, bargroupgap=0
-        )
-
-        # Manually add gridlines using `shapes`
-        x_grid_values = [2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22]  # Define the gridline positions on the x-axis
-        for x in x_grid_values:
-            fig.add_shape(
-                type="line",
-                x0=x, y0=0, x1=x, y1=1,  # Set the position of the gridlines
-                xref='x', yref='paper',  # Ensure gridlines span the whole chart (yref='paper' spans full height)
-                line=dict(color="darkgray", width=1),  # Customize the appearance of the gridlines
-                layer="above"  # Draw the gridlines above the bars
-            )
-
-        # Manually add gridlines using `shapes` for the right column (x-axis 'x2')
-        for x in x_grid_values:
-            fig.add_shape(
-                type="line",
-                x0=x, y0=0, x1=x, y1=1,  # Set the position of the gridlines
-                xref='x2', yref='paper',  # Apply to right column (x-axis 'x2')
-                line=dict(color="darkgray", width=1),  # Customize the appearance of the gridlines
-                layer="above"  # Draw the gridlines above the bars
-            )
-
-        # Define the legend items
-        legend_items = [
-            {"name": "Day", "color": bar_colour_1},
-            {"name": "Night", "color": bar_colour_2},
-        ]
-
-        # Add the vertical legends at the top and bottom
-        plots_class.add_vertical_legend_annotations(fig, legend_items,
-                                                    x_position=legend_x,
-                                                    y_start=legend_y,
-                                                    spacing=legend_spacing,
-                                                    font_size=font_size_captions)
-
-        # Add a box around the first column (left side)
-        fig.add_shape(
-            type="rect", xref="paper", yref="paper",
-            x0=0, y0=1, x1=0.495, y1=0.0,
-            line=dict(color="black", width=2)  # Black border for the box
-        )
-
-        # Add a box around the second column (right side)
-        fig.add_shape(
-            type="rect", xref="paper", yref="paper",
-            x0=0.505, y0=1, x1=1, y1=0.0,
-            line=dict(color="black", width=2)  # Black border for the box
-        )
-
-        # Create an ordered list of unique countries based on the cities in final_dict
-        country_city_map = {}
-        for city, info in final_dict.items():
-            country = info['iso']
-            if country not in country_city_map:
-                country_city_map[country] = []
-            country_city_map[country].append(city)
-
-        # Split cities into left and right columns
-        left_column_cities = cities_ordered[:num_cities_per_col]
-        right_column_cities = cities_ordered[num_cities_per_col:]
-
-        # Initialize variables for dynamic y positioning for both columns
-        current_row_left = 1  # Start from the first row for the left column
-        current_row_right = 1  # Start from the first row for the right column
-        y_position_map_left = {}  # Store y positions for each country (left column)
-        y_position_map_right = {}  # Store y positions for each country (right column)
-
-        # Calculate the y positions dynamically for the left column
-        for city in left_column_cities:
-            country = final_dict[city]['iso']
-
-            if country not in y_position_map_left:  # Add the country label once per country
-                y_position_map_left[country] = 1 - (current_row_left - 1) / (len(left_column_cities) * 2)
-
-            current_row_left += 2  # Increment the row for each city (speed and time take two rows)
-
-        # Calculate the y positions dynamically for the right column
-        for city in right_column_cities:
-            country = final_dict[city]['iso']
-
-            if country not in y_position_map_right:  # Add the country label once per country
-                y_position_map_right[country] = 1 - (current_row_right - 1) / (len(right_column_cities) * 2)
-
-            current_row_right += 2  # Increment the row for each city (speed and time take two rows)
-
-        fig.update_yaxes(
-            tickfont=dict(size=TEXT_SIZE, color="black"),
-            showticklabels=True,  # Ensure city names are visible
-            ticklabelposition='inside',  # Move the tick labels inside the bars
-        )
-        fig.update_xaxes(
-            tickangle=0,  # No rotation or small rotation for the x-axis
-        )
-
-        # update font family
-        fig.update_layout(font=dict(family=common.get_configs('font_family')))
-
-        # Final adjustments and display
-        fig.update_layout(margin=dict(l=10, r=10, t=x_axis_title_height, b=10))
-        plots_class.save_plotly_figure(fig,
-                                       "time_crossing_avg",
-                                       width=2400,
-                                       height=TALL_FIG_HEIGHT,
-                                       scale=SCALE,
-                                       save_eps=False,
-                                       save_final=True)
 
     @staticmethod
     def safe_average(values):
@@ -4363,6 +3014,10 @@ class Analysis():
 
         all_values = [speed for city in nested_dict.values() for video in city.values() for speed in video.values()]
 
+        # --- Calculate mean and median ---
+        mean_val = np.mean(all_values)
+        median_val = np.median(all_values)
+
         logger.info('Creating histogram for {}.', name)
 
         # Restrict values to the specified x-range if provided
@@ -4385,6 +3040,23 @@ class Analysis():
                 family=font_family if font_family else common.get_configs('font_family'),
                 size=font_size if font_size else common.get_configs('font_size')
             )
+        )
+
+        # --- Add vertical lines for mean and median ---
+        fig.add_vline(
+            x=mean_val,
+            line_dash='dash',
+            line_color='blue',
+            annotation_text=f"Mean: {mean_val:.2f}",
+            annotation_position='top right'
+        )
+
+        fig.add_vline(
+            x=median_val,
+            line_dash='dash',
+            line_color='red',
+            annotation_text=f"Median: {median_val:.2f}",
+            annotation_position='top left'
         )
 
         if vlines:
@@ -4777,6 +3449,7 @@ if __name__ == "__main__":
     # Analysis.get_world_map(df_mapping)
     df = df_mapping.copy()  # copy df to manipulate for output
     df['state'] = df['state'].fillna('NA')  # Set state to NA
+
     Analysis.get_mapbox_map(df=df, hover_data=hover_data)  # mapbox map
     Analysis.get_world_map(df_mapping=df)  # map with countries
 
@@ -4800,7 +3473,7 @@ if __name__ == "__main__":
                      marginal_x=None,  # type: ignore
                      marginal_y=None)  # type: ignore
 
-    Analysis.hist(data_index=22, name="speed", vlines=[1.42], save_file=True)
+    Analysis.hist(data_index=22, name="speed", save_file=True)
 
     # todo: ISO-3 codes next to figures shift. need to correct once "final" dataset is online
     Analysis.speed_and_time_to_start_cross(df_mapping,
@@ -4809,30 +3482,139 @@ if __name__ == "__main__":
                                            legend_x=0.9,
                                            legend_y=0.01,
                                            legend_spacing=0.0026)
-    Analysis.plot_speed_to_cross_by_alphabetical_order(df_mapping,
-                                                       x_axis_title_height=60,
-                                                       font_size_captions=common.get_configs("font_size"),
-                                                       legend_x=0.97,
-                                                       legend_y=1.0,
-                                                       legend_spacing=0.004)
-    Analysis.plot_time_to_start_cross_by_alphabetical_order(df_mapping,
-                                                            x_axis_title_height=60,
-                                                            font_size_captions=common.get_configs("font_size"),
-                                                            legend_x=0.97,
-                                                            legend_y=1.0,
-                                                            legend_spacing=0.004)
-    Analysis.plot_speed_to_cross_by_average(df_mapping,
-                                            x_axis_title_height=60,
-                                            font_size_captions=common.get_configs("font_size"),
-                                            legend_x=0.97,
-                                            legend_y=1.0,
-                                            legend_spacing=0.004)
-    Analysis.plot_time_to_start_cross_by_average(df_mapping,
-                                                 x_axis_title_height=60,
-                                                 font_size_captions=common.get_configs("font_size"),
-                                                 legend_x=0.97,
-                                                 legend_y=1.0,
-                                                 legend_spacing=0.004)
+
+    plots_class.stack_plot(df,
+                           order_by="alphabetical",
+                           metric="time",
+                           data_view="combined",
+                           title_text="Time to start crossing (s)",
+                           filename="time_crossing_alphabetical",
+                           font_size_captions=common.get_configs("font_size") + 8,
+                           left_margin=80,
+                           right_margin=80
+                           )
+
+    plots_class.stack_plot(df,
+                           order_by="alphabetical",
+                           metric="time",
+                           data_view="day",
+                           title_text="Time to start crossing (s)",
+                           filename="time_crossing_alphabetical_day",
+                           font_size_captions=common.get_configs("font_size") + 8,
+                           left_margin=80,
+                           right_margin=80
+                           )
+
+    plots_class.stack_plot(df,
+                           order_by="alphabetical",
+                           metric="time",
+                           data_view="night",
+                           title_text="Time to start crossing (s)",
+                           filename="time_crossing_alphabetical_night",
+                           font_size_captions=common.get_configs("font_size") + 8,
+                           left_margin=80,
+                           right_margin=80
+                           )
+
+    plots_class.stack_plot(df,
+                           order_by="average",
+                           metric="time",
+                           data_view="combined",
+                           title_text="Time to start crossing (s)",
+                           filename="time_crossing_avg",
+                           font_size_captions=common.get_configs("font_size") + 8,
+                           left_margin=10,
+                           right_margin=10
+                           )
+
+    plots_class.stack_plot(df,
+                           order_by="average",
+                           metric="time",
+                           data_view="day",
+                           title_text="Time to start crossing (s)",
+                           filename="time_crossing_avg_day",
+                           font_size_captions=common.get_configs("font_size") + 8,
+                           left_margin=10,
+                           right_margin=10
+                           )
+
+    plots_class.stack_plot(df,
+                           order_by="average",
+                           metric="time",
+                           data_view="night",
+                           title_text="Time to start crossing (s)",
+                           filename="time_crossing_avg_night",
+                           font_size_captions=common.get_configs("font_size") + 8,
+                           left_margin=10,
+                           right_margin=10
+                           )
+
+    plots_class.stack_plot(df,
+                           order_by="alphabetical",
+                           metric="speed",
+                           data_view="combined",
+                           title_text="Mean speed of crossing (in m/s)",
+                           filename="speed_crossing_alphabetical",
+                           font_size_captions=common.get_configs("font_size") + 8,
+                           left_margin=80,
+                           right_margin=80
+                           )
+
+    plots_class.stack_plot(df,
+                           order_by="alphabetical",
+                           metric="speed",
+                           data_view="day",
+                           title_text="Mean speed of crossing (in m/s)",
+                           filename="speed_crossing_alphabetical_day",
+                           font_size_captions=common.get_configs("font_size") + 8,
+                           left_margin=80,
+                           right_margin=80
+                           )
+
+    plots_class.stack_plot(df,
+                           order_by="alphabetical",
+                           metric="speed",
+                           data_view="night",
+                           title_text="Mean speed of crossing (in m/s)",
+                           filename="speed_crossing_alphabetical_night",
+                           font_size_captions=common.get_configs("font_size") + 8,
+                           left_margin=80,
+                           right_margin=80
+                           )
+
+    plots_class.stack_plot(df,
+                           order_by="average",
+                           metric="speed",
+                           data_view="combined",
+                           title_text="Mean speed of crossing (in m/s)",
+                           filename="speed_crossing_avg",
+                           font_size_captions=common.get_configs("font_size") + 8,
+                           left_margin=10,
+                           right_margin=10
+                           )
+
+    plots_class.stack_plot(df,
+                           order_by="average",
+                           metric="speed",
+                           data_view="day",
+                           title_text="Mean speed of crossing (in m/s)",
+                           filename="speed_crossing_avg_day",
+                           font_size_captions=common.get_configs("font_size") + 8,
+                           left_margin=10,
+                           right_margin=10
+                           )
+
+    plots_class.stack_plot(df,
+                           order_by="average",
+                           metric="speed",
+                           data_view="night",
+                           title_text="Mean speed of crossing (in m/s)",
+                           filename="speed_crossing_avg_night",
+                           font_size_captions=common.get_configs("font_size") + 8,
+                           left_margin=10,
+                           right_margin=10
+                           )
+
     Analysis.correlation_matrix(df_mapping)
 
     # Speed of crossing vs time to start crossing
@@ -4858,10 +3640,11 @@ if __name__ == "__main__":
                      marginal_x=None,  # type: ignore
                      marginal_y=None)  # type: ignore
 
-    # # Speed of crossing during daytime vs time to start crossing during daytime
-    # df = df_mapping[df_mapping["speed_crossing_day"] != 0].copy()
-    # df = df[df["time_crossing_day"] != 0]
-    # df['state'] = df['state'].fillna('NA')
+    # Speed of crossing during daytime vs time to start crossing during daytime
+    df = df_mapping[df_mapping["speed_crossing_day"] != 0].copy()
+    df = df[df["time_crossing_day"] != 0]
+    df['state'] = df['state'].fillna('NA')
+
     Analysis.scatter(df=df,
                      x="speed_crossing_day",
                      y="time_crossing_day",

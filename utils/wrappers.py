@@ -100,8 +100,12 @@ class Wrappers():
 
         def is_nan(value):
             # Handles both float('nan') and string 'nan'
-            return value is None or (isinstance(value, float) and math.isnan(value)) or (
-                isinstance(value, str) and value.lower() == 'nan')
+            missing = {'nan', 'na', 'n/a', ''}
+            return (
+                value is None
+                or (isinstance(value, float) and math.isnan(value))
+                or (isinstance(value, str) and value.strip().lower() in missing)
+            )
 
         def format_single(city_entry, state_entry):
             city = city_entry.split("_")[0] if "_" in city_entry else city_entry
