@@ -229,6 +229,13 @@ class Geometry():
 
         # --- STEP 6: FINAL COLUMN RENAMING FOR OUTPUT ---
 
+        # 1. Safety: Any unmatched detection gets its original 'Unique Id'
+        missing_newid_mask = df_fix['New Id'].isnull() | (df_fix['New Id'] == -1)
+        df_fix.loc[missing_newid_mask, 'New Id'] = df_fix.loc[missing_newid_mask, 'Unique Id']
+
+        # 2. Copy corrected IDs back to main DataFrame for processed rows
+        df.loc[df_fix.index, 'New Id'] = df_fix['New Id']
+
         # Rename the original YOLO 'Unique Id' to 'old_unique_id' (for reference),
         # and the fixed, stable IDs to 'Unique Id'
         df = df.rename(columns={'Unique Id': 'old_unique_id', 'New Id': 'Unique Id'})
