@@ -476,6 +476,8 @@ def form():
 
     if not channel_video and yt_channel:
         channel_video = yt_channel
+    else:
+        channel_video = 'None'
 
     # Cast to int for checks
     vehicle_type_video = int(vehicle_type_video) if vehicle_type_video is not None else None
