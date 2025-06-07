@@ -1714,3 +1714,5 @@ id,city,state,country,iso3,continent,lat,lon,gmp,population_city,population_coun
 1713,Las Palmas de Gran Canaria,,Spain,ESP,Europe,28.1288694,-15.4349015,0.0,378517.0,47351567.0,3.9,99.0,169.0,46.3,34.7,0.0,[4n2XkDTQcK8],[[0]],[[14]],[[628]],[0],[25082024],[30],[UCqDu-32bYPS_IbR2XbnTV-Q]
 1714,Hamad Town,,Bahrain,BHR,Asia,26.1267463,50.4983356,0.0,52718.0,1701583.0,5.2,98.0,166.0,33.3,0.0,0.0,[ugXtngs45Hg],"[[0,0,0]]","[[1089,1142,1202]]","[[1125,1154,1225]]",[0],[18092022],[30],[UCKjJciYc4dWypPbe0LASEnw]
 1715,Muharraq,,Bahrain,BHR,Asia,26.2465946,50.6164127,0.0,97458.0,1701583.0,5.2,98.0,166.0,33.3,0.0,33.85,[HMbpUfTfgaM],"[[0,0,0]]","[[2,113,335]]","[[100,183,498]]",[0],[10122021],[30],[UCBY4LYejNuIFR3aZdUEXPtQ]
+1716,Portland,Oregon,United States,USA,North America,45.5202471,-122.674194,0.0,652503.0,329484123.0,12.7,0.0,170.0,38.5,41.4,21.05,[JS5HvyvhhxM],[[0]],[[0]],[[761]],[0],[30052025],[30],[UC0H-Sa4Ua_wWGYMmc6ITpRg]
+1717,Seattle,Washington,United States,USA,North America,47.6038321,-122.330062,0.0,737015,329484123,12.7,0.0,170,38.5,41.4,18.18,[JS5HvyvhhxM],[[0]],[[19323]],[[20916]],[0],[30052025],[30],[UC0H-Sa4Ua_wWGYMmc6ITpRg]
