@@ -3107,7 +3107,8 @@ if __name__ == "__main__":
         df = df.sort_values(by=["continent", "city"], ascending=[True, True])
 
         # Data to avoid showing on hover in scatter plots
-        columns_remove = ['videos', 'time_of_day', 'start_time', 'end_time', 'upload_date', 'fps_list', 'vehicle_type', 'channel']
+        columns_remove = ['videos', 'time_of_day', 'start_time', 'end_time', 'upload_date', 'fps_list', 'vehicle_type',
+                          'channel']
         hover_data = list(set(df.columns) - set(columns_remove))
         Analysis.get_mapbox_map(df=df, hover_data=hover_data, file_name='mapbox_map_all')  # mapbox map with all data
 
@@ -3443,7 +3444,8 @@ if __name__ == "__main__":
 
     logger.info("Producing output.")
     # Data to avoid showing on hover in scatter plots
-    columns_remove = ['videos', 'time_of_day', 'start_time', 'end_time', 'upload_date', 'fps_list', 'vehicle_type', 'channel']
+    columns_remove = ['videos', 'time_of_day', 'start_time', 'end_time', 'upload_date', 'fps_list', 'vehicle_type',
+                      'channel']
     hover_data = list(set(df_mapping.columns) - set(columns_remove))
 
     # Analysis.get_world_map(df_mapping)
