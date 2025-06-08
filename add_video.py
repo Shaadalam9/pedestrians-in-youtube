@@ -390,8 +390,10 @@ def form():
                     else:
                         df.at[idx, 'lon'] = 0.0
                     for i in range(len(upload_date_list)):
-                        if upload_date_list[i]:
+                        if upload_date_list[i] != 'None' and upload_date_list[i]:
                             upload_date_list[i] = int(upload_date_list[i])
+                        else:
+                            upload_date_list[i] = None
                     upload_date_list = str(upload_date_list)
                     upload_date_list = upload_date_list.replace('\'', '')
                     upload_date_list = upload_date_list.replace(' ', '')
