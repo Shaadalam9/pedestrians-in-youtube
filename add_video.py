@@ -324,7 +324,7 @@ def form():
                         start_time_list.append([int(start_time[-1])])      # Append start time as integer
                         end_time_list.append([int(end_time[-1])])          # Append end time as integer
                         # Append upload time as integer
-                        if upload_date_video != 'None' and upload_date_video is not None:
+                        if upload_date_video != 'None' and upload_date_video:
                             upload_date_list.append(int(upload_date_video))
                         else:
                             upload_date_list.append(None)
@@ -337,7 +337,7 @@ def form():
                         time_of_day_list[video_index].append(int(time_of_day[-1]))  # Append new time of day
                         start_time_list[video_index].append(int(start_time[-1]))    # Append new start time
                         end_time_list[video_index].append(int(end_time[-1]))        # Append new end time
-                        if upload_date_video != 'None' and upload_date_video is not None:
+                        if upload_date_video != 'None' and upload_date_video:
                             upload_date_list[video_index] = int(upload_date_video)
                         else:
                             upload_date_list[video_index] = None
@@ -390,7 +390,7 @@ def form():
                     else:
                         df.at[idx, 'lon'] = 0.0
                     for i in range(len(upload_date_list)):
-                        if upload_date_list[i] != 'None':
+                        if upload_date_list[i]:
                             upload_date_list[i] = int(upload_date_list[i])
                     upload_date_list = str(upload_date_list)
                     upload_date_list = upload_date_list.replace('\'', '')
