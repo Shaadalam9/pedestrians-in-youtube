@@ -137,6 +137,13 @@ Video: [https://www.youtube.com/watch?v=uFG1_JBZUmM](https://www.youtube.com/wat
 
 Video: [https://www.youtube.com/watch?v=U0pdQ8eZtHY](https://www.youtube.com/watch?v=U0pdQ8eZtHY).
 
+### Videos are excluded from analysis if another video is a part of main video
+<a href="https://youtu.be/rdx7UFXYSz0">
+  <img src="./readme/video_in_video.gif" width="100%" />
+</a>
+
+Video: [https://www.youtube.com/watch?v=rdx7UFXYSz0](https://www.youtube.com/watch?v=rdx7UFXYSz0).
+
 ## Description and analysis of dataset
 ### Description of dataset
 <!-- [![Locations of cities with footage in dataset](figures/world_map.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/world_map.html)
