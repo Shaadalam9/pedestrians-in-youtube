@@ -69,6 +69,7 @@ Configuration of the project needs to be defined in `config`. Please use the `de
 - **`compress_youtube_video`**: Compresses YouTube videos (using the H.255 codec by default).
 - **`delete_runs_files`**: Deletes files containing YOLO output after analysis.
 - **`check_missing_mapping`**: Identifies all the missing csv files.
+- **`min_max_videos`**: Gives snippets of the fastest and slowest crossing pedestrian.
 - **`client`**: Specifies the client type for downloading YouTube videos; accepted values are `"WEB"`, `"ANDROID"` or `"ios"`.
 - **`model`**: Specifies the YOLO model to use; supported/tested versions include `v8x` and `v11x`.
 - **`boundary_left`**: Specifies the x-coordinate of one edge of the crossing area used to detect road crossings (normalised between 0 and 1).

@@ -2469,7 +2469,7 @@ class Analysis():
         # No match found
         return None
 
-    def get_duration_segment(self, var_dict, dfs, df_mapping, num, duration=None):
+    def get_duration_segment(self, var_dict, dfs, df_mapping, num=common.get_configs('min_max_videos'), duration=None):
         """
         Extract and save video segments based on the fastest tracked objects in provided data.
 
@@ -2488,7 +2488,7 @@ class Analysis():
             None. Video clips are saved to disk in 'saved_snaps/original' and 'saved_snaps/tracked'.
         """
         data = self.find_min_max_video(var_dict, num=num)
-        if common.get_configs('min_max_videos') is False:
+        if common.get_configs('min_max_videos') == 0:
             return data
 
         # Process only the 'max' speed segments
@@ -3307,8 +3307,8 @@ if __name__ == "__main__":
             )
         )
 
-        min_max_speed = analysis_class.get_duration_segment(speed_values, dfs, df_mapping, num=10, duration=None)
-        min_max_time = analysis_class.get_duration_segment(time_values, dfs, df_mapping, num=10, duration=None)
+        min_max_speed = analysis_class.get_duration_segment(speed_values, dfs, df_mapping, duration=None)
+        min_max_time = analysis_class.get_duration_segment(time_values, dfs, df_mapping, duration=None)
 
         # TODO: these functions are slow, and they are possibly not needed now as counts are added to df_mapping
         logger.info("Calculating counts of detected traffic signs.")
