@@ -2488,7 +2488,7 @@ class Analysis():
             None. Video clips are saved to disk in 'saved_snaps/original' and 'saved_snaps/tracked'.
         """
         data = self.find_min_max_video(var_dict, num=num)
-        if common.get_configs('min_max_videos') == 0:
+        if num == 0:
             return data
 
         # Process only the 'max' speed segments
@@ -2527,7 +2527,7 @@ class Analysis():
                         # Check if the result is None (i.e., no matching data was found)
                         if result is not None:
                             # Unpack the result since it's not None
-                            fps = result[15]
+                            fps = result[17]
 
                             first_time = first_frame / fps
                             last_time = last_frame / fps
