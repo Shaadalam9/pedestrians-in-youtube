@@ -2469,7 +2469,7 @@ class Analysis():
         # No match found
         return None
 
-    def get_duration_segment(self, var_dict, dfs, df_mapping, num=common.get_configs('min_max_videos'), duration=None):
+    def get_duration_segment(self, var_dict, dfs, df_mapping, name=None, num=common.get_configs('min_max_videos'), duration=None):  # noqa: E501
         """
         Extract and save video segments based on the fastest tracked objects in provided data.
 
@@ -2492,74 +2492,83 @@ class Analysis():
             return data
 
         # Process only the 'max' speed segments
-        for city_data in data['max'].values():
-            for video_start_time, inner_value in city_data.items():
-                # Extract base video name and its offset
-                video_name, start_offset = video_start_time.rsplit('_', 1)
-                start_offset = int(start_offset)
+        for segment_type in ['max', 'min']:
+            if segment_type in data:
+                for city_data in data[segment_type].values():
+                    for video_start_time, inner_value in city_data.items():
+                        # Extract base video name and its offset
+                        video_name, start_offset = video_start_time.rsplit('_', 1)
+                        start_offset = int(start_offset)
 
-                for unique_id, speed in inner_value.items():
-                    try:
-                        # Find the existing folder containing the video file
-                        existing_folder = next((
-                            path for path in video_paths if os.path.exists(
-                                os.path.join(path, f"{video_name}.mp4"))), None)
+                        for unique_id, _ in inner_value.items():
+                            try:
+                                # Find the existing folder containing the video file
+                                existing_folder = next((
+                                    path for path in video_paths if os.path.exists(
+                                        os.path.join(path, f"{video_name}.mp4"))), None)
 
-                        if not existing_folder:
-                            raise FileNotFoundError(f"Video file '{video_name}.mp4' not found in any of the specified paths.")  # noqa:E501
+                                if not existing_folder:
+                                    raise FileNotFoundError(f"Video file '{video_name}.mp4' not found in any of the specified paths.")  # noqa:E501
 
-                        base_video_path = os.path.join(existing_folder, f"{video_name}.mp4")
+                                base_video_path = os.path.join(existing_folder, f"{video_name}.mp4")
 
-                        # Load tracking DataFrame for the current video segment
-                        df = dfs[video_start_time]
-                        filtered_df = df[df['Unique Id'] == unique_id]
+                                # Load tracking DataFrame for the current video segment
+                                df = dfs[video_start_time]
+                                filtered_df = df[df['Unique Id'] == unique_id]
 
-                        if filtered_df.empty:
-                            return None, None  # No data found for this unique_id
+                                if filtered_df.empty:
+                                    return None, None  # No data found for this unique_id
 
-                        # Determine frame-based start and end times
-                        first_frame = filtered_df['Frame Count'].min()
-                        last_frame = filtered_df['Frame Count'].max()
+                                # Determine frame-based start and end times
+                                first_frame = filtered_df['Frame Count'].min()
+                                last_frame = filtered_df['Frame Count'].max()
 
-                        # Look up the frame rate (fps) using the video_start_time
-                        result = values_class.find_values_with_video_id(df_mapping, video_start_time)
+                                # Look up the frame rate (fps) using the video_start_time
+                                result = values_class.find_values_with_video_id(df_mapping, video_start_time)
 
-                        # Check if the result is None (i.e., no matching data was found)
-                        if result is not None:
-                            # Unpack the result since it's not None
-                            fps = result[17]
+                                # Check if the result is None (i.e., no matching data was found)
+                                if result is not None:
+                                    # Unpack the result since it's not None
+                                    fps = result[17]
 
-                            first_time = first_frame / fps
-                            last_time = last_frame / fps
+                                    first_time = first_frame / fps
+                                    last_time = last_frame / fps
 
-                            # Adjusted start and end times
-                            real_start_time = first_time + start_offset
-                            if duration is None:
-                                real_end_time = start_offset + last_time
-                            else:
-                                real_end_time = real_start_time + duration
+                                    # Adjusted start and end times
+                                    real_start_time = first_time + start_offset
+                                    if duration is None:
+                                        real_end_time = start_offset + last_time
+                                    else:
+                                        real_end_time = real_start_time + duration
 
-                            # Trim and save the raw segment
-                            helper.trim_video(
-                                input_path=base_video_path,
-                                output_path=os.path.join("saved_snaps",
-                                                         "original", f"{video_name}_{real_start_time}.mp4"),
-                                start_time=real_start_time,
-                                end_time=real_end_time
-                            )
+                                    # Trim and save the raw segment
+                                    helper.trim_video(
+                                        input_path=base_video_path,
+                                        output_path=os.path.join("saved_snaps",
+                                                                 str(name),
+                                                                 segment_type,
+                                                                 "original",
+                                                                 f"{video_name}_{real_start_time}.mp4"),
+                                        start_time=real_start_time,
+                                        end_time=real_end_time
+                                    )
 
-                            # Overlay YOLO boxes on the saved segment
-                            self.draw_yolo_boxes_on_video(df=filtered_df,
-                                                          fps=fps,
-                                                          video_path=os.path.join("saved_snaps",
-                                                                                  "original",
-                                                                                  f"{video_name}_{real_start_time}.mp4"),  # noqa:E501
-                                                          output_path=os.path.join("saved_snaps",
-                                                                                   "tracked",
-                                                                                   f"{video_name}_{real_start_time}.mp4"))  # noqa:E501
+                                    # Overlay YOLO boxes on the saved segment
+                                    self.draw_yolo_boxes_on_video(df=filtered_df,
+                                                                  fps=fps,
+                                                                  video_path=os.path.join("saved_snaps",
+                                                                                          str(name),
+                                                                                          segment_type,
+                                                                                          "original",
+                                                                                          f"{video_name}_{real_start_time}.mp4"),  # noqa:E501
+                                                                  output_path=os.path.join("saved_snaps",
+                                                                                           str(name),
+                                                                                           segment_type,
+                                                                                           "tracked",
+                                                                                           f"{video_name}_{real_start_time}.mp4"))  # noqa:E501
 
-                    except FileNotFoundError as e:
-                        logger.error(f"Error: {e}")
+                            except FileNotFoundError as e:
+                                logger.error(f"Error: {e}")
 
         return data
 
@@ -3307,8 +3316,8 @@ if __name__ == "__main__":
             )
         )
 
-        min_max_speed = analysis_class.get_duration_segment(speed_values, dfs, df_mapping, duration=None)
-        min_max_time = analysis_class.get_duration_segment(time_values, dfs, df_mapping, duration=None)
+        min_max_speed = analysis_class.get_duration_segment(speed_values, dfs, df_mapping, name="speed", duration=None)
+        min_max_time = analysis_class.get_duration_segment(time_values, dfs, df_mapping, name="time", duration=None)
 
         # TODO: these functions are slow, and they are possibly not needed now as counts are added to df_mapping
         logger.info("Calculating counts of detected traffic signs.")
