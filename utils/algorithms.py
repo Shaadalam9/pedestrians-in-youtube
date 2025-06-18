@@ -200,9 +200,13 @@ class Algorithms():
                 of walking speeds (m/s) for each valid crossing.
             all_speed (list): A flat list of all calculated walking speeds (m/s) across videos, including outliers.
         """
+
         time_compelete = {}
 
         for key, df in tqdm(dfs.items(), total=len(dfs)):
+
+            if 'Frame Count' not in df.columns:
+                continue
             data_cross = {}
             time_id_complete = {}
             crossed_ids = df[(df["YOLO_id"] == person_id)]

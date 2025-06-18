@@ -124,6 +124,12 @@ class Analysis():
                         # Read the CSV into a DataFrame
                         df = pd.read_csv(file_path)
 
+                        # Skip if "Frame Count" column is not present
+                        if "Frame Count" not in df.columns:
+                            if not common.get_configs("include_yolov8_files"):
+                                logger.info(f"'Frame Count' column missing in {file_path}, skipping file.")
+                                continue
+
                         # Optionally apply geometry correction if configured and not zero
                         use_geom_correction = common.get_configs("use_geometry_correction")
                         if use_geom_correction != 0:
@@ -3285,6 +3291,11 @@ if __name__ == "__main__":
         time_values = algorithms_class.time_to_start_cross(df_mapping, dfs, data)
         avg_time = algorithms_class.avg_time_to_start_cross(df_mapping, dfs, data)
 
+        # Kill the program if there is no data to analyse
+        if len(time_values) == 0 or len(avg_time) == 0:
+            logger.error("No speed and time data to analyse.")
+            exit()
+
         # add to mapping file
         for key, value in tqdm(avg_time.items(), total=len(avg_time)):
             parts = key.split("_")
@@ -3315,7 +3326,7 @@ if __name__ == "__main__":
                 np.where(df_mapping["time_crossing_night"] > 0, df_mapping["time_crossing_night"], np.nan)
             )
         )
-
+        print("speed_values:", speed_values)
         min_max_speed = analysis_class.get_duration_segment(speed_values, dfs, df_mapping, name="speed", duration=None)
         min_max_time = analysis_class.get_duration_segment(time_values, dfs, df_mapping, name="time", duration=None)
 
