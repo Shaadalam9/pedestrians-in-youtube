@@ -1834,3 +1834,5 @@ id,city,state,country,iso3,continent,lat,lon,gmp,population_city,population_coun
 1833,Maribor,,Slovenia,SVN,Europe,46.5576439,15.6455854,0.0,97019.0,2100126.0,5.1,99.6,174.0,45.9,24.6,0.0,[fZ3ulxN7jIk],[[0]],[[2222]],[[2621]],[0],[04122022],[30],[UCS925g2ZDenWUWsIZ_u9mtw]
 1834,Pécs,,Hungary,HUN,Africa,46.0765092,18.2280317,0.0,145347.0,0.0,7.7,99.1,170.0,44.5,0.0,34.78,[EH6YQV782Sk],[[0]],[[302]],[[576]],[0],[18112022],[30],[UCEHZP4YZr6N7vKtZKYQLT9Q]
 1835,Kaposvár,,Hungary,HUN,Europe,46.3564692,17.7886886,0.0,64280.0,9749763.0,7.7,99.1,170.0,44.5,29.6,0.0,[EH6YQV782Sk],"[[0, 0]]","[[3500, 0]]","[[3674, 1335]]",[0],[18112022],[30],[UCEHZP4YZr6N7vKtZKYQLT9Q]
+1836,Debrecen,,Hungary,HUN,Europe,47.531399,21.6259782,0.0,202402.0,9749763.0,7.7,99.1,170.0,44.5,29.6,32.5,[sI-lsMBIR28],[[0]],[[0]],[[495]],[0],[10022024],[30],[UCmdmDnh40EuS3OJdKtUwx8A]
+1837,Hajdúböszörmény,,Hungary,HUN,Europe,47.6716617,21.5078944,0.0,31957,9749763,7.7,99.1,170,44.5,29.6,0.0,[sI-lsMBIR28],[[0]],[[819]],[[1249]],[0],[10022024],[30],[UCmdmDnh40EuS3OJdKtUwx8A]
