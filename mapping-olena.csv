@@ -1799,4 +1799,5 @@ id,city,state,country,iso3,continent,lat,lon,gmp,population_city,population_coun
 1798,Štúrovo,,Slovakia,SVK,Europe,47.7978002,18.7158785,0.0,10279.0,5458827.0,6.1,0.0,174.0,42.5,25.0,0.0,[ViGbe8pbSNM],[[0]],[[11100]],[[11698]],[0],[19092016],[30],[UCXAMx3D3UqiM5aukWNiISYA]
 1799,Esztergom,,Hungary,HUN,Europe,47.7856939,18.7403377,0.0,65849.0,9749763.0,7.7,99.1,170.0,44.5,29.6,20.93,[ViGbe8pbSNM],[[0]],[[0]],[[704]],[0],[19092016],[30],[UCXAMx3D3UqiM5aukWNiISYA]
 1800,Nitra,,Slovakia,SVK,Europe,48.31295,18.0894593,0.0,86329.0,5458827.0,6.1,0.0,174.0,42.5,25.0,21.74,[zgkRS4mN-W8],[[0]],[[1191]],[[1940]],[0],[01062023],[30],[UCNDmCuao9zsJ8jhcyndIGsg]
-1801,Trnava,,Slovakia,SVK,Europe,48.3767652,17.5858175,0.0,63194,5458827,6.1,0.0,174,42.5,25.0,0.0,[yYb61ulMVj0],[[0]],[[3]],[[1670]],[0],[10012020],[30],[UCfvJnVXI1hmjT_6W2HXrWjA]
+1801,Trnava,,Slovakia,SVK,Europe,48.3767652,17.5858175,0.0,63194.0,5458827.0,6.1,0.0,174.0,42.5,25.0,0.0,[yYb61ulMVj0],[[0]],[[3]],[[1670]],[0],[10012020],[30],[UCfvJnVXI1hmjT_6W2HXrWjA]
+1802,Hainburg an der Donau,,Austria,AUT,Europe,48.1466103,16.9422459,0.0,6570,8917205,4.9,0.0,173,44.8,30.8,13.64,[ypgjwnqa8qs],[[0]],[[603]],[[645]],[0],[10122023],[30],[UCvLzZbl8OQVa7VDedEtkX9A]
