@@ -1826,3 +1826,7 @@ id,city,state,country,iso3,continent,lat,lon,gmp,population_city,population_coun
 1825,Channel Island,NT,Australia,AUS,Oceania,-12.554576,130.8610919,0.0,4.0,25687041.0,4.9,0.0,172.0,37.9,34.4,0.0,[1DWMGFe44xk],[[0]],[[5]],[[976]],[0],[26032025],[30],[UCsUuE5bKJiieUTlQEVAHW1w]
 1826,Košice,,Slovakia,SVK,Europe,48.7172272,21.2496774,0.0,228249.0,5458827.0,6.1,0.0,174.0,42.5,25.0,0.0,[W-whoN95bhM],[[0]],[[145]],[[2155]],[0],[02072022],[30],[UCCb7lWObBEx_3TAZphP0O4g]
 1827,Senica,,Slovakia,SVK,Europe,48.6787557,17.3661529,0.0,21741.0,5458827.0,6.1,0.0,174.0,42.5,25.0,0.0,[RPgdKHF0AC4],[[0]],[[158]],[[442]],[0],[13092016],[30],[UCXAMx3D3UqiM5aukWNiISYA]
+1828,Bled,,Slovenia,SVN,Europe,46.3684202,14.1100595,0.0,5181.0,2100126.0,5.1,99.6,174.0,45.9,24.6,27.03,[ZSl8hLqUDQw],[[0]],[[10]],[[314]],[0],[06072024],[30],[UCihxeO5AWPYNdhAvG3NMUjA]
+1829,Jesenice,,Slovenia,SVN,Europe,46.4323705,14.0623942,0.0,13440.0,2100126.0,5.1,99.6,174.0,45.9,24.6,0.0,[ZSl8hLqUDQw],[[0]],[[926]],[[1288]],[0],[06072024],[30],[UCihxeO5AWPYNdhAvG3NMUjA]
+1830,Koper,,Slovenia,SVN,Europe,45.5479864,13.7304781,0.0,25753.0,2100126.0,5.1,99.6,174.0,45.9,24.6,0.0,[hsk-UlQduZw],[[0]],[[22]],[[711]],[0],[26022023],[30],[UCxf-ISIk3SIE__V7fvoUpFQ]
+1831,Muggia,,Italy,ITA,Europe,45.5986173,13.7710497,0.0,10929,59554023,5.3,99,168,48.1,35.9,11.63,[hsk-UlQduZw],[[0]],[[1212]],[[3360]],[0],[26022023],[30],[UCxf-ISIk3SIE__V7fvoUpFQ]
