@@ -1348,12 +1348,10 @@ class Youtube_Helper:
                                                         output_path=output_video_path,
                                                         video_title=video_title,
                                                         seg_mode=seg_mode,
-                                                        bbox_mode=bbox_mode,
                                                         frame_rate=video_fps)
             if bbox_mode:
                 Youtube_Helper.create_video_from_images(image_folder=bbox_tracked_frame_output_path,
                                                         output_path=output_video_path,
                                                         video_title=video_title,
-                                                        seg_mode=seg_mode,
                                                         bbox_mode=bbox_mode,
                                                         frame_rate=video_fps)
