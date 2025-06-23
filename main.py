@@ -37,7 +37,7 @@ while True:  # run this script loop forever
 
         # Update the iso3 column without using apply
         if "iso3" not in mapping.columns:
-            mapping["iso3"] = None  # Initialize the column if it doesn't exist
+            mapping["iso3"] = None  # Initialise the column if it doesn't exist
 
         for index, row in mapping.iterrows():
             mapping.at[index, "iso3"] = helper.get_iso_alpha_3(row["country"], row["iso3"])
@@ -192,22 +192,45 @@ while True:  # run this script loop forever
                         seg_folders.append(folder)
                         seg_paths.append(seg_path)
 
-                print("here: ", bbox_paths, seg_paths)
-                # If file exists in bbox in any folder and seg in any folder, treat as both present
-                if bbox_folders and seg_folders:
-                    found_path = list(zip(bbox_paths, seg_paths))  # you may want to customize how you handle this
-                    bbox_mode = False
-                    seg_mode = False
-                elif bbox_folders:
-                    found_path = bbox_paths
-                    bbox_mode = False
-                elif seg_folders:
-                    found_path = seg_paths
-                    seg_mode = False
+                found_path = None
+                bbox_mode = False
+                seg_mode = False
+
+                if common.get_configs("tracking_mode") and not common.get_configs("segmentation_mode"):
+                    # Only check bbox_paths
+                    if bbox_paths:
+                        found_path = bbox_paths
+                        continue
+                    else:
+                        bbox_mode = True
+                        found_path = None
+                elif common.get_configs("segmentation_mode") and not common.get_configs("tracking_mode"):
+                    # Only check seg_paths
+                    if seg_paths:
+                        found_path = seg_paths
+                        continue
+                    else:
+                        seg_mode = True
+                        found_path = None
+                elif common.get_configs("tracking_mode") and common.get_configs("segmentation_mode"):
+                    # If both, check both
+                    if bbox_paths and seg_paths:
+                        found_path = list(zip(bbox_paths, seg_paths))
+                        continue
+                    elif bbox_paths:
+                        found_path = bbox_paths
+                        seg_mode = True
+                    elif seg_paths:
+                        found_path = seg_paths
+                        bbox_mode = True
+                    else:
+                        found_path = None
+                        bbox_mode = True
+                        seg_mode = True
                 else:
+                    # If neither mode is enabled, don't find anything
                     found_path = None
 
-                print("it is ", bbox_mode, seg_mode)
                 # If the YOLO output file already exists, skip processing for this segment
                 if not bbox_mode and not seg_mode:  # noqa: E501
                     logger.info(f"{vid}: YOLO file {vid}_{start_time}.csv exists. Skipping segment.")
