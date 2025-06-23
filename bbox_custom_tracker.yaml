@@ -1,0 +1,15 @@
+tracker_type: botsort          # Good for dashcam, uses appearance + motion
+
+track_high_thresh: 0.7         # Match your detection confidence for more reliable tracking
+track_low_thresh: 0.3          # Don't go too low, reduces false matches in busy scenes
+new_track_thresh: 0.7          # Match your detection confidence (only start new tracks for strong detections)
+track_buffer: 60               # Dashcam: keep tracks longer (about 2 seconds at 30 fps)
+match_thresh: 0.6              # Good balance for crowded street; higher if many close pedestrians
+fuse_score: True               # Yes, use both confidence and appearance for matching
+
+# BoT-SORT specific settings
+gmc_method: sparseOptFlow      # Great for moving cameras
+proximity_thresh: 0.5          # Default; you can try lower if many close pedestrians
+appearance_thresh: 0.25        # Good default; higher (like 0.3) if you want stricter matching by appearance
+with_reid: True                # Use appearance (clothes etc.) to help tracker
+model: auto

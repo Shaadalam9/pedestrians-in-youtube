@@ -3326,7 +3326,7 @@ if __name__ == "__main__":
                 np.where(df_mapping["time_crossing_night"] > 0, df_mapping["time_crossing_night"], np.nan)
             )
         )
-        print("speed_values:", speed_values)
+
         min_max_speed = analysis_class.get_duration_segment(speed_values, dfs, df_mapping, name="speed", duration=None)
         min_max_time = analysis_class.get_duration_segment(time_values, dfs, df_mapping, name="time", duration=None)
 

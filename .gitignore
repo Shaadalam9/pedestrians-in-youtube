@@ -14,6 +14,7 @@ saved_snaps
 # Model files
 yolov8x.pt
 yolo11x.pt
+yolo11x-seg.pt
 
 # Python environment files
 .vscode/

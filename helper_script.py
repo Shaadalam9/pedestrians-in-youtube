@@ -23,6 +23,7 @@ import logging
 from tqdm import tqdm
 import datetime
 import json
+import yaml
 
 
 logger = CustomLogger(__name__)  # use custom logger
@@ -32,6 +33,8 @@ mapping = pd.read_csv(common.get_configs("mapping"))
 confidence = common.get_configs("confidence")
 
 display_frame_tracking = common.get_configs("display_frame_tracking")
+display_frame_segmentation = common.get_configs("display_frame_segmentation")
+
 output_path = common.get_configs("videos")
 save_annoted_img = common.get_configs("save_annoted_img")
 save_tracked_img = common.get_configs("save_tracked_img")
@@ -39,7 +42,7 @@ delete_labels = common.get_configs("delete_labels")
 delete_frames = common.get_configs("delete_frames")
 
 # Consts
-LINE_TICKNESS = 1
+LINE_THICKNESS = 1
 RENDER = False
 SHOW_LABELS = False
 SHOW_CONF = False
@@ -74,10 +77,11 @@ class Youtube_Helper:
 
         Instance Variables:
             self.model (str): The model configuration loaded from common.get_configs("model").
-            self.resolution (str): The video resolution. Initialized as None and set later when needed.
+            self.resolution (str): The video resolution. Initialised as None and set later when needed.
             self.video_title (str): The title of the video.
         """
-        self.model = common.get_configs("model")
+        self.tracking_model = common.get_configs("tracking_model")
+        self.segment_model = common.get_configs("segment_model")
         self.resolution = None
         self.video_title = video_title
 
@@ -393,7 +397,7 @@ class Youtube_Helper:
             input_path (str): The file path to the original video.
             output_path (str): The destination file path where the trimmed video will be saved.
             start_time (float or str): The start time for the trimmed segment. This can be specified in seconds
-                                       or in a time format recognized by MoviePy.
+                                       or in a time format recognised by MoviePy.
             end_time (float or str): The end time for the trimmed segment. Similar to start_time, it can be in seconds
                                      or another supported time format.
 
@@ -476,13 +480,13 @@ class Youtube_Helper:
         # Construct ffmpeg command
         command = [
             "ffmpeg",
-            "-i", input_path,  # Input file
-            "-c:v", codec,  # Use appropriate codec
-            "-preset", preset,  # Compression speed/efficiency tradeoff
-            "-crf", str(crf),  # Constant Rate Factor (lower = better quality, larger file)
-            output_path,  # Temporary output file
+            "-i", input_path,       # Input file
+            "-c:v", codec,          # Use appropriate codec
+            "-preset", preset,      # Compression speed/efficiency tradeoff
+            "-crf", str(crf),       # Constant Rate Factor (lower = better quality, larger file)
+            output_path,            # Temporary output file
             "-progress", "pipe:1",  # Enables real-time progress output
-            "-nostats"  # Suppresses extra logs
+            "-nostats"              # Suppresses extra logs
         ]
 
         try:
@@ -522,15 +526,29 @@ class Youtube_Helper:
         return youtube_id
 
     @staticmethod
-    def create_video_from_images(image_folder, output_video_path, frame_rate=30):
+    def create_video_from_images(image_folder, output_path, video_title,
+                                 seg_mode=False, bbox_mode=False, frame_rate=30):
         """
         Creates a video file from a sequence of image frames.
+        The output filename will reflect the mode used.
 
         Parameters:
             image_folder (str): Folder containing frame images.
-            output_video_path (str): Path where the output video will be saved.
+            output_path (str): Directory where the output video will be saved.
+            video_title (str): Base title for the video.
+            seg_mode (bool): Whether segmentation mode is used.
+            bbox_mode (bool): Whether bounding box mode is used.
             frame_rate (int or float): Frame rate for the video.
         """
+        # Decide on the output filename based on mode
+        if bbox_mode:
+            output_filename = f"{video_title}_mod_bbox.mp4"
+        elif seg_mode:
+            output_filename = f"{video_title}_mod_seg.mp4"
+        else:
+            output_filename = f"{video_title}_mod.mp4"
+
+        output_video_path = os.path.join(output_path, output_filename)
         os.makedirs(os.path.dirname(output_video_path), exist_ok=True)
 
         def extract_frame_number(filename):
@@ -568,9 +586,10 @@ class Youtube_Helper:
 
         video.release()
         logger.info(f"Video created successfully at: {output_video_path}")
+        return output_video_path
 
     @staticmethod
-    def merge_txt_to_csv_dynamically(txt_location, output_csv, frame_count):
+    def merge_txt_to_csv_dynamically_bbox(txt_location, output_csv, frame_count):
         """
         Merges YOLO-format label data from a .txt file into a CSV, frame by frame.
 
@@ -600,6 +619,44 @@ class Youtube_Helper:
             df.to_csv(output_csv, index=False, mode='w')  # If the CSV does not exist, create it
         else:
             df.to_csv(output_csv, index=False, mode='a', header=False)  # If it exists, append without header
+
+    @staticmethod
+    def merge_txt_to_csv_dynamically_seg(txt_location, output_csv, frame_count):
+        """
+        Merges YOLO-format segmentation+tracking label data from a .txt file into a CSV, frame by frame.
+        Handles possible formatting issues gracefully.
+        """
+
+        new_txt_file_name = os.path.join(txt_location, f"label_{frame_count}.txt")
+        if not os.path.isfile(new_txt_file_name) or os.stat(new_txt_file_name).st_size == 0:
+            return  # No labels for this frame
+
+        rows = []
+        with open(new_txt_file_name, 'r') as f:
+            for line in f:
+                parts = line.strip().split()
+                if len(parts) < 4:
+                    continue  # skip malformed line
+                try:
+                    class_id = int(parts[0])
+                    # Everything except the first (class_id) and last (track_id) are mask coordinates
+                    mask_coords = parts[1:-1]
+                    track_id = int(parts[-1])
+                    mask_points = " ".join(mask_coords)
+                    rows.append([class_id, mask_points, track_id, frame_count])
+                except Exception:
+                    continue
+
+        if not rows:
+            return
+
+        df = pd.DataFrame(rows, columns=["YOLO_id", "Mask_Polygon", "Unique_Id", "Frame_Count"])
+
+        # Append the DataFrame to the CSV file
+        if not os.path.exists(output_csv):
+            df.to_csv(output_csv, index=False, mode='w')
+        else:
+            df.to_csv(output_csv, index=False, mode='a', header=False)
 
     @staticmethod
     def delete_folder(folder_path):
@@ -707,7 +764,7 @@ class Youtube_Helper:
             raise KeyError("The CSV file does not have a 'iso3' column.")
 
         if "population_country" not in data.columns:
-            data["population_country"] = None  # Initialize the column if it doesn't exist
+            data["population_country"] = None  # Initialise the column if it doesn't exist
 
         # Get the latest population data
         latest_population = Youtube_Helper.get_latest_population()
@@ -752,58 +809,59 @@ class Youtube_Helper:
     @staticmethod
     def update_csv_with_fps(df):
         """
-        Updates the existing CSV file by adding a new column 'fps_list' with the FPS values for each video's IDs.
-
-        Args:
-            file_path (str): The path to the CSV file to be updated.
+        Updates the existing CSV file by adding/updating the 'fps_list' column
+        with the FPS values for each video's IDs from local files.
+        If the file does not exist, the previous FPS value is kept.
         """
-        def get_fps(video_id):
+        def get_local_fps(video_file):
+            file_path = os.path.join("videos", f"{video_file}.mp4")
+            if not os.path.isfile(file_path):
+                logger.warning(f"File not found: {file_path}")
+                return None
+            cap = cv2.VideoCapture(file_path)
+            if not cap.isOpened():
+                logger.error(f"Could not open file: {file_path}")
+                return None
+            fps = cap.get(cv2.CAP_PROP_FPS)
+            cap.release()
+            return fps if fps > 0 else None
+
+        def process_videos(video_ids_str, existing_fps_list_str):
+            # Parse video IDs (e.g., '["videos_1", "videos_2"]')
             try:
-                video_url = f"https://www.youtube.com/watch?v={video_id}"
-                ydl_opts = {'quiet': True}
-                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                    info = ydl.extract_info(video_url, download=False)
-                    if not info:
-                        return None
+                video_ids = ast.literal_eval(video_ids_str)
+            except Exception:
+                # fallback if not a valid list string
+                video_ids = [v.strip() for v in video_ids_str.strip("[]").replace("'", "").replace(
+                    '"', '').split(",") if v.strip()]
 
-                    # Extract formats with 720p resolution and FPS information
-                    formats_720p = [
-                        fmt
-                        for fmt in info.get('formats', [])
-                        if fmt.get('height') == 720 and 'fps' in fmt
-                    ]
+            # Parse existing fps_list if present
+            try:
+                existing_fps_list = ast.literal_eval(existing_fps_list_str) if pd.notnull(
+                    existing_fps_list_str) else [None]*len(video_ids)
+            except Exception:
+                existing_fps_list = [None]*len(video_ids)
 
-                    if formats_720p:
-                        # Select the format with the highest FPS
-                        first_fps_format = formats_720p[0]
-                        return first_fps_format['fps']
+            # Ensure matching lengths
+            if len(existing_fps_list) < len(video_ids):
+                existing_fps_list += [None] * (len(video_ids) - len(existing_fps_list))
 
-                    # Fallback: No 720p formats with FPS information
-                    logger.warning(f"No valid 720p formats with FPS found for video {video_id}.")
-                    return None
-            except yt_dlp.utils.DownloadError:
-                logger.error(f"Video {video_id} not found or unavailable.")
-                return None
-            except Exception as e:
-                logger.error(f"Error fetching FPS for video {video_id}: {e}")
-                return None
-
-        def process_videos(video_ids, existing_fps_list):
-            video_ids = video_ids.strip("[]").split(",")
-
-            fps_values = []
+            updated_fps_list = []
             for i, video_id in enumerate(video_ids):
-                video_id = video_id.strip()
-                fps = get_fps(video_id)
-                fps_values.append(fps)
-            return str(fps_values)
-        # Process the 'videos' column and add/update the 'fps_list' column
+                fps = get_local_fps(video_id)
+                if fps is not None:
+                    updated_fps_list.append(fps)
+                else:
+                    # Keep previous FPS if file not present
+                    updated_fps_list.append(existing_fps_list[i] if i < len(existing_fps_list) else None)
+            return str(updated_fps_list)
+
+        # Add the 'fps_list' column if not present
         if 'fps_list' not in df.columns:
             df['fps_list'] = None
 
         for index, row in df.iterrows():
-            existing_fps_list = row['fps_list']
-            df.at[index, 'fps_list'] = process_videos(row['videos'], existing_fps_list)
+            df.at[index, 'fps_list'] = process_videos(row['videos'], row.get('fps_list', None))
 
         # Save the updated DataFrame back to the same file
         df.to_csv(common.get_configs("mapping"), index=False)
@@ -968,78 +1026,120 @@ class Youtube_Helper:
         except Exception as e:
             logger.error(f"An error occurred: {e}")
 
-    def prediction_mode(self):
-        """
-        Runs the YOLO object detection model on the video associated with this instance.
+    def update_track_buffer_in_yaml(self, yaml_path, video_fps):
+        # Load existing YAML
+        with open(yaml_path, 'r') as f:
+            config = yaml.safe_load(f)
 
-        The prediction is performed using the configuration stored in the class instance.
-        The output is saved with annotations and optionally visualized.
-        """
-        model = YOLO(self.model)
-        model.predict(source=os.path.join(output_path, f"{self.video_title}.mp4"),
-                      save=True,
-                      conf=confidence,
-                      ave_txt=True,
-                      show=RENDER,
-                      line_width=1,
-                      show_labels=SHOW_LABELS,
-                      show_conf=SHOW_CONF)
+        # Update the track_buffer value
+        config['track_buffer'] = 2 * video_fps
 
-    def tracking_mode(self, input_video_path, output_video_path, flag=0, video_fps=25):
-        """
-        Performs object tracking on a video using YOLO and saves tracking results.
+        # Write it back to the YAML file (overwrite)
+        with open(yaml_path, 'w') as f:
+            yaml.dump(config, f, default_flow_style=False)
 
-        Parameters:
-            input_video_path (str): Path to the input video.
+    def tracking_mode(self, input_video_path, output_video_path, video_title, video_fps, seg_mode, bbox_mode, flag=0):
+        """
+        Performs object tracking on a video using YOLO models and saves results.
+
+        Args:
+            input_video_path (str): Path to the input video file.
             output_video_path (str): Path to save the final output video.
-            video_fps (int, optional): Frames per second for the output video (default is 25).
+            video_fps (int): Frames per second for the output video.
+            flag (int, optional): If set to 1, compiles a video from tracked frames. Defaults to 0.
 
-        This function processes each frame:
-            - Runs YOLO tracking.
-            - Saves annotated frames and tracking data.
-            - Optionally displays the annotated video.
-            - Appends tracking labels to a CSV file.
+        Raises:
+            Exception: If there are errors during video processing or file operations.
+
+        Process:
+            - Updates tracker YAML if custom config is detected.
+            - Initializes YOLO tracking and/or segmentation models.
+            - Sets up directories for outputs (frames, labels, tracked images, videos).
+            - Processes each frame of the input video:
+                * Runs YOLO tracking (detection and/or segmentation mode).
+                * Saves annotated frames and bounding box labels.
+                * Maintains and draws track histories for objects.
+                * Optionally displays frames and saves annotated images.
+                * Aggregates detection labels to CSV files.
+            - Optionally, creates a final output video from tracked frames if `flag` is set.
         """
-        model = YOLO(self.model)
-        cap = cv2.VideoCapture(input_video_path)
 
-        # Store the track history
-        track_history = defaultdict(lambda: [])
+        # If using a custom tracker configuration, update YAML buffer
+        if common.get_configs("bbox_tracker") == "custom_tracker.yaml":
+            # Update tracker YAML
+            yaml_path = 'custom_tracker.yaml'  # or your actual tracker yaml file path
+            self.update_track_buffer_in_yaml(yaml_path, video_fps)
 
-        # Output paths for frames, txt files, and final video
-        frames_output_path = os.path.join("runs", "detect", "frames")
-        annotated_frame_output_path = os.path.join("runs", "detect", "annotated_frames")
-        tracked_frame_output_path = os.path.join("runs", "detect", "tracked_frame")
-        txt_output_path = os.path.join("runs", "detect", "labels")
-        text_filename = os.path.join("runs", "detect", "track", "labels", "image0.txt")
-        display_video_output_path = os.path.join("runs", "detect", "display_video.mp4")
+        # --- Model Initialisation ---
+        if bbox_mode:
+            bbox_model = YOLO(self.tracking_model)        # e.g. "yolo11x.pt"
 
-        # Create directories if they don't exist
-        os.makedirs(frames_output_path, exist_ok=True)
-        os.makedirs(txt_output_path, exist_ok=True)
-        os.makedirs(annotated_frame_output_path, exist_ok=True)
-        os.makedirs(tracked_frame_output_path, exist_ok=True)
+        if seg_mode:
+            seg_model = YOLO(self.segment_model)          # e.g. "yolo11x-seg.pt"
 
-        # Initialize a VideoWriter for the final video
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # type: ignore
-
-        if display_frame_tracking:
-            display_video_writer = cv2.VideoWriter(display_video_output_path,
-                                                   fourcc, video_fps, (int(cap.get(3)), int(cap.get(4))))
-
-        # Open video and get total frames
         cap = cv2.VideoCapture(input_video_path)
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        frame_width, frame_height = int(cap.get(3)), int(cap.get(4))
 
+        # Set up output directories for bounding box mode
+        if bbox_mode:
+            bbox_frames_output_path = os.path.join("runs", "detect", "frames")
+            bbox_annotated_frame_output_path = os.path.join("runs", "detect", "annotated_frames")
+            bbox_tracked_frame_output_path = os.path.join("runs", "detect", "tracked_frame")
+            bbox_txt_output_path = os.path.join("runs", "detect", "labels")
+            bbox_text_filename = os.path.join("runs", "detect", "track", "labels", "image0.txt")
+            bbox_display_video_output_path = os.path.join("runs", "detect", "display_video.mp4")
+            # Ensure output directories exist
+            os.makedirs(bbox_frames_output_path, exist_ok=True)
+            os.makedirs(bbox_txt_output_path, exist_ok=True)
+            os.makedirs(bbox_annotated_frame_output_path, exist_ok=True)
+            os.makedirs(bbox_tracked_frame_output_path, exist_ok=True)
+
+        # Set up output directories for segmentation mode
+        if seg_mode:
+            seg_frames_output_path = os.path.join("runs", "segment", "frames")
+            seg_annotated_frame_output_path = os.path.join("runs", "segment", "annotated_frames")
+            seg_tracked_frame_output_path = os.path.join("runs", "segment", "tracked_frame")
+            seg_txt_output_path = os.path.join("runs", "segment", "labels")
+            seg_text_filename = os.path.join("runs", "segment", "track", "labels", "image0.txt")
+            seg_display_video_output_path = os.path.join("runs", "segment", "display_video.mp4")
+            # Ensure output directories exist
+            os.makedirs(seg_frames_output_path, exist_ok=True)
+            os.makedirs(seg_txt_output_path, exist_ok=True)
+            os.makedirs(seg_annotated_frame_output_path, exist_ok=True)
+            os.makedirs(seg_tracked_frame_output_path, exist_ok=True)
+
+        # Initialize video writers for displaying tracking/segmentation results
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # type: ignore
+
+        if bbox_mode and display_frame_tracking:
+            bbox_video_writer = cv2.VideoWriter(bbox_display_video_output_path,
+                                                fourcc,
+                                                video_fps,
+                                                (frame_width, frame_height))
+
+        if seg_mode and display_frame_segmentation:
+            seg_video_writer = cv2.VideoWriter(seg_display_video_output_path,
+                                               fourcc,
+                                               video_fps,
+                                               (frame_width, frame_height))
+
+        # Handle progress bar for feedback
         if total_frames == 0:
-            print("Warning: Could not determine total frames. Progress bar may not work correctly.")
+            logger.warning("Warning: Could not determine total frames. Progress bar may not work correctly.")
             total_frames = None  # Prevent tqdm from setting a fixed length
 
         # Setup progress bar
         progress_bar = tqdm(total=total_frames, unit="frames", dynamic_ncols=True)
-
-        # Loop through the video frames
         frame_count = 0  # Variable to track the frame number
+
+        # Track history for drawing tracking lines
+        if seg_mode:
+            seg_track_history = defaultdict(lambda: [])
+
+        if bbox_mode:
+            bbox_track_history = defaultdict(lambda: [])
+
         while cap.isOpened():
             # Read a frame from the video
             success, frame = cap.read()
@@ -1048,89 +1148,183 @@ class Youtube_Helper:
 
                 frame_count += 1  # Increment frame count
                 # Run YOLO tracking on the frame, persisting tracks between frames
-                results = model.track(frame,
-                                      tracker='bytetrack.yaml',
-                                      persist=True,
-                                      conf=confidence,
-                                      save=True,
-                                      save_txt=True,
-                                      line_width=LINE_TICKNESS,
-                                      show_labels=SHOW_LABELS,
-                                      show_conf=SHOW_CONF,
-                                      show=RENDER,
-                                      verbose=False)
+
+                if seg_mode:
+                    seg_results = seg_model.track(frame,
+                                                  tracker=common.get_configs("seg_tracker"),
+                                                  persist=True,
+                                                  conf=confidence,
+                                                  save=True,
+                                                  save_txt=True,
+                                                  line_width=LINE_THICKNESS,
+                                                  show_labels=SHOW_LABELS,
+                                                  show_conf=SHOW_CONF,
+                                                  show=RENDER,
+                                                  verbose=False)
+
+                if bbox_mode:
+                    bbox_results = bbox_model.track(frame,
+                                                    tracker=common.get_configs("bbox_tracker"),
+                                                    persist=True,
+                                                    conf=confidence,
+                                                    save=True,
+                                                    save_txt=True,
+                                                    line_width=LINE_THICKNESS,
+                                                    show_labels=SHOW_LABELS,
+                                                    show_conf=SHOW_CONF,
+                                                    show=RENDER,
+                                                    verbose=False)
 
                 # Update progress bar
                 progress_bar.update(1)
 
                 # Get the boxes and track IDs
-                boxes = results[0].boxes.xywh.cpu()  # type: ignore
-                if boxes.size(0) == 0:
-                    with open(text_filename, 'w') as file:   # noqa: F841
-                        pass
+                if seg_mode:
+                    seg_boxes = seg_results[0].boxes.xywh.cpu()  # type: ignore
+                    if seg_boxes.size(0) == 0:
+                        with open(seg_text_filename, 'w') as file:   # noqa: F841
+                            pass
+
+                # Get the boxes and track IDs
+                if bbox_mode:
+                    bbox_boxes = bbox_results[0].boxes.xywh.cpu()  # type: ignore
+                    if bbox_boxes.size(0) == 0:
+                        with open(bbox_text_filename, 'w') as file:   # noqa: F841
+                            pass
 
                 try:
-                    track_ids = results[0].boxes.id.int().cpu().tolist()  # type: ignore
+                    if seg_mode:
+                        seg_track_ids = seg_results[0].boxes.id.int().cpu().tolist()  # type: ignore
+                    if bbox_mode:
+                        bbox_track_ids = bbox_results[0].boxes.id.int().cpu().tolist()  # type: ignore
 
                     # Visualise the results on the frame
-                    annotated_frame = results[0].plot()
+                    if seg_mode:
+                        seg_annotated_frame = seg_results[0].plot()
+                    if bbox_mode:
+                        bbox_annotated_frame = bbox_results[0].plot()
 
                 # Save annotated frame to file
                     if save_annoted_img:
-                        frame_filename = os.path.join(annotated_frame_output_path, f"frame_{frame_count}.jpg")
-                        cv2.imwrite(frame_filename, annotated_frame)
+                        if seg_mode:
+                            seg_frame_filename = os.path.join(seg_annotated_frame_output_path,
+                                                              f"frame_{frame_count}.jpg")
+                            cv2.imwrite(seg_frame_filename, seg_annotated_frame)
+
+                        if bbox_mode:
+                            bbox_frame_filename = os.path.join(bbox_annotated_frame_output_path,
+                                                               f"frame_{frame_count}.jpg")
+                            cv2.imwrite(bbox_frame_filename, bbox_annotated_frame)
 
                 except Exception:
                     pass
 
                 # Save txt file with bounding box information
-                with open(text_filename, 'r') as text_file:
-                    data = text_file.read()
-                new_txt_file_name = os.path.join("runs", "detect", "labels", f"label_{frame_count}.txt")
-                with open(new_txt_file_name, 'w') as new_file:
-                    new_file.write(data)
+                if seg_mode:
+                    with open(seg_text_filename, 'r') as seg_text_file:
+                        seg_data = seg_text_file.read()
+                    new_txt_file_name_seg = os.path.join("runs", "segment", "labels", f"label_{frame_count}.txt")
 
-                labels_path = os.path.join("runs", "detect", "labels")
-                output_csv_path = os.path.join("runs", "detect", f"{self.video_title}.csv")
+                    with open(new_txt_file_name_seg, 'w') as seg_new_file:
+                        seg_new_file.write(seg_data)
 
-                Youtube_Helper.merge_txt_to_csv_dynamically(labels_path, output_csv_path, frame_count)
+                    seg_labels_path = os.path.join("runs", "segment", "labels")
+                    seg_output_csv_path = os.path.join("runs", "segment", f"{self.video_title}.csv")
 
-                os.remove(text_filename)
+                if bbox_mode:
+                    with open(bbox_text_filename, 'r') as bbox_text_file:
+                        bbox_data = bbox_text_file.read()
+                    new_txt_file_name_bbox = os.path.join("runs", "detect", "labels", f"label_{frame_count}.txt")
+
+                    with open(new_txt_file_name_bbox, 'w') as bbox_new_file:
+                        bbox_new_file.write(bbox_data)
+
+                    bbox_labels_path = os.path.join("runs", "detect", "labels")
+                    bbox_output_csv_path = os.path.join("runs", "detect", f"{self.video_title}.csv")
+
+                # Dynamically save each of the labels to the aggregated csv files
+                if seg_mode:
+                    Youtube_Helper.merge_txt_to_csv_dynamically_seg(seg_labels_path,
+                                                                    seg_output_csv_path,
+                                                                    frame_count)
+                    os.remove(seg_text_filename)
+
+                if bbox_mode:
+                    Youtube_Helper.merge_txt_to_csv_dynamically_bbox(bbox_labels_path,
+                                                                     bbox_output_csv_path,
+                                                                     frame_count)
+                    os.remove(bbox_text_filename)
+
                 if delete_labels is True:
-                    os.remove(os.path.join("runs", "detect", "labels", f"label_{frame_count}.txt"))
+                    if seg_mode:
+                        os.remove(os.path.join("runs", "segment", "labels", f"label_{frame_count}.txt"))
+                    if bbox_mode:
+                        os.remove(os.path.join("runs", "detect", "labels", f"label_{frame_count}.txt"))
 
                 # save the labelled image
                 if delete_frames is False:
-                    image_filename = os.path.join("runs", "detect", "track", "image0.jpg")
-                    new_img_file_name = os.path.join("runs", "detect", "frames", f"frame_{frame_count}.jpg")
-                    shutil.move(image_filename, new_img_file_name)
+                    if seg_mode:
+                        seg_image_filename = os.path.join("runs", "segment", "track", "image0.jpg")
+                        seg_new_img_file_name = os.path.join("runs", "segment", "frames", f"frame_{frame_count}.jpg")
+                        shutil.move(seg_image_filename, seg_new_img_file_name)
+
+                    if bbox_mode:
+                        bbox_image_filename = os.path.join("runs", "segment", "track", "image0.jpg")
+                        bbox_new_img_file_name = os.path.join("runs", "segment", "frames", f"frame_{frame_count}.jpg")
+                        shutil.move(bbox_image_filename, bbox_new_img_file_name)
 
                 # Plot the tracks
                 try:
-                    for box, track_id in zip(boxes, track_ids):
-                        x, y, w, h = box
-                        track = track_history[track_id]
-                        track.append((float(x), float(y)))  # x, y center point
-                        if len(track) > 30:  # retain 90 tracks for 90 frames
-                            track.pop(0)
+                    if seg_mode:
+                        for box, track_id in zip(seg_boxes, seg_track_ids):
+                            x, y, w, h = box
+                            track = seg_track_history[track_id]
+                            track.append((float(x), float(y)))  # x, y center point
+                            if len(track) > 30:
+                                track.pop(0)
 
-                        # Draw the tracking lines
-                        points = np.hstack(track).astype(np.int32).reshape((-1, 1, 2))
-                        cv2.polylines(annotated_frame, [points], isClosed=False, color=(230, 230, 230),
-                                      thickness=LINE_TICKNESS*5)
+                            # Draw the tracking lines
+                            points = np.hstack(track).astype(np.int32).reshape((-1, 1, 2))
+                            cv2.polylines(seg_annotated_frame, [points], isClosed=False, color=(230, 230, 230),
+                                          thickness=LINE_THICKNESS*5)
+
+                    if bbox_mode:
+                        for box, track_id in zip(bbox_boxes, bbox_track_ids):
+                            x, y, w, h = box
+                            track = bbox_track_history[track_id]
+                            track.append((float(x), float(y)))  # x, y center point
+                            if len(track) > 30:
+                                track.pop(0)
+
+                            # Draw the tracking lines
+                            points = np.hstack(track).astype(np.int32).reshape((-1, 1, 2))
+                            cv2.polylines(bbox_annotated_frame, [points], isClosed=False, color=(230, 230, 230),
+                                          thickness=LINE_THICKNESS*5)
 
                 except Exception:
                     pass
 
                 # Display the annotated frame
                 if display_frame_tracking:
-                    cv2.imshow("YOLOv11 Tracking", annotated_frame)
-                    display_video_writer.write(annotated_frame)
+                    if seg_mode:
+                        cv2.imshow("YOLOv11 Segmentation & Tracking", seg_annotated_frame)
+                        seg_video_writer.write(seg_annotated_frame)
+
+                    if bbox_mode:
+                        cv2.imshow("YOLOv11 Tracking", bbox_annotated_frame)
+                        bbox_video_writer.write(bbox_annotated_frame)
 
                 # Save the annotated frame here
                 if save_tracked_img:
-                    frame_filename = os.path.join(tracked_frame_output_path, f"frame_tracked_{frame_count}.jpg")
-                    cv2.imwrite(frame_filename, annotated_frame)
+                    if seg_mode:
+                        seg_frame_filename = os.path.join(seg_tracked_frame_output_path,
+                                                          f"frame_tracked_{frame_count}.jpg")
+                        cv2.imwrite(seg_frame_filename, seg_annotated_frame)
+
+                    if bbox_mode:
+                        bbox_frame_filename = os.path.join(bbox_tracked_frame_output_path,
+                                                           f"frame_tracked_{frame_count}.jpg")
+                        cv2.imwrite(bbox_frame_filename, bbox_annotated_frame)
 
                 # Break the loop if 'q' is pressed
                 if cv2.waitKey(1) & 0xFF == ord("q"):
@@ -1143,7 +1337,18 @@ class Youtube_Helper:
         cv2.destroyAllWindows()
         progress_bar.close()
 
-        if flag == 1:
-            Youtube_Helper.create_video_from_images(image_folder=tracked_frame_output_path,
-                                                    output_video_path=output_video_path,
-                                                    frame_rate=30)
+        if flag:
+            if seg_mode:
+                Youtube_Helper.create_video_from_images(image_folder=seg_tracked_frame_output_path,
+                                                        output_path=output_video_path,
+                                                        video_title=video_title,
+                                                        seg_mode=seg_mode,
+                                                        bbox_mode=bbox_mode,
+                                                        frame_rate=video_fps)
+            if bbox_mode:
+                Youtube_Helper.create_video_from_images(image_folder=bbox_tracked_frame_output_path,
+                                                        output_path=output_video_path,
+                                                        video_title=video_title,
+                                                        seg_mode=seg_mode,
+                                                        bbox_mode=bbox_mode,
+                                                        frame_rate=video_fps)

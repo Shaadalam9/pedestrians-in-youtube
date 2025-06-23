@@ -95,6 +95,10 @@ while True:  # run this script loop forever
     # create required directories
     os.makedirs(data_path, exist_ok=True)
 
+    # Create the bbox and seg subdirectories
+    os.makedirs(os.path.join(data_path, "bbox"), exist_ok=True)
+    os.makedirs(os.path.join(data_path, "seg"), exist_ok=True)
+
     # Go over rows. Add progress bar.
     for index, row in tqdm(mapping.iterrows(), total=mapping.shape[0]):
         video_ids = [id.strip() for id in row["videos"].strip("[]").split(',')]
@@ -102,13 +106,16 @@ while True:  # run this script loop forever
         end_times = ast.literal_eval(row["end_time"])
         time_of_day = ast.literal_eval(row["time_of_day"])
         iso3 = str(row["iso3"])
+
         # Check if countries is in the list to be analysed
         if countries_analyse and iso3 not in countries_analyse:
             continue
+
         city = str(row["city"])
         state = str(row["state"])
         country = str(row["country"])
         logger.info(f"Processing videos for city={city}, state={state}, country={country}.")
+
         if pd.isna(row["fps_list"]) or row["fps_list"] == '[]':
             fps_values = [0 for _ in range(len(video_ids))]
         else:
@@ -116,6 +123,9 @@ while True:  # run this script loop forever
 
         for vid_index, (vid, start_times_list, end_times_list, time_of_day_list) in enumerate(zip(
                 video_ids, start_times, end_times, time_of_day)):
+
+            seg_mode = common.get_configs("segmentation_mode")
+            bbox_mode = common.get_configs("tracking_mode")
 
             # Define a base video file path for the downloaded original video
             base_video_path = os.path.join(output_path, f"{vid}.mp4")
@@ -167,19 +177,39 @@ while True:  # run this script loop forever
                 video_fps = helper.get_video_fps(base_video_path)  # try to get FPS value of existing file
 
             for start_time, end_time, time_of_day_value in zip(start_times_list, end_times_list, time_of_day_list):
-                # Construct a unique file name for the trimmed segment
-                trimmed_file_path = os.path.join(data_path, f'{vid}_{start_time}.csv')
+                bbox_folders, seg_folders, bbox_paths, seg_paths = [], [], [], []
+                filename = f"{vid}_{start_time}.csv"
 
-                # check if YOLO file is in any of the data folders
-                found_path = None
                 for folder in data_folders:
-                    path = os.path.join(folder, f'{vid}_{start_time}.csv')
-                    if os.path.isfile(path):
-                        found_path = path
-                        break
+                    bbox_path = os.path.join(folder, "bbox", filename)
+                    seg_path = os.path.join(folder, "seg", filename)
 
+                    if os.path.isfile(bbox_path):
+                        bbox_folders.append(folder)
+                        bbox_paths.append(bbox_path)
+
+                    if os.path.isfile(seg_path):
+                        seg_folders.append(folder)
+                        seg_paths.append(seg_path)
+
+                print("here: ", bbox_paths, seg_paths)
+                # If file exists in bbox in any folder and seg in any folder, treat as both present
+                if bbox_folders and seg_folders:
+                    found_path = list(zip(bbox_paths, seg_paths))  # you may want to customize how you handle this
+                    bbox_mode = False
+                    seg_mode = False
+                elif bbox_folders:
+                    found_path = bbox_paths
+                    bbox_mode = False
+                elif seg_folders:
+                    found_path = seg_paths
+                    seg_mode = False
+                else:
+                    found_path = None
+
+                print("it is ", bbox_mode, seg_mode)
                 # If the YOLO output file already exists, skip processing for this segment
-                if found_path and (common.get_configs("prediction_mode") or common.get_configs("tracking_mode")):  # noqa: E501
+                if not bbox_mode and not seg_mode:  # noqa: E501
                     logger.info(f"{vid}: YOLO file {vid}_{start_time}.csv exists. Skipping segment.")
                     continue
 
@@ -188,51 +218,93 @@ while True:  # run this script loop forever
 
                 if start_time is None and end_time is None:
                     logger.info(f"{vid}: no trimming required for this video.")
-                elif common.get_configs("prediction_mode") or common.get_configs("tracking_mode"):
+                elif bbox_mode or seg_mode:
                     # trim only if needed
                     logger.info(f"{vid}: trimming in progress for segment {start_time}-{end_time}s.")
+
                     # Adjust end_time if needed (e.g., to account for missing frames)
                     end_time_adj = end_time - 1
                     helper.trim_video(base_video_path, trimmed_video_path, start_time, end_time_adj)
 
                     logger.info(f"{vid}: trimming completed for segment {start_time}-{end_time}s.")
 
-                if common.get_configs("prediction_mode"):
-                    helper.prediction_mode()
-
                 # Tracking mode: process the trimmed segment
-                if common.get_configs("tracking_mode"):
+                if seg_mode or bbox_mode:
                     if video_fps > 0:  # type: ignore
                         logger.info(f"{vid}: YOLO analysis in progress for segment {start_time}-{end_time}s with FPS from file {video_fps}.")  # noqa: E501
-                        helper.tracking_mode(trimmed_video_path, trimmed_video_path, video_fps)  # type: ignore
+
+                        helper.tracking_mode(trimmed_video_path,
+                                             output_path,
+                                             video_title=f"{video_title}_mod.mp4",
+                                             video_fps=video_fps,
+                                             seg_mode=seg_mode,
+                                             bbox_mode=bbox_mode,
+                                             flag=common.get_configs("save_annotated_video"))
+
                     elif fps_values[vid_index] > 0:
                         logger.info(f"{vid}: YOLO analysis in progress for segment {start_time}-{end_time}s with FPS from mapping {fps_values[vid_index]}.")  # noqa: E501
-                        helper.tracking_mode(trimmed_video_path, trimmed_video_path, fps_values[vid_index])
+                        helper.tracking_mode(trimmed_video_path,
+                                             output_path,
+                                             video_title=f"{video_title}_mod.mp4",
+                                             video_fps=fps_values[vid_index],
+                                             seg_mode=seg_mode,
+                                             bbox_mode=bbox_mode,
+                                             flag=common.get_configs("save_annotated_video"))
+
                     else:
                         logger.warning(f"{vid}: FPS value is {video_fps}. Skipping tracking mode.")
 
-                    # Move and rename the generated CSV file from tracking mode
-                    old_file_path = os.path.join("runs", "detect", f"{vid}.csv")
-                    new_file_path = os.path.join("runs", "detect", f"{vid}_{start_time}.csv")
-                    if os.path.exists(old_file_path):
-                        os.rename(old_file_path, new_file_path)
-                    else:
-                        logger.error(f"{vid}: error:{old_file_path} does not exist.")
+                    if bbox_mode:
+                        # Move and rename the generated CSV file from tracking mode
+                        old_file_path = os.path.join("runs", "detect", f"{vid}.csv")
+                        new_file_path = os.path.join("runs", "detect", f"{vid}_{start_time}.csv")
 
-                    # Move the CSV file to the desired folder
-                    if os.path.exists(new_file_path):
-                        shutil.move(new_file_path, data_path)
-                    else:
-                        logger.error(f"{vid}: error: {new_file_path} does not exist.")
+                        if os.path.exists(old_file_path):
+                            os.rename(old_file_path, new_file_path)
+                        else:
+                            logger.error(f"{vid}: error:{old_file_path} does not exist.")
+
+                        # Move the CSV file to the desired folder
+                        if os.path.exists(new_file_path):
+                            shutil.move(new_file_path, os.path.join(data_path, "bbox"))
+                        else:
+                            logger.error(f"{vid}: error: {new_file_path} does not exist.")
+
+                    if seg_mode:
+                        # Move and rename the generated CSV file from tracking mode
+                        old_file_path = os.path.join("runs", "segment", f"{vid}.csv")
+                        new_file_path = os.path.join("runs", "segment", f"{vid}_{start_time}.csv")
+                        if os.path.exists(old_file_path):
+                            os.rename(old_file_path, new_file_path)
+                        else:
+                            logger.error(f"{vid}: error:{old_file_path} does not exist.")
+
+                        # Move the CSV file to the desired folder
+                        if os.path.exists(new_file_path):
+                            shutil.move(new_file_path, os.path.join(data_path, "seg"))
+                        else:
+                            logger.error(f"{vid}: error: {new_file_path} does not exist.")
 
                     if delete_runs_files:
-                        shutil.rmtree(os.path.join("runs", "detect"))
+                        if bbox_mode:
+                            shutil.rmtree(os.path.join("runs", "detect"))
+
+                        if seg_mode:
+                            shutil.rmtree(os.path.join("runs", "segment"))
+
                     else:
-                        source_folder = os.path.join("runs", "detect")
-                        destination_folder = os.path.join("runs", f"{video_title}_{resolution}_{datetime.now()}")
-                        helper.rename_folder(source_folder, destination_folder)
-                # remove trimmed file
-                if common.get_configs("prediction_mode") or common.get_configs("tracking_mode"):
+                        if bbox_mode:
+                            source_folder = os.path.join("runs", "detect")
+                            destination_folder = os.path.join("runs", f"{video_title}_{resolution}_{datetime.now()}")
+                            helper.rename_folder(source_folder, destination_folder)
+
+                        if seg_mode:
+                            source_folder = os.path.join("runs", "segment")
+                            destination_folder = os.path.join("runs", f"{video_title}_{resolution}_{datetime.now()}")
+                            helper.rename_folder(source_folder, destination_folder)
+
+                # Remove trimmed file
+                if common.get_configs("tracking_mode"):
                     os.remove(trimmed_video_path)
 
             # Optionally delete the original video after processing if needed
