@@ -1935,6 +1935,6 @@ id,city,state,country,iso3,continent,lat,lon,gmp,population_city,population_coun
 1934,Beclean,,Romania,ROU,Europe,47.1799314,24.1791099,0.0,0.0,19286123.0,10.3,99.0,171.0,45.1,35.8,27.42,[WnWDx3VXaqA],[[0]],[[3226]],[[3707]],[0],[2052022],[30],[UCaAlrRQ1jgTEVht2-zcCTCg]
 1935,Codlea,,Romania,ROU,Europe,45.6924431,25.4490362,0.0,20534.0,19286123.0,10.3,99.0,171.0,45.1,35.8,48.78,[WnWDx3VXaqA],[[0]],[[5944]],[[6272]],[0],[02052022],[30],[UCaAlrRQ1jgTEVht2-zcCTCg]
 1936,Bielsko-Biała,,Poland,POL,Europe,49.823588,19.045143,0.0,176515.0,37950802.0,9.4,99.8,173.0,42.4,30.2,121.75,[lVfQqhZjJbo],[[1]],[[14]],[[1292]],[0],[10032025],[30],[UCRRmfOBOziJ8J2moFnmvwSw]
-1937,Brno,,Czechia,CZE,Europe,49.1922443,16.6113382,0.0,379466.0,10698896.0,5.9,0.0,175.0,43.9,25.0,28.12,[fHhpSf1_Zf0],[[0]],[[0]],[[288]],[0],[06122016],[30],[UCXAMx3D3UqiM5aukWNiISYA]
+1937,Brno,,Czechia,CZE,Europe,49.1922443,16.6113382,0.0,379466.0,10698896.0,5.9,0.0,175.0,43.9,25.0,28.12,[fHhpSf1_Zf0],"[[0, 1]]","[[0, 19454]]","[[288, 19837]]",[0],[6122016],[30],[UCXAMx3D3UqiM5aukWNiISYA]
 1938,Rosice,,Czechia,CZE,Europe,49.1825874,16.3878251,0.0,5287.0,10698896.0,5.9,0.0,175.0,43.9,25.0,0.0,[fHhpSf1_Zf0],[[0]],[[969]],[[1317]],[0],[06122016],[30],[UCXAMx3D3UqiM5aukWNiISYA]
 1939,Poysdorf,,Austria,AUT,Europe,48.6678922,16.6291796,0.0,2620.0,8917205.0,4.9,0.0,173.0,44.8,30.8,0.0,[fHhpSf1_Zf0],[[0]],[[4439]],[[4641]],[0],[06122016],[30],[UCXAMx3D3UqiM5aukWNiISYA]
