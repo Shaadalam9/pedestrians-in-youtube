@@ -1957,3 +1957,5 @@ id,city,state,country,iso3,continent,lat,lon,gmp,population_city,population_coun
 1956,Sinaia,,Romania,ROU,Europe,45.3454687,25.5481055,0.0,11918.0,19286123.0,10.3,99.0,171.0,45.1,35.8,0.0,"[DqWyMpAbRpo,071F6kuc4R4]","[[0], [0]]","[[5320], [0]]","[[5884], [688]]","[0,0]","[3062023,5012024]","[30,30]","[UC8_7cWET-AU1lUFc5OELpRQ,UC8_7cWET-AU1lUFc5OELpRQ]"
 1957,Bușteni,,Romania,ROU,Europe,45.4147706,25.5354853,0.0,0.0,19286123.0,10.3,99.0,171.0,45.1,35.8,37.25,[DqWyMpAbRpo],[[0]],[[5987]],[[6370]],[0],[03062023],[30],[UC8_7cWET-AU1lUFc5OELpRQ]
 1958,Azuga,,Romania,ROU,Europe,45.4444432,25.5693383,0.0,0.0,19286123.0,10.3,99.0,171.0,45.1,35.8,0.0,[DqWyMpAbRpo],[[0]],[[6480]],[[6590]],[0],[03062023],[30],[UC8_7cWET-AU1lUFc5OELpRQ]
+1959,Jastrzębia Góra,,Poland,POL,Europe,54.8304419,18.3044272,0.0,1068.0,37950802.0,9.4,99.8,173.0,42.4,30.2,0.0,[8nG2FvPU4e8],[[0]],[[0]],[[256]],[0],[24062025],[30],[UC3HiFK4UxSfghmqu433PKxA]
+1960,Władysławowo,,Poland,POL,Europe,54.7901316,18.4087342,0.0,14889,37950802,9.4,99.8,173,42.4,30.2,31.25,[8nG2FvPU4e8],[[0]],[[460]],[[640]],[0],[24062025],[30],[UC3HiFK4UxSfghmqu433PKxA]
