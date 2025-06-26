@@ -1938,7 +1938,7 @@ id,city,state,country,iso3,continent,lat,lon,gmp,population_city,population_coun
 1937,Brno,,Czechia,CZE,Europe,49.1922443,16.6113382,0.0,379466.0,10698896.0,5.9,0.0,175.0,43.9,25.0,28.12,[fHhpSf1_Zf0],"[[0,1]]","[[0,19454]]","[[288,19837]]",[0],[6122016],[30],[UCXAMx3D3UqiM5aukWNiISYA]
 1938,Rosice,,Czechia,CZE,Europe,49.1825874,16.3878251,0.0,5287.0,10698896.0,5.9,0.0,175.0,43.9,25.0,0.0,[fHhpSf1_Zf0],[[0]],[[969]],[[1317]],[0],[06122016],[30],[UCXAMx3D3UqiM5aukWNiISYA]
 1939,Poysdorf,,Austria,AUT,Europe,48.6678922,16.6291796,0.0,2620.0,8917205.0,4.9,0.0,173.0,44.8,30.8,0.0,[fHhpSf1_Zf0],[[0]],[[4439]],[[4641]],[0],[06122016],[30],[UCXAMx3D3UqiM5aukWNiISYA]
-1940,Katowice,,Poland,POL,Europe,50.26301,19.018707,0.0,317316.0,37950802.0,9.4,99.8,173.0,42.4,30.2,157.17,[A1AhqHj6n8E],[[1]],[[106]],[[545]],[0],[19052023],[30],[UCynIvCggyEK-tjdXgQy2FUQ]
+1940,Katowice,,Poland,POL,Europe,50.261473,19.022139,0.0,317316.0,37950802.0,9.4,99.8,173.0,42.4,30.2,157.17,"[A1AhqHj6n8E,U708FVIBurw]","[[1], [0]]","[[106], [35]]","[[545], [1596]]","[0,0]","[19052023,4022024]","[30,30]","[UCynIvCggyEK-tjdXgQy2FUQ,UC62XLEy4ZRTL2q8YzOJBDow]"
 1941,Sosnowiec,,Poland,POL,Europe,50.2712401,19.2155628,0.0,227295.0,37950802.0,9.4,99.8,173.0,42.4,30.2,0.0,[A1AhqHj6n8E],[[1]],[[641]],[[1272]],[0],[19052023],[30],[UCynIvCggyEK-tjdXgQy2FUQ]
 1942,Mysłowice,,Poland,POL,Europe,50.2414715,19.1414528,0.0,72124.0,37950802.0,9.4,99.8,173.0,42.4,30.2,0.0,[A1AhqHj6n8E],[[1]],[[1408]],[[2009]],[0],[19052023],[30],[UCynIvCggyEK-tjdXgQy2FUQ]
 1943,Visegrád,,Hungary,HUN,Europe,47.7845811,18.9703373,0.0,1841.0,9749763.0,7.7,99.1,170.0,44.5,29.6,0.0,[inS0-1PLmXE],[[0]],[[0]],[[180]],[0],[21062025],[30],[UCBtU1_6MnzUBwV-a3hDqLIw]
@@ -1980,3 +1980,6 @@ id,city,state,country,iso3,continent,lat,lon,gmp,population_city,population_coun
 1979,Witów,,Poland,POL,Europe,51.7192903,18.5630286,0.0,0.0,37950802.0,9.4,99.8,173.0,42.4,30.2,0.0,[XX9aFHAYDpA],[[0]],[[5842]],[[6130]],[0],[28062024],[30],[UCsqXOz5GyIaFsOQJZ5BfCJw]
 1980,Książenice,,Poland,POL,Europe,52.0744325,20.7020181,0.0,2459.0,37950802.0,9.4,99.8,173.0,42.4,30.2,0.0,[jcQwHnaVaOY],[[0]],[[110]],[[1007]],[0],[09032025],[30],[UCAhkUEDfztvmwDvEYeTB88g]
 1981,Grodzisk Mazowiecki,,Poland,POL,Europe,52.1066223,20.6313441,0.0,26684.0,37950802.0,9.4,99.8,173.0,42.4,30.2,38.46,[jcQwHnaVaOY],[[0]],[[1200]],[[4107]],[0],[09032025],[30],[UCAhkUEDfztvmwDvEYeTB88g]
+1982,Pula,,Croatia,HRV,Europe,44.8702281,13.8455311,0.0,52220.0,4047200.0,7.9,99.45,174.0,44.8,29.7,26.09,[niqOzOUJQcE],[[0]],[[0]],[[443]],[0],[11112021],[30],[UCDA38HtNUTpGoV2fC-u8Epw]
+1983,Krk,,Croatia,HRV,Europe,45.027557,14.575252,0.0,0.0,4047200.0,7.9,99.45,174.0,44.8,29.7,0.0,[niqOzOUJQcE],[[0]],[[6901]],[[8281]],[0],[11112021],[30],[UCDA38HtNUTpGoV2fC-u8Epw]
+1984,Baška,,Croatia,HRV,Europe,44.9709329,14.7508013,0.0,1656,4047200,7.9,99.45,174,44.8,29.7,0.0,[niqOzOUJQcE],[[0]],[[10561]],[[11450]],[0],[11112021],[30],[UCDA38HtNUTpGoV2fC-u8Epw]
