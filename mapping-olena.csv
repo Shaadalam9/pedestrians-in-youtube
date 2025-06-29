@@ -2141,3 +2141,4 @@ id,city,state,country,iso3,continent,lat,lon,gmp,population_city,population_coun
 2140,Narvik,,Norway,NOR,Europe,68.4383796,17.4271978,0.0,14141.0,5379475.0,2.1,0.0,173.0,40.6,27.6,19.05,[O7De8x730cE],[[0]],[[11787]],[[13289]],[0],[18032024],[30],[UCR5uGBgfIxKT4zUIFnPXYeQ]
 2141,Fauske,,Norway,NOR,Europe,67.259239,15.394764,0.0,9739.0,5379475.0,2.1,0.0,173.0,40.6,27.6,0.0,[O7De8x730cE],[[0]],[[26145]],[[26464]],[0],[18032024],[30],[UCR5uGBgfIxKT4zUIFnPXYeQ]
 2142,Ålesund,,Norway,NOR,Europe,62.4802363,6.5550739,0.0,52626.0,5379475.0,2.1,0.0,173.0,40.6,27.6,0.0,[kPWh0Rf_LrE],[[0]],[[25]],[[1268]],[1],[08102023],[30],[UCypDyNhp0B0ug3ERtNQuH7Q]
+2143,Volda,,Norway,NOR,Europe,62.145457,6.066856,0.0,10809,5379475,2.1,0.0,173,40.6,27.6,0.0,[kPWh0Rf_LrE],[[0]],[[5929]],[[6141]],[1],[08102023],[30],[UCypDyNhp0B0ug3ERtNQuH7Q]
