@@ -2256,4 +2256,11 @@ id,city,state,country,iso3,continent,lat,lon,gmp,population_city,population_coun
 2255,Trier,,Germany,DEU,Europe,49.7596208,6.6441878,0.0,100129.0,83240525.0,3.8,0.0,173.0,46.7,31.9,44.83,[HalcqSkO0vo],[[0]],[[0]],[[1288]],[0],[04092020],[30],[UCNnsWJsSZIeQHXruukfQR_Q]
 2256,Essen,,Germany,DEU,Europe,51.4582235,7.0158171,0.0,593085.0,83240525.0,3.8,0.0,173.0,46.7,31.9,31.71,"[TPjxocdAnzo,G59Tq2E5Flg]","[[0], [0]]","[[0], [0]]","[[921], [1117]]","[0,0]","[13092020,14092020]","[30,30]","[UCNnsWJsSZIeQHXruukfQR_Q,UCNnsWJsSZIeQHXruukfQR_Q]"
 2257,Ramsau,,Germany,DEU,Europe,47.6070066,12.8968243,0.0,1806.0,83240525.0,3.8,0.0,173.0,46.7,31.9,0.0,[KaJv_bXsJTg],[[0]],[[468]],[[760]],[0],[27112020],[30],[UCNnsWJsSZIeQHXruukfQR_Q]
-2258,Bochum,,Germany,DEU,Europe,51.4818111,7.2196635,0.0,385729,83240525,3.8,0.0,173,46.7,31.9,31.03,[sxLjx47TyUc],[[0]],[[0]],[[1014]],[0],[14032021],[30],[UCNnsWJsSZIeQHXruukfQR_Q]
+2258,Bochum,,Germany,DEU,Europe,51.4818111,7.2196635,0.0,385729.0,83240525.0,3.8,0.0,173.0,46.7,31.9,31.03,[sxLjx47TyUc],[[0]],[[0]],[[1014]],[0],[14032021],[30],[UCNnsWJsSZIeQHXruukfQR_Q]
+2259,Gelsenkirchen,,Germany,DEU,Europe,51.5110321,7.0960124,0.0,270028.0,83240525.0,3.8,0.0,173.0,46.7,31.9,32.35,[tGSeGwxrlaM],[[0]],[[0]],[[1094]],[0],[28032021],[30],[UCNnsWJsSZIeQHXruukfQR_Q]
+2260,Mannheim,,Germany,DEU,Europe,49.4892913,8.4673098,0.0,307960.0,83240525.0,3.8,0.0,173.0,46.7,31.9,21.43,[EFhNPydMWAE],"[[0, 0]]","[[0, 396]]","[[395, 1356]]",[0],[11042021],[30],[UCNnsWJsSZIeQHXruukfQR_Q]
+2261,Heidelberg,,Germany,DEU,Europe,49.4093582,8.694724,0.0,143345.0,83240525.0,3.8,0.0,173.0,46.7,31.9,16.67,[IP-V_YAOk74],[[0]],[[0]],[[1358]],[0],[17042021],[30],[UCNnsWJsSZIeQHXruukfQR_Q]
+2262,Wuppertal,,Germany,DEU,Europe,51.264018,7.1780374,0.0,360797.0,83240525.0,3.8,0.0,173.0,46.7,31.9,0.0,[pc_PG203oyE],[[0]],[[0]],[[1715]],[0],[25042021],[30],[UCNnsWJsSZIeQHXruukfQR_Q]
+2263,Aachen,,Germany,DEU,Europe,50.776351,6.083862,0.0,265208.0,83240525.0,3.8,0.0,173.0,46.7,31.9,27.78,[ygogKNF5XxY],[[0]],[[0]],[[1680]],[0],[02052021],[30],[UCNnsWJsSZIeQHXruukfQR_Q]
+2264,Leverkusen,,Germany,DEU,Europe,51.0324743,6.9881194,0.0,162738.0,83240525.0,3.8,0.0,173.0,46.7,31.9,21.43,[XFyDHASQ45M],"[[0, 0]]","[[0, 908]]","[[669, 1008]]",[0],[9052021],[30],[UCNnsWJsSZIeQHXruukfQR_Q]
+2265,Münster,,Germany,DEU,Europe,51.9625101,7.6251879,0.0,270184.0,83240525.0,3.8,0.0,173.0,46.7,31.9,24.24,[U2lZcdaCgZY],"[[0, 0]]","[[0, 1088]]","[[1087, 1316]]",[0],[30052021],[30],[UCNnsWJsSZIeQHXruukfQR_Q]
