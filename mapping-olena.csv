@@ -2252,4 +2252,6 @@ id,city,state,country,iso3,continent,lat,lon,gmp,population_city,population_coun
 2251,Bonn,,Germany,DEU,Europe,50.7352621,7.1024635,0.0,0.0,83240525.0,3.8,0.0,173.0,46.7,31.9,18.92,[WbtHH4mEl-g],[[0]],[[0]],[[2838]],[0],[23062020],[30],[UCNnsWJsSZIeQHXruukfQR_Q]
 2252,Koblenz,,Germany,DEU,Europe,50.3533278,7.5943951,0.0,107319.0,83240525.0,3.8,0.0,173.0,46.7,31.9,0.0,[ih74a76H_lc],[[0]],[[0]],[[2422]],[0],[02072020],[30],[UCNnsWJsSZIeQHXruukfQR_Q]
 2253,Wiesbaden,,Germany,DEU,Europe,50.0820384,8.2416556,0.0,278609.0,83240525.0,3.8,0.0,173.0,46.7,31.9,23.33,[JDmLr-s8Alo],[[0]],[[0]],[[1225]],[0],[28082020],[30],[UCNnsWJsSZIeQHXruukfQR_Q]
-2254,Mainz,,Germany,DEU,Europe,49.9995205,8.2736253,0.0,217123,83240525,3.8,0.0,173,46.7,31.9,30.0,[ds5ZX1sAmjI],[[0]],[[0]],[[1348]],[0],[04092020],[30],[UCNnsWJsSZIeQHXruukfQR_Q]
+2254,Mainz,,Germany,DEU,Europe,49.9995205,8.2736253,0.0,217123.0,83240525.0,3.8,0.0,173.0,46.7,31.9,30.0,[ds5ZX1sAmjI],[[0]],[[0]],[[1348]],[0],[04092020],[30],[UCNnsWJsSZIeQHXruukfQR_Q]
+2255,Trier,,Germany,DEU,Europe,49.7596208,6.6441878,0.0,100129.0,83240525.0,3.8,0.0,173.0,46.7,31.9,44.83,[HalcqSkO0vo],[[0]],[[0]],[[1288]],[0],[04092020],[30],[UCNnsWJsSZIeQHXruukfQR_Q]
+2256,Essen,,Germany,DEU,Europe,51.4582235,7.0158171,0.0,593085.0,83240525.0,3.8,0.0,173.0,46.7,31.9,31.71,"[TPjxocdAnzo,G59Tq2E5Flg]","[[0], [0]]","[[0], [0]]","[[921], [1117]]","[0,0]","[13092020,14092020]","[30,30]","[UCNnsWJsSZIeQHXruukfQR_Q,UCNnsWJsSZIeQHXruukfQR_Q]"
