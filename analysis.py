@@ -330,36 +330,6 @@ class Analysis():
         plots_class.save_plotly_figure(fig, "world_map", save_final=True)
 
     @staticmethod
-    def get_mapbox_map(df, hover_data=None, file_name="mapbox_map"):
-        """Generate world map with cities using mapbox.
-
-        Args:
-            df (dataframe): dataframe with mapping info.
-            hover_data (list, optional): list of params to show on hover.
-            file_name (str, optional): name of file
-        """
-        # Draw map
-        fig = px.scatter_map(df,
-                             lat="lat",
-                             lon="lon",
-                             hover_data=hover_data,
-                             hover_name="city",
-                             color=df["continent"],
-                             zoom=1.3)  # type: ignore
-        # Update layout
-        fig.update_layout(
-            margin=dict(l=0, r=0, t=0, b=0),  # Reduce margins
-            # modebar_remove=["toImage"],  # remove modebar image button
-            # showlegend=False,  # hide legend if not needed
-            # annotations=[],  # remove any extra annotations
-            mapbox=dict(zoom=1.3),
-            font=dict(family=common.get_configs('font_family'),  # update font family
-                      size=common.get_configs('font_size'))  # update font size
-        )
-        # Save and display the figure
-        plots_class.save_plotly_figure(fig, file_name, save_final=True)
-
-    @staticmethod
     def pedestrian_crossing(dataframe, min_x, max_x, person_id):
         """Counts the number of person with a specific ID crosses the road within specified boundaries.
 
@@ -3177,7 +3147,7 @@ if __name__ == "__main__":
         columns_remove = ['videos', 'time_of_day', 'start_time', 'end_time', 'upload_date', 'fps_list', 'vehicle_type',
                           'channel']
         hover_data = list(set(df.columns) - set(columns_remove))
-        # Analysis.get_mapbox_map(df=df, hover_data=hover_data, file_name='mapbox_map_all')  # mapbox map with all data
+        plots_class.get_mapbox_map(df=df, hover_data=hover_data, file_name='mapbox_map_all')  # mapbox map with all data
 
         # Get the population threshold from the configuration
         population_threshold = common.get_configs("population_threshold")
