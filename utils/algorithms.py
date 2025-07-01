@@ -3,10 +3,9 @@ import common
 from custom_logger import CustomLogger
 from logmod import logs
 import warnings
-from .values import Values
-from .wrappers import Wrappers
+from utils.values import Values
+from utils.wrappers import Wrappers
 import pandas as pd
-from tqdm import tqdm
 
 # Suppress the specific FutureWarning
 warnings.filterwarnings("ignore", category=FutureWarning, module="plotly")
@@ -66,7 +65,7 @@ class Algorithms():
 
         return var
 
-    def calculate_speed_of_crossing(self, df_mapping, dfs, data):
+    def calculate_speed_of_crossing(self, df_mapping, df, data):
         """
         Calculate and organise the walking speeds of individuals crossing in various videos,
         grouping the results by city, state, and crossing condition.
@@ -74,7 +73,7 @@ class Algorithms():
         Args:
             df_mapping (pd.DataFrame): DataFrame mapping video IDs to metadata including
                 city, state, country, and other contextual details.
-            dfs (dict): Dictionary containing DataFrames extracted from YOLO for each video (keyed by video ID).
+            df (dict): Dictionary containing DataFrames extracted from YOLO for each video (keyed by video ID).
             data (dict): Dictionary where keys are video IDs and values are dictionaries
                 mapping person IDs to crossing durations (in frames or seconds).
 
@@ -88,11 +87,14 @@ class Algorithms():
         # Create a dictionary to store country information for each city
         city_country_map_ = {}
 
+        # Group YOLO data by unique person ID
+        grouped = df.groupby('Unique Id')
+
         # Iterate through all video IDs and their corresponding crossing data
-        for key, df in tqdm(data.items(), total=len(data)):
+        for key, id_time in data.items():
             speed_id_compelete = {}  # Store valid speeds for individuals in this video
 
-            if df == {}:  # Skip if there is no data
+            if id_time == {}:  # Skip if there is no data
                 continue
 
             result = values_class.find_values_with_video_id(df_mapping, key)
@@ -108,7 +110,7 @@ class Algorithms():
                 avg_height = result[15]
                 iso3 = result[16]
 
-                value = dfs.get(key)  # Get corresponding YOLO data
+                # value = dfs.get(key)  # Get corresponding YOLO data
 
                 # Store the country associated with each city
                 city_country_map_[f'{city}_{lat}_{long}'] = iso3
@@ -117,11 +119,8 @@ class Algorithms():
                 duration = end - start
                 time_.append(duration)
 
-                # Group YOLO data by unique person ID
-                grouped = value.groupby('Unique Id')
-
                 # Loop through each individual's crossing data in this video
-                for id, time in df.items():
+                for id, time in id_time.items():
                     # Get all frames for this person
                     grouped_with_id = grouped.get_group(id)
 
@@ -134,6 +133,7 @@ class Algorithms():
 
                     # Estimate "pixels per meter" using average height and actual avg_height
                     ppm = mean_height / avg_height
+
                     # Estimate real-world distance crossed (in centimeters)
                     distance = (max_x_center - min_x_center) / ppm
 
@@ -153,7 +153,7 @@ class Algorithms():
 
         return output
 
-    def avg_speed_of_crossing(self, df_mapping, dfs, data):
+    def avg_speed_of_crossing(self, df_mapping, dfs, data, all_speed):
         """
         Calculate the average crossing speed for each city-condition combination.
 
@@ -170,9 +170,7 @@ class Algorithms():
         """
         avg_speed = {}
 
-        speed_dict = self.calculate_speed_of_crossing(df_mapping, dfs, data)
-
-        for city_condition, value_1 in speed_dict.items():
+        for city_condition, value_1 in all_speed.items():
             box = []
             for video_id, value_2 in value_1.items():
                 for unique_id, speed in value_2.items():
@@ -182,7 +180,7 @@ class Algorithms():
 
         return avg_speed
 
-    def time_to_start_cross(self, df_mapping, dfs, data, person_id=0):
+    def time_to_start_cross(self, df_mapping, df, data, person_id=0):
         """
         Calculate the time to start crossing the road of individuals crossing in various videos
         and organise them by city, state, and condition.
@@ -190,7 +188,7 @@ class Algorithms():
         Args:
             df_mapping (dataframe): A DataFrame mapping video IDs to metadata such as
                 city, state, country, and other contextual information.
-            dfs (dict): A dictionary where contains all the csv files extracted from YOLO.
+            df (dict): A dictionary where contains all the csv files extracted from YOLO.
             data (dict): A dictionary where keys are video IDs and values are dictionaries
                 mapping person IDs to crossing durations.
             person_id (int, optional): YOLO unique representation for person
@@ -203,71 +201,69 @@ class Algorithms():
 
         time_compelete = {}
 
-        for key, df in tqdm(dfs.items(), total=len(dfs)):
+        if 'Frame Count' not in df.columns:
+            return
 
-            if 'Frame Count' not in df.columns:
-                continue
-            data_cross = {}
-            time_id_complete = {}
-            crossed_ids = df[(df["YOLO_id"] == person_id)]
+        data_cross = {}
+        time_id_complete = {}
 
-            # Extract relevant information using the find_values function
-            result = values_class.find_values_with_video_id(df_mapping, key)
+        # Filter out the person ids for faster processing
+        crossed_ids = df[(df["YOLO_id"] == person_id)]
 
-            # Check if the result is None (i.e., no matching data was found)
-            if result is not None:
+        # Extract relevant information using the find_values function
+        result = values_class.find_values_with_video_id(df_mapping, next(iter(data)))
 
-                # Makes group based on Unique ID
-                crossed_ids_grouped = crossed_ids.groupby("Unique Id")
+        # Check if the result is None (i.e., no matching data was found)
+        if result is not None:
 
-                for unique_id, group_data in crossed_ids_grouped:
-                    x_values = group_data["X-center"].values
-                    initial_x = x_values[0]  # Initial x-value
-                    mean_height = group_data['Height'].mean()
-                    flag = 0
-                    margin = 0.1 * mean_height  # Margin for considering crossing event
-                    consecutive_frame = 0
+            # Makes group based on Unique ID
+            crossed_ids_grouped = crossed_ids.groupby("Unique Id")
 
-                    for i in range(0, len(x_values)-10, 10):
-                        if initial_x < 0.5:  # Check if crossing from left to right
-                            if (x_values[i] - margin <= x_values[i+10] <= x_values[i] + margin):
-                                consecutive_frame += 1
-                                if consecutive_frame == 3:  # Check for three consecutive frames
-                                    flag = 1
-                            elif flag == 1:
-                                data_cross[unique_id] = consecutive_frame
-                                break
-                            else:
-                                consecutive_frame = 0
+            for unique_id, group_data in crossed_ids_grouped:
+                x_values = group_data["X-center"].values
+                initial_x = x_values[0]  # Initial x-value
+                mean_height = group_data['Height'].mean()
+                flag = 0
+                margin = 0.1 * mean_height  # Margin for considering crossing event
+                consecutive_frame = 0
 
-                        else:  # Check if crossing from right to left
-                            if (x_values[i] - margin >= x_values[i+10] >= x_values[i] + margin):
-                                consecutive_frame += 1
-                                if consecutive_frame == 3:  # Check for three consecutive frames
-                                    flag = 1
-                            elif flag == 1:
-                                data_cross[unique_id] = consecutive_frame
-                                break
-                            else:
-                                consecutive_frame = 0
-                    if consecutive_frame >= 3:
-                        time_id_complete[unique_id] = consecutive_frame
+                for i in range(0, len(x_values)-10, 10):
+                    if initial_x < 0.5:  # Check if crossing from left to right
+                        if (x_values[i] - margin <= x_values[i+10] <= x_values[i] + margin):
+                            consecutive_frame += 1
+                            if consecutive_frame == 3:  # Check for three consecutive frames
+                                flag = 1
+                        elif flag == 1:
+                            data_cross[unique_id] = consecutive_frame
+                            break
+                        else:
+                            consecutive_frame = 0
 
-                if len(data_cross) == 0:
-                    continue
+                    else:  # Check if crossing from right to left
+                        if (x_values[i] - margin >= x_values[i+10] >= x_values[i] + margin):
+                            consecutive_frame += 1
+                            if consecutive_frame == 3:  # Check for three consecutive frames
+                                flag = 1
+                        elif flag == 1:
+                            data_cross[unique_id] = consecutive_frame
+                            break
+                        else:
+                            consecutive_frame = 0
+                if consecutive_frame >= 3:
+                    time_id_complete[unique_id] = consecutive_frame
+            if len(data_cross) == 0:
+                return
 
-                time_compelete[key] = time_id_complete
+            time_compelete[next(iter(data))] = time_id_complete
 
         output = wrapper_class.city_country_wrapper(input_dict=time_compelete, mapping=df_mapping)
 
         return output
 
-    def avg_time_to_start_cross(self, df_mapping, dfs, data):
+    def avg_time_to_start_cross(self, df_mapping, dfs, data, all_time):
         avg_over_time = {}
 
-        output = self.time_to_start_cross(df_mapping, dfs, data)
-
-        for city_condition, value_1 in output.items():
+        for city_condition, value_1 in all_time.items():
             box = []
             for video_id, value_2 in value_1.items():
                 if value_2 is None:

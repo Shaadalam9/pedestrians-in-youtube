@@ -247,6 +247,9 @@ class Plots():
                     ), reverse=True
                 )
 
+        if len(cities_ordered) == 0:
+            return
+
         # Prepare data for day and night stacking
         day_key = f"{metric}_0"
         night_key = f"{metric}_1"
@@ -286,7 +289,10 @@ class Plots():
             # Row for speed (Day and Night)
             row = i + 1
             if day_values[i] is not None and night_values[i] is not None:
-                value = (day_values[i] + night_values[i])/2
+                if data_view == "combined":
+                    value = (day_values[i] + night_values[i])/2
+                else:
+                    value = (day_values[i] + night_values[i])
 
                 fig.add_trace(go.Bar(
                     x=[day_values[i]],
@@ -362,7 +368,10 @@ class Plots():
             row = i + 1
             idx = num_cities_per_col + i
             if day_values[idx] is not None and night_values[idx] is not None:
-                value = (day_values[idx] + night_values[idx])/2
+                if data_view == "combined":
+                    value = (day_values[i] + night_values[i])/2
+                else:
+                    value = (day_values[i] + night_values[i])
 
                 fig.add_trace(go.Bar(
                     x=[day_values[idx]],
