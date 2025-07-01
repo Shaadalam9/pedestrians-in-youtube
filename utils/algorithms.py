@@ -3,10 +3,9 @@ import common
 from custom_logger import CustomLogger
 from logmod import logs
 import warnings
-from .values import Values
-from .wrappers import Wrappers
+from utils.values import Values
+from utils.wrappers import Wrappers
 import pandas as pd
-from tqdm import tqdm
 
 # Suppress the specific FutureWarning
 warnings.filterwarnings("ignore", category=FutureWarning, module="plotly")
@@ -92,7 +91,7 @@ class Algorithms():
         grouped = df.groupby('Unique Id')
 
         # Iterate through all video IDs and their corresponding crossing data
-        for key, id_time in tqdm(data.items(), total=len(data)):
+        for key, id_time in data.items():
             speed_id_compelete = {}  # Store valid speeds for individuals in this video
 
             if id_time == {}:  # Skip if there is no data
@@ -134,6 +133,7 @@ class Algorithms():
 
                     # Estimate "pixels per meter" using average height and actual avg_height
                     ppm = mean_height / avg_height
+
                     # Estimate real-world distance crossed (in centimeters)
                     distance = (max_x_center - min_x_center) / ppm
 

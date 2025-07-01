@@ -388,234 +388,226 @@ class Analysis():
         crossed_ids = filtered_crossed_ids["Unique Id"].unique()
         return crossed_ids
 
-    @staticmethod
-    def calculate_cell_phones(df_mapping):
-        """Plots the relationship between average cell phone usage per person detected vs. traffic mortality.
+    # class-level cache to store metrics for all video files, avoids redundant computation
+    _all_metrics_cache = None  # class-level cache for all metrics
+
+    @classmethod
+    def _compute_all_metrics(cls, df_mapping):
+        """
+        Computes and caches all traffic and object detection metrics for the given video mapping DataFrame.
+
+        This method processes mapping information for video files, scans associated CSV detection results,
+        computes summary metrics per video (such as cell phone usage per person, object counts per minute for
+        various vehicle types, traffic signs, and persons), and caches the results grouped and wrapped by city/country.
+        The results are stored in a class-level cache to avoid repeated computation.
 
         Args:
-            df_mapping (DataFrame): DataFrame containing mapping information.
-            dfs (dict): Dictionary of DataFrames containing video data.
+            df_mapping (pandas.DataFrame): A DataFrame containing metadata about video files,
+                with columns expected to include 'videos', 'start_time', and 'time_of_day'.
+                Each row describes a set of related video segments.
+
+        Side Effects:
+            Updates the class-level cache variable `_all_metrics_cache` with a dictionary containing
+            all metrics, each mapped via `wrapper_class.city_country_wrapper` for aggregation.
+
+        Metrics computed (keys in cache):
+            - "cell_phones": cell phone detections per person, normalized for time
+            - "traffic_signs": count of detected traffic signs (YOLO ids 9, 11)
+            - "vehicles": count of all vehicles (YOLO ids 2, 3, 5, 7)
+            - "bicycles": count of bicycles (YOLO id 1)
+            - "cars": count of cars (YOLO id 3)
+            - "motorcycles": count of motorcycles (YOLO id 2)
+            - "buses": count of buses (YOLO id 5)
+            - "trucks": count of trucks (YOLO id 7)
+            - "persons": count of people (YOLO id 0)
+
+        Note:
+            - The CSV files must follow a naming pattern <video_id>_<start_time>.csv and reside in data folders
+                as configured via `common.get_configs('data')`.
+            - Each CSV must contain at least the columns "YOLO_id" and "Unique Id".
+            - Progress is tracked using tqdm.
         """
-        info, no_person, total_time = {}, {}, {}
-        time_ = []
-        # Iterate through each video DataFrame
-        for index, row in tqdm(df_mapping.iterrows(), total=df_mapping.shape[0]):
+
+        # List of data folders containing detection CSVs
+        data_folders = common.get_configs('data')
+        csv_files = {}
+
+        # Index all CSV files from all configured folders for quick lookup
+        for folder_path in data_folders:
+            for file in os.listdir(folder_path):
+                if file.endswith('.csv'):
+                    csv_files[file] = os.path.join(folder_path, file)
+
+        # Prepare result containers for each metric type
+        cell_phone_info = {}
+        traffic_signs_layer = {}
+        vehicle_layer = {}
+        bicycle_layer = {}
+        car_layer = {}
+        motorcycle_layer = {}
+        bus_layer = {}
+        truck_layer = {}
+        person_layer = {}
+
+        # Process each mapping row (one or more videos per row)
+        for _, row in tqdm(df_mapping.iterrows(), total=df_mapping.shape[0], desc="Analysing the video files:"):
             video_ids = [id.strip() for id in row["videos"].strip("[]").split(',')]
             start_times = ast.literal_eval(row["start_time"])
             time_of_day = ast.literal_eval(row["time_of_day"])
 
-            for vid_index, (vid, start_times_list, time_of_day_list) in enumerate(zip(video_ids, start_times, time_of_day)):  # noqa:E501
+            # Loop through all video_id + start_time pairs
+            for vid, start_times_list, time_of_day_list in zip(video_ids, start_times, time_of_day):
                 for start_time, time_of_day_value in zip(start_times_list, time_of_day_list):
                     filename = f"{vid}_{start_time}.csv"
+                    if filename not in csv_files:
+                        continue  # No detection CSV for this video segment
+                    file_path = csv_files[filename]
 
-                    for folder_path in common.get_configs('data'):
-                        for file in os.listdir(folder_path):
-                            file_path = os.path.join(folder_path, filename)
+                    # Find video meta details (start, end, city, location, etc.)
+                    result = values_class.find_values_with_video_id(df_mapping, f"{vid}_{start_time}")
+                    if result is None:
+                        continue
 
-                            if file == filename:
-                                # Extract relevant information using the find_values function
-                                result = values_class.find_values_with_video_id(df_mapping, f"{vid}_{start_time}")
+                    start = result[1]
+                    end = result[2]
+                    condition = result[3]
+                    city = result[4]
+                    lat = result[6]
+                    long = result[7]
+                    duration = end - start  # Duration in seconds
+                    city_id_format = f'{city}_{lat}_{long}_{condition}'  # noqa:F841
+                    video_key = f"{vid}_{start_time}"
 
-                                # Check if the result is None (i.e., no matching data was found)
-                                if result is not None:
-                                    # Unpack the result since it's not None
-                                    start = result[1]
-                                    end = result[2]
-                                    condition = result[3]
-                                    city = result[4]
-                                    lat = result[6]
-                                    long = result[7]
+                    # Load detection data for this video segment
+                    dataframe = pd.read_csv(file_path)
 
-                                    city_id_format = f'{city}_{lat}_{long}_{condition}'
-                                    dataframe = pd.read_csv(file_path)
+                    # ---- CELL PHONES: Count per person, normalised ----
+                    mobile_ids = len(dataframe[dataframe["YOLO_id"] == 67]["Unique Id"].unique())
+                    num_person = len(dataframe[dataframe["YOLO_id"] == 0]["Unique Id"].unique())
+                    if num_person > 0 and mobile_ids > 0:
+                        avg_cell_phone = ((mobile_ids * 60) / duration / num_person) * 1000
+                        cell_phone_info[video_key] = avg_cell_phone
 
-                                    # Count the number of mobile objects in the video
-                                    mobile_ids = Analysis.count_object(dataframe, 67)
+                    # ---- TRAFFIC SIGNS (YOLO 9, 11) ----
+                    traffic_sign_ids = dataframe[dataframe["YOLO_id"].isin([9, 11])]["Unique Id"].unique()
+                    count = (len(traffic_sign_ids) / duration) * 60 if duration > 0 else 0
+                    traffic_signs_layer[video_key] = count
 
-                                    # Calculate the duration of the video
-                                    duration = end - start
+                    # ---- VEHICLES (YOLO 2,3,5,7) ----
+                    vehicles_mask = dataframe["YOLO_id"].isin([2, 3, 5, 7])
+                    vehicle_ids = dataframe[vehicles_mask]["Unique Id"].unique()
+                    count = (len(vehicle_ids) / duration) * 60 if duration > 0 else 0
+                    vehicle_layer[video_key] = count
 
-                                    # Count the number of people in the video
-                                    num_person = Analysis.count_object(dataframe, 0)
+                    # ---- BICYCLES (YOLO 1) ----
+                    bicycle_ids = dataframe[dataframe["YOLO_id"] == 1]["Unique Id"].unique()
+                    count = (len(bicycle_ids) / duration) * 60 if duration > 0 else 0
+                    bicycle_layer[video_key] = count
 
-                                    # Calculate average cell phones detected per person
-                                    if num_person == 0 or mobile_ids == 0:
-                                        continue
+                    # ---- CARS (YOLO 3) ----
+                    car_ids = dataframe[dataframe["YOLO_id"] == 3]["Unique Id"].unique()
+                    count = (len(car_ids) / duration) * 60 if duration > 0 else 0
+                    car_layer[video_key] = count
 
-                                    # Update the information dictionary
-                                    if city_id_format in info:
-                                        previous_value = info[city_id_format]
-                                        # Extracting the old number of detected mobiles
-                                        previous_value = previous_value * no_person[city_id_format] * total_time[city_id_format] / 1000 / 60  # noqa: E501
+                    # ---- MOTORCYCLES (YOLO 2) ----
+                    motorcycle_ids = dataframe[dataframe["YOLO_id"] == 2]["Unique Id"].unique()
+                    count = (len(motorcycle_ids) / duration) * 60 if duration > 0 else 0
+                    motorcycle_layer[video_key] = count
 
-                                        # Summing up the previous value and the new value
-                                        total_value = previous_value + mobile_ids
-                                        no_person[city_id_format] += num_person
-                                        total_time[city_id_format] += duration
+                    # ---- BUSES (YOLO 5) ----
+                    bus_ids = dataframe[dataframe["YOLO_id"] == 5]["Unique Id"].unique()
+                    count = (len(bus_ids) / duration) * 60 if duration > 0 else 0
+                    bus_layer[video_key] = count
 
-                                        # Normalising with respect to total person detected and time
-                                        info[city_id_format] = (((total_value * 60) / total_time[city_id_format]) / no_person[city_id_format]) * 1000  # noqa: E501
-                                        continue  # Skip saving the variable in plotting variables
-                                    else:
-                                        no_person[city_id_format] = num_person
-                                        total_time[city_id_format] = duration
+                    # ---- TRUCKS (YOLO 7) ----
+                    truck_ids = dataframe[dataframe["YOLO_id"] == 7]["Unique Id"].unique()
+                    count = (len(truck_ids) / duration) * 60 if duration > 0 else 0
+                    truck_layer[video_key] = count
 
-                                        """Normalising the detection with respect to time and numvber of person in the video.  # noqa: E501
-                                            Multiplied by 1000 to increase the value to look better in plotting."""
+                    # ---- PERSONS (YOLO 0) ----
+                    person_ids = dataframe[dataframe["YOLO_id"] == 0]["Unique Id"].unique()
+                    count = (len(person_ids) / duration) * 60 if duration > 0 else 0
+                    person_layer[video_key] = count
 
-                                        avg_cell_phone = (((mobile_ids * 60) / time_[-1]) / num_person) * 1000
-                                        info[city_id_format] = avg_cell_phone
+        # --- WRAPPING AS IN YOUR ORIGINAL CODE ---
+        cls._all_metrics_cache = {
+            "cell_phones": wrapper_class.city_country_wrapper(input_dict=cell_phone_info, mapping=df_mapping),
+            "traffic_signs": wrapper_class.city_country_wrapper(input_dict=traffic_signs_layer, mapping=df_mapping),
+            "vehicles": wrapper_class.city_country_wrapper(input_dict=vehicle_layer, mapping=df_mapping),
+            "bicycles": wrapper_class.city_country_wrapper(input_dict=bicycle_layer, mapping=df_mapping),
+            "cars": wrapper_class.city_country_wrapper(input_dict=car_layer, mapping=df_mapping),
+            "motorcycles": wrapper_class.city_country_wrapper(input_dict=motorcycle_layer, mapping=df_mapping),
+            "buses": wrapper_class.city_country_wrapper(input_dict=bus_layer, mapping=df_mapping),
+            "trucks": wrapper_class.city_country_wrapper(input_dict=truck_layer, mapping=df_mapping),
+            "persons": wrapper_class.city_country_wrapper(input_dict=person_layer, mapping=df_mapping),
+        }
 
-                                else:
-                                    # Handle the case where no data was found for the given key
-                                    logger.error(f"No matching data found for key: {key}")
-
-        return info
-
-    def calculate_traffic(self, df_mapping, normalised=True, person=0, bicycle=0,
-                          motorcycle=0, car=0, bus=0, truck=0):
-        """Plots the relationship between vehicle detection and crossing time.
-
-        Args:
-            df_mapping (DataFrame): DataFrame containing mapping information.
-            dfs (dict): Dictionary of DataFrames containing video data.
-            data (dict): Dictionary containing information about which object is crossing.
-            bicycle (int, optional): Flag to include bicycle. Default is 0.
-            motorcycle (int, optional): Flag to include motorcycles. Default is 0.
-            car (int, optional): Flag to include cars. Default is 0.
-            bus (int, optional): Flag to include buses. Default is 0.
-            truck (int, optional): Flag to include trucks. Default is 0.
+    @classmethod
+    def _ensure_cache(cls, df_mapping):
         """
-
-        info, layer = {}, {}
-        time_ = []
-
-        # Iterate through each video DataFrame
-        for index, row in tqdm(df_mapping.iterrows(), total=df_mapping.shape[0]):
-            video_ids = [id.strip() for id in row["videos"].strip("[]").split(',')]
-            start_times = ast.literal_eval(row["start_time"])
-            time_of_day = ast.literal_eval(row["time_of_day"])
-
-            for vid_index, (vid, start_times_list, time_of_day_list) in enumerate(zip(video_ids, start_times, time_of_day)):  # noqa:E501
-                for start_time, time_of_day_value in zip(start_times_list, time_of_day_list):
-                    filename = f"{vid}_{start_time}.csv"
-
-                    for folder_path in common.get_configs('data'):
-                        for file in os.listdir(folder_path):
-                            file_path = os.path.join(folder_path, filename)
-
-                            if file == filename:
-                                result = values_class.find_values_with_video_id(df_mapping, f"{vid}_{start_time}")
-
-                                # Check if the result is None (i.e., no matching data was found)
-                                if result is not None:
-                                    # Unpack the result since it's not None
-                                    start = result[1]
-                                    end = result[2]
-
-                                    # Calculate the duration of the video
-                                    duration = end - start
-                                    time_.append(duration)
-
-                                    dataframe = pd.read_csv(file_path)
-
-                                    # Filter vehicles based on flags
-                                    if motorcycle == 1 & car == 1 & bus == 1 & truck == 1:
-                                        vehicle_ids = dataframe[(dataframe["YOLO_id"] == 2) |
-                                                                (dataframe["YOLO_id"] == 3) |
-                                                                (dataframe["YOLO_id"] == 5) |
-                                                                (dataframe["YOLO_id"] == 7)]
-
-                                    elif motorcycle == 1:
-                                        vehicle_ids = dataframe[(dataframe["YOLO_id"] == 2)]
-
-                                    elif car == 1:
-                                        vehicle_ids = dataframe[(dataframe["YOLO_id"] == 3)]
-
-                                    elif bus == 1:
-                                        vehicle_ids = dataframe[(dataframe["YOLO_id"] == 5)]
-
-                                    elif truck == 1:
-                                        vehicle_ids = dataframe[(dataframe["YOLO_id"] == 7)]
-
-                                    elif bicycle == 1:
-                                        vehicle_ids = dataframe[(dataframe["YOLO_id"] == 1)]
-
-                                    elif person == 1:
-                                        vehicle_ids = dataframe[(dataframe["YOLO_id"] == 0)]
-
-                                    else:
-                                        logger.info("No plot generated")
-
-                                    vehicle_ids = vehicle_ids["Unique Id"].unique()  # type: ignore
-
-                                    if vehicle_ids is None:
-                                        continue
-
-                                    if normalised:
-                                        # Calculate normalised vehicle detection rate
-                                        new_value = ((len(vehicle_ids)/time_[-1]) * 60)
-                                    else:
-                                        new_value = len(vehicle_ids)
-
-                                    layer[f"{vid}_{start_time}"] = new_value
-        info = wrapper_class.city_country_wrapper(input_dict=layer, mapping=df_mapping)
-
-        return info
-
-    def calculate_traffic_signs(self, df_mapping, normalised=True):
-        """Plots traffic safety vs traffic mortality.
-
-        Args:
-            df_mapping (dict): Mapping of video keys to relevant information.
-            dfs (dict): Dictionary of DataFrames containing pedestrian data.
+        Ensure that the class-level metrics cache is populated.
+        If the cache is empty, computes all metrics for the provided mapping DataFrame.
         """
-        info, layer = {}, {}  # Dictionaries to store information and duration
+        if cls._all_metrics_cache is None:
+            cls._compute_all_metrics(df_mapping)
 
-        for index, row in tqdm(df_mapping.iterrows(), total=df_mapping.shape[0]):
-            video_ids = [id.strip() for id in row["videos"].strip("[]").split(',')]
-            start_times = ast.literal_eval(row["start_time"])
-            time_of_day = ast.literal_eval(row["time_of_day"])
+    @classmethod
+    def calculate_cell_phones(cls, df_mapping):
+        """
+        Return the cached cell phone metric, computing all metrics if needed.
+        Raises:
+            RuntimeError: If cache population fails.
+        """
+        cls._ensure_cache(df_mapping)
+        if cls._all_metrics_cache is None:
+            raise RuntimeError("Metric cache not populated.")
+        return cls._all_metrics_cache["cell_phones"]
 
-            for vid_index, (vid, start_times_list, time_of_day_list) in enumerate(zip(video_ids, start_times, time_of_day)):  # noqa:E501
-                for start_time, time_of_day_value in zip(start_times_list, time_of_day_list):
-                    filename = f"{vid}_{start_time}.csv"
+    @classmethod
+    def calculate_traffic_signs(cls, df_mapping):
+        """
+        Return the cached traffic sign metric, computing all metrics if needed.
+        Raises:
+            RuntimeError: If cache population fails.
+        """
+        cls._ensure_cache(df_mapping)
+        if cls._all_metrics_cache is None:
+            raise RuntimeError("Metric cache not populated after ensure_cache!")
+        return cls._all_metrics_cache["traffic_signs"]
 
-                    for folder_path in common.get_configs('data'):
-                        for file in os.listdir(folder_path):
-                            file_path = os.path.join(folder_path, filename)
-
-                            if file == filename:
-                                # Extract relevant information using the find_values function
-                                result = values_class.find_values_with_video_id(df_mapping, f"{vid}_{start_time}")
-
-                                # Check if the result is None (i.e., no matching data was found)
-                                if result is not None:
-                                    start = result[1]
-                                    end = result[2]
-
-                                    dataframe = pd.read_csv(file_path)
-                                    duration = end - start
-
-                                    # Filter dataframe for traffic instruments (YOLO_id 9 and 11)
-                                    instrument = dataframe[(dataframe["YOLO_id"] == 9) | (dataframe["YOLO_id"] == 11)]
-
-                                    instrument_ids = instrument["Unique Id"].unique()
-
-                                    # Skip if there are no instrument ids
-                                    if instrument_ids is None:
-                                        continue
-
-                                    if normalised:
-                                        # Calculate count of traffic instruments detected per minute
-                                        count_ = ((len(instrument_ids)/duration) * 60)
-                                    else:
-                                        count_ = len(instrument_ids)
-
-                                layer[f"{vid}_{start_time}"] = count_
-
-        info = wrapper_class.city_country_wrapper(input_dict=layer, mapping=df_mapping)
-        return info
+    @classmethod
+    def calculate_traffic(cls, df_mapping, person=0, bicycle=0, motorcycle=0, car=0, bus=0, truck=0):
+        """
+        Return the requested vehicle/person/bicycle metric from the cache, computing if needed.
+        Arguments specify which traffic metric to return. If multiple flags are set, precedence is given as:
+        - 'person' if set
+        - 'bicycle' if set
+        - if all of motorcycle, car, bus, truck are set: returns 'vehicles'
+        - otherwise, returns individual type if its flag is set
+        - fallback is 'vehicles'
+        Raises:
+            RuntimeError: If cache population fails.
+        """
+        cls._ensure_cache(df_mapping)
+        if cls._all_metrics_cache is None:
+            raise RuntimeError("Metric cache not populated after ensure_cache!")
+        # Return the right metric by flags
+        if person:
+            return cls._all_metrics_cache["persons"]
+        if bicycle:
+            return cls._all_metrics_cache["bicycles"]
+        if motorcycle and car and bus and truck:
+            return cls._all_metrics_cache["vehicles"]
+        if car:
+            return cls._all_metrics_cache["cars"]
+        if motorcycle:
+            return cls._all_metrics_cache["motorcycles"]
+        if bus:
+            return cls._all_metrics_cache["buses"]
+        if truck:
+            return cls._all_metrics_cache["trucks"]
+        # Fallback to all vehicles
+        return cls._all_metrics_cache["vehicles"]
 
     @staticmethod
     def crossing_event_wt_traffic_equipment(df_mapping, data):
@@ -774,7 +766,6 @@ class Analysis():
                         ratio[city_id_format] = ((counter_2[city_id_format] * 100) /
                                                  (counter_1[city_id_format] +
                                                   counter_2[city_id_format]))
-        print(ratio)
         return ratio
 
     @staticmethod
@@ -1318,7 +1309,7 @@ class Analysis():
         x_position_right = 1.0  # Position for the right column
         font_size = 15  # Font size for visibility
 
-        # Initialize variables for dynamic y positioning for both columns
+        # Initialise variables for dynamic y positioning for both columns
         current_row_left = 1  # Start from the first row for the left column
         current_row_right = 1  # Start from the first row for the right column
         y_position_map_left = {}  # Store y positions for each country (left column)
@@ -1677,7 +1668,7 @@ class Analysis():
         left_column_cities = cities_ordered[:num_cities_per_col]
         right_column_cities = cities_ordered[num_cities_per_col:]
 
-        # Initialize variables for dynamic y positioning for both columns
+        # Initialise variables for dynamic y positioning for both columns
         current_row_left = 1  # Start from the first row for the left column
         current_row_right = 1  # Start from the first row for the right column
         y_position_map_left = {}  # Store y positions for each country (left column)
@@ -1739,7 +1730,7 @@ class Analysis():
             country = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "country")
             iso_code = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "iso3")
             if country or iso_code is not None:
-                # Initialize the city's dictionary if not already present
+                # Initialise the city's dictionary if not already present
                 if f"{city}_{lat}_{long}" not in final_dict:
                     final_dict[f"{city}_{lat}_{long}"] = {"with_trf_light_0": None, "with_trf_light_1": None,
                                                           "country": country, "iso": iso_code}
@@ -1996,7 +1987,7 @@ class Analysis():
         left_column_cities = cities_ordered[:num_cities_per_col]
         right_column_cities = cities_ordered[num_cities_per_col:]
 
-        # Initialize variables for dynamic y positioning for both columns
+        # Initialise variables for dynamic y positioning for both columns
         current_row_left = 1  # Start from the first row for the left column
         current_row_right = 1  # Start from the first row for the right column
         y_position_map_left = {}  # Store y positions for each country (left column)
@@ -2061,7 +2052,7 @@ class Analysis():
     @staticmethod
     def correlation_matrix(df_mapping):
         """
-        Compute and visualize correlation matrices for various city-level traffic and demographic data.
+        Compute and visualise correlation matrices for various city-level traffic and demographic data.
 
         This method:
         - Loads precomputed statistical data from a pickled file.
@@ -2118,7 +2109,7 @@ class Analysis():
 
             if country or iso_code is not None:
 
-                # Initialize the city's dictionary if not already present
+                # Initialise the city's dictionary if not already present
                 if f'{city}_{lat}_{long}' not in final_dict:
                     final_dict[f'{city}_{lat}_{long}'] = {
                         "avg_speed_0": None, "avg_speed_1": None, "avg_time_0": None, "avg_time_1": None,
@@ -2178,7 +2169,8 @@ class Analysis():
                     final_dict[f'{city}_{lat}_{long}'][f"vehicle_city_{condition}"] = avg_vehicle_city.get(
                         f'{city}_{lat}_{long}_{condition}', None)
 
-                    final_dict[f'{city}_{lat}_{long}'][f"cellphone_city_{condition}"] = cellphone_city.get(
+                    avg_cellphone_city = analysis_class.compute_avg_variable_city(cellphone_city)
+                    final_dict[f'{city}_{lat}_{long}'][f"cellphone_city_{condition}"] = avg_cellphone_city.get(
                         f'{city}_{lat}_{long}_{condition}', 0)
 
                     avg_trf_sign_city = analysis_class.compute_avg_variable_city(trf_sign_city)
@@ -2193,12 +2185,12 @@ class Analysis():
                     if gdp_city is not None:
                         final_dict[f'{city}_{lat}_{long}'][f"gmp_{condition}"] = gdp_city/population_country
 
-        # Initialize an empty list to store the rows for the DataFrame
+        # Initialise an empty list to store the rows for the DataFrame
         data_day, data_night = [], []
 
         # Loop over each city and gather relevant values for condition 0
         for city in final_dict:
-            # Initialize a dictionary for the row
+            # Initialise a dictionary for the row
             row_day, row_night = {}, {}
 
             # Add data for condition 0 (ignore 'speed_val' and 'time_val')
@@ -2280,7 +2272,7 @@ class Analysis():
 
         plots_class.save_plotly_figure(fig, "correlation_matrix_heatmap_night", save_final=True)
 
-        # Initialize a list to store rows of data (one row per city)
+        # Initialise a list to store rows of data (one row per city)
         data_rows = []
 
         # Assuming `conditions` is a list of conditions you are working with
@@ -2288,7 +2280,7 @@ class Analysis():
 
         # Iterate over each city and condition
         for city in final_dict:
-            # Initialize a dictionary to store the values for the current row
+            # Initialise a dictionary to store the values for the current row
             row_data = {}
 
             # For each condition
@@ -2585,12 +2577,9 @@ class Analysis():
                                 if result is not None:
                                     # Unpack the result since it's not None
                                     fps = result[17]
-                                    print("fps: ", fps)
 
                                     first_time = first_frame / fps
                                     last_time = last_frame / fps
-
-                                    print("first frame: ", first_frame)
 
                                     # Adjusted start and end times
                                     real_start_time = first_time + start_offset
@@ -3208,7 +3197,6 @@ if __name__ == "__main__":
         country, number = Analysis.get_unique_values(df_mapping, "country")
         logger.info("Total number of countries: {}.", number)
 
-        # TODO: Correct this
         city, number = Analysis.get_unique_values(df_mapping, "city")
         logger.info("Total number of cities: {}.", number)
 
@@ -3237,13 +3225,13 @@ if __name__ == "__main__":
         all_speed = {}
         all_time = {}
 
-        logger.info("Reading csv files.")
+        logger.info("Processing csv files.")
         for folder_path in common.get_configs('data'):
             if not os.path.exists(folder_path):
                 logger.warning(f"Folder does not exist: {folder_path}.")
                 continue
 
-            for file in tqdm(os.listdir(folder_path)):
+            for file in tqdm(os.listdir(folder_path), desc=f"Processing files in {folder_path}"):
                 file = analysis_class.filter_csv_files(file=file)
                 if file is None:
                     continue
@@ -3401,7 +3389,6 @@ if __name__ == "__main__":
         min_max_speed = analysis_class.get_duration_segment(all_speed, df_mapping, name="speed", duration=None)
         min_max_time = analysis_class.get_duration_segment(all_time, df_mapping, name="time", duration=None)
 
-        # TODO: these functions are slow, and they are possibly not needed now as counts are added to df_mapping
         logger.info("Calculating counts of detected traffic signs.")
         traffic_sign_city = analysis_class.calculate_traffic_signs(df_mapping)
         logger.info("Calculating counts of detected mobile phones.")
@@ -3523,8 +3510,10 @@ if __name__ == "__main__":
 
     # Set index as ID
     df_mapping = df_mapping.set_index("id")
+
     # Sort by continent and city, both in ascending order
     df_mapping = df_mapping.sort_values(by=["continent", "city"], ascending=[True, True])
+
     # Save updated mapping file in output
     os.makedirs(common.output_dir, exist_ok=True)  # check if folder
     df_mapping.to_csv(os.path.join(common.output_dir, "mapping_updated.csv"))
