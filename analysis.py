@@ -450,7 +450,7 @@ class Analysis():
         person_layer = {}
 
         # Process each mapping row (one or more videos per row)
-        for _, row in tqdm(df_mapping.iterrows(), total=df_mapping.shape[0], desc="Analysing the video files:"):
+        for _, row in tqdm(df_mapping.iterrows(), total=df_mapping.shape[0], desc="Analysing the csv files:"):
             video_ids = [id.strip() for id in row["videos"].strip("[]").split(',')]
             start_times = ast.literal_eval(row["start_time"])
             time_of_day = ast.literal_eval(row["time_of_day"])
