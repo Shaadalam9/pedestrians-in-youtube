@@ -2,9 +2,10 @@ import common
 from custom_logger import CustomLogger
 from logmod import logs
 import warnings
-from .values import Values
+from utils.values import Values
 import pycountry
 import math
+from tqdm import tqdm
 
 # Suppress the specific FutureWarning
 warnings.filterwarnings("ignore", category=FutureWarning, module="plotly")
@@ -19,7 +20,7 @@ class Wrappers():
     def __init__(self) -> None:
         pass
 
-    def city_country_wrapper(self, input_dict, mapping):
+    def city_country_wrapper(self, input_dict, mapping, show_progress=False):
         """
         Processes an input dictionary of video IDs and their corresponding values, maps each video ID to metadata
         using a provided mapping function, and builds an output dictionary keyed by city and condition.
@@ -36,7 +37,13 @@ class Wrappers():
         """
 
         output = {}
-        for key, value in input_dict.items():
+        # Choose the right iterator based on flag
+        iterator = input_dict.items()
+
+        if show_progress:
+            iterator = tqdm(iterator, desc="Wrapping by city/condition", total=len(input_dict))
+
+        for key, value in iterator:
             # Lookup metadata associated with the video ID
             result = values_class.find_values_with_video_id(mapping, key)
 

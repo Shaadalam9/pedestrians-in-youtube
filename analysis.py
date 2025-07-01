@@ -529,18 +529,29 @@ class Analysis():
                     count = (len(person_ids) / duration) * 60 if duration > 0 else 0
                     person_layer[video_key] = count
 
-        # --- WRAPPING AS IN YOUR ORIGINAL CODE ---
-        cls._all_metrics_cache = {
-            "cell_phones": wrapper_class.city_country_wrapper(input_dict=cell_phone_info, mapping=df_mapping),
-            "traffic_signs": wrapper_class.city_country_wrapper(input_dict=traffic_signs_layer, mapping=df_mapping),
-            "vehicles": wrapper_class.city_country_wrapper(input_dict=vehicle_layer, mapping=df_mapping),
-            "bicycles": wrapper_class.city_country_wrapper(input_dict=bicycle_layer, mapping=df_mapping),
-            "cars": wrapper_class.city_country_wrapper(input_dict=car_layer, mapping=df_mapping),
-            "motorcycles": wrapper_class.city_country_wrapper(input_dict=motorcycle_layer, mapping=df_mapping),
-            "buses": wrapper_class.city_country_wrapper(input_dict=bus_layer, mapping=df_mapping),
-            "trucks": wrapper_class.city_country_wrapper(input_dict=truck_layer, mapping=df_mapping),
-            "persons": wrapper_class.city_country_wrapper(input_dict=person_layer, mapping=df_mapping),
-        }
+        # --- WRAPPING AS CITY_LONGITUDE_LATITUDE_CONDITION ---
+        metric_dicts = [
+            ("cell_phones", cell_phone_info),
+            ("traffic_signs", traffic_signs_layer),
+            ("vehicles", vehicle_layer),
+            ("bicycles", bicycle_layer),
+            ("cars", car_layer),
+            ("motorcycles", motorcycle_layer),
+            ("buses", bus_layer),
+            ("trucks", truck_layer),
+            ("persons", person_layer),
+        ]
+
+        cls._all_metrics_cache = {}
+
+        for i, (metric_name, metric_layer) in enumerate(metric_dicts, 1):
+            logger.info(f"[{i}/{len(metric_dicts)}] Wrapping '{metric_name}' ...")
+            wrapped = wrapper_class.city_country_wrapper(
+                input_dict=metric_layer,
+                mapping=df_mapping,
+                show_progress=True  # or False if you don't want tqdm inside
+            )
+            cls._all_metrics_cache[metric_name] = wrapped
 
     @classmethod
     def _ensure_cache(cls, df_mapping):
