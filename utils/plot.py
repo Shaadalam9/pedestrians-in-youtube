@@ -12,6 +12,7 @@ from plotly.subplots import make_subplots
 import math
 import pickle
 from tqdm import tqdm
+import plotly.express as px
 
 
 # Suppress the specific FutureWarning
@@ -68,14 +69,13 @@ class Plots():
             save_final (bool, optional): whether to save the "good" final figure.
         """
         # Create directory if it doesn't exist
-        output_folder = "_output"
-        output_final = "figures"
-        os.makedirs(output_folder, exist_ok=True)
+        output_final = os.path.join(common.root_dir, 'figures')
+        os.makedirs(common.output_dir, exist_ok=True)
         os.makedirs(output_final, exist_ok=True)
 
         # Save as HTML
         logger.info(f"Saving html file for {filename}.")
-        py.offline.plot(fig, filename=os.path.join(output_folder, filename + ".html"))
+        py.offline.plot(fig, filename=os.path.join(common.output_dir, filename + ".html"))
         # also save the final figure
         if save_final:
             py.offline.plot(fig, filename=os.path.join(output_final, filename + ".html"),  auto_open=False)
@@ -84,20 +84,20 @@ class Plots():
             # Save as PNG
             if save_png:
                 logger.info(f"Saving png file for {filename}.")
-                fig.write_image(os.path.join(output_folder, filename + ".png"), width=width, height=height,
+                fig.write_image(os.path.join(common.output_dir, filename + ".png"), width=width, height=height,
                                 scale=scale)
                 # also save the final figure
                 if save_final:
-                    shutil.copy(os.path.join(output_folder, filename + ".png"),
+                    shutil.copy(os.path.join(common.output_dir, filename + ".png"),
                                 os.path.join(output_final, filename + ".png"))
 
             # Save as EPS
             if save_eps:
                 logger.info(f"Saving eps file for {filename}.")
-                fig.write_image(os.path.join(output_folder, filename + ".eps"), width=width, height=height)
+                fig.write_image(os.path.join(common.output_dir, filename + ".eps"), width=width, height=height)
                 # also save the final figure
                 if save_final:
-                    shutil.copy(os.path.join(output_folder, filename + ".eps"),
+                    shutil.copy(os.path.join(common.output_dir, filename + ".eps"),
                                 os.path.join(output_final, filename + ".eps"))
         except ValueError:
             logger.error(f"Value error raised when attempted to save image {filename}.")
@@ -704,3 +704,33 @@ class Plots():
                                 scale=SCALE,
                                 save_eps=False,
                                 save_final=True)
+
+    def get_mapbox_map(self, df, hover_data=None, file_name="mapbox_map", save_final=True):
+        """Generate world map with cities using mapbox.
+
+        Args:
+            df (dataframe): dataframe with mapping info.
+            hover_data (list, optional): list of params to show on hover.
+            file_name (str, optional): name of file
+        """
+        # Draw map
+        fig = px.scatter_map(df,
+                             lat="lat",
+                             lon="lon",
+                             hover_data=hover_data,
+                             hover_name="city",
+                             color=df["continent"],
+                             zoom=1.3)  # type: ignore
+        # Update layout
+        fig.update_layout(
+            margin=dict(l=0, r=0, t=0, b=0),  # Reduce margins
+            # modebar_remove=["toImage"],  # remove modebar image button
+            # showlegend=False,  # hide legend if not needed
+            # annotations=[],  # remove any extra annotations
+            mapbox=dict(zoom=1.3),
+            font=dict(family=common.get_configs('font_family'),  # update font family
+                      size=common.get_configs('font_size'))  # update font size
+        )
+        # Save and display the figure
+        self.save_plotly_figure(fig, file_name, save_final=True)
+

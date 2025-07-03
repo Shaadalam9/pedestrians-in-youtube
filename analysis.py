@@ -3062,8 +3062,9 @@ if __name__ == "__main__":
                           'channel']
         hover_data = list(set(df.columns) - set(columns_remove))
 
+
         # mapbox map with all data
-        # plots_class.get_mapbox_map(df=df, hover_data=hover_data, file_name='mapbox_map_all')  # type: ignore
+        plots_class.get_mapbox_map(df=df, hover_data=hover_data, file_name='mapbox_map_all')  # type: ignore
 
         # Get the population threshold from the configuration
         population_threshold = common.get_configs("population_threshold")
