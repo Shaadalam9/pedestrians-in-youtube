@@ -422,6 +422,91 @@ class Youtube_Helper:
         # Close the video clip to release any resources used.
         video_clip.close()
 
+    def draw_yolo_boxes_on_video(self, df, fps, video_path, output_path):
+        """
+        Draw YOLO-style bounding boxes on a video and save the annotated output.
+
+        This method takes a DataFrame containing normalised bounding box coordinates (in YOLO format),
+        matches them frame-by-frame to the input video, draws the corresponding boxes and labels,
+        and writes the resulting video to disk.
+
+        Args:
+            df (pd.DataFrame): DataFrame containing at least the following columns:
+                - 'Frame Count': Original frame indices in the source video.
+                - 'X-center', 'Y-center': Normalised center coordinates (0 to 1).
+                - 'Width', 'Height': Normalised width and height (0 to 1).
+                - 'Unique Id': Identifier to display in the label.
+            fps (float): Frames per second for the output video.
+            video_path (str): Path to the input video file.
+            output_path (str): Path to save the annotated output video.
+
+        Raises:
+            IOError: If the input video cannot be opened.
+        """
+
+        # Ensure the output directory exists
+        output_dir = os.path.dirname(output_path)
+        if output_dir and not os.path.exists(output_dir):
+            os.makedirs(output_dir, exist_ok=True)
+
+        # Normalise frame indices to start from 0
+        min_frame = df["Frame Count"].min()
+        df["Frame Index"] = df["Frame Count"] - min_frame
+
+        # Attempt to open the input video
+        cap = cv2.VideoCapture(video_path)
+        if not cap.isOpened():
+            raise IOError(f"Cannot open video file: {video_path}")
+
+        # Get video dimensions and total number of frames
+        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+        # Set up video writer with the same resolution and specified fps
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # type: ignore
+        out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
+        logger.info(f"Writing to {output_path} ({width}x{height} @ {fps}fps)")
+
+        frame_index = 0
+
+        # Process each frame
+        while frame_index < total_frames:
+            success, frame = cap.read()
+            if not success:
+                logger.error(f"Failed to read frame {frame_index}")
+                break
+
+            # Filter YOLO data for this adjusted frame index
+            frame_data = df[df["Frame Index"] == frame_index]
+
+            for _, row in frame_data.iterrows():
+                # Convert normalised coordinates to absolute pixel values
+                x_center = row["X-center"] * width
+                y_center = row["Y-center"] * height
+                w = row["Width"] * width
+                h = row["Height"] * height
+
+                # Calculate top-left and bottom-right corners of the box
+                x1 = int(x_center - w / 2)
+                y1 = int(y_center - h / 2)
+                x2 = int(x_center + w / 2)
+                y2 = int(y_center + h / 2)
+
+                # Draw rectangle and label with unique ID
+                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                label = f"ID: {int(row['Unique Id'])}"
+                cv2.putText(frame, label, (x1, max(y1 - 10, 0)),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+
+            # Write the modified frame to the output video
+            out.write(frame)
+            frame_index += 1
+
+        # Release video objects
+        cap.release()
+        out.release()
+
     @staticmethod
     def detect_gpu():
         """
@@ -806,25 +891,12 @@ class Youtube_Helper:
         except KeyError:
             return "Unknown"
 
-    @staticmethod
-    def update_csv_with_fps(df):
+    def update_csv_with_fps(self, df):
         """
         Updates the existing CSV file by adding/updating the 'fps_list' column
         with the FPS values for each video's IDs from local files.
         If the file does not exist, the previous FPS value is kept.
         """
-        def get_local_fps(video_file):
-            file_path = os.path.join("videos", f"{video_file}.mp4")
-            if not os.path.isfile(file_path):
-                logger.warning(f"File not found: {file_path}")
-                return None
-            cap = cv2.VideoCapture(file_path)
-            if not cap.isOpened():
-                logger.error(f"Could not open file: {file_path}")
-                return None
-            fps = cap.get(cv2.CAP_PROP_FPS)
-            cap.release()
-            return fps if fps > 0 else None
 
         def process_videos(video_ids_str, existing_fps_list_str):
             # Parse video IDs (e.g., '["videos_1", "videos_2"]')
@@ -848,7 +920,7 @@ class Youtube_Helper:
 
             updated_fps_list = []
             for i, video_id in enumerate(video_ids):
-                fps = get_local_fps(video_id)
+                fps = self.get_video_fps(video_id)
                 if fps is not None:
                     updated_fps_list.append(fps)
                 else:
@@ -1053,7 +1125,7 @@ class Youtube_Helper:
 
         Process:
             - Updates tracker YAML if custom config is detected.
-            - Initializes YOLO tracking and/or segmentation models.
+            - Initialises YOLO tracking and/or segmentation models.
             - Sets up directories for outputs (frames, labels, tracked images, videos).
             - Processes each frame of the input video:
                 * Runs YOLO tracking (detection and/or segmentation mode).
@@ -1114,7 +1186,7 @@ class Youtube_Helper:
             os.makedirs(seg_annotated_frame_output_path, exist_ok=True)
             os.makedirs(seg_tracked_frame_output_path, exist_ok=True)
 
-        # Initialize video writers for displaying tracking/segmentation results
+        # Initialise video writers for displaying tracking/segmentation results
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # type: ignore
 
         if bbox_mode and display_frame_tracking:

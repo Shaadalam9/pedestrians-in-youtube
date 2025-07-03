@@ -3,7 +3,6 @@ import math
 import pandas as pd
 import numpy as np
 import os
-import cv2
 from collections import defaultdict
 import heapq
 import plotly.express as px
@@ -474,13 +473,13 @@ class Analysis():
                     count = (len(bicycle_ids) / duration) * 60 if duration > 0 else 0
                     bicycle_layer[video_key] = count
 
-                    # ---- CARS (YOLO 3) ----
-                    car_ids = dataframe[dataframe["YOLO_id"] == 3]["Unique Id"].unique()
+                    # ---- CARS (YOLO 2) ----
+                    car_ids = dataframe[dataframe["YOLO_id"] == 2]["Unique Id"].unique()
                     count = (len(car_ids) / duration) * 60 if duration > 0 else 0
                     car_layer[video_key] = count
 
-                    # ---- MOTORCYCLES (YOLO 2) ----
-                    motorcycle_ids = dataframe[dataframe["YOLO_id"] == 2]["Unique Id"].unique()
+                    # ---- MOTORCYCLES (YOLO 3) ----
+                    motorcycle_ids = dataframe[dataframe["YOLO_id"] == 3]["Unique Id"].unique()
                     count = (len(motorcycle_ids) / duration) * 60 if duration > 0 else 0
                     motorcycle_layer[video_key] = count
 
@@ -2582,108 +2581,23 @@ class Analysis():
                                     )
 
                                     # Overlay YOLO boxes on the saved segment
-                                    self.draw_yolo_boxes_on_video(df=filtered_df,
-                                                                  fps=fps,
-                                                                  video_path=os.path.join("saved_snaps",
-                                                                                          str(name),
-                                                                                          segment_type,
-                                                                                          "original",
-                                                                                          f"{video_name}_{real_start_time}.mp4"),  # noqa:E501
-                                                                  output_path=os.path.join("saved_snaps",
-                                                                                           str(name),
-                                                                                           segment_type,
-                                                                                           "tracked",
-                                                                                           f"{video_name}_{real_start_time}.mp4"))  # noqa:E501
+                                    helper.draw_yolo_boxes_on_video(df=filtered_df,
+                                                                    fps=fps,
+                                                                    video_path=os.path.join("saved_snaps",
+                                                                                            str(name),
+                                                                                            segment_type,
+                                                                                            "original",
+                                                                                            f"{video_name}_{real_start_time}.mp4"),  # noqa:E501
+                                                                    output_path=os.path.join("saved_snaps",
+                                                                                             str(name),
+                                                                                             segment_type,
+                                                                                             "tracked",
+                                                                                             f"{video_name}_{real_start_time}.mp4"))  # noqa:E501
 
                             except FileNotFoundError as e:
                                 logger.error(f"Error: {e}")
 
         return data
-
-    def draw_yolo_boxes_on_video(self, df, fps, video_path, output_path):
-        """
-        Draw YOLO-style bounding boxes on a video and save the annotated output.
-
-        This method takes a DataFrame containing normalized bounding box coordinates (in YOLO format),
-        matches them frame-by-frame to the input video, draws the corresponding boxes and labels,
-        and writes the resulting video to disk.
-
-        Args:
-            df (pd.DataFrame): DataFrame containing at least the following columns:
-                - 'Frame Count': Original frame indices in the source video.
-                - 'X-center', 'Y-center': Normalized center coordinates (0 to 1).
-                - 'Width', 'Height': Normalized width and height (0 to 1).
-                - 'Unique Id': Identifier to display in the label.
-            fps (float): Frames per second for the output video.
-            video_path (str): Path to the input video file.
-            output_path (str): Path to save the annotated output video.
-
-        Raises:
-            IOError: If the input video cannot be opened.
-        """
-
-        # Ensure the output directory exists
-        output_dir = os.path.dirname(output_path)
-        if output_dir and not os.path.exists(output_dir):
-            os.makedirs(output_dir, exist_ok=True)
-
-        # Normalise frame indices to start from 0
-        min_frame = df["Frame Count"].min()
-        df["Frame Index"] = df["Frame Count"] - min_frame
-
-        # Attempt to open the input video
-        cap = cv2.VideoCapture(video_path)
-        if not cap.isOpened():
-            raise IOError(f"Cannot open video file: {video_path}")
-
-        # Get video dimensions and total number of frames
-        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-
-        # Set up video writer with the same resolution and specified fps
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # type: ignore
-        out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
-        logger.info(f"Writing to {output_path} ({width}x{height} @ {fps}fps)")
-
-        frame_index = 0
-
-        # Process each frame
-        while frame_index < total_frames:
-            success, frame = cap.read()
-            if not success:
-                logger.error(f"Failed to read frame {frame_index}")
-                break
-
-            # Filter YOLO data for this adjusted frame index
-            frame_data = df[df["Frame Index"] == frame_index]
-
-            for _, row in frame_data.iterrows():
-                # Convert normalized coordinates to absolute pixel values
-                x_center = row["X-center"] * width
-                y_center = row["Y-center"] * height
-                w = row["Width"] * width
-                h = row["Height"] * height
-
-                # Calculate top-left and bottom-right corners of the box
-                x1 = int(x_center - w / 2)
-                y1 = int(y_center - h / 2)
-                x2 = int(x_center + w / 2)
-                y2 = int(y_center + h / 2)
-
-                # Draw rectangle and label with unique ID
-                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                label = f"ID: {int(row['Unique Id'])}"
-                cv2.putText(frame, label, (x1, max(y1 - 10, 0)),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-
-            # Write the modified frame to the output video
-            out.write(frame)
-            frame_index += 1
-
-        # Release video objects
-        cap.release()
-        out.release()
 
     def get_duration(self, df, video_id, start_time):
         """
@@ -3147,7 +3061,10 @@ if __name__ == "__main__":
         columns_remove = ['videos', 'time_of_day', 'start_time', 'end_time', 'upload_date', 'fps_list', 'vehicle_type',
                           'channel']
         hover_data = list(set(df.columns) - set(columns_remove))
-        plots_class.get_mapbox_map(df=df, hover_data=hover_data, file_name='mapbox_map_all')  # mapbox map with all data
+
+
+        # mapbox map with all data
+        plots_class.get_mapbox_map(df=df, hover_data=hover_data, file_name='mapbox_map_all')  # type: ignore
 
         # Get the population threshold from the configuration
         population_threshold = common.get_configs("population_threshold")
@@ -3294,8 +3211,8 @@ if __name__ == "__main__":
                     if time_value is not None:
                         all_time.update(time_value)
 
-        avg_speed = algorithms_class.avg_speed_of_crossing(df_mapping, df, data, all_speed)
-        avg_time = algorithms_class.avg_time_to_start_cross(df_mapping, df, data, all_time)
+        avg_speed = algorithms_class.avg_speed_of_crossing(all_speed)
+        avg_time = algorithms_class.avg_time_to_start_cross(df_mapping, all_time)
 
         # Kill the program if there is no data to analyse
         if len(avg_time) == 0 or len(avg_speed) == 0:
@@ -3515,7 +3432,7 @@ if __name__ == "__main__":
     df = df_mapping.copy()  # copy df to manipulate for output
     df['state'] = df['state'].fillna('NA')  # Set state to NA
 
-    Analysis.get_mapbox_map(df=df, hover_data=hover_data)  # mapbox map
+    Analysis.get_mapbox_map(df=df, hover_data=hover_data)  # type: ignore # mapbox map
     Analysis.get_world_map(df_mapping=df)  # map with countries
 
     # Amount of footage
