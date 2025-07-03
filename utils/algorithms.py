@@ -292,7 +292,8 @@ class Algorithms():
         return avg_over_time
 
     def is_rider_id(self, df, id, key, avg_height, fps, min_shared_frames=5,
-                    dist_thresh=80, similarity_thresh=0.8, overlap_ratio=0.7):
+                    dist_thresh=80, similarity_thresh=0.8, overlap_ratio=0.7,
+                    need_snaps=False):
         """
         Determines if a person identified by the given Unique Id is riding a bicycle or motorcycle
         during their trajectory in the YOLO detection DataFrame.
@@ -399,51 +400,51 @@ class Algorithms():
 
             if similarity_mask.sum() / len(similarities) >= overlap_ratio:
                 # If both proximity and movement similarity criteria met, label as rider
+                if need_snaps:
+                    video_name, start_offset = key.rsplit('_', 1)
 
-                video_name, start_offset = key.rsplit('_', 1)
+                    # Find the existing folder containing the video file
+                    existing_folder = next((
+                        path for path in common.get_configs("videos") if os.path.exists(
+                            os.path.join(path, f"{video_name}.mp4"))), None)
 
-                # Find the existing folder containing the video file
-                existing_folder = next((
-                    path for path in common.get_configs("videos") if os.path.exists(
-                        os.path.join(path, f"{video_name}.mp4"))), None)
+                    if not existing_folder:
+                        raise FileNotFoundError(f"Video file '{video_name}.mp4' not found in any of the specified paths.")  # noqa:E501
 
-                if not existing_folder:
-                    raise FileNotFoundError(f"Video file '{video_name}.mp4' not found in any of the specified paths.")  # noqa:E501
+                    base_video_path = os.path.join(existing_folder, f"{video_name}.mp4")
 
-                base_video_path = os.path.join(existing_folder, f"{video_name}.mp4")
+                    # Look up the frame rate (fps) using the video_start_time
+                    result = values_class.find_values_with_video_id(df_mapping, key)
 
-                # Look up the frame rate (fps) using the video_start_time
-                result = values_class.find_values_with_video_id(df_mapping, key)
+                    # Check if the result is None (i.e., no matching data was found)
+                    if result is not None:
+                        # Unpack the result since it's not None
 
-                # Check if the result is None (i.e., no matching data was found)
-                if result is not None:
-                    # Unpack the result since it's not None
+                        first_time = first_frame / fps
+                        last_time = last_frame / fps
 
-                    first_time = first_frame / fps
-                    last_time = last_frame / fps
+                        # Adjusted start and end times
+                        real_start_time = first_time + float(start_offset)
+                        real_end_time = float(start_offset) + last_time
 
-                    # Adjusted start and end times
-                    real_start_time = first_time + float(start_offset)
-                    real_end_time = float(start_offset) + last_time
+                        # Filter dataframe for only the shared frames of this person and vehicle
+                        filtered_df = df[
+                            ((df['Unique Id'] == id) | (df['Unique Id'] == vehicle_id))
+                            & (df['Frame Count'].isin(shared_frames))
+                        ]
 
-                    # Filter dataframe for only the shared frames of this person and vehicle
-                    filtered_df = df[
-                        ((df['Unique Id'] == id) | (df['Unique Id'] == vehicle_id))
-                        & (df['Frame Count'].isin(shared_frames))
-                    ]
-
-                    # Trim and save the raw segment
-                    helper.trim_video(
-                        input_path=base_video_path,
-                        output_path=os.path.join("saved_snaps", "original", f"{video_name}_{real_start_time}.mp4"),
-                        start_time=real_start_time, end_time=real_end_time)
-                    helper.draw_yolo_boxes_on_video(df=filtered_df, fps=fps,
-                                                    video_path=os.path.join("saved_snaps",
-                                                                            "original",
-                                                                            f"{video_name}_{real_start_time}.mp4"),
-                                                    output_path=os.path.join("saved_snaps",
-                                                                             "tracked",
-                                                                             f"{video_name}_{real_start_time}.mp4"))
+                        # Trim and save the raw segment
+                        helper.trim_video(
+                            input_path=base_video_path,
+                            output_path=os.path.join("saved_snaps", "original", f"{video_name}_{real_start_time}.mp4"),
+                            start_time=real_start_time, end_time=real_end_time)
+                        helper.draw_yolo_boxes_on_video(df=filtered_df, fps=fps,
+                                                        video_path=os.path.join("saved_snaps",
+                                                                                "original",
+                                                                                f"{video_name}_{real_start_time}.mp4"),
+                                                        output_path=os.path.join("saved_snaps",
+                                                                                 "tracked",
+                                                                                 f"{video_name}_{real_start_time}.mp4"))  # noqa:E501
 
                 return True
 

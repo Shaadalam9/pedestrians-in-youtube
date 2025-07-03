@@ -2452,6 +2452,57 @@ class Analysis():
             plots_class.save_plotly_figure(fig, f"correlation_matrix_heatmap_{continents}", save_final=True)
 
     @staticmethod
+    def aggregate_by_iso3(df):
+        """
+        Aggregates a DataFrame by ISO3 country codes, applying specific aggregation rules.
+        Drops unnecessary location-specific columns before processing.
+
+        Parameters:
+            df (pd.DataFrame): Original DataFrame with city-level traffic and demographic data.
+
+        Returns:
+            pd.DataFrame: Aggregated DataFrame grouped by ISO3 codes.
+        """
+
+        # Drop location-specific columns
+        df = df.drop(columns=['city', 'state', 'lat', 'lon', 'channel'], errors='ignore')
+
+        # Static columns to keep one representative value (using first)
+        static_columns = [
+            'country', 'continent', 'population_country', 'traffic_mortality',
+            'literacy_rate', 'avg_height', 'gini', 'traffic_index', 'med_age'
+            ]
+
+        # Columns to merge as lists
+        merge_columns = ['videos', 'time_of_day', 'start_time', 'end_time', 'vehicle_type', 'upload_date', 'fps_list']
+
+        # Columns to sum
+        sum_columns = [
+            'person', 'bicycle', 'car', 'motorcycle', 'bus', 'truck',
+            'cellphone', 'traffic_light', 'stop_sign', 'total_time', 'total_videos'
+        ]
+
+        # Columns to average
+        avg_columns = [
+            'speed_crossing', 'speed_crossing_day', 'speed_crossing_night',
+            'time_crossing', 'time_crossing_day', 'time_crossing_night',
+            'speed_crossing_avg', 'time_crossing_avg',
+            'with_trf_light_day', 'with_trf_light_night',
+            'without_trf_light_day', 'without_trf_light_night'
+        ]
+
+        # Build aggregation dictionary
+        agg_dict = {col: 'first' for col in static_columns}
+        agg_dict.update({col: lambda x: list(x) for col in merge_columns})  # type: ignore
+        agg_dict.update({col: 'sum' for col in sum_columns})
+        agg_dict.update({col: 'mean' for col in avg_columns})
+
+        # Group by ISO3 code
+        df_grouped = df.groupby('iso3').agg(agg_dict).reset_index()
+
+        return df_grouped
+
+    @staticmethod
     def find_city_id(df, video_id, start_time):
         """
         Find the city identifier (row 'id') associated with a given video ID and start time.
@@ -3062,7 +3113,6 @@ if __name__ == "__main__":
                           'channel']
         hover_data = list(set(df.columns) - set(columns_remove))
 
-
         # mapbox map with all data
         plots_class.get_mapbox_map(df=df, hover_data=hover_data, file_name='mapbox_map_all')  # type: ignore
 
@@ -3205,7 +3255,8 @@ if __name__ == "__main__":
 
                     # Aggregated values
                     speed_value = algorithms_class.calculate_speed_of_crossing(df_mapping, df, data)
-                    all_speed.update(speed_value)
+                    if speed_value is not None:
+                        all_speed.update(speed_value)
 
                     time_value = algorithms_class.time_to_start_cross(df_mapping, df, data)
                     if time_value is not None:
@@ -3423,6 +3474,7 @@ if __name__ == "__main__":
                 f"traffic sign: {stop_sign_counter}")
 
     logger.info("Producing output.")
+
     # Data to avoid showing on hover in scatter plots
     columns_remove = ['videos', 'time_of_day', 'start_time', 'end_time', 'upload_date', 'fps_list', 'vehicle_type',
                       'channel']
