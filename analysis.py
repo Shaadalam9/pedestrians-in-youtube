@@ -3262,16 +3262,21 @@ if __name__ == "__main__":
                     if time_value is not None:
                         all_time.update(time_value)
 
-        avg_speed = algorithms_class.avg_speed_of_crossing(all_speed)
-        avg_time = algorithms_class.avg_time_to_start_cross(df_mapping, all_time)
+        # Record the average speed and time of crossing on country basis
+        avg_speed_country = algorithms_class.avg_speed_of_crossing_country(df_mapping, all_speed)
+        avg_time_country = algorithms_class.avg_time_to_start_cross_country(df_mapping, all_speed)
+
+        # Record the average speed and time of crossing on city basis
+        avg_speed_city = algorithms_class.avg_speed_of_crossing_city(all_speed)
+        avg_time_city = algorithms_class.avg_time_to_start_cross_city(df_mapping, all_time)
 
         # Kill the program if there is no data to analyse
-        if len(avg_time) == 0 or len(avg_speed) == 0:
+        if len(avg_time_city) == 0 or len(avg_speed_city) == 0:
             logger.error("No speed and time data to analyse.")
             exit()
 
         # Add to mapping file
-        for key, value in tqdm(avg_speed.items(), total=len(avg_speed)):
+        for key, value in tqdm(avg_speed_city.items(), total=len(avg_speed_city)):
             parts = key.split("_")
             city = parts[0]  # First part is city
             lat = parts[1]  # Second part is latitude
@@ -3305,7 +3310,7 @@ if __name__ == "__main__":
         )
 
         # add to mapping file
-        for key, value in tqdm(avg_time.items(), total=len(avg_time)):
+        for key, value in tqdm(avg_time_city.items(), total=len(avg_time_city)):
             parts = key.split("_")
             city = parts[0]  # First part is city
             lat = parts[1]  # Second part is latitude
@@ -3447,8 +3452,8 @@ if __name__ == "__main__":
                          traffic_sign_city,          # 21
                          all_speed,                  # 22
                          all_time,                   # 23
-                         avg_time,                   # 24
-                         avg_speed,                  # 25
+                         avg_time_city,              # 24
+                         avg_speed_city,             # 25
                          df_mapping,                 # 26
                          with_trf_light,             # 27
                          without_trf_light,          # 28

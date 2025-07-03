@@ -31,6 +31,8 @@ class Values():
                 - Time of day
                 - City
                 - State
+                - Latitude
+                - Longitude
                 - Country
                 - GDP per capita
                 - Population

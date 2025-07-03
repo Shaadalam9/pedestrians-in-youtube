@@ -164,7 +164,7 @@ class Algorithms():
 
         return output
 
-    def avg_speed_of_crossing(self, all_speed):
+    def avg_speed_of_crossing_city(self, all_speed):
         """
         Calculate the average crossing speed for each city-condition combination.
 
@@ -190,6 +190,42 @@ class Algorithms():
                 avg_speed[city_condition] = (sum(box) / len(box))
 
         return avg_speed
+
+    def avg_speed_of_crossing_country(self, df_mapping, all_speed):
+        """
+        Calculate the average speed for each country based on all_speed data and a mapping DataFrame.
+
+        Args:
+            all_speed (dict): Nested dictionary structured as
+                {city_lat_lang_condition: {video_id: {unique_id: speed}}}
+            df_mapping (pd.DataFrame): DataFrame containing video_id and country information.
+
+        Returns:
+            dict: Dictionary mapping each country to its average speed (float).
+        """
+        avg_speed = {}
+
+        # Iterate through each city condition in the all_speed dict
+        for city_lat_lang_condition, value_1 in all_speed.items():
+            # For each video_id, retrieve speeds
+            for video_id, value_2 in value_1.items():
+                # Find the country associated with the current video_id
+                result = values_class.find_values_with_video_id(df=df_mapping, key=video_id)
+                if result is not None:
+                    condition = result[3]
+                    country = result[8]
+                    for unique_id, speed in value_2.items():
+                        if f'{country}_{condition}' not in avg_speed:
+                            avg_speed[f'{country}_{condition}'] = []
+                        avg_speed[f'{country}_{condition}'].append(speed)
+
+        # Now, calculate the average speed for each country
+        avg_speed_result = {}
+        for country_condition, speed_list in avg_speed.items():
+            if speed_list:  # Avoid division by zero
+                avg_speed_result[country_condition] = sum(speed_list) / len(speed_list)
+
+        return avg_speed_result
 
     def time_to_start_cross(self, df_mapping, df, data, person_id=0):
         """
@@ -271,25 +307,93 @@ class Algorithms():
 
         return output
 
-    def avg_time_to_start_cross(self, df_mapping, all_time):
+    def avg_time_to_start_cross_city(self, df_mapping, all_time):
+        """
+        Calculate the average adjusted time to start crossing for each city condition.
+
+        The time for each entry is adjusted by dividing by (fps / 10), where fps is
+        extracted from the mapping DataFrame for the corresponding video_id.
+
+        Args:
+            df_mapping (pd.DataFrame): DataFrame containing video_id and fps information.
+            all_time (dict): Nested dictionary structured as
+                {city_condition: {video_id: {unique_id: time}}}
+
+        Returns:
+            dict: Dictionary mapping each city_condition to its average adjusted crossing time (float).
+        """
         avg_over_time = {}
 
+        # Iterate over each city condition in the all_time dictionary
         for city_condition, value_1 in all_time.items():
-            box = []
+            box = []  # List to store adjusted times for the current city condition
+
+            # Iterate over each video_id and its times
             for video_id, value_2 in value_1.items():
                 if value_2 is None:
-                    continue
+                    continue  # Skip if there are no times for this video
                 else:
+                    # Retrieve fps value from the mapping using video_id
                     result = values_class.find_values_with_video_id(df_mapping, video_id)
                     if result is not None:
                         fps = result[17]
+
+                        # Adjust time for each unique_id if it is positive
                         for unique_id, time in value_2.items():
                             if time > 0:
                                 box.append(time/(fps/10))
 
+            # Compute average adjusted time for the current city condition
             avg_over_time[city_condition] = (sum(box) / len(box))
 
         return avg_over_time
+
+    def avg_time_to_start_cross_country(self, df_mapping, all_time):
+        """
+        Calculate the average adjusted time to start crossing for each country.
+
+        The time for each entry is adjusted by dividing by (fps / 10), where fps is
+        extracted from the mapping DataFrame for the corresponding video_id.
+
+        Args:
+            df_mapping (pd.DataFrame): DataFrame containing video_id, fps, and country information.
+            all_time (dict): Nested dictionary structured as
+                {city_condition: {video_id: {unique_id: time}}}
+
+        Returns:
+            dict: Dictionary mapping each country to its average adjusted crossing time (float).
+        """
+        avg_over_time = {}
+
+        # Iterate over all city conditions in the all_time dictionary
+        for city_condition, videos in all_time.items():
+            # For each video_id and its times
+            for video_id, times in videos.items():
+                if times is None:
+                    continue  # Skip if no times for this video
+
+                # Retrieve mapping info using video_id
+                result = values_class.find_values_with_video_id(df_mapping, video_id)
+                if result is not None:
+                    condition = result[3]
+                    country = result[8]
+                    fps = result[17]
+
+                    # Adjust and store each valid time for the current country
+                    for unique_id, time in times.items():
+                        if time > 0:
+                            adjusted_time = time / (fps / 10)
+                            if f'{country}_{condition}' not in avg_over_time:
+                                avg_over_time[f'{country}_{condition}'] = []
+                            avg_over_time[f'{country}_{condition}'].append(adjusted_time)
+
+        # Compute the average adjusted time per country
+        avg_over_time_result = {}
+        for country_condition, time_list in avg_over_time.items():
+            if time_list:  # Avoid division by zero
+                avg_over_time_result[country_condition] = sum(time_list) / len(time_list)
+
+        return avg_over_time_result
 
     def is_rider_id(self, df, id, key, avg_height, fps, min_shared_frames=5,
                     dist_thresh=80, similarity_thresh=0.8, overlap_ratio=0.7,
