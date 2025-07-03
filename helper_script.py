@@ -426,15 +426,15 @@ class Youtube_Helper:
         """
         Draw YOLO-style bounding boxes on a video and save the annotated output.
 
-        This method takes a DataFrame containing normalized bounding box coordinates (in YOLO format),
+        This method takes a DataFrame containing normalised bounding box coordinates (in YOLO format),
         matches them frame-by-frame to the input video, draws the corresponding boxes and labels,
         and writes the resulting video to disk.
 
         Args:
             df (pd.DataFrame): DataFrame containing at least the following columns:
                 - 'Frame Count': Original frame indices in the source video.
-                - 'X-center', 'Y-center': Normalized center coordinates (0 to 1).
-                - 'Width', 'Height': Normalized width and height (0 to 1).
+                - 'X-center', 'Y-center': Normalised center coordinates (0 to 1).
+                - 'Width', 'Height': Normalised width and height (0 to 1).
                 - 'Unique Id': Identifier to display in the label.
             fps (float): Frames per second for the output video.
             video_path (str): Path to the input video file.
@@ -481,7 +481,7 @@ class Youtube_Helper:
             frame_data = df[df["Frame Index"] == frame_index]
 
             for _, row in frame_data.iterrows():
-                # Convert normalized coordinates to absolute pixel values
+                # Convert normalised coordinates to absolute pixel values
                 x_center = row["X-center"] * width
                 y_center = row["Y-center"] * height
                 w = row["Width"] * width
@@ -1125,7 +1125,7 @@ class Youtube_Helper:
 
         Process:
             - Updates tracker YAML if custom config is detected.
-            - Initializes YOLO tracking and/or segmentation models.
+            - Initialises YOLO tracking and/or segmentation models.
             - Sets up directories for outputs (frames, labels, tracked images, videos).
             - Processes each frame of the input video:
                 * Runs YOLO tracking (detection and/or segmentation mode).
@@ -1186,7 +1186,7 @@ class Youtube_Helper:
             os.makedirs(seg_annotated_frame_output_path, exist_ok=True)
             os.makedirs(seg_tracked_frame_output_path, exist_ok=True)
 
-        # Initialize video writers for displaying tracking/segmentation results
+        # Initialise video writers for displaying tracking/segmentation results
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # type: ignore
 
         if bbox_mode and display_frame_tracking:

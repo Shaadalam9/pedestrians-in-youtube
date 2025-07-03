@@ -306,7 +306,7 @@ class Algorithms():
             df (pd.DataFrame): YOLO detections DataFrame containing columns:
                 'YOLO_id' (class, 0=person, 1=bicycle, 3=motorcycle), 'Unique Id',
                 'Frame Count', 'X-center', 'Y-center', 'Width', 'Height'.
-            id (int or str): The Unique Id of the person to analyze.
+            id (int or str): The Unique Id of the person to analyse.
             avg_height (float): The average real-world height of the person (cm).
             min_shared_frames (int, optional): Minimum number of frames with both the person and vehicle
                 present for comparison. Defaults to 5.
