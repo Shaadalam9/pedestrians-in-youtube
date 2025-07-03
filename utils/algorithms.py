@@ -6,6 +6,10 @@ import warnings
 from utils.values import Values
 from utils.wrappers import Wrappers
 import pandas as pd
+import numpy as np
+import os
+from helper_script import Youtube_Helper
+# from analysis import Analysis
 
 # Suppress the specific FutureWarning
 warnings.filterwarnings("ignore", category=FutureWarning, module="plotly")
@@ -15,6 +19,8 @@ logger = CustomLogger(__name__)  # use custom logger
 
 values_class = Values()
 wrapper_class = Wrappers()
+helper = Youtube_Helper()
+# analysis_class = Analysis()
 
 df_mapping = pd.read_csv(common.get_configs("mapping"))
 
@@ -121,6 +127,10 @@ class Algorithms():
 
                 # Loop through each individual's crossing data in this video
                 for id, time in id_time.items():
+
+                    if self.is_rider_id(df, id, key, avg_height):
+                        continue  # Skip rider, not a pedestrian
+
                     # Get all frames for this person
                     grouped_with_id = grouped.get_group(id)
 
@@ -131,7 +141,7 @@ class Algorithms():
                     min_x_center = grouped_with_id['X-center'].min()
                     max_x_center = grouped_with_id['X-center'].max()
 
-                    # Estimate "pixels per meter" using average height and actual avg_height
+                    # Estimate "pixels per centi-meter" using average height and actual avg_height
                     ppm = mean_height / avg_height
 
                     # Estimate real-world distance crossed (in centimeters)
@@ -153,7 +163,7 @@ class Algorithms():
 
         return output
 
-    def avg_speed_of_crossing(self, df_mapping, dfs, data, all_speed):
+    def avg_speed_of_crossing(self, all_speed):
         """
         Calculate the average crossing speed for each city-condition combination.
 
@@ -260,7 +270,7 @@ class Algorithms():
 
         return output
 
-    def avg_time_to_start_cross(self, df_mapping, dfs, data, all_time):
+    def avg_time_to_start_cross(self, df_mapping, all_time):
         avg_over_time = {}
 
         for city_condition, value_1 in all_time.items():
@@ -279,3 +289,163 @@ class Algorithms():
             avg_over_time[city_condition] = (sum(box) / len(box))
 
         return avg_over_time
+
+    def is_rider_id(self, df, id, key, avg_height, min_shared_frames=5,
+                    dist_thresh=80, similarity_thresh=0.8, overlap_ratio=0.7):
+        """
+        Determines if a person identified by the given Unique Id is riding a bicycle or motorcycle
+        during their trajectory in the YOLO detection DataFrame.
+
+        The function checks, for the duration in which the person is present, whether a bicycle or
+        motorcycle detection is present and moving together (i.e., close proximity and similar
+        movement direction and speed) with the person for a sufficient number of frames. If so,
+        the person is likely a cyclist or motorcyclist and should be excluded from pedestrian analysis.
+
+        Args:
+            df (pd.DataFrame): YOLO detections DataFrame containing columns:
+                'YOLO_id' (class, 0=person, 1=bicycle, 3=motorcycle), 'Unique Id',
+                'Frame Count', 'X-center', 'Y-center', 'Width', 'Height'.
+            id (int or str): The Unique Id of the person to analyze.
+            avg_height (float): The average real-world height of the person (cm).
+            min_shared_frames (int, optional): Minimum number of frames with both the person and vehicle
+                present for comparison. Defaults to 5.
+            dist_thresh (float, optional): Maximum distance (in pixels) between person and vehicle
+                bounding box centers to be considered "moving together". Defaults to 50.
+            similarity_thresh (float, optional): Minimum cosine similarity threshold for movement direction
+                to be considered "similar". Ranges from -1 (opposite) to 1 (identical direction). Defaults to 0.8.
+            overlap_ratio (float, optional): Fraction of overlapping frames where proximity and movement
+                similarity must be satisfied. Defaults to 0.7 (i.e., 70%).
+
+        Returns:
+            bool: True if the person is moving together with a bicycle or motorcycle (i.e., is a rider);
+                False if likely a pedestrian.
+
+        Example:
+            for id, time in id_time.items():
+                if is_rider_id(df, id):
+                    continue  # Skip this id (cyclist or motorcyclist)
+                # ...process as pedestrian...
+
+        """
+        # Extract all rows corresponding to the person id
+        person_track = df[df['Unique Id'] == id]
+        if person_track.empty:
+            return False  # No data for this id
+
+        frames = person_track['Frame Count'].values
+        if len(frames) < min_shared_frames:
+            return False  # Not enough frames to perform check
+
+        first_frame, last_frame = frames.min(), frames.max()
+
+        # Filter DataFrame to get all bicycle/motorcycle detections in relevant frames
+        mask = (
+            (df['Frame Count'] >= first_frame)
+            & (df['Frame Count'] <= last_frame)
+            & (df['YOLO_id'].isin([1, 3]))
+        )
+        vehicles_in_frames = df[mask]
+
+        for vehicle_id in vehicles_in_frames['Unique Id'].unique():
+            # Get trajectory for this vehicle
+            vehicle_track = vehicles_in_frames[vehicles_in_frames['Unique Id'] == vehicle_id]
+
+            # Find shared frames between person and vehicle
+            shared_frames = np.intersect1d(person_track['Frame Count'], vehicle_track['Frame Count'])
+
+            if len(shared_frames) < min_shared_frames:
+                continue  # Not enough overlapping frames to check movement together
+
+            # Align positions for person and vehicle on shared frames, sorted by Frame Count
+            person_pos = (
+                person_track[person_track['Frame Count'].isin(shared_frames)]
+                .sort_values('Frame Count')[['X-center', 'Y-center']].values
+            )
+            vehicle_pos = (
+                vehicle_track[vehicle_track['Frame Count'].isin(shared_frames)]
+                .sort_values('Frame Count')[['X-center', 'Y-center']].values
+            )
+
+            # Calculate person's bounding box heights in pixels for shared frames
+            person_heights = (
+                person_track[person_track['Frame Count'].isin(shared_frames)]
+                .sort_values('Frame Count')['Height'].values
+            )  # This is in pixels per frame
+
+            # Compute pixels-per-cm for each frame using the average real-world height
+            pixels_per_cm = person_heights / avg_height  # array, one per frame
+
+            # Compute Euclidean distances between person and vehicle centers for shared frames
+            pixel_dists = np.linalg.norm(person_pos - vehicle_pos, axis=1)
+            distances_cm = pixel_dists / pixels_per_cm  # Real-world distance per frame
+
+            proximity = (distances_cm < dist_thresh)
+            if proximity.sum() / len(distances_cm) < overlap_ratio:
+                continue  # Not close enough for sufficient frames
+
+            # Calculate movement vectors (delta positions) for both tracks
+            person_mov = np.diff(person_pos, axis=0)
+            vehicle_mov = np.diff(vehicle_pos, axis=0)
+
+            # Compute cosine similarity of movement direction for each step
+            similarities = []
+            for a, b in zip(person_mov, vehicle_mov):
+                if np.linalg.norm(a) == 0 or np.linalg.norm(b) == 0:
+                    similarities.append(0)
+                else:
+                    similarities.append(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)))
+            similarity_mask = (np.array(similarities) > similarity_thresh)
+
+            if similarity_mask.sum() / len(similarities) >= overlap_ratio:
+                # If both proximity and movement similarity criteria met, label as rider
+
+                video_name, start_offset = key.rsplit('_', 1)
+
+                # Find the existing folder containing the video file
+                existing_folder = next((
+                    path for path in common.get_configs("videos") if os.path.exists(
+                        os.path.join(path, f"{video_name}.mp4"))), None)
+
+                if not existing_folder:
+                    raise FileNotFoundError(f"Video file '{video_name}.mp4' not found in any of the specified paths.")  # noqa:E501
+
+                base_video_path = os.path.join(existing_folder, f"{video_name}.mp4")
+
+                # Look up the frame rate (fps) using the video_start_time
+                result = values_class.find_values_with_video_id(df_mapping, key)
+
+                # Check if the result is None (i.e., no matching data was found)
+                if result is not None:
+                    # Unpack the result since it's not None
+                    fps = 24
+
+                    first_time = first_frame / fps
+                    last_time = last_frame / fps
+
+                    # Adjusted start and end times
+                    real_start_time = first_time + float(start_offset)
+                    real_end_time = float(start_offset) + last_time
+
+                    # Filter dataframe for only the shared frames of this person and vehicle
+                    filtered_df = df[
+                        ((df['Unique Id'] == id) | (df['Unique Id'] == vehicle_id))
+                        & (df['Frame Count'].isin(shared_frames))
+                    ]
+
+                    # Trim and save the raw segment
+                    helper.trim_video(
+                        input_path=base_video_path,
+                        output_path=os.path.join("saved_snaps", "original", f"{video_name}_{real_start_time}.mp4"),
+                        start_time=real_start_time, end_time=real_end_time)
+                    helper.draw_yolo_boxes_on_video(df=filtered_df, fps=fps,
+                                                    video_path=os.path.join("saved_snaps",
+                                                                            "original",
+                                                                            f"{video_name}_{real_start_time}.mp4"),
+                                                    output_path=os.path.join("saved_snaps",
+                                                                             "tracked",
+                                                                             f"{video_name}_{real_start_time}.mp4"))
+
+                return True
+
+        # If no such vehicle found moving together, label as pedestrian
+        return False
