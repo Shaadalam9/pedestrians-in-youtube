@@ -40,6 +40,7 @@ class Values():
                 - Literacy rate
                 - Average height
                 - ISO-3 code for country
+                - Fps of the video
         """
         id, start_ = key.rsplit("_", 1)  # Splitting the key into video ID and start time
 

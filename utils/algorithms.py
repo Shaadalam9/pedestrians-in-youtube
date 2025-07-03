@@ -115,6 +115,7 @@ class Algorithms():
                 long = result[7]
                 avg_height = result[15]
                 iso3 = result[16]
+                fps = result[17]
 
                 # value = dfs.get(key)  # Get corresponding YOLO data
 
@@ -128,7 +129,7 @@ class Algorithms():
                 # Loop through each individual's crossing data in this video
                 for id, time in id_time.items():
 
-                    if self.is_rider_id(df, id, key, avg_height):
+                    if self.is_rider_id(df, id, key, avg_height, fps):
                         continue  # Skip rider, not a pedestrian
 
                     # Get all frames for this person
@@ -290,7 +291,7 @@ class Algorithms():
 
         return avg_over_time
 
-    def is_rider_id(self, df, id, key, avg_height, min_shared_frames=5,
+    def is_rider_id(self, df, id, key, avg_height, fps, min_shared_frames=5,
                     dist_thresh=80, similarity_thresh=0.8, overlap_ratio=0.7):
         """
         Determines if a person identified by the given Unique Id is riding a bicycle or motorcycle
@@ -417,7 +418,6 @@ class Algorithms():
                 # Check if the result is None (i.e., no matching data was found)
                 if result is not None:
                     # Unpack the result since it's not None
-                    fps = 24
 
                     first_time = first_frame / fps
                     last_time = last_frame / fps
