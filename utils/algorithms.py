@@ -117,8 +117,6 @@ class Algorithms():
                 iso3 = result[16]
                 fps = result[17]
 
-                # value = dfs.get(key)  # Get corresponding YOLO data
-
                 # Store the country associated with each city
                 city_country_map_[f'{city}_{lat}_{long}'] = iso3
 
@@ -131,6 +129,9 @@ class Algorithms():
 
                     if self.is_rider_id(df, id, key, avg_height, fps):
                         continue  # Skip rider, not a pedestrian
+
+                    if not self.is_valid_crossing(df, id):
+                        continue  # Skip fake crossing
 
                     # Get all frames for this person
                     grouped_with_id = grouped.get_group(id)
@@ -554,3 +555,74 @@ class Algorithms():
 
         # If no such vehicle found moving together, label as pedestrian
         return False
+
+    def is_valid_crossing(self, df, person_id, ratio_thresh=0.2):
+        """
+        Determines if a detected pedestrian crossing is valid based on the relative movement
+        between the person and static objects (traffic light or stop sign) in the YOLO output.
+
+        The function assumes the camera (e.g., dashcam) may be moving. To account for this,
+        it compares the y-direction movement of the static object(s) and the person. If the
+        static object's y-movement is a significant fraction of the person's y-movement, it
+        is likely due to camera movement rather than actual pedestrian crossing, and the
+        crossing is classified as invalid.
+
+        Args:
+            df (pd.DataFrame): DataFrame containing YOLO detections with columns:
+                'YOLO_id', 'X-center', 'Y-center', 'Width', 'Height', 'Unique Id', 'Frame Count'.
+                All coordinates are normalized between 0 and 1.
+            person_id (int or str): Unique Id of the person (pedestrian) to be analyzed.
+            key: Placeholder for additional parameters (not used in this function).
+            avg_height: Placeholder for additional parameters (not used in this function).
+            fps: Placeholder for additional parameters (not used in this function).
+            ratio_thresh (float, optional): Threshold ratio of static object y-movement to
+                person's y-movement. Default is 0.2.
+
+        Returns:
+            bool: True if crossing is valid (not due to camera movement), False otherwise.
+        """
+
+        # Extract all detections for the specified person
+        person_track = df[df['Unique Id'] == person_id]
+        if person_track.empty:
+            # No detection for this person
+            return False
+
+        # Determine the first and last frames in which the person appears
+        frames = person_track['Frame Count'].values
+        first_frame, last_frame = frames.min(), frames.max()
+
+        # Filter for static objects (traffic light or stop sign) in those frames
+        static_objs = df[
+            (df['Frame Count'] >= first_frame) &
+            (df['Frame Count'] <= last_frame) &
+            (df['YOLO_id'].isin([9, 11]))
+        ]
+
+        if static_objs.empty:
+            # No static object present during this period; cannot verify, assume valid
+            return True
+
+        # Calculate the y-movement (vertical movement) of the person
+        person_y_movement = person_track['Y-center'].max() - person_track['Y-center'].min()
+
+        # Calculate the maximum y-movement among all static objects in the same frame range
+        max_static_y_movement = 0
+        for obj_id in static_objs['Unique Id'].unique():
+            obj_track = static_objs[static_objs['Unique Id'] == obj_id]
+            y_movement = obj_track['Y-center'].max() - obj_track['Y-center'].min()
+            if y_movement > max_static_y_movement:
+                max_static_y_movement = y_movement
+
+        # If the person does not move vertically, it's an invalid crossing
+        if person_y_movement == 0:
+            return False
+
+        # Compute the movement ratio
+        movement_ratio = max_static_y_movement / person_y_movement
+
+        # If the static object moves too much compared to the person, crossing is invalid
+        if movement_ratio > ratio_thresh:
+            return False
+        else:
+            return True

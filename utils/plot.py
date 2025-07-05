@@ -11,6 +11,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import math
 import pickle
+import numpy as np
 from tqdm import tqdm
 import plotly.express as px
 
@@ -734,3 +735,99 @@ class Plots():
         # Save and display the figure
         self.save_plotly_figure(fig, file_name, save_final=True)
 
+    def hist(self, data_index, name, nbins=None, color=None, pretty_text=False, marginal='rug',
+             xaxis_title=None, yaxis_title=None, name_file=None, save_file=False, save_final=False,
+             fig_save_width=1320, fig_save_height=680, font_family=None, font_size=None,
+             vlines=None, xrange=None):
+        """
+        Output histogram of selected data from pickle file.
+
+        Args:
+            data_index (int): index of the item in the tuple to plot.
+            nbins (int, optional): number of bins in histogram.
+            color (str, optional): dataframe column to assign colour of bars.
+            pretty_text (bool, optional): prettify ticks by replacing _ with spaces and capitalising.
+            marginal (str, optional): marginal type: 'histogram', 'rug', 'box', or 'violin'.
+            xaxis_title (str, optional): title for x axis.
+            yaxis_title (str, optional): title for y axis.
+            name_file (str, optional): name of file to save.
+            save_file (bool, optional): whether to save HTML file of the plot.
+            save_final (bool, optional): whether to save final figure to /figures.
+            fig_save_width (int, optional): width of saved figure.
+            fig_save_height (int, optional): height of saved figure.
+            font_family (str, optional): font family to use. Defaults to config.
+            font_size (int, optional): font size to use. Defaults to config.
+        """
+
+        # Load data from pickle file
+        with open(file_results, 'rb') as file:
+            data_tuple = pickle.load(file)
+        nested_dict = data_tuple[data_index]
+
+        all_values = [speed for city in nested_dict.values() for video in city.values() for speed in video.values()]
+        with open('no_filter.txt', 'w') as f:
+            for value in all_values:
+                f.write(f"{value}\n")
+
+        # --- Calculate mean and median ---
+        mean_val = np.mean(all_values)
+        median_val = np.median(all_values)
+
+        logger.info('Creating histogram for {}.', name)
+
+        # Restrict values to the specified x-range if provided
+        if xrange is not None:
+            x_min, x_max = xrange
+            all_values = [x for x in all_values if x_min <= x <= x_max]
+
+        # Create histogram
+        if color:
+            fig = px.histogram(x=all_values, nbins=nbins, marginal=marginal, color=color)
+        else:
+            fig = px.histogram(x=all_values, nbins=nbins, marginal=marginal)
+
+        fig.update_layout(
+            xaxis=dict(tickformat='digits'),
+            template=common.get_configs('plotly_template'),
+            xaxis_title=xaxis_title,
+            yaxis_title=yaxis_title,
+            font=dict(
+                family=font_family if font_family else common.get_configs('font_family'),
+                size=font_size if font_size else common.get_configs('font_size')
+            )
+        )
+
+        # --- Add vertical lines for mean and median ---
+        fig.add_vline(
+            x=mean_val,
+            line_dash='dash',
+            line_color='blue',
+            annotation_text=f"Mean: {mean_val:.2f}",
+            annotation_position='top right'
+        )
+
+        fig.add_vline(
+            x=median_val,
+            line_dash='dash',
+            line_color='red',
+            annotation_text=f"Median: {median_val:.2f}",
+            annotation_position='top left'
+        )
+
+        if vlines:
+            for x in vlines:
+                fig.add_vline(
+                    x=x,
+                    line_dash='dot',
+                    line_color='black',
+                    annotation_text=f'{x}',
+                    annotation_position='top'
+                )
+
+        if save_file:
+            if not name_file:
+                name_file = f"hist_{name}"
+            fig.update_layout(margin=dict(l=10, r=10, t=10, b=10))
+            self.save_plotly_figure(fig, name_file, save_final=True)
+        else:
+            fig.show()
