@@ -765,9 +765,6 @@ class Plots():
         nested_dict = data_tuple[data_index]
 
         all_values = [speed for city in nested_dict.values() for video in city.values() for speed in video.values()]
-        with open('no_filter.txt', 'w') as f:
-            for value in all_values:
-                f.write(f"{value}\n")
 
         # --- Calculate mean and median ---
         mean_val = np.mean(all_values)

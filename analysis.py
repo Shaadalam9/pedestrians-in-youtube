@@ -3064,16 +3064,40 @@ if __name__ == "__main__":
         df_mapping['traffic_light'] = 0
         df_mapping['stop_sign'] = 0
         df_mapping['total_time'] = 0
-        df_mapping['speed_crossing'] = 0.0
-        df_mapping['speed_crossing_day'] = 0.0
-        df_mapping['speed_crossing_night'] = 0.0
-        df_mapping['time_crossing'] = 0.0
-        df_mapping['time_crossing_day'] = 0.0
-        df_mapping['time_crossing_night'] = 0.0
-        df_mapping['with_trf_light_day'] = 0.0
-        df_mapping['with_trf_light_night'] = 0.0
-        df_mapping['without_trf_light_day'] = 0.0
-        df_mapping['without_trf_light_night'] = 0.0
+
+        # City-level columns
+        df_mapping['speed_crossing_day_city'] = 0.0
+        df_mapping['speed_crossing_night_city'] = 0.0
+        df_mapping['speed_crossing_day_night_city_avg'] = 0.0
+
+        df_mapping['time_crossing_day_city'] = 0.0
+        df_mapping['time_crossing_night_city'] = 0.0
+        df_mapping['time_crossing_day_night_city_avg'] = 0.0
+
+        df_mapping['with_trf_light_day_city'] = 0.0
+        df_mapping['with_trf_light_night_city'] = 0.0
+        df_mapping['with_trf_light_day_night_city_avg'] = 0.0
+
+        df_mapping['without_trf_light_day_city'] = 0.0
+        df_mapping['without_trf_light_night_city'] = 0.0
+        df_mapping['without_trf_light_day_night_city_avg'] = 0.0
+
+        # Country-level columns
+        df_mapping['speed_crossing_day_country'] = 0.0
+        df_mapping['speed_crossing_night_country'] = 0.0
+        df_mapping['speed_crossing_day_night_country_avg'] = 0.0
+
+        df_mapping['time_crossing_day_country'] = 0.0
+        df_mapping['time_crossing_night_country'] = 0.0
+        df_mapping['time_crossing_day_night_country_avg'] = 0.0
+
+        df_mapping['with_trf_light_day_country'] = 0.0
+        df_mapping['with_trf_light_night_country'] = 0.0
+        df_mapping['with_trf_light_day_night_country_avg'] = 0.0
+
+        df_mapping['without_trf_light_day_country'] = 0.0
+        df_mapping['without_trf_light_night_country'] = 0.0
+        df_mapping['without_trf_light_day_night_country_avg'] = 0.0
 
         all_speed = {}
         all_time = {}
@@ -3180,68 +3204,125 @@ if __name__ == "__main__":
             logger.error("No speed and time data to analyse.")
             exit()
 
-        # Add to mapping file
+        # ----------------------------------------------------------------------
+        # Add city-level average speeds for day and night to mapping file
+        # ----------------------------------------------------------------------
         for key, value in tqdm(avg_speed_city.items(), total=len(avg_speed_city)):
             parts = key.split("_")
-            city = parts[0]  # First part is city
-            lat = parts[1]  # Second part is latitude
-            long = parts[2]  # Third part is longitude
-            time_of_day = int(parts[3])  # Fourth part is the time-of-day
+            city = parts[0]          # City name
+            lat = parts[1]           # Latitude
+            long = parts[2]          # Longitude
+            time_of_day = int(parts[3])  # 0=day, 1=night
 
-            # state = parts[1] if parts[1] != "unknown" else np.nan
+            # Get the corresponding state using a helper function
             state = values_class.get_value(df_mapping, "city", city, "lat", lat, "state")
 
+            # Assign average speed to the correct day/night city column
+            mask = (
+                (df_mapping["city"] == city) &
+                ((df_mapping["state"] == state) | (pd.isna(df_mapping["state"]) & pd.isna(state)))
+            )
             if not time_of_day:  # day
-                df_mapping.loc[
-                    (df_mapping["city"] == city) &
-                    ((df_mapping["state"] == state) | (pd.isna(df_mapping["state"]) & pd.isna(state))),
-                    "speed_crossing_day"
-                ] = float(value)  # Explicitly cast speed to float
+                df_mapping.loc[mask, "speed_crossing_day_city"] = float(value)
             else:  # night
-                df_mapping.loc[
-                    (df_mapping["city"] == city) &
-                    ((df_mapping["state"] == state) | (pd.isna(df_mapping["state"]) & pd.isna(state))),
-                    "speed_crossing_night"
-                ] = float(value)  # Explicitly cast speed to float
+                df_mapping.loc[mask, "speed_crossing_night_city"] = float(value)
 
-        # calculate average values
-        df_mapping["speed_crossing"] = np.where(
-            (df_mapping["speed_crossing_day"] > 0) & (df_mapping["speed_crossing_night"] > 0),
-            df_mapping[["speed_crossing_day", "speed_crossing_night"]].mean(axis=1),
+        # ----------------------------------------------------------------------
+        # Compute city-level overall average speed (mean of day & night)
+        # ----------------------------------------------------------------------
+        df_mapping["speed_crossing_day_night_city_avg"] = np.where(
+            (df_mapping["speed_crossing_day_city"] > 0) & (df_mapping["speed_crossing_night_city"] > 0),
+            df_mapping[["speed_crossing_day_city", "speed_crossing_night_city"]].mean(axis=1),
             np.where(
-                df_mapping["speed_crossing_day"] > 0, df_mapping["speed_crossing_day"],
-                np.where(df_mapping["speed_crossing_night"] > 0, df_mapping["speed_crossing_night"], np.nan)
+                df_mapping["speed_crossing_day_city"] > 0, df_mapping["speed_crossing_day_city"],
+                np.where(df_mapping["speed_crossing_night_city"] > 0,
+                         df_mapping["speed_crossing_night_city"], np.nan)
             )
         )
 
-        # add to mapping file
+        # ----------------------------------------------------------------------
+        # Add city-level average crossing time for day and night
+        # ----------------------------------------------------------------------
         for key, value in tqdm(avg_time_city.items(), total=len(avg_time_city)):
             parts = key.split("_")
-            city = parts[0]  # First part is city
-            lat = parts[1]  # Second part is latitude
-            long = parts[2]  # Third part is longitude
-            time_of_day = int(parts[3])  # Fourth part is the time-of-day
+            city = parts[0]
+            lat = parts[1]
+            long = parts[2]
+            time_of_day = int(parts[3])  # 0=day, 1=night
 
+            mask = (
+                (df_mapping["city"] == city) &
+                ((df_mapping["state"] == state) | (pd.isna(df_mapping["state"]) & pd.isna(state)))
+            )
             if not time_of_day:  # day
-                df_mapping.loc[
-                    (df_mapping["city"] == city) &
-                    ((df_mapping["state"] == state) | (pd.isna(df_mapping["state"]) & pd.isna(state))),
-                    "time_crossing_day"
-                ] = float(value)  # Explicitly cast speed to float
+                df_mapping.loc[mask, "time_crossing_day_city"] = float(value)
             else:  # night
-                df_mapping.loc[
-                    (df_mapping["city"] == city) &
-                    ((df_mapping["state"] == state) | (pd.isna(df_mapping["state"]) & pd.isna(state))),
-                    "time_crossing_night"
-                ] = float(value)  # Explicitly cast speed to float
+                df_mapping.loc[mask, "time_crossing_night_city"] = float(value)
 
-        # calculate average values
-        df_mapping["time_crossing"] = np.where(
-            (df_mapping["time_crossing_day"] > 0) & (df_mapping["time_crossing_night"] > 0),
-            df_mapping[["time_crossing_day", "time_crossing_night"]].mean(axis=1),
+        # ----------------------------------------------------------------------
+        # Compute city-level overall average crossing time (mean of day & night)
+        # ----------------------------------------------------------------------
+        df_mapping["time_crossing_day_night_city_avg"] = np.where(
+            (df_mapping["time_crossing_day_city"] > 0) & (df_mapping["time_crossing_night_city"] > 0),
+            df_mapping[["time_crossing_day_city", "time_crossing_night_city"]].mean(axis=1),
             np.where(
-                df_mapping["time_crossing_day"] > 0, df_mapping["time_crossing_day"],
-                np.where(df_mapping["time_crossing_night"] > 0, df_mapping["time_crossing_night"], np.nan)
+                df_mapping["time_crossing_day_city"] > 0, df_mapping["time_crossing_day_city"],
+                np.where(df_mapping["time_crossing_night_city"] > 0,
+                         df_mapping["time_crossing_night_city"], np.nan)
+            )
+        )
+
+        # ----------------------------------------------------------------------
+        # Add country-level average speeds for day and night to mapping file
+        # ----------------------------------------------------------------------
+        for key, value in tqdm(avg_speed_country.items(), total=len(avg_speed_country)):
+            parts = key.split("_")
+            country = parts[0]        # Country name
+            time_of_day = int(parts[1])  # 0=day, 1=night
+
+            mask = (df_mapping["country"] == country)
+            if not time_of_day:  # day
+                df_mapping.loc[mask, "speed_crossing_day_country"] = float(value)
+            else:  # night
+                df_mapping.loc[mask, "speed_crossing_night_country"] = float(value)
+
+        # ----------------------------------------------------------------------
+        # Compute country-level overall average speed (mean of day & night)
+        # ----------------------------------------------------------------------
+        df_mapping["speed_crossing_day_night_country_avg"] = np.where(
+            (df_mapping["speed_crossing_day_country"] > 0) & (df_mapping["speed_crossing_night_country"] > 0),
+            df_mapping[["speed_crossing_day_country", "speed_crossing_night_country"]].mean(axis=1),
+            np.where(
+                df_mapping["speed_crossing_day_country"] > 0, df_mapping["speed_crossing_day_country"],
+                np.where(df_mapping["speed_crossing_night_country"] > 0,
+                         df_mapping["speed_crossing_night_country"], np.nan)
+                )
+        )
+
+        # ----------------------------------------------------------------------
+        # Add country-level average crossing time for day and night
+        # ----------------------------------------------------------------------
+        for key, value in tqdm(avg_time_country.items(), total=len(avg_time_country)):
+            parts = key.split("_")
+            country = parts[0]        # Country name
+            time_of_day = int(parts[1])  # 0=day, 1=night
+
+            mask = (df_mapping["country"] == country)
+            if not time_of_day:  # day
+                df_mapping.loc[mask, "time_crossing_day_country"] = float(value)
+            else:  # night
+                df_mapping.loc[mask, "time_crossing_night_country"] = float(value)
+
+        # ----------------------------------------------------------------------
+        # Compute country-level overall average crossing time (mean of day & night)
+        # ----------------------------------------------------------------------
+        df_mapping["time_crossing_day_night_country_avg"] = np.where(
+            (df_mapping["time_crossing_day_country"] > 0) & (df_mapping["time_crossing_night_country"] > 0),
+            df_mapping[["time_crossing_day_country", "time_crossing_night_country"]].mean(axis=1),
+            np.where(
+                df_mapping["time_crossing_day_country"] > 0, df_mapping["time_crossing_day_country"],
+                np.where(df_mapping["time_crossing_night_country"] > 0,
+                         df_mapping["time_crossing_night_country"], np.nan)
             )
         )
 
