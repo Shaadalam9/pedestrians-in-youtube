@@ -2370,3 +2370,6 @@ id,city,state,country,iso3,continent,lat,lon,gmp,population_city,population_coun
 2369,Châlonvillars,,France,FRA,Europe,47.6423667,6.7901805,0.0,1195.0,67391582.0,5.1,0.0,172.0,42.4,32.4,0.0,[SmYy2LFmmdU],[[0]],[[2408]],[[2606]],[0],[30102023],[30],[UCKPKkECp7Ad_GjQ8MFm1nXg]
 2370,Essert,,France,FRA,Europe,47.6323621,6.8176239,0.0,2891.0,67391582.0,5.1,0.0,172.0,42.4,32.4,0.0,[SmYy2LFmmdU],[[0]],[[2607]],[[2797]],[0],[30102023],[30],[UCKPKkECp7Ad_GjQ8MFm1nXg]
 2371,Beaune,,France,FRA,Europe,47.0239064,4.8380426,0.0,24162.0,67391582.0,5.1,0.0,172.0,42.4,32.4,0.0,[wzEmVmoDkHI],"[[0, 0]]","[[210, 597]]","[[564, 761]]",[0],[13082023],[30],[UCybykuc_xad-k0LMP6cY50g]
+2372,Nuits-Saint-Georges,,France,FRA,Europe,47.1367598,4.9489061,0.0,5300.0,67391582.0,5.1,0.0,172.0,42.4,32.4,0.0,[aId3XS4AhcQ],[[0]],[[304]],[[581]],[0],[12082023],[30],[UCybykuc_xad-k0LMP6cY50g]
+2373,Comblanchien,,France,FRA,Europe,47.10081,4.92122,0.0,655.0,67391582.0,5.1,0.0,172.0,42.4,32.4,0.0,[aId3XS4AhcQ],[[0]],[[10]],[[204]],[0],[12082023],[30],[UCybykuc_xad-k0LMP6cY50g]
+2374,Saint-Apollinaire,,France,FRA,Europe,47.3340704,5.0821629,0.0,5211,67391582,5.1,0.0,172,42.4,32.4,0.0,[aId3XS4AhcQ],[[0]],[[837]],[[1018]],[0],[12082023],[30],[UCybykuc_xad-k0LMP6cY50g]
