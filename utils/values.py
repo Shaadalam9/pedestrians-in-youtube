@@ -124,23 +124,31 @@ class Values():
         Any: The value from target_column that corresponds to the matching values in both
              column_name1 and column_name2.
         """
-        # Treat column_value2 as NaN if it is "unknown"
-        if column_value2 == "unknown":
-            column_value2 = float('nan')
+        if column_name2 is None or column_value2 is None:
+            result = df[df[column_name1] == column_value1][target_column]
+            if not result.empty:
+                return result.iloc[0]
+            else:
+                return None
 
-        # Filter the DataFrame where both conditions are met
-        if pd.isna(column_value2):
-            result = df[(df[column_name1] == column_value1) & (df[column_name2].isna())][target_column]
         else:
-            result = df[(df[column_name1] == column_value1) & (df[column_name2] == column_value2)][target_column]
+            # Treat column_value2 as NaN if it is "unknown"
+            if column_value2 == "unknown":
+                column_value2 = float('nan')
 
-        # Check if the result is not empty (i.e., if there is a match)
-        if not result.empty:
-            # Return the first matched value
-            return result.values[0]
-        else:
-            # Return None if no matching value is found
-            return None
+            # Filter the DataFrame where both conditions are met
+            if pd.isna(column_value2):
+                result = df[(df[column_name1] == column_value1) & (df[column_name2].isna())][target_column]
+            else:
+                result = df[(df[column_name1] == column_value1) & (df[column_name2] == column_value2)][target_column]
+
+            # Check if the result is not empty (i.e., if there is a match)
+            if not result.empty:
+                # Return the first matched value
+                return result.values[0]
+            else:
+                # Return None if no matching value is found
+                return None
 
     def calculate_total_seconds_for_city(self, df, city_name, state_name):
         """

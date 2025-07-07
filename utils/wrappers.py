@@ -6,6 +6,7 @@ from utils.values import Values
 import pycountry
 import math
 from tqdm import tqdm
+from collections import defaultdict
 
 # Suppress the specific FutureWarning
 warnings.filterwarnings("ignore", category=FutureWarning, module="plotly")
@@ -133,6 +134,97 @@ class Wrappers():
 
         else:
             raise TypeError("city_lat_lon must be a string or a list of strings.")
+
+    def country_averages_from_nested(self, var_dict, df_mapping):
+        # Collect values by country_condition
+        country_condition_values = defaultdict(list)
+
+        for k, inner_dict in var_dict.items():
+            city, lat, long, condition = k.rsplit('_', 3)
+            lat = float(lat)
+            condition = int(condition)
+            # Assuming values_class.get_value works as before
+            country = values_class.get_value(df_mapping, "city", city, "lat", lat, "country")
+            if country:
+                key = f'{country}_{condition}'
+                # ADD: iterate over inner dictionary values!
+                country_condition_values[key].extend(inner_dict.values())
+
+        # Calculate averages
+        country_condition_averages = {
+            key: sum(vals) / len(vals) for key, vals in country_condition_values.items() if vals
+        }
+        return country_condition_averages
+
+    def country_averages_from_flat(self, var_dict, df_mapping):
+        # Collect values by country_condition
+        country_condition_values = defaultdict(list)
+
+        for k, v in var_dict.items():
+            city, lat, long, condition = k.rsplit('_', 3)
+            lat = float(lat)
+            condition = int(condition)
+            country = values_class.get_value(df_mapping, "city", city, "lat", lat, "country")
+            if country:
+                key = f'{country}_{condition}'
+                country_condition_values[key].append(v)
+
+        # Calculate averages
+        country_condition_averages = {
+            key: sum(vals)/len(vals) for key, vals in country_condition_values.items()
+        }
+        return country_condition_averages
+
+    def country_sum_from_cities(self, var_dict, df_mapping):
+        country_condition_values = defaultdict(list)
+
+        for k, v in var_dict.items():
+            city, lat, long, condition = k.rsplit('_', 3)
+            lat = float(lat)
+            condition = int(condition)
+            country = values_class.get_value(df_mapping, "city", city, "lat", lat, "country")
+            if country:
+                key = f'{country}_{condition}'
+                country_condition_values[key].append(v)
+
+        # Calculate sums (not averages)
+        country_condition_sums = {
+            key: sum(vals) for key, vals in country_condition_values.items()
+        }
+        return country_condition_sums
+
+    def format_city_state(self, city_state):
+        """
+        Formats a city_state string or a list of strings in the format 'City_State'.
+        If the state is 'unknown', only the city is returned.
+        Handles cases where the format is incorrect or missing the '_'.
+
+        Args:
+            city_state (str or list): A single string or list of strings in the format 'City_State'.
+
+        Returns:
+            str or list: A formatted string or list of formatted strings in the format 'City, State' or 'City'.
+        """
+        if isinstance(city_state, str):  # If input is a single string
+            if "_" in city_state:
+                city, state = city_state.split("_", 1)
+                return f"{city}, {state}" if state.lower() != "unknown" else city
+            else:
+                return city_state  # Return as-is if no '_' in string
+        elif isinstance(city_state, list):  # If input is a list
+            formatted_list = []
+            for cs in city_state:
+                if "_" in cs:
+                    city, state = cs.split("_", 1)
+                    if state.lower() != "unknown":
+                        formatted_list.append(f"{city}, {state}")
+                    else:
+                        formatted_list.append(city)
+                else:
+                    formatted_list.append(cs)  # Append as-is if no '_'
+            return formatted_list
+        else:
+            raise TypeError("Input must be a string or a list of strings.")
 
     def iso2_to_flag(self, iso2):
         """
