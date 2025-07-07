@@ -2381,4 +2381,7 @@ id,city,state,country,iso3,continent,lat,lon,gmp,population_city,population_coun
 2380,Sanremo,,Italy,ITA,Europe,43.8198253,7.7748827,0.0,47043.0,59554023.0,5.3,99.0,168.0,48.1,35.9,0.0,[IILuJo-AiYE],[[0]],[[6411]],[[7074]],[0],[11122024],[30],[UCcwGwvM5iPB9IvtTnMTVcEg]
 2381,Séez,,France,FRA,Europe,48.603378,0.1734544,0.0,2139.0,67391582.0,5.1,0.0,172.0,42.4,32.4,0.0,[BCl_GWsDRpA],[[0]],[[52]],[[522]],[0],[06042025],[30],[UC12FUHVhwpC5lMYsMPMbmyg]
 2382,La Thuile,,Italy,ITA,Europe,45.7162875,6.9486119,0.0,762.0,59554023.0,5.3,99.0,168.0,48.1,35.9,0.0,[BCl_GWsDRpA],[[0]],[[3649]],[[3828]],[0],[06042025],[30],[UC12FUHVhwpC5lMYsMPMbmyg]
-2383,Courmayeur,,Italy,ITA,Europe,45.7874248,6.9730618,0.0,2794,59554023,5.3,99,168,48.1,35.9,0.0,[BCl_GWsDRpA],[[0]],[[4979]],[[5305]],[0],[06042025],[30],[UC12FUHVhwpC5lMYsMPMbmyg]
+2383,Courmayeur,,Italy,ITA,Europe,45.7874248,6.9730618,0.0,2794.0,59554023.0,5.3,99.0,168.0,48.1,35.9,0.0,[BCl_GWsDRpA],[[0]],[[4979]],[[5305]],[0],[06042025],[30],[UC12FUHVhwpC5lMYsMPMbmyg]
+2384,Vic-le-Comte,,France,FRA,Europe,45.6433495,3.2433311,0.0,4590.0,67391582.0,5.1,0.0,172.0,42.4,32.4,0.0,[iPGyDh9ykIY],[[0]],[[0]],[[84]],[0],[07102019],[30],[UCjEIqRY_k_K63tlRhaOl2eA]
+2385,Saint-Babel,,France,FRA,Europe,45.5973684,3.3003116,0.0,836.0,67391582.0,5.1,0.0,172.0,42.4,32.4,0.0,[iPGyDh9ykIY],[[0]],[[455]],[[600]],[0],[07102019],[30],[UCjEIqRY_k_K63tlRhaOl2eA]
+2386,Sauxillanges,,France,FRA,Europe,45.5519544,3.3721049,0.0,1116,67391582,5.1,0.0,172,42.4,32.4,0.0,[iPGyDh9ykIY],[[0]],[[1077]],[[1202]],[0],[07102019],[30],[UCjEIqRY_k_K63tlRhaOl2eA]
