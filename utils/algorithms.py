@@ -5,11 +5,8 @@ from logmod import logs
 import warnings
 from utils.values import Values
 from utils.wrappers import Wrappers
-import pandas as pd
 import numpy as np
-import os
 from helper_script import Youtube_Helper
-# from analysis import Analysis
 
 # Suppress the specific FutureWarning
 warnings.filterwarnings("ignore", category=FutureWarning, module="plotly")
@@ -20,16 +17,56 @@ logger = CustomLogger(__name__)  # use custom logger
 values_class = Values()
 wrapper_class = Wrappers()
 helper = Youtube_Helper()
-# analysis_class = Analysis()
-
-df_mapping = pd.read_csv(common.get_configs("mapping"))
 
 
 class Algorithms():
     def __init__(self) -> None:
         pass
 
-    def time_to_cross(self, dataframe, ids, video_id):
+    def pedestrian_crossing(self, dataframe, video_id, df_mapping, min_x, max_x, person_id):
+        """Counts the number of person with a specific ID crosses the road within specified boundaries.
+
+        Args:
+            dataframe (DataFrame): DataFrame containing data from the video.
+            min_x (float): Min/Max x-coordinate boundary for the road crossing.
+            max_x (float): Max/Min x-coordinate boundary for the road crossing.
+            person_id (int): Unique ID assigned by the YOLO tracker to identify the person.
+
+        Returns:
+            Tuple[int, list]: A tuple containing the number of person crossed the road within
+            the boundaries and a list of unique IDs of the person.
+        """
+
+        # Filter dataframe to include only entries for the specified person
+        crossed_ids = dataframe[(dataframe["YOLO_id"] == person_id)]
+
+        # Group entries by Unique ID
+        crossed_ids_grouped = crossed_ids.groupby("Unique Id")
+
+        # Filter entries based on x-coordinate boundaries
+        filtered_crossed_ids = crossed_ids_grouped.filter(
+            lambda x: (x["X-center"] <= min_x).any() and (x["X-center"] >= max_x).any())
+
+        # Get unique IDs of the person who crossed the road within boundaries
+        crossed_ids = filtered_crossed_ids["Unique Id"].unique()
+
+        result = values_class.find_values_with_video_id(df_mapping, video_id)
+        if result is not None:
+            avg_height = result[15]
+
+        pedestrian_ids = []
+        for uid in crossed_ids:
+            if self.is_rider_id(dataframe, uid, avg_height):
+                continue  # Filter out riders
+
+            if not self.is_valid_crossing(dataframe, uid):
+                continue  # Skip fake crossing
+
+            pedestrian_ids.append(uid)
+
+        return pedestrian_ids
+
+    def time_to_cross(self, dataframe, ids, video_id, df_mapping):
         """Calculates the time taken for each object with specified IDs to cross the road.
 
         Args:
@@ -118,7 +155,6 @@ class Algorithms():
                 long = result[7]
                 avg_height = result[15]
                 iso3 = result[16]
-                fps = result[17]
 
                 # Store the country associated with each city
                 city_country_map_[f'{city}_{lat}_{long}'] = iso3
@@ -129,12 +165,6 @@ class Algorithms():
 
                 # Loop through each individual's crossing data in this video
                 for id, time in id_time.items():
-
-                    if self.is_rider_id(df, id, key, avg_height, fps):
-                        continue  # Skip rider, not a pedestrian
-
-                    if not self.is_valid_crossing(df, id):
-                        continue  # Skip fake crossing
 
                     # Get all frames for this person
                     grouped_with_id = grouped.get_group(id)
@@ -399,9 +429,8 @@ class Algorithms():
 
         return avg_over_time_result
 
-    def is_rider_id(self, df, id, key, avg_height, fps, min_shared_frames=5,
-                    dist_thresh=80, similarity_thresh=0.8, overlap_ratio=0.7,
-                    need_snaps=False):
+    def is_rider_id(self, df, id, avg_height, min_shared_frames=5,
+                    dist_thresh=80, similarity_thresh=0.8, overlap_ratio=0.7):
         """
         Determines if a person identified by the given Unique Id is riding a bicycle or motorcycle
         during their trajectory in the YOLO detection DataFrame.
@@ -507,53 +536,6 @@ class Algorithms():
             similarity_mask = (np.array(similarities) > similarity_thresh)
 
             if similarity_mask.sum() / len(similarities) >= overlap_ratio:
-                # If both proximity and movement similarity criteria met, label as rider
-                if need_snaps:
-                    video_name, start_offset = key.rsplit('_', 1)
-
-                    # Find the existing folder containing the video file
-                    existing_folder = next((
-                        path for path in common.get_configs("videos") if os.path.exists(
-                            os.path.join(path, f"{video_name}.mp4"))), None)
-
-                    if not existing_folder:
-                        raise FileNotFoundError(f"Video file '{video_name}.mp4' not found in any of the specified paths.")  # noqa:E501
-
-                    base_video_path = os.path.join(existing_folder, f"{video_name}.mp4")
-
-                    # Look up the frame rate (fps) using the video_start_time
-                    result = values_class.find_values_with_video_id(df_mapping, key)
-
-                    # Check if the result is None (i.e., no matching data was found)
-                    if result is not None:
-                        # Unpack the result since it's not None
-
-                        first_time = first_frame / fps
-                        last_time = last_frame / fps
-
-                        # Adjusted start and end times
-                        real_start_time = first_time + float(start_offset)
-                        real_end_time = float(start_offset) + last_time
-
-                        # Filter dataframe for only the shared frames of this person and vehicle
-                        filtered_df = df[
-                            ((df['Unique Id'] == id) | (df['Unique Id'] == vehicle_id))
-                            & (df['Frame Count'].isin(shared_frames))
-                        ]
-
-                        # Trim and save the raw segment
-                        helper.trim_video(
-                            input_path=base_video_path,
-                            output_path=os.path.join("saved_snaps", "original", f"{video_name}_{real_start_time}.mp4"),
-                            start_time=real_start_time, end_time=real_end_time)
-                        helper.draw_yolo_boxes_on_video(df=filtered_df, fps=fps,
-                                                        video_path=os.path.join("saved_snaps",
-                                                                                "original",
-                                                                                f"{video_name}_{real_start_time}.mp4"),
-                                                        output_path=os.path.join("saved_snaps",
-                                                                                 "tracked",
-                                                                                 f"{video_name}_{real_start_time}.mp4"))  # noqa:E501
-
                 return True
 
         # If no such vehicle found moving together, label as pedestrian
