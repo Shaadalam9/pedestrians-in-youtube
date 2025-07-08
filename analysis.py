@@ -115,9 +115,8 @@ class Analysis():
 
                 # Skip if "Frame Count" column is not present
                 if "Frame Count" not in df.columns:
-                    if not common.get_configs("include_yolov8_files"):
-                        logger.info(f"'Frame Count' column missing in {file_path}, skipping file.")
-                        return None
+                    logger.debug(f"Skipping non-numeric feature: {filename}")
+                    return None
 
                 # Optionally apply geometry correction if configured and not zero
                 use_geom_correction = common.get_configs("use_geometry_correction")
@@ -2699,7 +2698,7 @@ if __name__ == "__main__":
         hover_data = list(set(df.columns) - set(columns_remove))
 
         # mapbox map with all data
-        plots_class.get_mapbox_map(df=df, hover_data=hover_data, file_name='mapbox_map_all')  # type: ignore
+        # plots_class.get_mapbox_map(df=df, hover_data=hover_data, file_name='mapbox_map_all')  # type: ignore
 
         # Get the population threshold from the configuration
         population_threshold = common.get_configs("population_threshold")
@@ -2822,16 +2821,18 @@ if __name__ == "__main__":
                                                                df_mapping,
                                                                common.get_configs("boundary_left"),
                                                                common.get_configs("boundary_right"),
-                                                               0)
+                                                               person_id=0)
 
                     # Saving it in a dictionary in: {video-id_time: count, ids}
                     pedestrian_crossing_count[filename_no_ext] = {"ids": ids}
 
                     # Saves the time to cross in form {name_time: {id(s): time(s)}}
-                    data[filename_no_ext] = algorithms_class.time_to_cross(df,
-                                                                           pedestrian_crossing_count[filename_no_ext]["ids"],  # noqa:E501
-                                                                           filename_no_ext,
-                                                                           df_mapping)
+                    temp_data = algorithms_class.time_to_cross(df,
+                                                               pedestrian_crossing_count[filename_no_ext]["ids"],
+                                                               filename_no_ext,
+                                                               df_mapping)
+                    data[filename_no_ext] = temp_data
+                    print(data)
 
                     # Calculate the total number of different objects detected
                     person_video = Analysis.count_object(df, 0)
@@ -2875,11 +2876,13 @@ if __name__ == "__main__":
                     df_mapping.loc[df_mapping["id"] == video_city_id, "total_time"] += time_video  # type: ignore
 
                     # Aggregated values
-                    speed_value = algorithms_class.calculate_speed_of_crossing(df_mapping, df, data)
+                    speed_value = algorithms_class.calculate_speed_of_crossing(df_mapping, df,
+                                                                               {filename_no_ext: temp_data})
                     if speed_value is not None:
                         all_speed.update(speed_value)
 
-                    time_value = algorithms_class.time_to_start_cross(df_mapping, df, data)
+                    time_value = algorithms_class.time_to_start_cross(df_mapping, df,
+                                                                      {filename_no_ext: temp_data})
                     if time_value is not None:
                         all_time.update(time_value)
 

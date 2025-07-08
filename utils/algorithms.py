@@ -124,7 +124,10 @@ class Algorithms():
             dict: A dictionary where each key is a combination of 'city_state_condition'
                 mapping to a list of walking speeds (in m/s) for valid crossings.
         """
-        if 'Frame Count' not in df:
+
+        # Check if all values in the dict are empty dicts
+        is_empty = all(len(v) == 0 for v in data.values())
+        if is_empty:
             return None
 
         time_ = []  # List to store durations of videos (not used in output)
@@ -135,6 +138,7 @@ class Algorithms():
 
         # Group YOLO data by unique person ID
         grouped = df.groupby('Unique Id')
+        print("here", data)
 
         # Iterate through all video IDs and their corresponding crossing data
         for key, id_time in data.items():
@@ -279,11 +283,12 @@ class Algorithms():
                 of walking speeds (m/s) for each valid crossing.
             all_speed (list): A flat list of all calculated walking speeds (m/s) across videos, including outliers.
         """
+        # Check if all values in the dict are empty dicts
+        is_empty = all(len(v) == 0 for v in data.values())
+        if is_empty:
+            return None
 
         time_compelete = {}
-
-        if 'Frame Count' not in df.columns:
-            return
 
         data_cross = {}
         time_id_complete = {}
