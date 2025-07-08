@@ -198,22 +198,22 @@
 90,740424,0.0223,28896,"Solomon Islands","SLB","SB",90,"Oceania","Melanesia",27990,26.4532,68.5137,166,2019,163.0694439,156.7888442,197
 418,7633779,0.01385,236800,"Laos","LAO","LA",418,"Asia","South-Eastern Asia",230800,33.0753,85.665,103,2019,162.7805915,153.0990839,198
 626,1360596,0.01439,14874,"Timor-Leste","TLS","TL",626,"Asia","South-Eastern Asia",14870,91.4994,236.9834,155,2019,160.1305426,152.7123349,199
-,30030,,350,"British Virgin Islands","VGB","VG",092,,,,,,,2025,,,
-,,,,"United States Virgin Islands","VIR","VI",850,,,,,,,2025,,,
-,,,,"Cayman Islands","CYM","KY",136,,,,,,,,,,
-,,,,"Guadeloupe","GLP","GP",312,,,,,,,,,,
-,,,,"Northern Mariana Islands","MNP","MP",580,,,,,,,,,,
-,,,,"Saint Barthélemy","BLM","BL",652,,,,,,,,,,
-,,,,"Saint Helena","SHN","SH",654,,,,,,,,,,
-,,,,"Åland Islands","ALA","AX",248,,,,,,,,,,
-,,,,"Guam","GUM","GU",316,,,,,,,,,,
-,,,,"Isle of Man","IMN","IM",833,,,,,,,,,,
-,,,,"Jersey","JEY","JE",832,,,,,,,,,,
-,,,,"Guernsey","GGY","GG",831,,,,,,,,,,
-,,,,"Faroe Islands","FRO","FO",234,,,,,,,,,,
-,,,,"Liechtenstein","LIE","LI",438,,,,,,,,,,
-,,,,"San Marino","SMR","SM",674,,,,,,,,,,
-,,,,"Mayotte","MYT","YT",175,,,,,,,,,,
-,,,,"Réunion","REU","RE",638,,,,,,,,,,
-,,,,"Western Sahara","ESH","EH",732,,,,,,,,,,
-,,,,"Norfolk Island","NFK","NH",574,,,,,,,,,,
+92,31828,0.0059,151,"British Virgin Islands","VGB","VG",92,"Americas","Caribbean",151,210.82,545.02,220,2023,178.2080213,163.9391448,34
+850,87146,-0.0041,346,"United States Virgin Islands","VIR","VI",850,"Americas","Caribbean",346,251.87,652.33,196,2025,178.2080213,163.9391448,34
+136,82535,0.0147,264,"Cayman Islands","CYM","KY",136,"Americas","Caribbean",264,312.7,809.9,200,2023,178.2080213,163.9391448,34
+312,375693,-0.0024,1628,"Guadeloupe","GLP","GP",312,"Americas","Caribbean",1628,230.73,597.61,174,2023,173.5583982,160.1349333,23
+580,56768,0.0025,464,"Northern Mariana Islands","MNP","MP",580,"Oceania","Micronesia",464,122.37,317.93,205,2023,172.6,160.6,88
+652,10739,0.0121,21,"Saint Barthélemy","BLM","BL",652,"Americas","Caribbean",21,511.38,1324.47,225,2023,173.5583982,160.1349333,23
+654,4417,-0.0092,122,"Saint Helena","SHN","SH",654,"Africa","Western Africa",122,36.21,93.83,233,2023,174.6,161.7,56
+248,30429,0.0026,1580,"Åland Islands","ALA","AX",248,"Europe","Northern Europe",1552,19.61,50.79,218,2023,179.2,166.3,
+316,168783,0.0021,549,"Guam","GUM","GU",316,"Oceania","Micronesia",549,307.47,796.35,187,2023,172.6,160.6,88
+833,84931,0.0025,572,"Isle of Man","IMN","IM",833,"Europe","Northern Europe",572,148.5,384.6,201,2023,178.2080213,163.9391448,34
+832,110800,0.0027,119,"Jersey","JEY","JE",832,"Europe","Northern Europe",119,931.09,2411.52,195,2023,178.2080213,163.9391448,34
+831,63500,0.0024,65,"Guernsey","GGY","GG",831,"Europe","Northern Europe",65,976.92,2530.22,206,2023,178.2080213,163.9391448,34
+234,53699,0.0085,1396,"Faroe Islands","FRO","FO",234,"Europe","Northern Europe",1396,38.49,99.68,211,2023,179.2,166.3,
+438,39344,0.0043,160,"Liechtenstein","LIE","LI",438,"Europe","Western Europe",160,245.9,636.9,216,2023,178.7319158,164.3299732,18
+674,33686,0.0033,61,"San Marino","SMR","SM",674,"Europe","Southern Europe",61,552.23,1430.26,217,2023,174.4246967,161.810158,73
+175,326000,0.0262,374,"Mayotte","MYT","YT",175,"Africa","Eastern Africa",374,871.66,2257.6,183,2023,167.1,157.9,
+638,984994,0.0032,2512,"Réunion","REU","RE",638,"Africa","Eastern Africa",2504,393.46,1018.06,160,2023,167.1,157.9,
+732,628210,0.0217,266000,"Western Sahara","ESH","EH",732,"Africa","Northern Africa",266000,2.363,6.119,168,2023,170.2,159.4,
+574,2188,-0.0091,36,"Norfolk Island","NFK","NF",574,"Oceania","Australia and New Zealand",36,60.78,157.42,232,2023,177.0,163.8,
