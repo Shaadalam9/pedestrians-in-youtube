@@ -2385,7 +2385,7 @@ id,city,state,country,iso3,continent,lat,lon,gmp,population_city,population_coun
 2384,Vic-le-Comte,,France,FRA,Europe,45.6433495,3.2433311,0.0,4590,67391582,5.1,0.0,172.0,42.4,32.4,0.0,[iPGyDh9ykIY],[[0]],[[0]],[[84]],[0],[07102019],[30],[UCjEIqRY_k_K63tlRhaOl2eA]
 2385,Saint-Babel,,France,FRA,Europe,45.5973684,3.3003116,0.0,836,67391582,5.1,0.0,172.0,42.4,32.4,0.0,[iPGyDh9ykIY],[[0]],[[455]],[[600]],[0],[07102019],[30],[UCjEIqRY_k_K63tlRhaOl2eA]
 2386,Sauxillanges,,France,FRA,Europe,45.5519544,3.3721049,0.0,1116,67391582,5.1,0.0,172.0,42.4,32.4,0.0,[iPGyDh9ykIY],[[0]],[[1077]],[[1202]],[0],[07102019],[30],[UCjEIqRY_k_K63tlRhaOl2eA]
-2387,Lausanne,,Switzerland,CHE,Europe,46.5218269,6.6327025,0.0,139111,8654622,2.2,0.0,172.0,44.0,33.1,107.09,"[9DnPpfkuye8,6Vq5nFz1GqM]","[[0],[0]]","[[34],[48]]","[[1634],[848]]","[0,0]","[14102022,15112021]","[30,30]","[UCOwLcdeMxb5atlacD-B0sWQ,UCOwLcdeMxb5atlacD-B0sWQ]"
+2387,Lausanne,,Switzerland,CHE,Europe,46.5218269,6.6327025,0.0,139111,8654622,2.2,0.0,172.0,44.0,33.1,107.09,"[9DnPpfkuye8,6Vq5nFz1GqM,m9gziiUfY7U,sZ6SfzGtmJw]","[[0], [0], [0], [0]]","[[34], [48], [0], [8]]","[[1634], [848], [3072], [671]]","[0,0,0,0]","[14102022,15112021,9112021,16082020]","[30,30,30,30]","[UCOwLcdeMxb5atlacD-B0sWQ,UCOwLcdeMxb5atlacD-B0sWQ,UCByMkXW0lK9LelnKe8hODhg,UC_NIn-5xAeAJhT-I84v-QLw]"
 2388,Saint-Prex,,Switzerland,CHE,Europe,46.4809059,6.4586004,0.0,4461,8654622,2.2,0.0,172.0,44.0,33.1,0.0,[6Vq5nFz1GqM],[[0]],[[925]],[[1329]],[0],[15112021],[30],[UCOwLcdeMxb5atlacD-B0sWQ]
 2389,Rolle,,Switzerland,CHE,Europe,46.4601563,6.3380469,0.0,4425,8654622,2.2,0.0,172.0,44.0,33.1,0.0,[6Vq5nFz1GqM],[[0]],[[1580]],[[1903]],[0],[15112021],[30],[UCOwLcdeMxb5atlacD-B0sWQ]
 2390,Allaman,,Switzerland,CHE,Europe,46.4707776,6.396174,0.0,451,8654622,2.2,0.0,172.0,44.0,33.1,25.93,[6Vq5nFz1GqM],[[0]],[[1389]],[[1579]],[0],[15112021],[30],[UCOwLcdeMxb5atlacD-B0sWQ]
@@ -2401,3 +2401,10 @@ id,city,state,country,iso3,continent,lat,lon,gmp,population_city,population_coun
 2400,Mies,,Switzerland,CHE,Europe,46.3060321,6.1723029,0.0,2078,8654622,2.2,0.0,172.0,44.0,33.1,0.0,[6Vq5nFz1GqM],[[0]],[[3659]],[[3821]],[0],[15112021],[30],[UCOwLcdeMxb5atlacD-B0sWQ]
 2401,Versoix,,Switzerland,CHE,Europe,46.2773064,6.168962,0.0,11467,8654622,2.2,0.0,172.0,44.0,33.1,20.59,[6Vq5nFz1GqM],[[0]],[[3822]],[[4154]],[0],[15112021],[30],[UCOwLcdeMxb5atlacD-B0sWQ]
 2402,Bellevue,,Switzerland,CHE,Europe,46.255,6.154317,0.0,3674,8654622,2.2,0.0,172.0,44.0,33.1,6.82,[6Vq5nFz1GqM],[[0]],[[4155]],[[4557]],[0],[15112021],[30],[UCOwLcdeMxb5atlacD-B0sWQ]
+2403,Villette,,Switzerland,CHE,Europe,46.4944793,6.7094638,0.0,0,8654622,2.2,0.0,172.0,44.0,33.1,0.0,[sZ6SfzGtmJw],[[0]],[[672]],[[960]],[0],[16082020],[30],[UC_NIn-5xAeAJhT-I84v-QLw]
+2404,Rivaz,,Switzerland,CHE,Europe,46.4762772,6.7786403,0.0,342,8654622,2.2,0.0,172.0,44.0,33.1,0.0,[sZ6SfzGtmJw],[[0]],[[1236]],[[1307]],[0],[16082020],[30],[UC_NIn-5xAeAJhT-I84v-QLw]
+2405,Saint-Saphorin,,Switzerland,CHE,Europe,46.4731819,6.7959554,0.0,0,8654622,2.2,0.0,172.0,44.0,33.1,0.0,[sZ6SfzGtmJw],[[0]],[[1308]],[[1378]],[0],[16082020],[30],[UC_NIn-5xAeAJhT-I84v-QLw]
+2406,Corseaux,,Switzerland,CHE,Europe,46.4722747,6.8320071,0.0,2282,8654622,2.2,0.0,172.0,44.0,33.1,0.0,[sZ6SfzGtmJw],[[0]],[[1456]],[[1649]],[0],[16082020],[30],[UC_NIn-5xAeAJhT-I84v-QLw]
+2407,Vevey,,Switzerland,CHE,Europe,46.4602978,6.8418655,0.0,15812,8654622,2.2,0.0,172.0,44.0,33.1,0.0,[sZ6SfzGtmJw],[[0]],[[1650]],[[1994]],[0],[16082020],[30],[UC_NIn-5xAeAJhT-I84v-QLw]
+2408,La Tour-de-Peilz,,Switzerland,CHE,Europe,46.4537524,6.8569063,0.0,10522,8654622,2.2,0.0,172.0,44.0,33.1,42.42,[sZ6SfzGtmJw],[[0]],[[1995]],[[2250]],[0],[16082020],[30],[UC_NIn-5xAeAJhT-I84v-QLw]
+2409,Montreux,,Switzerland,CHE,Europe,46.4310831,6.9129921,0.0,25984,8654622,2.2,0.0,172,44.0,33.1,0.0,[sZ6SfzGtmJw],[[0]],[[2251]],[[2955]],[0],[16082020],[30],[UC_NIn-5xAeAJhT-I84v-QLw]
