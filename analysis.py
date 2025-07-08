@@ -2825,7 +2825,20 @@ if __name__ == "__main__":
                     file_path = os.path.join(folder_path, file)
                     df = pd.read_csv(file_path)
 
+                    # After reading the file, clean up the filename
+                    file_clean = file.lstrip('.')  # Remove leading dot if present
+
+                    # Find the position of '.csv' and keep only up to that (including '.csv')
+                    csv_pos = file_clean.find('.csv')
+                    if csv_pos != -1:
+                        base_name = file_clean[:csv_pos + 4]  # includes ".csv"
+                    else:
+                        base_name = file_clean  # fallback if '.csv' not found
+
+                    filename_no_ext = os.path.splitext(base_name)[0]  # Remove extension
+
                     video_id, start_index = filename_no_ext.rsplit("_", 1)  # split to extract id and index
+
                     video_city_id = Analysis.find_city_id(df_mapping, video_id, int(start_index))
                     video_city = df_mapping.loc[df_mapping["id"] == video_city_id, "city"].values[0]
                     video_state = df_mapping.loc[df_mapping["id"] == video_city_id, "state"].values[0]
@@ -3216,9 +3229,9 @@ if __name__ == "__main__":
     df['state'] = df['state'].fillna('NA')  # Set state to NA
 
     # Analysis.get_mapbox_map(df=df, hover_data=hover_data)  # type: ignore # mapbox map
-    # Analysis.get_world_map(df_mapping=df)  # map with countries
+    Analysis.get_world_map(df_mapping=df)  # map with countries
 
-    # plots_class.hist(data_index=22, name="speed", save_file=True)
+    plots_class.hist(data_index=22, name="speed", save_file=True)
 
     if common.get_configs("analysis_level") == "city":
 

@@ -87,6 +87,9 @@ class Algorithms():
             dict: A dictionary where each key is a combination of 'city_state_condition'
                 mapping to a list of walking speeds (in m/s) for valid crossings.
         """
+        if 'Frame Count' not in df:
+            return None
+
         time_ = []  # List to store durations of videos (not used in output)
         speed_compelete = {}  # Dictionary to hold valid speed results for each video
 
