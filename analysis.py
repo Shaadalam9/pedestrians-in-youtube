@@ -326,35 +326,6 @@ class Analysis():
         # Save and display the figure
         plots_class.save_plotly_figure(fig, "world_map", save_final=True)
 
-    @staticmethod
-    def pedestrian_crossing(dataframe, min_x, max_x, person_id):
-        """Counts the number of person with a specific ID crosses the road within specified boundaries.
-
-        Args:
-            dataframe (DataFrame): DataFrame containing data from the video.
-            min_x (float): Min/Max x-coordinate boundary for the road crossing.
-            max_x (float): Max/Min x-coordinate boundary for the road crossing.
-            person_id (int): Unique ID assigned by the YOLO tracker to identify the person.
-
-        Returns:
-            Tuple[int, list]: A tuple containing the number of person crossed the road within
-            the boundaries and a list of unique IDs of the person.
-        """
-
-        # Filter dataframe to include only entries for the specified person
-        crossed_ids = dataframe[(dataframe["YOLO_id"] == person_id)]
-
-        # Group entries by Unique ID
-        crossed_ids_grouped = crossed_ids.groupby("Unique Id")
-
-        # Filter entries based on x-coordinate boundaries
-        filtered_crossed_ids = crossed_ids_grouped.filter(
-            lambda x: (x["X-center"] <= min_x).any() and (x["X-center"] >= max_x).any())
-
-        # Get unique IDs of the person who crossed the road within boundaries
-        crossed_ids = filtered_crossed_ids["Unique Id"].unique()
-        return crossed_ids
-
     # class-level cache to store metrics for all video files, avoids redundant computation
     _all_metrics_cache = None  # class-level cache for all metrics
 
@@ -2846,10 +2817,12 @@ if __name__ == "__main__":
                     logger.debug(f"{file}: found values {video_city}, {video_state}, {video_country}.")
 
                     # Get the number of number and unique id of the object crossing the road
-                    ids = Analysis.pedestrian_crossing(df,
-                                                       common.get_configs("boundary_left"),
-                                                       common.get_configs("boundary_right"),
-                                                       0)
+                    ids = algorithms_class.pedestrian_crossing(df,
+                                                               filename_no_ext,
+                                                               df_mapping,
+                                                               common.get_configs("boundary_left"),
+                                                               common.get_configs("boundary_right"),
+                                                               0)
 
                     # Saving it in a dictionary in: {video-id_time: count, ids}
                     pedestrian_crossing_count[filename_no_ext] = {"ids": ids}
@@ -2857,7 +2830,8 @@ if __name__ == "__main__":
                     # Saves the time to cross in form {name_time: {id(s): time(s)}}
                     data[filename_no_ext] = algorithms_class.time_to_cross(df,
                                                                            pedestrian_crossing_count[filename_no_ext]["ids"],  # noqa:E501
-                                                                           filename_no_ext)
+                                                                           filename_no_ext,
+                                                                           df_mapping)
 
                     # Calculate the total number of different objects detected
                     person_video = Analysis.count_object(df, 0)
