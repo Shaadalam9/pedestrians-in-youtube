@@ -3224,7 +3224,11 @@ if __name__ == "__main__":
     # Analysis.get_mapbox_map(df=df, hover_data=hover_data)  # type: ignore # mapbox map
     Analysis.get_world_map(df_mapping=df)  # map with countries
 
-    plots_class.hist(data_index=22, name="speed", save_file=True)
+    plots_class.hist(data_index=22, name="speed", min_threshold=common.get_configs("min_speed_limit"),
+                     max_threshold=common.get_configs("max_speed_limit"), save_file=True)
+
+    plots_class.hist(data_index=23, name="time", min_threshold=common.get_configs("min_waiting_time"),
+                     max_threshold=common.get_configs("max_waiting_time"), save_file=True)
 
     if common.get_configs("analysis_level") == "city":
 

@@ -1362,10 +1362,10 @@ class Plots():
         # Save and display the figure
         self.save_plotly_figure(fig, file_name, save_final=True)
 
-    def hist(self, data_index, name, nbins=None, color=None, pretty_text=False, marginal='rug',
-             xaxis_title=None, yaxis_title=None, name_file=None, save_file=False, save_final=False,
-             fig_save_width=1320, fig_save_height=680, font_family=None, font_size=None,
-             vlines=None, xrange=None):
+    def hist(self, data_index, name, min_threshold, max_threshold, nbins=None, color=None,
+             pretty_text=False, marginal='rug', xaxis_title=None, yaxis_title=None,
+             name_file=None, save_file=False, save_final=False, fig_save_width=1320,
+             fig_save_height=680, font_family=None, font_size=None, vlines=None, xrange=None):
         """
         Output histogram of selected data from pickle file.
 
@@ -1392,6 +1392,7 @@ class Plots():
         nested_dict = data_tuple[data_index]
 
         all_values = [speed for city in nested_dict.values() for video in city.values() for speed in video.values()]
+        all_values[:] = [value for value in all_values if min_threshold <= value <= max_threshold]
 
         # --- Calculate mean and median ---
         mean_val = np.mean(all_values)
