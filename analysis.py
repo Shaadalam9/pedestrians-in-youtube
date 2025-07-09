@@ -65,7 +65,7 @@ class Analysis():
     def __init__(self) -> None:
         pass
 
-    def filter_csv_files(self, file):
+    def filter_csv_files(self, file, df_mapping):
         """
         Filters and processes CSV files based on predefined criteria.
 
@@ -90,6 +90,7 @@ class Analysis():
                 - `folder_path`: Path to search for CSV files.
         """
         # Only process files ending with ".csv"
+        file = self.clean_csv_filename(file)
         if file.endswith(".csv"):
             filename = os.path.splitext(file)[0]
 
@@ -2661,6 +2662,24 @@ class Analysis():
             logger.error(f"Geocoding server could not be reached for {location_query}.")
             return None, None  # Return None if city is not found
 
+    def clean_csv_filename(self, file):
+        """
+        If the filename ends with '.csv', returns it as-is.
+        Otherwise:
+        - Removes leading dot
+        - Truncates at first '.csv' if present
+        - Else returns cleaned filename
+        """
+        if file.endswith('.csv'):
+            return file
+        file_clean = file.lstrip('.')  # Remove leading dot if present
+        csv_pos = file_clean.find('.csv')
+        if csv_pos != -1:
+            base_name = file_clean[:csv_pos + 4]  # includes ".csv"
+        else:
+            base_name = file_clean  # fallback if '.csv' not found
+        return base_name
+
 
 analysis_class = Analysis()
 
@@ -2698,7 +2717,7 @@ if __name__ == "__main__":
         hover_data = list(set(df.columns) - set(columns_remove))
 
         # mapbox map with all data
-        # plots_class.get_mapbox_map(df=df, hover_data=hover_data, file_name='mapbox_map_all')  # type: ignore
+        plots_class.get_mapbox_map(df=df, hover_data=hover_data, file_name='mapbox_map_all')
 
         # Get the population threshold from the configuration
         population_threshold = common.get_configs("population_threshold")
@@ -2785,7 +2804,7 @@ if __name__ == "__main__":
                 continue
 
             for file in tqdm(os.listdir(folder_path), desc=f"Processing files in {folder_path}"):
-                file = analysis_class.filter_csv_files(file=file)
+                file = analysis_class.filter_csv_files(file=file, df_mapping=df_mapping)
                 if file is None:
                     continue
                 else:
@@ -2796,14 +2815,7 @@ if __name__ == "__main__":
                     df = pd.read_csv(file_path)
 
                     # After reading the file, clean up the filename
-                    file_clean = file.lstrip('.')  # Remove leading dot if present
-
-                    # Find the position of '.csv' and keep only up to that (including '.csv')
-                    csv_pos = file_clean.find('.csv')
-                    if csv_pos != -1:
-                        base_name = file_clean[:csv_pos + 4]  # includes ".csv"
-                    else:
-                        base_name = file_clean  # fallback if '.csv' not found
+                    base_name = analysis_class.clean_csv_filename(file)
 
                     filename_no_ext = os.path.splitext(base_name)[0]  # Remove extension
 
@@ -2813,6 +2825,7 @@ if __name__ == "__main__":
                     video_city = df_mapping.loc[df_mapping["id"] == video_city_id, "city"].values[0]
                     video_state = df_mapping.loc[df_mapping["id"] == video_city_id, "state"].values[0]
                     video_country = df_mapping.loc[df_mapping["id"] == video_city_id, "country"].values[0]
+
                     logger.debug(f"{file}: found values {video_city}, {video_state}, {video_country}.")
 
                     # Get the number of number and unique id of the object crossing the road
@@ -2832,7 +2845,6 @@ if __name__ == "__main__":
                                                                filename_no_ext,
                                                                df_mapping)
                     data[filename_no_ext] = temp_data
-                    print(data)
 
                     # Calculate the total number of different objects detected
                     person_video = Analysis.count_object(df, 0)
@@ -2876,13 +2888,17 @@ if __name__ == "__main__":
                     df_mapping.loc[df_mapping["id"] == video_city_id, "total_time"] += time_video  # type: ignore
 
                     # Aggregated values
-                    speed_value = algorithms_class.calculate_speed_of_crossing(df_mapping, df,
+                    speed_value = algorithms_class.calculate_speed_of_crossing(df_mapping,
+                                                                               df,
                                                                                {filename_no_ext: temp_data})
+
                     if speed_value is not None:
                         all_speed.update(speed_value)
 
-                    time_value = algorithms_class.time_to_start_cross(df_mapping, df,
+                    time_value = algorithms_class.time_to_start_cross(df_mapping,
+                                                                      df,
                                                                       {filename_no_ext: temp_data})
+
                     if time_value is not None:
                         all_time.update(time_value)
 
@@ -3763,6 +3779,13 @@ if __name__ == "__main__":
         df_countries = analysis_class.aggregate_by_iso3(df_mapping)
         columns_remove = ['videos', 'time_of_day', 'start_time', 'end_time', 'upload_date', 'fps_list', 'vehicle_type']
         hover_data = list(set(df_countries.columns) - set(columns_remove))
+
+        # Map with images. currently works on a 13" MacBook air screen in chrome, as things are hardcoded...
+        plots_class.map_political(df=df_countries, df_mapping=df_mapping, show_cities=True, show_images=True,
+                                  hover_data=hover_data, save_file=True, save_final=False)
+        # Map with no images
+        plots_class.map_political(df=df_countries, df_mapping=df_mapping, show_cities=True, show_images=False,
+                                  hover_data=hover_data, save_file=True, save_final=True)
 
         # Amount of footage
         plots_class.scatter(df=df_countries,

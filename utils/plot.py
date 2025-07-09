@@ -1511,6 +1511,242 @@ class Plots():
         else:
             fig.show()
 
+    def map_political(self, df, df_mapping, show_images=False, show_cities=True, hover_data=None, save_file=False,
+                      save_final=False):
+        """Generate world map with countries colored by continent using choropleth.
+
+        Args:
+            df (dataframe): dataframe with 'country' and 'continent' columns.
+            hover_data (list, optional): list of params to show on hover.
+        """
+        if 'Denmark' in df['country'].values:
+            denmark_value = df.loc[df['country'] == 'Denmark', 'continent'].values[0]
+            df = pd.concat([df, pd.DataFrame([{'country': 'Greenland', 'continent': denmark_value}])],
+                           ignore_index=True)
+
+        country_name_map = {
+            "Türkiye": "Turkey"
+        }
+
+        # Replace the names in your DataFrame
+        df['country'] = df['country'].replace(country_name_map)
+
+        # Plot country-level choropleth
+        fig = px.choropleth(df,
+                            locations="country",
+                            locationmode="country names",
+                            color="continent",
+                            hover_name="country",
+                            hover_data=hover_data,
+                            projection="natural earth")
+
+        # add markers of cities
+        if show_cities:
+            # add city markers as scattergeo
+            fig.add_trace(go.Scattergeo(
+                lon=df_mapping['lon'],
+                lat=df_mapping['lat'],
+                text=df_mapping.get('city', None),
+                mode='markers',
+                hoverinfo='skip',
+                marker=dict(
+                    size=4,
+                    color='black',
+                    opacity=0.7,
+                    symbol='circle'
+                ),
+                name='cities'
+            ))
+
+        # add screenshots of videos
+        if show_images:
+            # define city images with positions
+            city_images = [
+                {
+                    "city": "Tokyo",
+                    "file": "tokyo.png",
+                    "x": 0.933, "y": 0.58,
+                    "approx_lon": 165.2, "approx_lat": 7.2,
+                    "label": "Tokyo, Japan",
+                    "x_label": 0.983, "y_label": 0.641,
+                    "video": "oDejyTLYUTE",
+                    "x_video": 0.933-0.0021, "y_video": 0.58-0.059
+                },
+                {
+                    "city": "Nairobi",
+                    "file": "nairobi.png",
+                    "x": 0.72, "y": 0.38,
+                    "approx_lon": 70.2, "approx_lat": -20.0,
+                    "label": "Nairobi, Kenya",
+                    "x_label": 0.7695, "y_label": 0.38+0.062,
+                    "video": "VNLqnwoJqmM",
+                    "x_video": 0.72+0.00529, "y_video": 0.38-0.069,
+                },
+                {
+                    "city": "Los Angeles",
+                    "file": "los_angeles.png",
+                    "x": 0.12, "y": 0.5,
+                    "approx_lon": -121.7, "approx_lat": 0.0,
+                    "label": "Los Angeles, CA, USA",
+                    "x_label": 0.07, "y_label": 0.5+0.062,
+                    "video": "4uhMg5na888",
+                    "x_video": 0.12-0.002, "y_video": 0.5-0.06,
+                },
+                {
+                    "city": "Paris",
+                    "file": "paris.png",
+                    "x": 0.3915, "y": 0.68,
+                    "approx_lon": -30.6, "approx_lat": 30.4,
+                    "label": "Paris, France",
+                    "x_label": 0.37, "y_label": 0.68+0.072,
+                    "video": "ZTmjk8mSCq8",
+                    "x_video": 0.3915-0.0225, "y_video": 0.68-0.06,
+                },
+                {
+                    "city": "Rio de Janeiro",
+                    "file": "rio_de_janeiro.png",
+                    "x": 0.47, "y": 0.2,
+                    "approx_lon": -1.8, "approx_lat": -60.2,
+                    "label": "Rio de Janeiro, Brazil",
+                    "x_label": 0.4746, "y_label": 0.2+0.05,
+                    "video": "q83bl_GcsCo",
+                    "x_video": 0.47-0.026, "y_video": 0.2-0.069,
+                },
+                {
+                    "city": "Melbourne",
+                    "file": "melbourne.png",
+                    "x": 0.74, "y": 0.22,
+                    "approx_lon": 90.0, "approx_lat": -52.0,
+                    "label": "Melbourne, Australia",
+                    "x_label": 0.7783, "y_label": 0.22+0.05,
+                    "video": "gQ-9mmnfJjE",
+                    "x_video": 0.74, "y_video": 0.22-0.069,
+                }
+            ]
+
+            path_screenshots = os.path.join(common.root_dir, 'readme')
+            # add each image
+            for item in city_images:
+                fig.add_layout_image(
+                    dict(
+                        source=os.path.join(path_screenshots, item['file']),
+                        xref="paper", yref="paper",
+                        x=item["x"], y=item["y"],
+                        sizex=0.1, sizey=0.1,
+                        xanchor="center", yanchor="middle",
+                        layer="above"
+                    )
+                )
+                # text label on top
+                if "label" in item:
+                    fig.add_annotation(
+                        text=item["label"],
+                        x=item["x_label"],
+                        y=item["y_label"],
+                        xref="paper",
+                        yref="paper",
+                        showarrow=False,
+                        font=dict(size=12, color="black"),
+                        bgcolor="rgba(255,255,255,0.7)",
+                        bordercolor="black",
+                        borderwidth=1
+                    )
+
+            # draw arrows from image to city location
+            for item in city_images:
+                row = df_mapping[df_mapping['city'].str.lower() == item['city'].lower()]
+                if not row.empty:
+                    fig.add_trace(go.Scattergeo(
+                        lon=[item['approx_lon'], row['lon'].values[0]],
+                        lat=[item['approx_lat'], row['lat'].values[0]],
+                        mode='lines',
+                        line=dict(width=2, color='black'),
+                        showlegend=False,
+                        geo='geo',
+                        hoverinfo='skip'
+                    ))
+                    # label with video on the bottom
+                    fig.add_annotation(
+                        dict(
+                            text=item['video'],
+                            x=item["x_video"], y=item["y_video"],
+                            xref="paper", yref="paper",
+                            showarrow=False,
+                            font=dict(size=10, color="black"),
+                            align="center",
+                            bgcolor="rgba(255,255,255,0.7)",
+                            bordercolor="black",
+                            borderwidth=1
+                        )
+                    )
+
+            # add YOLO image
+            fig.add_layout_image(
+                dict(
+                    source=os.path.join(path_screenshots, 'new_york_yolo.png'),  # or use PIL.Image.open if needed
+                    xref="paper", yref="paper",
+                    x=0.2, y=0.25,
+                    sizex=0.2, sizey=0.2,
+                    xanchor="center", yanchor="middle",
+                    layer="above"
+                )
+            )
+            # label on top
+            fig.add_annotation(
+                dict(
+                    text="Example of YOLO output (New York, NY, USA)",
+                    x=0.1001, y=0.25+0.1115,
+                    xref="paper", yref="paper",
+                    showarrow=False,
+                    font=dict(size=12, color="black"),
+                    align="center",
+                    bgcolor="rgba(255,255,255,0.7)",
+                    bordercolor="black",
+                    borderwidth=1
+                )
+            )
+            # label with video on the bottom
+            # text label on top
+            fig.add_annotation(
+                dict(
+                    text="Wyg213IZDI",
+                    x=0.253, y=0.25-0.119,
+                    xref="paper", yref="paper",
+                    showarrow=False,
+                    font=dict(size=10, color="black"),
+                    align="center",
+                    bgcolor="rgba(255,255,255,0.7)",
+                    bordercolor="black",
+                    borderwidth=1
+                )
+            )
+
+        # Remove color bar
+        fig.update_coloraxes(showscale=False)
+
+        # Update layout
+        fig.update_layout(
+            margin=dict(l=0, r=0, t=0, b=0),
+            showlegend=False,
+            font=dict(
+                family=common.get_configs('font_family'),
+                size=common.get_configs('font_size')
+            )
+        )
+
+        # save file to local output folder
+        if save_file:
+            fig.update_layout(margin=dict(l=10, r=10, t=10, b=10))
+            # with screenshots
+            if show_images:
+                self.save_plotly_figure(fig, "map_screenshots", save_final=False)
+            # without screenshots
+            else:
+                self.save_plotly_figure(fig, "map", save_final=True)
+        # open it in localhost instead
+        else:
+            fig.show()
+
     def scatter(self, df, x, y, color=None, symbol=None, size=None, text=None, trendline=None, hover_data=None,
                 marker_size=None, pretty_text=False, marginal_x='violin', marginal_y='violin', xaxis_title=None,
                 yaxis_title=None, xaxis_range=None, yaxis_range=None, name_file=None, save_file=False,
@@ -1775,7 +2011,6 @@ class Plots():
                                               column_name2=None,
                                               column_value2=None,
                                               target_column="iso3")
-            print(iso_code)
 
             if country is not None or iso_code is not None:
                 # Initialise the country's dictionary if not already present
@@ -2206,7 +2441,6 @@ class Plots():
 
         # Create an ordered list of unique countries based on the cities in final_dict
         country_city_map = {}
-        print("final_dict:", final_dict)
         for city, info in final_dict.items():
             country = info['iso3']  # type: ignore
             if country not in country_city_map:

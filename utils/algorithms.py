@@ -126,8 +126,7 @@ class Algorithms():
         """
 
         # Check if all values in the dict are empty dicts
-        is_empty = all(len(v) == 0 for v in data.values())
-        if is_empty:
+        if not any(data.values()):
             return None
 
         time_ = []  # List to store durations of videos (not used in output)
@@ -138,7 +137,6 @@ class Algorithms():
 
         # Group YOLO data by unique person ID
         grouped = df.groupby('Unique Id')
-        print("here", data)
 
         # Iterate through all video IDs and their corresponding crossing data
         for key, id_time in data.items():
@@ -189,10 +187,7 @@ class Algorithms():
                     # Calculate walking speed (meters per second)
                     speed_ = (distance / time) / 100
 
-                    # Only include the speed if it's within configured bounds
-                    if common.get_configs("min_speed_limit") <= speed_ <= common.get_configs("max_speed_limit"):
-                        speed_id_compelete[id] = speed_
-                    # Otherwise, skip this crossing as an outlier
+                    speed_id_compelete[id] = speed_
 
                 # Store all valid speeds for this video
                 speed_compelete[key] = speed_id_compelete
@@ -223,7 +218,9 @@ class Algorithms():
             box = []
             for video_id, value_2 in value_1.items():
                 for unique_id, speed in value_2.items():
-                    box.append(speed)
+                    # Only include the speed if it's within configured bounds
+                    if common.get_configs("min_speed_limit") <= speed <= common.get_configs("max_speed_limit"):
+                        box.append(speed)
             if len(box) > 0:
                 avg_speed[city_condition] = (sum(box) / len(box))
 
@@ -253,9 +250,11 @@ class Algorithms():
                     condition = result[3]
                     country = result[8]
                     for unique_id, speed in value_2.items():
-                        if f'{country}_{condition}' not in avg_speed:
-                            avg_speed[f'{country}_{condition}'] = []
-                        avg_speed[f'{country}_{condition}'].append(speed)
+                        # Only include the speed if it's within configured bounds
+                        if common.get_configs("min_speed_limit") <= speed <= common.get_configs("max_speed_limit"):
+                            if f'{country}_{condition}' not in avg_speed:
+                                avg_speed[f'{country}_{condition}'] = []
+                            avg_speed[f'{country}_{condition}'].append(speed)
 
         # Now, calculate the average speed for each country
         avg_speed_result = {}
@@ -284,8 +283,7 @@ class Algorithms():
             all_speed (list): A flat list of all calculated walking speeds (m/s) across videos, including outliers.
         """
         # Check if all values in the dict are empty dicts
-        is_empty = all(len(v) == 0 for v in data.values())
-        if is_empty:
+        if not any(data.values()):
             return None
 
         time_compelete = {}
@@ -293,19 +291,25 @@ class Algorithms():
         data_cross = {}
         time_id_complete = {}
 
-        # Filter out the person ids for faster processing
-        crossed_ids = df[(df["YOLO_id"] == person_id)]
+        # Group YOLO data by unique person ID
+        crossed_ids_grouped = df.groupby('Unique Id')
 
         # Extract relevant information using the find_values function
         result = values_class.find_values_with_video_id(df_mapping, next(iter(data)))
 
         # Check if the result is None (i.e., no matching data was found)
         if result is not None:
+            fps = result[17]
 
-            # Makes group based on Unique ID
-            crossed_ids_grouped = crossed_ids.groupby("Unique Id")
+            checks_per_second = common.get_configs("check_per_sec_time")
+            interval_seconds = 1 / checks_per_second  # 0.333...
+            step = max(1, int(round(interval_seconds * fps)))  # Frames between checks (at least 1)
 
-            for unique_id, group_data in crossed_ids_grouped:
+            # Directly get the inner dictionary
+            inner_dict = next(iter(data.values()))
+
+            for unique_id, time in inner_dict.items():
+                group_data = crossed_ids_grouped.get_group(unique_id)
                 x_values = group_data["X-center"].values
                 initial_x = x_values[0]  # Initial x-value
                 mean_height = group_data['Height'].mean()
@@ -313,9 +317,15 @@ class Algorithms():
                 margin = 0.1 * mean_height  # Margin for considering crossing event
                 consecutive_frame = 0
 
-                for i in range(0, len(x_values)-10, 10):
+                stop = len(x_values) - step
+
+                for i in range(0, stop, step):
+                    # Indexing is safe because step is int
+                    current_x = x_values[i]
+                    next_x = x_values[i + step]
+
                     if initial_x < 0.5:  # Check if crossing from left to right
-                        if (x_values[i] - margin <= x_values[i+10] <= x_values[i] + margin):
+                        if (current_x - margin <= next_x <= current_x + margin):
                             consecutive_frame += 1
                             if consecutive_frame == 3:  # Check for three consecutive frames
                                 flag = 1
@@ -326,7 +336,7 @@ class Algorithms():
                             consecutive_frame = 0
 
                     else:  # Check if crossing from right to left
-                        if (x_values[i] - margin >= x_values[i+10] >= x_values[i] + margin):
+                        if (current_x - margin >= next_x >= current_x + margin):
                             consecutive_frame += 1
                             if consecutive_frame == 3:  # Check for three consecutive frames
                                 flag = 1
@@ -335,10 +345,12 @@ class Algorithms():
                             break
                         else:
                             consecutive_frame = 0
+
                 if consecutive_frame >= 3:
                     time_id_complete[unique_id] = consecutive_frame
+
             if len(data_cross) == 0:
-                return
+                return None
 
             time_compelete[next(iter(data))] = time_id_complete
 
@@ -375,12 +387,13 @@ class Algorithms():
                     # Retrieve fps value from the mapping using video_id
                     result = values_class.find_values_with_video_id(df_mapping, video_id)
                     if result is not None:
-                        fps = result[17]
 
                         # Adjust time for each unique_id if it is positive
                         for unique_id, time in value_2.items():
                             if time > 0:
-                                box.append(time/(fps/10))
+                                time_in_seconds = time / common.get_configs("check_per_sec_time")
+                                if common.get_configs("min_waiting_time") <= time_in_seconds <= common.get_configs("max_waiting_time"):  # noqa: E501
+                                    box.append(time_in_seconds)
 
             # Compute average adjusted time for the current city condition
             avg_over_time[city_condition] = (sum(box) / len(box))
@@ -416,15 +429,15 @@ class Algorithms():
                 if result is not None:
                     condition = result[3]
                     country = result[8]
-                    fps = result[17]
 
                     # Adjust and store each valid time for the current country
                     for unique_id, time in times.items():
                         if time > 0:
-                            adjusted_time = time / (fps / 10)
-                            if f'{country}_{condition}' not in avg_over_time:
-                                avg_over_time[f'{country}_{condition}'] = []
-                            avg_over_time[f'{country}_{condition}'].append(adjusted_time)
+                            time_in_seconds = time / common.get_configs("check_per_sec_time")
+                            if common.get_configs("min_waiting_time") <= time_in_seconds <= common.get_configs("max_waiting_time"):  # noqa: E501
+                                if f'{country}_{condition}' not in avg_over_time:
+                                    avg_over_time[f'{country}_{condition}'] = []
+                                avg_over_time[f'{country}_{condition}'].append(time_in_seconds)
 
         # Compute the average adjusted time per country
         avg_over_time_result = {}
