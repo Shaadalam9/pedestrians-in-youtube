@@ -1392,7 +1392,9 @@ class Plots():
         nested_dict = data_tuple[data_index]
 
         all_values = [speed for city in nested_dict.values() for video in city.values() for speed in video.values()]
-        all_values[:] = [value for value in all_values if min_threshold <= value <= max_threshold]
+        all_values = [value for value in all_values
+                      if (min_threshold is None or value >= min_threshold)
+                      and (max_threshold is None or value <= max_threshold)]
 
         # --- Calculate mean and median ---
         mean_val = np.mean(all_values)
@@ -1456,6 +1458,48 @@ class Plots():
             self.save_plotly_figure(fig, name_file, save_final=True)
         else:
             fig.show()
+
+    def violin_plot(self, data_index, name, min_threshold, max_threshold, df_mapping, color=None,
+                    pretty_text=False, xaxis_title=None, yaxis_title=None,
+                    name_file=None, save_file=False, save_final=False, fig_save_width=1320,
+                    fig_save_height=680, font_family=None, font_size=None, vlines=None, xrange=None):
+
+        # Load data from pickle file
+        with open(file_results, 'rb') as file:
+            data_tuple = pickle.load(file)
+        nested_dict = data_tuple[data_index]
+
+        values = {}
+
+        for city_lat_long_cond, inner_dict in nested_dict.items():
+            city, lat, _, _ = city_lat_long_cond.split("_")
+            country = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "country")
+            if country not in values:
+                values[country] = []  # Use a list to keep duplicates
+            for video_id, inner_values in inner_dict.items():
+                values[country].extend(inner_values.values())
+
+        fig = go.Figure()
+
+        # Add one violin plot per city
+        for country, country_values in values.items():
+            fig.add_trace(go.Violin(
+                y=country_values,
+                x=[country] * len(country_values),  # Repeating city name for each value
+                name=country,
+                box_visible=True,
+                meanline_visible=True,
+                # points='all'  # Optional: show individual points
+            ))
+
+        # Update layout to improve visualization
+        fig.update_layout(
+            xaxis_title="Country",
+            yaxis_title="Values",
+            violinmode='group'
+        )
+
+        fig.show()
 
     def map(self, df, color, title, title_colorbar=None, save_file=False):
         """Map of countries of participation with colour based on column in dataframe.

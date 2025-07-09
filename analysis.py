@@ -3224,6 +3224,9 @@ if __name__ == "__main__":
     # Analysis.get_mapbox_map(df=df, hover_data=hover_data)  # type: ignore # mapbox map
     Analysis.get_world_map(df_mapping=df)  # map with countries
 
+    plots_class.violin_plot(data_index=22, name="speed", min_threshold=common.get_configs("min_speed_limit"),
+                            max_threshold=common.get_configs("max_speed_limit"), df_mapping=df_mapping, save_file=True)
+
     plots_class.hist(data_index=22, name="speed", min_threshold=common.get_configs("min_speed_limit"),
                      max_threshold=common.get_configs("max_speed_limit"), save_file=True)
 
