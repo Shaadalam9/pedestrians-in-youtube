@@ -396,7 +396,8 @@ class Algorithms():
                                     box.append(time_in_seconds)
 
             # Compute average adjusted time for the current city condition
-            avg_over_time[city_condition] = (sum(box) / len(box))
+            if len(box) > 0:
+                avg_over_time[city_condition] = sum(box) / len(box)
 
         return avg_over_time
 
