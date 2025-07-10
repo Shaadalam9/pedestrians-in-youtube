@@ -35,6 +35,7 @@ config
 secret
 # mapping_queue.csv
 mapping_bkp.csv
+shadab_mapping.csv
 
 # Pickle files
 *.pickle

@@ -99,6 +99,14 @@ class Analysis():
             if values is None:
                 return None  # Skip if mapping or required value is None
 
+            vehicle_type = values[18]
+            vehicle_list = common.get_configs("vehicles_analysis")
+
+            # Only check if the list is NOT empty
+            if vehicle_list:  # This is True if the list is not empty
+                if vehicle_type not in vehicle_list:
+                    return None
+
             # Check if the footage duration meets the minimum threshold
             total_seconds = values_class.calculate_total_seconds_for_city(
                 df_mapping, values[4], values[5]
@@ -1867,7 +1875,7 @@ class Analysis():
 
         # Loop over each city and gather relevant values for condition 0
         for country in final_dict:
-            # Initialize a dictionary for the row
+            # Initialise a dictionary for the row
             row_day, row_night = {}, {}
 
             # Add data for condition 0 (ignore 'speed_val' and 'time_val')
@@ -2200,15 +2208,13 @@ class Analysis():
 
         # Drop location-specific columns
         df = df.drop(columns=['city', 'state', 'lat', 'lon', 'gmp', 'population_city', 'traffic_index',
-                              'vidoes', 'time_of_day', 'start_time', 'end_time', 'vehicle_type', 'upload_date',
-                              'fps_list', 'speed_crossing_day_city', 'speed_crossing_night_city',
+                              'upload_date', 'speed_crossing_day_city', 'speed_crossing_night_city',
                               'speed_crossing_day_night_city_avg', 'time_crossing_day_city',
                               'time_crossing_night_city', 'time_crossing_day_night_city_avg',
                               'with_trf_light_day_city', 'with_trf_light_night_city',
                               'without_trf_light_day_city', 'without_trf_light_night_city',
                               'channel'], errors='ignore')
 
-        # Static columns to keep one representative value (using first)
         static_columns = [
             'country', 'continent', 'population_country', 'traffic_mortality',
             'literacy_rate', 'avg_height', 'gini', 'med_age', 'speed_crossing_day_country',
@@ -2218,32 +2224,32 @@ class Analysis():
             'without_trf_light_night_country'
             ]
 
-        # # Columns to merge as lists
-        # merge_columns = ['videos', 'time_of_day', 'start_time',
-        #                  'end_time', 'vehicle_type', 'upload_date', 'fps_list']
+        # Columns to merge as lists
+        merge_columns = ['videos', 'time_of_day', 'start_time', 'end_time', 'vehicle_type', 'fps_list']
 
-        # Columns to sum
         sum_columns = [
             'person', 'bicycle', 'car', 'motorcycle', 'bus', 'truck',
             'cellphone', 'traffic_light', 'stop_sign', 'total_time', 'total_videos'
         ]
 
-        # Columns to average
-        # avg_columns = [
-        #     'speed_crossing', 'speed_crossing_day', 'speed_crossing_night',
-        #     'time_crossing', 'time_crossing_day', 'time_crossing_night',
-        #     'speed_crossing_avg', 'time_crossing_avg',
-        #     'with_trf_light_day', 'with_trf_light_night',
-        #     'without_trf_light_day', 'without_trf_light_night'
-        # ]
-
-        # Build aggregation dictionary
         agg_dict = {col: 'first' for col in static_columns}
-        # agg_dict.update({col: lambda x: list(x) for col in merge_columns})  # type: ignore
+        agg_dict.update({col: lambda x: list(x) for col in merge_columns})  # type: ignore
         agg_dict.update({col: 'sum' for col in sum_columns})
-        # agg_dict.update({col: 'mean' for col in avg_columns})
 
-        # Group by ISO3 code
+        # Fix continent assignment - assign most frequent continent per iso3
+        continent_mode = (
+            df.groupby('iso3')['continent']
+            .agg(lambda x: x.mode().iloc[0] if not x.mode().empty else x.iloc[0])
+            .reset_index()
+            .rename(columns={'continent': 'continent_majority'})
+        )
+
+        # Merge back to df to fix 'continent' column
+        df = df.drop('continent', axis=1)
+        df = df.merge(continent_mode, on='iso3', how='left')
+        df = df.rename(columns={'continent_majority': 'continent'})
+
+        # Aggregate
         df_grouped = df.groupby('iso3').agg(agg_dict).reset_index()
 
         return df_grouped
@@ -2583,7 +2589,7 @@ if __name__ == "__main__":
         logger.info("Loaded analysis results from pickle file.")
     else:
         # Store the mapping file
-        df_mapping = pd.read_csv(common.get_configs("mapping"))
+        df_mapping = pd.read_csv(common.get_configs("analysis_mapping"))
 
         # Produce map with all data
         df = df_mapping.copy()  # copy df to manipulate for output
@@ -3667,6 +3673,7 @@ if __name__ == "__main__":
         df_countries = analysis_class.aggregate_by_iso3(df_mapping)
         columns_remove = ['videos', 'time_of_day', 'start_time', 'end_time', 'upload_date', 'fps_list', 'vehicle_type']
         hover_data = list(set(df_countries.columns) - set(columns_remove))
+        df_countries.to_csv(os.path.join(common.output_dir, "mapping_updated_countries.csv"))
 
         # Map with images. currently works on a 13" MacBook air screen in chrome, as things are hardcoded...
         plots_class.map_political(df=df_countries, df_mapping=df_mapping, show_cities=True, show_images=True,

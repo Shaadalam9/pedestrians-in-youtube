@@ -43,6 +43,7 @@ class Values():
                 - Average height
                 - ISO-3 code for country
                 - Fps of the video
+                - Type of vehicle
         """
         id, start_ = key.rsplit("_", 1)  # Splitting the key into video ID and start time
 
@@ -66,10 +67,11 @@ class Values():
             literacy_rate = row["literacy_rate"]
             avg_height = row["avg_height"]
             iso3 = row["iso3"]
+            vehicle_type = ast.literal_eval(row["vehicle_type"])
             fps_list = ast.literal_eval(row["fps_list"])
 
             # Iterate through each video, start time, end time, and time of day
-            for video, start, end, time_of_day_, fps in zip(video_ids, start_times, end_times, time_of_day, fps_list):
+            for video, start, end, time_of_day_, vehicle_type, fps in zip(video_ids, start_times, end_times, time_of_day, vehicle_type, fps_list):  # noqa: E501
                 # Assume FPS=30 for None
                 if not fps:
                     fps = 30
@@ -104,7 +106,8 @@ class Values():
                                     literacy_rate,              # 14
                                     avg_height,                 # 15
                                     iso3,                       # 16
-                                    fps)                        # 17
+                                    fps,                        # 17
+                                    vehicle_type)               # 18
                         counter += 1
 
     def get_value(self, df, column_name1, column_value1, column_name2, column_value2, target_column):
