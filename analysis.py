@@ -100,7 +100,7 @@ class Analysis():
                 return None  # Skip if mapping or required value is None
 
             vehicle_type = values[18]
-            vehicle_list = common.get_configs("vehicles_analysis")
+            vehicle_list = common.get_configs("vehicles_analyse")
 
             # Only check if the list is NOT empty
             if vehicle_list:  # This is True if the list is not empty
@@ -2589,7 +2589,7 @@ if __name__ == "__main__":
         logger.info("Loaded analysis results from pickle file.")
     else:
         # Store the mapping file
-        df_mapping = pd.read_csv(common.get_configs("analysis_mapping"))
+        df_mapping = pd.read_csv(common.get_configs("mapping"))
 
         # Produce map with all data
         df = df_mapping.copy()  # copy df to manipulate for output
@@ -2649,6 +2649,7 @@ if __name__ == "__main__":
         df_mapping['traffic_light'] = 0
         df_mapping['stop_sign'] = 0
         df_mapping['total_time'] = 0
+        df_mapping['total_crossing_detect'] = 0
 
         # City-level columns
         df_mapping['speed_crossing_day_city'] = math.nan
@@ -2774,6 +2775,9 @@ if __name__ == "__main__":
                     time_video = analysis_class.get_duration(df_mapping, video_id, int(start_index))
                     df_mapping.loc[df_mapping["id"] == video_city_id, "total_time"] += time_video  # type: ignore
 
+                    # add total crossing detected
+                    df_mapping.loc[df_mapping["id"] == video_city_id, "total_crossing_detect"] += len(ids)
+
                     # Aggregated values
                     speed_value = algorithms_class.calculate_speed_of_crossing(df_mapping,
                                                                                df,
@@ -2807,9 +2811,9 @@ if __name__ == "__main__":
         # ----------------------------------------------------------------------
         for key, value in tqdm(avg_speed_city.items(), total=len(avg_speed_city)):
             parts = key.split("_")
-            city = parts[0]          # City name
-            lat = parts[1]           # Latitude
-            long = parts[2]          # Longitude
+            city = parts[0]              # City name
+            lat = parts[1]               # Latitude
+            long = parts[2]              # Longitude
             time_of_day = int(parts[3])  # 0=day, 1=night
 
             # Get the corresponding state using a helper function
@@ -3108,7 +3112,7 @@ if __name__ == "__main__":
     df = df_mapping.copy()  # copy df to manipulate for output
     df['state'] = df['state'].fillna('NA')  # Set state to NA
 
-    # Analysis.get_mapbox_map(df=df, hover_data=hover_data)  # type: ignore # mapbox map
+    Analysis.get_mapbox_map(df=df, hover_data=hover_data)  # type: ignore # mapbox map
     plots_class.get_world_map(df_mapping=df)  # map with countries
 
     plots_class.violin_plot(data_index=22, name="speed", min_threshold=common.get_configs("min_speed_limit"),
@@ -3149,6 +3153,18 @@ if __name__ == "__main__":
                                                   legend_x=0.9,
                                                   legend_y=0.01,
                                                   legend_spacing=0.0026)
+
+        plots_class.stack_plot(df,
+                               order_by="average",
+                               metric="num_of_crossing",
+                               data_view="day",
+                               title_text="Crossing in the country",
+                               filename="crossing_country",
+                               font_size_captions=common.get_configs("font_size") + 8,
+                               legend_x=0.87,
+                               legend_y=0.04,
+                               legend_spacing=0.02
+                               )
 
         plots_class.stack_plot(df,
                                order_by="alphabetical",
@@ -3743,6 +3759,15 @@ if __name__ == "__main__":
                             legend_y=1.0,
                             marginal_x=None,  # type: ignore
                             marginal_y=None)  # type: ignore
+
+        plots_class.stack_plot_crossing(df_mapping,
+                                        df_countries,
+                                        title_text="Crossing in the country",
+                                        filename="crossing_country",
+                                        font_size_captions=common.get_configs("font_size") + 8,
+                                        legend_x=0.87,
+                                        legend_y=0.04,
+                                        legend_spacing=0.02)
 
         plots_class.stack_plot_country(df_countries,
                                        order_by="average",
