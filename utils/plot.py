@@ -2162,10 +2162,6 @@ class Plots():
             # build up textual label for left column
             country = wrapper_class.iso2_to_flag(wrapper_class.iso3_to_iso2(iso_code)) + " " + country
 
-            # if order_by == "average":
-            #     iso_code = values_class.get_value(df_mapping, "city", city_new, "lat", float(lat), "iso3")
-            #     city = wrapper_class.iso2_to_flag(wrapper_class.iso3_to_iso2(iso_code)) + " " + city  # type: ignore
-
             # Row for speed (Day and Night)
             row = i + 1
             if day_values[i] is not None and night_values[i] is not None:
@@ -2248,9 +2244,9 @@ class Plots():
             idx = num_countries_per_col + i
             if day_values[idx] is not None and night_values[idx] is not None:
                 if data_view == "combined":
-                    value = (day_values[i] + night_values[i])/2
+                    value = (day_values[idx] + night_values[idx])/2
                 else:
-                    value = (day_values[i] + night_values[i])
+                    value = (day_values[idx] + night_values[idx])
 
                 fig.add_trace(go.Bar(
                     x=[day_values[idx]],
@@ -2401,7 +2397,7 @@ class Plots():
             plot_bgcolor='white',
             paper_bgcolor='white',
             barmode='stack',
-            height=600,
+            height=2400,
             width=2480,
             showlegend=False,  # Hide the default legend
             margin=dict(t=150, b=150),
@@ -2413,7 +2409,7 @@ class Plots():
         if metric == "speed":
             start, step, count = 1, 1, 19
         elif metric == "time":
-            start, step, count = 0.2, 0.2, 2
+            start, step, count = 0.5, 0.5, 3
 
         # Generate gridline positions
         x_grid_values = [start + i * step for i in range(count)]
