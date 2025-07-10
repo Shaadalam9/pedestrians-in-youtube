@@ -33,7 +33,7 @@ __pycache__/
 # Instance specific files
 config
 secret
-mapping_queue.csv
+# mapping_queue.csv
 mapping_bkp.csv
 
 # Pickle files

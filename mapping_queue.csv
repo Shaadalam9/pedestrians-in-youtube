@@ -1,0 +1,101 @@
+id,city,state,country,iso3,videos,start_time,end_time,vehicle_type,upload_date,fps_list,time_of_day
+2023,Featherston,,New Zealand,NZL,[cYMyHVDVugI],[[825]],[[1018]],[0],[27062021],[30],[[0]]
+2024,Greytown,,New Zealand,NZL,[cYMyHVDVugI],[[1148]],[[2200]],[0],[27062021],[30],[[0]]
+2025,Pahiatua,,New Zealand,NZL,[cYMyHVDVugI],[[2653]],[[2930]],[0],[27062021],[30],[[0]]
+2026,Dannevirke,,New Zealand,NZL,[cYMyHVDVugI],[[3815]],[[4024]],[0],[27062021],[30],[[0]]
+2027,Waipawa,,New Zealand,NZL,[cYMyHVDVugI],[[3255]],[[4520]],[0],[27062021],[30],[[0]]
+2028,Hastings,,New Zealand,NZL,[cYMyHVDVugI],[[5645]],[[5874]],[0],[27062021],[30],[[0]]
+2029,Westport,,New Zealand,NZL,[M33M9xLWsE8],[[0]],[[112]],[0],[31102022],[30],[[0]]
+2030,Inangahua,,New Zealand,NZL,[M33M9xLWsE8],[[2645]],[[2707]],[0],[31102022],[30],[[0]]
+2031,Whittlesea,VIC,Australia,AUS,[WdDHPxw06sk],[[4]],[[395]],[0],[17062025],[30],[[0]]
+2032,Tampere,,Finland,FIN,"[8sSUZAVtaA0,nOt7hFq3_Is,iGcMFJVc2NQ,EvjvsT1D_2U]","[[55,374,753,1390,1545,1819,2478],[1035,1462],[844],[1171]]","[[373,656,1094,1542,1770,2477,3129],[1461,2828],[1018],[3053]]","[4,0,0,0]","[21082023,1092021,24062023,29082017]","[30,30,30,30]","[[0,0,0,0,0,0,0],[0,1],[0],[0]]"
+2033,Kerikeri,,New Zealand,NZL,[9_ErRh6PrKM],[[17]],[[225]],[0],[08062022],[30],[[0]]
+2034,Paihia,,New Zealand,NZL,[9_ErRh6PrKM],"[[900,1195]]","[[1138,1505]]",[0],[8062022],[30],"[[0,0]]"
+2035,New Plymouth,,New Zealand,NZL,"[D1NHbpsZLIA,b2GLIdgmCns]","[[0], [0]]","[[1212], [2465]]","[0,0]","[25112020,16032023]","[30,30]","[[0], [0]]"
+2036,Waihola,,New Zealand,NZL,[2I9u8uC5NRs],"[[2067,2162]]","[[2123,2194]]",[0],[5012025],[30],"[[0,0]]"
+2037,Milton,,New Zealand,NZL,"[2I9u8uC5NRs,LG0tLbdpKoo]","[[2734],[825]]","[[2942],[895]]","[0,0]","[5012025,4032024]","[30,30]","[[0],[0]]"
+2038,Balclutha,,New Zealand,NZL,[2I9u8uC5NRs],[[3915]],[[4390]],[0],[05012025],[30],[[0]]
+2039,Clinton,,New Zealand,NZL,[2I9u8uC5NRs],[[5549]],[[5690]],[0],[05012025],[30],[[0]]
+2040,Gore,,New Zealand,NZL,"[2I9u8uC5NRs,ZumL1r848XQ]","[[7340],[38]]","[[7490],[331]]","[0,0]","[5012025,8012025]","[30,30]","[[0],[0]]"
+2041,Hyvinkää,,Finland,FIN,"[pyF4wsHBw6c,PcuQfn70qhc,qg76Ny5Wfuc]","[[137],[0],[0,245]]","[[2945],[644],[227,555]]","[0,0,0]","[10012025,25062023,21062023]","[30,30,30]","[[0],[0],[0,0]]"
+2042,Toijala,,Finland,FIN,"[0oMVixKUbMY,U--pOXTGIw8]","[[0],[0]]","[[231],[127]]","[0,0]","[14112023,13112023]","[30,30]","[[0],[0]]"
+2043,Haapamäki,,Finland,FIN,[U--pOXTGIw8],[[1712]],[[1829]],[0],[13112023],[30],[[0]]
+2044,Kuopio,,Finland,FIN,"[7p-uTnnQsAo,K-H21vWNxQY]","[[33,0],[0]]","[[518,2020],[2662]]","[0,0]","[12062025,17062022]","[30,30]","[[0,0],[0]]"
+2045,Myllykoski,,Finland,FIN,[zDSrXwypO5Y],[[1]],[[113]],[0],[22062019],[30],[[0]]
+2046,Kouvola,,Finland,FIN,"[zDSrXwypO5Y,PTLEgXjaIrY]","[[1178],[3]]","[[2064],[742]]","[0,0]","[22062019,25062019]","[30,30]","[[0],[0]]"
+2047,Heinola,,Finland,FIN,[PTLEgXjaIrY],[[3699]],[[3825]],[0],[25062019],[30],[[0]]
+2048,Kittilä,,Finland,FIN,[wr7fQ-lLcdA],[[0]],[[416]],[0],[08082023],[30],[[0]]
+2049,Utsjoki,,Finland,FIN,[qLMUh89Bkwo],[[2]],[[330]],[0],[25082023],[30],[[0]]
+2050,Levi,,Finland,FIN,"[LUqPv2JmlVU,BwvdtmyuM0U]","[[3546],[0]]","[[3824],[120]]","[0,0]","[6092023,10092023]","[30,30]","[[0],[0]]"
+2051,Kolari,,Finland,FIN,[4URioSqYies],"[[0,180]]","[[150,493]]",[0],[12122023],[30],"[[1,1]]"
+2052,Alexandra,,New Zealand,NZL,[LG0tLbdpKoo],"[[384,583]]","[[582,715]]",[0],[4032024],[30],"[[0,0]]"
+2053,Lawrence,,New Zealand,NZL,[LG0tLbdpKoo],[[723]],[[817]],[0],[04032024],[30],[[0]]
+2054,Matamata,,New Zealand,NZL,[ahe6rzQ81ug],[[0]],[[482]],[0],[08032023],[30],[[0]]
+2055,Mataura,,New Zealand,NZL,[ZumL1r848XQ],[[665]],[[930]],[0],[08012025],[30],[[0]]
+2056,Invercargill,,New Zealand,NZL,"[ZumL1r848XQ,Jc-zDJOBuJw]","[[2780], [1650]]","[[3570], [2273]]","[0,0]","[8012025,12012025]","[30,30]","[[0], [0]]"
+2057,Bluff,,New Zealand,NZL,"[ZumL1r848XQ,Jc-zDJOBuJw]","[[4590], [50]]","[[4993], [671]]","[0,0]","[8012025,12012025]","[30,30]","[[0], [0]]"
+2058,Joensuu,,Finland,FIN,"[TqlYUDWDREA,tBIsp5LPq0o,zxZ-h8eQslM]","[[0],[0],[16]]","[[2416],[3104],[3807]]","[0,0,0]","[13102022,21112022,14102022]","[30,30,30]","[[0],[0],[0]]"
+2036,Mikkeli,,Finland,FIN,"[QF_PM9CaBis,UnfH-nzHR5s]","[[0, 975], [21]]","[[974, 2289], [2159]]","[0,0]","[13092024,18042025]","[30,30]","[[0, 0], [0]]"
+2037,Riihimäki,,Finland,FIN,"[KlN91aZ3tE0,alQmGaER_rs]","[[0], [49]]","[[1499], [1710]]","[0,0]","[9092018,7032025]","[30,30]","[[0], [0]]"
+2061,Espoo,,Finland,FIN,[CXjcWv6x6Kg],[[20]],[[2152]],[0],[24072023],[30],[[0]]
+2062,Lahti,,Finland,FIN,[nKeKGodS9lE],[[100]],[[2067]],[0],[09062023],[30],[[0]]
+2063,Reefton,,New Zealand,NZL,[yhw5I_JB0bo],[[2600]],[[2693]],[0],[30032024],[30],[[0]]
+2064,Jacks Point,,New Zealand,NZL,[t4uMv5ijygc],[[594]],[[1668]],[0],[06112024],[30],[[0]]
+2065,Turakina,,New Zealand,NZL,[Bah6PjgkebU],[[1155]],[[1225]],[0],[25062024],[30],[[0]]
+2066,Sanson,,New Zealand,NZL,[Bah6PjgkebU],[[2505]],[[2517]],[0],[25062024],[30],[[0]]
+2067,Manakau,,New Zealand,NZL,"[Bah6PjgkebU,JQ3654jf__Y]","[[5440],[4008]]","[[5540],[4200]]","[0,0]","[25062024,17042024]","[30,30]","[[0],[0]]"
+2068,Palmerston North,,New Zealand,NZL,[JQ3654jf__Y],[[87]],[[850]],[0],[17042024],[30],[[0]]
+2069,Longburn,,New Zealand,NZL,[JQ3654jf__Y],[[1035]],[[1053]],[0],[17042024],[30],[[0]]
+2070,Opiki,,New Zealand,NZL,[JQ3654jf__Y],[[1541]],[[1600]],[0],[17042024],[30],[[0]]
+2071,Shannon,,New Zealand,NZL,[JQ3654jf__Y],[[2166]],[[2365]],[0],[17042024],[30],[[0]]
+2072,Woodend,,New Zealand,NZL,"[qz7w3i--nlQ,uH2HLC7UcZc]","[[1897], [1950]]","[[2090], [2150]]","[0,0]","[10102024,14022024]","[30,30]","[[0], [0]]"
+2073,Waikuku,,New Zealand,NZL,"[qz7w3i--nlQ,uH2HLC7UcZc]","[[2160], [2215]]","[[2280], [2335]]","[0,0]","[10102024,14022024]","[30,30]","[[0], [0]]"
+2074,Amberley,,New Zealand,NZL,"[qz7w3i--nlQ,uH2HLC7UcZc]","[[3114], [3165]]","[[3330], [3380]]","[0,0]","[10102024,14022024]","[30,30]","[[0], [0]]"
+2075,Domett,,New Zealand,NZL,"[qz7w3i--nlQ,uH2HLC7UcZc]","[[5920], [5970]]","[[5960], [6020]]","[0,0]","[10102024,14022024]","[30,30]","[[0], [0]]"
+2076,Cheviot,,New Zealand,NZL,"[qz7w3i--nlQ,uH2HLC7UcZc,VgL4otEDWMs]","[[6213], [6266], [90]]","[[6340], [6310], [145]]","[0,0,0]","[10102024,14022024,18022024]","[30,30,30]","[[0], [0], [0]]"
+2077,Parnassus,,New Zealand,NZL,"[qz7w3i--nlQ,VgL4otEDWMs]","[[6844], [648]]","[[6895], [690]]","[0,0]","[10102024,18022024]","[30,30]","[[0], [0]]"
+2078,Peketā,,New Zealand,NZL,"[qz7w3i--nlQ,VgL4otEDWMs]","[[9390], [3193]]","[[9450], [3236]]","[0,0]","[10102024,18022024]","[30,30]","[[0], [0]]"
+2079,Kaikōura,,New Zealand,NZL,"[qz7w3i--nlQ,VgL4otEDWMs]","[[9815], [3620]]","[[10170], [4029]]","[0,0]","[10102024,18022024]","[30,30]","[[0], [0]]"
+2080,Ward,,New Zealand,NZL,[qz7w3i--nlQ],[[14060]],[[14300]],[0],[10102024],[30],[[0]]
+2081,Seddon,,New Zealand,NZL,[qz7w3i--nlQ],[[15018]],[[15190]],[0],[10102024],[30],[[0]]
+2082,Blenheim,,New Zealand,NZL,[qz7w3i--nlQ],[[16247]],[[16525]],[0],[10102024],[30],[[0]]
+2083,Spring Creek,,New Zealand,NZL,[qz7w3i--nlQ],[[16680]],[[16970]],[0],[10102024],[30],[[0]]
+2084,Picton,,New Zealand,NZL,[qz7w3i--nlQ],[[17870]],[[18540]],[0],[10102024],[30],[[0]]
+2085,Winton,,New Zealand,NZL,[Jc-zDJOBuJw],"[[3375, 3559]]","[[3492, 3763]]",[0],[12012025],[30],"[[0, 0]]"
+2086,Centre Bush,,New Zealand,NZL,[Jc-zDJOBuJw],[[4075]],[[4148]],[0],[12012025],[30],[[0]]
+2087,Dipton,,New Zealand,NZL,[Jc-zDJOBuJw],[[4900]],[[4960]],[0],[12012025],[30],[[0]]
+2088,Hinds,,New Zealand,NZL,[Dp2bUvuU8A8],[[1048]],[[1136]],[0],[01092024],[30],[[0]]
+2089,Rangitata,,New Zealand,NZL,[Dp2bUvuU8A8],[[1796]],[[1840]],[0],[01092024],[30],[[0]]
+2090,Orari,,New Zealand,NZL,[Dp2bUvuU8A8],[[2185]],[[2280]],[0],[01092024],[30],[[0]]
+2091,Winchester,,New Zealand,NZL,[Dp2bUvuU8A8],[[2408]],[[2550]],[0],[01092024],[30],[[0]]
+2092,Temuka,,New Zealand,NZL,[Dp2bUvuU8A8],[[2680]],[[3270]],[0],[01092024],[30],[[0]]
+2093,St Andrews,,New Zealand,NZL,[Dp2bUvuU8A8],[[4905]],[[4985]],[0],[01092024],[30],[[0]]
+2094,Makikihi,,New Zealand,NZL,[Dp2bUvuU8A8],[[5460]],[[5505]],[0],[01092024],[30],[[0]]
+2095,Glenavy,,New Zealand,NZL,[Dp2bUvuU8A8],[[6880]],[[6965]],[0],[01092024],[30],[[0]]
+2096,Cambridge,,New Zealand,NZL,[qDXhnZT9S_Y],[[0]],[[1779]],[0],[21082023],[30],[[0]]
+2097,Kumara,,New Zealand,NZL,[A0gHrG_1RII],[[1617]],[[1736]],[0],[28052024],[30],[[0]]
+2098,Arthur's Pass Village,,New Zealand,NZL,[A0gHrG_1RII],[[5890]],[[6040]],[0],[28052024],[30],[[0]]
+2099,Castle Hill,,New Zealand,NZL,[A0gHrG_1RII],[[8339]],[[8377]],[0],[28052024],[30],[[0]]
+2100,Turku,,Finland,FIN,[PEpe0aA_HJo],[[21]],[[2350]],[0],[14022025],[30],[[0]]
+2101,Kauniainen,,Finland,FIN,[80qO_4_TTyQ],[[33]],[[2129]],[0],[17012025],[30],[[0]]
+2102,Kekerengu,,New Zealand,NZL,[VgL4otEDWMs],[[6650]],[[6698]],[0],[18022024],[30],[[0]]
+2103,Okitu,,New Zealand,NZL,[sgh5rGblc-4],[[474]],[[635]],[0],[23062024],[30],[[0]]
+2104,Tolaga Bay,,New Zealand,NZL,[sgh5rGblc-4],"[[2708, 2815]]","[[2792, 2882]]",[0],[23062024],[30],"[[0, 0]]"
+2105,Tokomaru Bay,,New Zealand,NZL,[sgh5rGblc-4],[[4590]],[[4771]],[0],[23062024],[30],[[0]]
+2106,Te Puia Springs,,New Zealand,NZL,[sgh5rGblc-4],[[5538]],[[5612]],[0],[23062024],[30],[[0]]
+2107,Tikitiki,,New Zealand,NZL,[sgh5rGblc-4],[[8000]],[[8065]],[0],[23062024],[30],[[0]]
+2108,Te Araroa,,New Zealand,NZL,[sgh5rGblc-4],[[9540]],[[9693]],[0],[23062024],[30],[[0]]
+2109,Motueka,,New Zealand,NZL,"[0e5cCrsLgb0,oLP-aLyWFns]","[[0], [0]]","[[1777], [745]]","[0,0]","[3092022,12042024]","[30,30]","[[0], [0]]"
+2110,Nelson,,New Zealand,NZL,[50Q2Q3_vZOk],[[30]],[[790]],[0],[21052022],[30],[[0]]
+2111,Wilson Bay,,New Zealand,NZL,[y-QuayjN8N0],[[1039]],[[1120]],[0],[08032024],[30],[[0]]
+2112,Mount Maunganui,,New Zealand,NZL,[9f4BGWR9aow],[[0]],[[495]],[0],[14022025],[30],[[0]]
+2113,Tauranga,,New Zealand,NZL,"[9f4BGWR9aow,_ZzxZagCtcA]","[[585], [0, 670]]","[[686], [320, 800]]","[0,0]","[14022025,14062023]","[30,30]","[[0], [0, 0]]"
+2114,Whangarei,,New Zealand,NZL,[sAcq1ZrV3ho],[[0]],[[2610]],[0],[21072023],[30],[[0]]
+2115,Warkworth,,New Zealand,NZL,[GQNvOhIQtbs],[[0]],[[710]],[0],[20072023],[30],[[0]]
+2116,Te Poi,,New Zealand,NZL,[_ZzxZagCtcA],[[1865]],[[1965]],[0],[14062023],[30],[[0]]
+2117,Morrinsville,,New Zealand,NZL,[y8muDEaVgUI],[[0]],[[358]],[0],[19042023],[30],[[0]]
+2118,Paeroa,,New Zealand,NZL,[V7JvSFrY9bA],[[0]],[[200]],[0],[26012023],[30],[[0]]
+2119,Hikutaia,,New Zealand,NZL,[V7JvSFrY9bA],[[405]],[[470]],[0],[26012023],[30],[[0]]
+2120,Puriri,,New Zealand,NZL,[V7JvSFrY9bA],[[719]],[[780]],[0],[26012023],[30],[[0]]
+2121,Kopu,,New Zealand,NZL,[V7JvSFrY9bA],[[1005]],[[1120]],[0],[26012023],[30],[[0]]
+2122,Te Aroha,,New Zealand,NZL,[P3IM8VbuqAw],[[0]],[[543]],[0],[10012023],[30],[[0]]
