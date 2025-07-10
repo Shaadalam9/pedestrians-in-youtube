@@ -2589,7 +2589,7 @@ if __name__ == "__main__":
         logger.info("Loaded analysis results from pickle file.")
     else:
         # Store the mapping file
-        df_mapping = pd.read_csv(common.get_configs("mapping"))
+        df_mapping = pd.read_csv(common.get_configs("analysis_mapping"))
 
         # Produce map with all data
         df = df_mapping.copy()  # copy df to manipulate for output
