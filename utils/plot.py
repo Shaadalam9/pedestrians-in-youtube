@@ -1362,6 +1362,126 @@ class Plots():
         # Save and display the figure
         self.save_plotly_figure(fig, file_name, save_final=True)
 
+    def get_world_map(self, df_mapping):
+        """
+        Generate a world map with highlighted countries and red markers for cities using Plotly.
+
+        - Highlights countries based on the cities present in the dataset.
+        - Adds scatter points for each city with detailed socioeconomic and traffic-related hover info.
+        - Adjusts map appearance to improve clarity and remove irrelevant regions like Antarctica.
+
+        Args:
+            df_mapping (pd.DataFrame): A DataFrame with columns:
+                ['city', 'state', 'country', 'lat', 'lon', 'continent',
+                 'gmp', 'population_city', 'population_country',
+                 'traffic_mortality', 'literacy_rate', 'avg_height',
+                 'gini', 'traffic_index']
+
+        Returns:
+            None. Saves and displays the interactive map to disk.
+        """
+        cities = df_mapping["city"]
+        states = df_mapping["state"]
+        countries = df_mapping["country"]
+        coords_lat = df_mapping["lat"]
+        coords_lon = df_mapping["lon"]
+
+        # Create the country list to highlight in the choropleth map
+        countries_set = set(countries)  # Use set to avoid duplicates
+        if "Denmark" in countries_set:
+            countries_set.add('Greenland')
+        if "Türkiye" in countries_set:
+            countries_set.add('Turkey')
+        if "Somalia" in countries_set:
+            countries_set.add('Somaliland')
+
+        # Create a DataFrame for highlighted countries with a value (same for all to have the same color)
+        df = pd.DataFrame({'country': list(countries_set), 'value': 1})
+
+        # Create a choropleth map using Plotly with grey color for countries
+        fig = px.choropleth(df, locations="country", locationmode="country names",
+                            color="value", hover_name="country", hover_data={'value': False, 'country': False},
+                            color_continuous_scale=["rgb(242, 186, 78)", "rgb(242, 186, 78)"],
+                            labels={'value': 'Highlighted'})
+
+        # Update layout to remove Antarctica, Easter Island, remove the color bar, and set ocean color
+        fig.update_layout(
+            coloraxis_showscale=False,  # Remove color bar
+            geo=dict(
+                showframe=False,
+                showcoastlines=True,
+                coastlinecolor="black",  # Set coastline color
+                showcountries=True,  # Show country borders
+                countrycolor="black",  # Set border color
+                projection_type='equirectangular',
+                showlakes=True,
+                lakecolor='rgb(173, 216, 230)',  # Light blue for lakes
+                projection_scale=1,
+                center=dict(lat=20, lon=0),  # Center map to remove Antarctica
+                bgcolor='rgb(173, 216, 230)',  # Light blue for ocean
+                resolution=50
+            ),
+            margin=dict(l=0, r=0, t=0, b=0),  # Remove the margins
+            paper_bgcolor='rgb(173, 216, 230)'  # Set the paper background to match the ocean color
+        )
+
+        # Process each city and its corresponding country
+        city_coords = []
+        for i, (city, state, lat, lon) in enumerate(tqdm(zip(cities, states, coords_lat, coords_lon), total=len(cities))):  # noqa: E501
+            if not state or str(state).lower() == 'nan':
+                state = 'N/A'
+            if lat and lon:
+                city_coords.append({
+                    'City': city,
+                    'State': state,
+                    'Country': df_mapping["country"].iloc[i],
+                    'Continent': df_mapping["continent"].iloc[i],
+                    'lat': lat,
+                    'lon': lon,
+                    'GDP (Billion USD)': df_mapping["gmp"].iloc[i],
+                    'City population (thousands)': df_mapping["population_city"].iloc[i] / 1000.0,
+                    'Country population (thousands)': df_mapping["population_country"].iloc[i] / 1000.0,
+                    'Traffic mortality rate (per 100,000)': df_mapping["traffic_mortality"].iloc[i],
+                    'Literacy rate': df_mapping["literacy_rate"].iloc[i],
+                    'Average height (cm)': df_mapping["avg_height"].iloc[i],
+                    'Gini coefficient': df_mapping["gini"].iloc[i],
+                    'Traffic index': df_mapping["traffic_index"].iloc[i],
+                })
+
+        if city_coords:
+            city_df = pd.DataFrame(city_coords)
+            # city_df["City"] = city_df["city"]  # Format city name with "City:"
+            city_trace = px.scatter_geo(
+                city_df, lat='lat', lon='lon',
+                hover_data={
+                    'City': True,
+                    'State': True,
+                    'Country': True,
+                    'Continent': True,
+                    'GDP (Billion USD)': True,
+                    'City population (thousands)': True,
+                    'Country population (thousands)': True,
+                    'Traffic mortality rate (per 100,000)': True,
+                    'Literacy rate': True,
+                    'Average height (cm)': True,
+                    'Gini coefficient': True,
+                    'Traffic index': True,
+                    'lat': False,
+                    'lon': False  # Hide lat and lon
+                }
+            )
+            # Update the city markers to be red and adjust size
+            city_trace.update_traces(marker=dict(color="red", size=5))
+
+            # Add the scatter_geo trace to the choropleth map
+            fig.add_trace(city_trace.data[0])
+
+        # update font family
+        fig.update_layout(font=dict(family=common.get_configs('font_family')))
+
+        # Save and display the figure
+        self.save_plotly_figure(fig, "world_map", save_final=True)
+
     def hist(self, data_index, name, min_threshold, max_threshold, nbins=None, color=None,
              pretty_text=False, marginal='rug', xaxis_title=None, yaxis_title=None,
              name_file=None, save_file=False, save_final=False, fig_save_width=1320,
@@ -1525,6 +1645,13 @@ class Plots():
                     greenland_row[col] = None
 
             df_filtered = pd.concat([df_filtered, pd.DataFrame([greenland_row])], ignore_index=True)
+
+        # ---- HANDLE COUNTRY NAME MISMATCHES ----
+        country_name_map = {
+            'Türkiye': 'Turkey'
+        }
+        df_filtered['country'] = df_filtered['country'].replace(country_name_map)
+        # ----------------------------------------
 
         # create map
         fig = px.choropleth(df_filtered,
