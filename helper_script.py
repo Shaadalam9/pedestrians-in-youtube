@@ -1137,12 +1137,12 @@ class Youtube_Helper:
         """
 
         # If using a custom tracker configuration, update YAML buffer
-        if common.get_configs("bbox_tracker") == "bbox_custom_tracker.yaml":
+        if common.get_configs("bbox_tracker") == "bbox_custom_tracker.yaml" and bbox_mode is True:
             # Update tracker YAML
             yaml_path = 'bbox_custom_tracker.yaml'  # actual tracker yaml file path
             self.update_track_buffer_in_yaml(yaml_path, video_fps)
 
-        if common.get_configs("seg_tracker") == "seg_custom_tracker.yaml":
+        if common.get_configs("seg_tracker") == "seg_custom_tracker.yaml" and seg_mode is True:
             # Update tracker YAML
             yaml_path = 'seg_custom_tracker.yaml'  # actual tracker yaml file path
             self.update_track_buffer_in_yaml(yaml_path, video_fps)
