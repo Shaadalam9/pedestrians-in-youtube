@@ -602,9 +602,6 @@ class Analysis():
                             # Load the CSV
                             value = pd.read_csv(file_path)
 
-                # Extract the time of day
-                condition = time_of_day
-
                 for id, time in df.items():
                     unique_id_indices = value.index[value['Unique Id'] == id]
                     first_occurrence = unique_id_indices[0]
@@ -667,6 +664,19 @@ class Analysis():
                     final[city_time_key] += count[key]  # Add the current count to the existing sum
                 else:
                     final[city_time_key] = count[key]
+
+        return final
+
+    @staticmethod
+    def pedestrian_cross_per_country(pedestrian_cross_city, df_mapping):
+        final = {}
+        for city_lat_long_cond, value in pedestrian_cross_city.items():
+            city, lat, _, cond = city_lat_long_cond.split("_")
+            country = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "country")
+            if country in final:
+                final[country] += value
+            else:
+                final[country] = value
 
         return final
 
@@ -2207,7 +2217,7 @@ class Analysis():
         """
 
         # Drop location-specific columns
-        df = df.drop(columns=['city', 'state', 'lat', 'lon', 'gmp', 'population_city', 'traffic_index',
+        df = df.drop(columns=['id', 'city', 'state', 'lat', 'lon', 'gmp', 'population_city', 'traffic_index',
                               'upload_date', 'speed_crossing_day_city', 'speed_crossing_night_city',
                               'speed_crossing_day_night_city_avg', 'time_crossing_day_city',
                               'time_crossing_night_city', 'time_crossing_day_night_city_avg',
@@ -2567,6 +2577,96 @@ class Analysis():
             base_name = file_clean  # fallback if '.csv' not found
         return base_name
 
+    def add_speed_and_time_to_mapping(self, df_mapping, avg_speed_city=None, avg_time_city=None,
+                                      avg_speed_country=None, avg_time_country=None):
+        """
+        Adds city/country-level average speeds and/or times (day/night) to df_mapping DataFrame,
+        depending on which dicts are provided. Missing columns are created and initialized with NaN.
+        """
+        configs = []
+        if avg_speed_city is not None:
+            configs.append(dict(
+                label='city',
+                avg_dict=avg_speed_city,
+                value_type='speed',
+                col_prefix='speed_crossing',
+                key_parts=['city', 'lat', 'long', 'time_of_day'],
+                get_state=True
+            ))
+        if avg_time_city is not None:
+            configs.append(dict(
+                label='city',
+                avg_dict=avg_time_city,
+                value_type='time',
+                col_prefix='time_crossing',
+                key_parts=['city', 'lat', 'long', 'time_of_day'],
+                get_state=True
+            ))
+        if avg_speed_country is not None:
+            configs.append(dict(
+                label='country',
+                avg_dict=avg_speed_country,
+                value_type='speed',
+                col_prefix='speed_crossing',
+                key_parts=['country', 'time_of_day'],
+                get_state=False
+            ))
+        if avg_time_country is not None:
+            configs.append(dict(
+                label='country',
+                avg_dict=avg_time_country,
+                value_type='time',
+                col_prefix='time_crossing',
+                key_parts=['country', 'time_of_day'],
+                get_state=False
+            ))
+
+        for cfg in configs:
+            label = cfg['label']
+            avg_dict = cfg['avg_dict']
+            col_prefix = cfg['col_prefix']
+            get_state = cfg['get_state']  # noqa:F841
+
+            # Prepare column names
+            day_col = f"{col_prefix}_day_{label}"
+            night_col = f"{col_prefix}_night_{label}"
+            avg_col = f"{col_prefix}_day_night_{label}_avg"
+
+            # Ensure columns exist and are initialized to np.nan
+            for col in [day_col, night_col, avg_col]:
+                if col not in df_mapping.columns:
+                    df_mapping[col] = np.nan
+
+            for key, value in tqdm(avg_dict.items(), desc=f"{label.capitalize()} {cfg['value_type'].capitalize()}s",
+                                   total=len(avg_dict)):
+                parts = key.split("_")
+                if label == 'city':
+                    city, lat, _, time_of_day = parts[0], parts[1], parts[2], int(parts[3])
+                    state = values_class.get_value(df_mapping, "city", city, "lat", lat, "state")
+                    mask = (
+                        (df_mapping["city"] == city) &
+                        ((df_mapping["state"] == state) | (pd.isna(df_mapping["state"]) & pd.isna(state)))
+                    )
+                else:  # country
+                    country, time_of_day = parts[0], int(parts[1])
+                    mask = (df_mapping["country"] == country)
+                if not time_of_day:
+                    df_mapping.loc[mask, day_col] = float(value)
+                else:
+                    df_mapping.loc[mask, night_col] = float(value)
+
+            # Calculate overall average column for each type
+            df_mapping[avg_col] = np.where(
+                (df_mapping[day_col] > 0) & (df_mapping[night_col] > 0),
+                df_mapping[[day_col, night_col]].mean(axis=1),
+                np.where(
+                    df_mapping[day_col] > 0, df_mapping[day_col],
+                    np.where(df_mapping[night_col] > 0, df_mapping[night_col], np.nan)
+                )
+            )
+
+        return df_mapping
+
 
 analysis_class = Analysis()
 
@@ -2577,14 +2677,43 @@ if __name__ == "__main__":
     if os.path.exists(file_results) and not common.get_configs('always_analyse'):
         # Load the data from the pickle file
         with open(file_results, 'rb') as file:
-            (data, person_counter, bicycle_counter, car_counter, motorcycle_counter,
-             bus_counter, truck_counter, cellphone_counter, traffic_light_counter, stop_sign_counter,
-             pedestrian_cross_city, pedestrian_crossing_count, person_city, bicycle_city, car_city,
-             motorcycle_city, bus_city, truck_city, cross_evnt_city, vehicle_city,
-             cellphone_city, traffic_sign_city, speed_values, time_values, avg_time, avg_speed,
-             df_mapping, avg_speed_country, avg_time_country, crossings_with_traffic_equipment_city,
-             crossings_without_traffic_equipment_city, crossings_with_traffic_equipment_country,
-             crossings_without_traffic_equipment_country, min_max_speed, min_max_time) = pickle.load(file)
+            (data,                                          # 0
+             person_counter,                                # 1
+             bicycle_counter,                               # 2
+             car_counter,                                   # 3
+             motorcycle_counter,                            # 4
+             bus_counter,                                   # 5
+             truck_counter,                                 # 6
+             cellphone_counter,                             # 7
+             traffic_light_counter,                         # 8
+             stop_sign_counter,                             # 9
+             pedestrian_cross_city,                         # 10
+             pedestrian_crossing_count,                     # 11
+             person_city,                                   # 12
+             bicycle_city,                                  # 13
+             car_city,                                      # 14
+             motorcycle_city,                               # 15
+             bus_city,                                      # 16
+             truck_city,                                    # 17
+             cross_evnt_city,                               # 18
+             vehicle_city,                                  # 19
+             cellphone_city,                                # 20
+             traffic_sign_city,                             # 21
+             all_speed,                                     # 22
+             all_time,                                      # 23
+             avg_time_city,                                 # 24
+             avg_speed_city,                                # 25
+             df_mapping,                                    # 26
+             avg_speed_country,                             # 27
+             avg_time_country,                              # 28
+             crossings_with_traffic_equipment_city,         # 29
+             crossings_without_traffic_equipment_city,      # 30
+             crossings_with_traffic_equipment_country,      # 31
+             crossings_without_traffic_equipment_country,   # 32
+             min_max_speed,                                 # 33
+             min_max_time,                                  # 34
+             pedestrian_cross_country                       # 35
+             ) = pickle.load(file)
 
         logger.info("Loaded analysis results from pickle file.")
     else:
@@ -2616,7 +2745,7 @@ if __name__ == "__main__":
         # 1. The city's population is greater than the threshold
         # 2. The city's population is at least the minimum percentage of the country's population
         df_mapping = df_mapping[
-            (df_mapping["population_city"] >= population_threshold) &  # Condition 1
+            (df_mapping["population_city"] >= population_threshold) |  # Condition 1
             (df_mapping["population_city"] >= min_percentage * df_mapping["population_country"])  # Condition 2
         ]
 
@@ -2806,127 +2935,11 @@ if __name__ == "__main__":
             logger.error("No speed and time data to analyse.")
             exit()
 
-        # ----------------------------------------------------------------------
-        # Add city-level average speeds for day and night to mapping file
-        # ----------------------------------------------------------------------
-        for key, value in tqdm(avg_speed_city.items(), total=len(avg_speed_city)):
-            parts = key.split("_")
-            city = parts[0]              # City name
-            lat = parts[1]               # Latitude
-            long = parts[2]              # Longitude
-            time_of_day = int(parts[3])  # 0=day, 1=night
-
-            # Get the corresponding state using a helper function
-            state = values_class.get_value(df_mapping, "city", city, "lat", lat, "state")
-
-            # Assign average speed to the correct day/night city column
-            mask = (
-                (df_mapping["city"] == city) &
-                ((df_mapping["state"] == state) | (pd.isna(df_mapping["state"]) & pd.isna(state)))
-            )
-            if not time_of_day:  # day
-                df_mapping.loc[mask, "speed_crossing_day_city"] = float(value)
-            else:  # night
-                df_mapping.loc[mask, "speed_crossing_night_city"] = float(value)
-
-        # ----------------------------------------------------------------------
-        # Compute city-level overall average speed (mean of day & night)
-        # ----------------------------------------------------------------------
-        df_mapping["speed_crossing_day_night_city_avg"] = np.where(
-            (df_mapping["speed_crossing_day_city"] > 0) & (df_mapping["speed_crossing_night_city"] > 0),
-            df_mapping[["speed_crossing_day_city", "speed_crossing_night_city"]].mean(axis=1),
-            np.where(
-                df_mapping["speed_crossing_day_city"] > 0, df_mapping["speed_crossing_day_city"],
-                np.where(df_mapping["speed_crossing_night_city"] > 0,
-                         df_mapping["speed_crossing_night_city"], np.nan)
-            )
-        )
-
-        # ----------------------------------------------------------------------
-        # Add city-level average crossing time for day and night
-        # ----------------------------------------------------------------------
-        for key, value in tqdm(avg_time_city.items(), total=len(avg_time_city)):
-            parts = key.split("_")
-            city = parts[0]
-            lat = parts[1]
-            long = parts[2]
-            time_of_day = int(parts[3])  # 0=day, 1=night
-
-            mask = (
-                (df_mapping["city"] == city) &
-                ((df_mapping["state"] == state) | (pd.isna(df_mapping["state"]) & pd.isna(state)))
-            )
-            if not time_of_day:  # day
-                df_mapping.loc[mask, "time_crossing_day_city"] = float(value)
-            else:  # night
-                df_mapping.loc[mask, "time_crossing_night_city"] = float(value)
-
-        # ----------------------------------------------------------------------
-        # Compute city-level overall average crossing time (mean of day & night)
-        # ----------------------------------------------------------------------
-        df_mapping["time_crossing_day_night_city_avg"] = np.where(
-            (df_mapping["time_crossing_day_city"] > 0) & (df_mapping["time_crossing_night_city"] > 0),
-            df_mapping[["time_crossing_day_city", "time_crossing_night_city"]].mean(axis=1),
-            np.where(
-                df_mapping["time_crossing_day_city"] > 0, df_mapping["time_crossing_day_city"],
-                np.where(df_mapping["time_crossing_night_city"] > 0,
-                         df_mapping["time_crossing_night_city"], np.nan)
-            )
-        )
-
-        # ----------------------------------------------------------------------
-        # Add country-level average speeds for day and night to mapping file
-        # ----------------------------------------------------------------------
-        for key, value in tqdm(avg_speed_country.items(), total=len(avg_speed_country)):
-            parts = key.split("_")
-            country = parts[0]        # Country name
-            time_of_day = int(parts[1])  # 0=day, 1=night
-
-            mask = (df_mapping["country"] == country)
-            if not time_of_day:  # day
-                df_mapping.loc[mask, "speed_crossing_day_country"] = float(value)
-            else:  # night
-                df_mapping.loc[mask, "speed_crossing_night_country"] = float(value)
-
-        # ----------------------------------------------------------------------
-        # Compute country-level overall average speed (mean of day & night)
-        # ----------------------------------------------------------------------
-        df_mapping["speed_crossing_day_night_country_avg"] = np.where(
-            (df_mapping["speed_crossing_day_country"] > 0) & (df_mapping["speed_crossing_night_country"] > 0),
-            df_mapping[["speed_crossing_day_country", "speed_crossing_night_country"]].mean(axis=1),
-            np.where(
-                df_mapping["speed_crossing_day_country"] > 0, df_mapping["speed_crossing_day_country"],
-                np.where(df_mapping["speed_crossing_night_country"] > 0,
-                         df_mapping["speed_crossing_night_country"], np.nan)
-                )
-        )
-
-        # ----------------------------------------------------------------------
-        # Add country-level average crossing time for day and night
-        # ----------------------------------------------------------------------
-        for key, value in tqdm(avg_time_country.items(), total=len(avg_time_country)):
-            parts = key.split("_")
-            country = parts[0]        # Country name
-            time_of_day = int(parts[1])  # 0=day, 1=night
-
-            mask = (df_mapping["country"] == country)
-            if not time_of_day:  # day
-                df_mapping.loc[mask, "time_crossing_day_country"] = float(value)
-            else:  # night
-                df_mapping.loc[mask, "time_crossing_night_country"] = float(value)
-
-        # ----------------------------------------------------------------------
-        # Compute country-level overall average crossing time (mean of day & night)
-        # ----------------------------------------------------------------------
-        df_mapping["time_crossing_day_night_country_avg"] = np.where(
-            (df_mapping["time_crossing_day_country"] > 0) & (df_mapping["time_crossing_night_country"] > 0),
-            df_mapping[["time_crossing_day_country", "time_crossing_night_country"]].mean(axis=1),
-            np.where(
-                df_mapping["time_crossing_day_country"] > 0, df_mapping["time_crossing_day_country"],
-                np.where(df_mapping["time_crossing_night_country"] > 0,
-                         df_mapping["time_crossing_night_country"], np.nan)
-            )
-        )
+        df_mapping = analysis_class.add_speed_and_time_to_mapping(df_mapping=df_mapping,
+                                                                  avg_speed_city=avg_speed_city,
+                                                                  avg_speed_country=avg_speed_country,
+                                                                  avg_time_city=avg_time_city,
+                                                                  avg_time_country=avg_time_country)
 
         min_max_speed = analysis_class.get_duration_segment(all_speed, df_mapping, name="speed", duration=None)
         min_max_time = analysis_class.get_duration_segment(all_time, df_mapping, name="time", duration=None)
@@ -2951,8 +2964,10 @@ if __name__ == "__main__":
         person_city = analysis_class.calculate_traffic(df_mapping, person=1)
         logger.info("Calculating counts of detected crossing events with traffic lights.")
         cross_evnt_city = Analysis.crossing_event_wt_traffic_light(df_mapping, data)
-        logger.info("Calculating counts of crossing events.")
+        logger.info("Calculating counts of crossing events in cities.")
         pedestrian_cross_city = Analysis.pedestrian_cross_per_city(pedestrian_crossing_count, df_mapping)
+        logger.info("Calculating counts of crossing events in countries.")
+        pedestrian_cross_country = Analysis.pedestrian_cross_per_country(pedestrian_cross_city, df_mapping)
 
         # Jaywalking data
         logger.info("Calculating parameters for detection of jaywalking.")
@@ -3081,12 +3096,105 @@ if __name__ == "__main__":
                          crossings_with_traffic_equipment_country,          # 31
                          crossings_without_traffic_equipment_country,       # 32
                          min_max_speed,                                     # 33
-                         min_max_time),                                     # 34
+                         min_max_time,                                      # 34
+                         pedestrian_cross_country),                         # 35
                         file)
         logger.info("Analysis results saved to pickle file.")
 
     # Set index as ID
-    df_mapping = df_mapping.set_index("id")
+    df_mapping = df_mapping.set_index("id", drop=False)
+
+    # --- Check if reanalysis of speed is required ---
+    if common.get_configs("reanalyse_speed"):
+        # Compute average speed for each country using mapping and speed data
+        avg_speed_country = algorithms_class.avg_speed_of_crossing_country(df_mapping, all_speed)
+        # Compute average speed for each city using speed data
+        avg_speed_city = algorithms_class.avg_speed_of_crossing_city(all_speed)
+
+        # Add computed speed values to the main mapping dataframe
+        df_mapping = analysis_class.add_speed_and_time_to_mapping(
+            df_mapping=df_mapping,
+            avg_speed_city=avg_speed_city,
+            avg_speed_country=avg_speed_country
+        )
+
+        # --- Update avg speed values in the pickle file ---
+        with open(file_results, 'rb') as file:
+            results = pickle.load(file)  # Load existing results
+
+        results_list = list(results)
+        results_list[25] = avg_speed_city     # Update city speed
+        results_list[27] = avg_speed_country  # Update country speed
+        results_list[26] = df_mapping         # Update mapping
+
+        with open(file_results, 'wb') as file:
+            pickle.dump(tuple(results_list), file)  # Save updated results
+        logger.info("Updated speed values in the pickle file.")
+
+    # --- Check if reanalysis of waiting time is required ---
+    if common.get_configs("reanalyse_waiting_time"):
+        # Compute average waiting time to start crossing for each country
+        avg_time_country = algorithms_class.avg_time_to_start_cross_country(df_mapping, all_speed)
+        # Compute average waiting time to start crossing for each city
+        avg_time_city = algorithms_class.avg_time_to_start_cross_city(df_mapping, all_time)
+
+        # Add computed time values to the main mapping dataframe
+        df_mapping = analysis_class.add_speed_and_time_to_mapping(
+            df_mapping=df_mapping,
+            avg_time_city=avg_time_city,
+            avg_time_country=avg_time_country
+        )
+
+        # --- Update avg time values in the pickle file ---
+        with open(file_results, 'rb') as file:
+            results = pickle.load(file)  # Load existing results
+
+        results_list = list(results)
+        results_list[24] = avg_time_city     # Update city waiting time
+        results_list[28] = avg_time_country  # Update country waiting time
+        results_list[26] = df_mapping        # Update mapping
+
+        with open(file_results, 'wb') as file:
+            pickle.dump(tuple(results_list), file)  # Save updated results
+        logger.info("Updated time values in the pickle file.")
+
+    # --- Remove countries/cities with insufficient crossing detections ---
+    if common.get_configs("min_crossing_detect") != 0:
+        # --- Remove low-detection countries from country-level speed/time ---
+        # Find countries with crossings below threshold
+        remove_countries = {country for country, value in pedestrian_cross_country.items()
+                            if value < common.get_configs("min_crossing_detect")}
+
+        # Remove rows from df_mapping where 'country' is in remove_countries
+        df_mapping = df_mapping[~df_mapping['country'].isin(remove_countries)].copy()
+
+        # Remove all entries in avg_speed_country and avg_time_country for those countries
+        for dict_name, d in [('avg_speed_country', avg_speed_country), ('avg_time_country', avg_time_country)]:
+            keys_to_remove = [key for key in d if key.split('_')[0] in remove_countries]
+            for key in keys_to_remove:
+                logger.info(f"Deleting from {dict_name}: {key} -> {d[key]}")
+                del d[key]
+
+        # --- Remove low-detection cities from city-level speed/time ---
+        # Sum all conditions for each city in pedestrian_cross_city
+        city_sum = defaultdict(int)
+        for key, value in pedestrian_cross_city.items():
+            city = key.split('_')[0]
+            city_sum[city] += value
+
+        # Find cities with total crossings below threshold
+        remove_cities = {city for city, total in city_sum.items()
+                         if total < common.get_configs("min_crossing_detect")}
+
+        # Remove rows from df_mapping where 'cities' is in remove_cities
+        df_mapping = df_mapping[~df_mapping['city'].isin(remove_cities)].copy()
+
+        # Remove all entries in avg_speed_city and avg_time_city for those cities
+        for dict_name, d in [('avg_speed_city', avg_speed_city), ('avg_time_city', avg_time_city)]:
+            keys_to_remove = [key for key in d if key.split('_')[0] in remove_cities]
+            for key in keys_to_remove:
+                logger.info(f"Deleting from {dict_name}: {key} -> {d[key]}")
+                del d[key]
 
     # Sort by continent and city, both in ascending order
     df_mapping = df_mapping.sort_values(by=["continent", "city"], ascending=[True, True])
@@ -3112,8 +3220,8 @@ if __name__ == "__main__":
     df = df_mapping.copy()  # copy df to manipulate for output
     df['state'] = df['state'].fillna('NA')  # Set state to NA
 
-    Analysis.get_mapbox_map(df=df, hover_data=hover_data)  # type: ignore # mapbox map
-    plots_class.get_world_map(df_mapping=df)  # map with countries
+    # plots_class.get_mapbox_map(df=df, hover_data=hover_data)  # type: ignore # mapbox map
+    # plots_class.get_world_map(df_mapping=df)  # map with countries
 
     plots_class.violin_plot(data_index=22, name="speed", min_threshold=common.get_configs("min_speed_limit"),
                             max_threshold=common.get_configs("max_speed_limit"), df_mapping=df_mapping, save_file=True)
@@ -3759,15 +3867,6 @@ if __name__ == "__main__":
                             legend_y=1.0,
                             marginal_x=None,  # type: ignore
                             marginal_y=None)  # type: ignore
-
-        plots_class.stack_plot_crossing(df_mapping,
-                                        df_countries,
-                                        title_text="Crossing in the country",
-                                        filename="crossing_country",
-                                        font_size_captions=common.get_configs("font_size") + 8,
-                                        legend_x=0.87,
-                                        legend_y=0.04,
-                                        legend_spacing=0.02)
 
         plots_class.stack_plot_country(df_countries,
                                        order_by="average",
