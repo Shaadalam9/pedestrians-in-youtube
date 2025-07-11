@@ -214,7 +214,8 @@ class Algorithms():
         """
         avg_speed = {}
 
-        for city_condition, value_1 in all_speed.items():
+        for city_lat_lang_condition, value_1 in all_speed.items():
+            city, lat, long, cond = city_lat_lang_condition.split("_")
             box = []
             for video_id, value_2 in value_1.items():
                 for unique_id, speed in value_2.items():
@@ -222,7 +223,7 @@ class Algorithms():
                     if common.get_configs("min_speed_limit") <= speed <= common.get_configs("max_speed_limit"):
                         box.append(speed)
             if len(box) > 0:
-                avg_speed[city_condition] = (sum(box) / len(box))
+                avg_speed[city_lat_lang_condition] = (sum(box) / len(box))
 
         return avg_speed
 
@@ -249,6 +250,7 @@ class Algorithms():
                 if result is not None:
                     condition = result[3]
                     country = result[8]
+
                     for unique_id, speed in value_2.items():
                         # Only include the speed if it's within configured bounds
                         if common.get_configs("min_speed_limit") <= speed <= common.get_configs("max_speed_limit"):
@@ -392,6 +394,8 @@ class Algorithms():
                         for unique_id, time in value_2.items():
                             if time > 0:
                                 time_in_seconds = time / common.get_configs("check_per_sec_time")
+
+                                # https://doi.org/10.1016/j.jtte.2015.12.001
                                 if common.get_configs("min_waiting_time") <= time_in_seconds <= common.get_configs("max_waiting_time"):  # noqa: E501
                                     box.append(time_in_seconds)
 
