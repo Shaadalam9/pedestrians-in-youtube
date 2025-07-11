@@ -670,7 +670,6 @@ class Analysis():
     @staticmethod
     def pedestrian_cross_per_country(pedestrian_cross_city, df_mapping):
         final = {}
-        print(pedestrian_cross_city)
         for city_lat_long_cond, value in pedestrian_cross_city.items():
             city, lat, _, cond = city_lat_long_cond.split("_")
             country = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "country")
@@ -2746,7 +2745,7 @@ if __name__ == "__main__":
         # 1. The city's population is greater than the threshold
         # 2. The city's population is at least the minimum percentage of the country's population
         df_mapping = df_mapping[
-            (df_mapping["population_city"] >= population_threshold) &  # Condition 1
+            (df_mapping["population_city"] >= population_threshold) |  # Condition 1
             (df_mapping["population_city"] >= min_percentage * df_mapping["population_country"])  # Condition 2
         ]
 
@@ -3105,47 +3104,97 @@ if __name__ == "__main__":
     # Set index as ID
     df_mapping = df_mapping.set_index("id", drop=False)
 
+    # --- Check if reanalysis of speed is required ---
     if common.get_configs("reanalyse_speed"):
+        # Compute average speed for each country using mapping and speed data
         avg_speed_country = algorithms_class.avg_speed_of_crossing_country(df_mapping, all_speed)
+        # Compute average speed for each city using speed data
         avg_speed_city = algorithms_class.avg_speed_of_crossing_city(all_speed)
 
-        df_mapping = analysis_class.add_speed_and_time_to_mapping(df_mapping=df_mapping,
-                                                                  avg_speed_city=avg_speed_city,
-                                                                  avg_speed_country=avg_speed_country)
+        # Add computed speed values to the main mapping dataframe
+        df_mapping = analysis_class.add_speed_and_time_to_mapping(
+            df_mapping=df_mapping,
+            avg_speed_city=avg_speed_city,
+            avg_speed_country=avg_speed_country
+        )
 
-        # --- UPDATE avg speed values in the pickle file ---
+        # --- Update avg speed values in the pickle file ---
         with open(file_results, 'rb') as file:
-            results = pickle.load(file)
+            results = pickle.load(file)  # Load existing results
 
         results_list = list(results)
-        results_list[25] = avg_speed_city
-        results_list[27] = avg_speed_country
-        results_list[26] = df_mapping
+        results_list[25] = avg_speed_city     # Update city speed
+        results_list[27] = avg_speed_country  # Update country speed
+        results_list[26] = df_mapping         # Update mapping
 
         with open(file_results, 'wb') as file:
-            pickle.dump(tuple(results_list), file)
+            pickle.dump(tuple(results_list), file)  # Save updated results
         logger.info("Updated speed values in the pickle file.")
 
+    # --- Check if reanalysis of waiting time is required ---
     if common.get_configs("reanalyse_waiting_time"):
+        # Compute average waiting time to start crossing for each country
         avg_time_country = algorithms_class.avg_time_to_start_cross_country(df_mapping, all_speed)
+        # Compute average waiting time to start crossing for each city
         avg_time_city = algorithms_class.avg_time_to_start_cross_city(df_mapping, all_time)
 
-        df_mapping = analysis_class.add_speed_and_time_to_mapping(df_mapping=df_mapping,
-                                                                  avg_time_city=avg_time_city,
-                                                                  avg_time_country=avg_time_country)
+        # Add computed time values to the main mapping dataframe
+        df_mapping = analysis_class.add_speed_and_time_to_mapping(
+            df_mapping=df_mapping,
+            avg_time_city=avg_time_city,
+            avg_time_country=avg_time_country
+        )
 
-        # --- UPDATE avg time values in the pickle file ---
+        # --- Update avg time values in the pickle file ---
         with open(file_results, 'rb') as file:
-            results = pickle.load(file)
+            results = pickle.load(file)  # Load existing results
 
         results_list = list(results)
-        results_list[24] = avg_time_city
-        results_list[28] = avg_time_country
-        results_list[26] = df_mapping
+        results_list[24] = avg_time_city     # Update city waiting time
+        results_list[28] = avg_time_country  # Update country waiting time
+        results_list[26] = df_mapping        # Update mapping
 
         with open(file_results, 'wb') as file:
-            pickle.dump(tuple(results_list), file)
+            pickle.dump(tuple(results_list), file)  # Save updated results
         logger.info("Updated time values in the pickle file.")
+
+    # --- Remove countries/cities with insufficient crossing detections ---
+    if common.get_configs("min_crossing_detect") != 0:
+        # --- Remove low-detection countries from country-level speed/time ---
+        # Find countries with crossings below threshold
+        remove_countries = {country for country, value in pedestrian_cross_country.items()
+                            if value < common.get_configs("min_crossing_detect")}
+
+        # Remove rows from df_mapping where 'country' is in remove_countries
+        df_mapping = df_mapping[~df_mapping['country'].isin(remove_countries)].copy()
+
+        # Remove all entries in avg_speed_country and avg_time_country for those countries
+        for dict_name, d in [('avg_speed_country', avg_speed_country), ('avg_time_country', avg_time_country)]:
+            keys_to_remove = [key for key in d if key.split('_')[0] in remove_countries]
+            for key in keys_to_remove:
+                logger.info(f"Deleting from {dict_name}: {key} -> {d[key]}")
+                del d[key]
+
+        # --- Remove low-detection cities from city-level speed/time ---
+        # Sum all conditions for each city in pedestrian_cross_city
+        city_sum = defaultdict(int)
+        for key, value in pedestrian_cross_city.items():
+            city = key.split('_')[0]
+            city_sum[city] += value
+
+        # Find cities with total crossings below threshold
+        remove_cities = {city for city, total in city_sum.items()
+                         if total < common.get_configs("min_crossing_detect")}
+
+        # Remove rows from df_mapping where 'cities' is in remove_cities
+        df_mapping = df_mapping[~df_mapping['city'].isin(remove_cities)].copy()
+
+        # Remove all entries in avg_speed_city and avg_time_city for those cities
+        for dict_name, d in [('avg_speed_city', avg_speed_city), ('avg_time_city', avg_time_city)]:
+            keys_to_remove = [key for key in d if key.split('_')[0] in remove_cities]
+            for key in keys_to_remove:
+                logger.info(f"Deleting from {dict_name}: {key} -> {d[key]}")
+                del d[key]
 
     # Sort by continent and city, both in ascending order
     df_mapping = df_mapping.sort_values(by=["continent", "city"], ascending=[True, True])
@@ -3171,8 +3220,8 @@ if __name__ == "__main__":
     df = df_mapping.copy()  # copy df to manipulate for output
     df['state'] = df['state'].fillna('NA')  # Set state to NA
 
-    plots_class.get_mapbox_map(df=df, hover_data=hover_data)  # type: ignore # mapbox map
-    plots_class.get_world_map(df_mapping=df)  # map with countries
+    # plots_class.get_mapbox_map(df=df, hover_data=hover_data)  # type: ignore # mapbox map
+    # plots_class.get_world_map(df_mapping=df)  # map with countries
 
     plots_class.violin_plot(data_index=22, name="speed", min_threshold=common.get_configs("min_speed_limit"),
                             max_threshold=common.get_configs("max_speed_limit"), df_mapping=df_mapping, save_file=True)
