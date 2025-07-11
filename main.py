@@ -389,7 +389,7 @@ if __name__ == "__main__":
             msg = EmailMessage()
             msg.set_content(f"Processing job finished on {config.machine_name} at {time_now}. {counter_processed} " +
                             " segments were processed.")
-            msg["Subject"] = f"Processing job finished on machine {config.machine_name}"
+            msg["Subject"] = f"✅ Processing job finished on machine {config.machine_name}"
             msg["From"] = config.email_sender
             msg["To"] = ", ".join(config.email_recipients)
             # Try to send email
