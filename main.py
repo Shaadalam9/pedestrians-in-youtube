@@ -49,7 +49,8 @@ if __name__ == "__main__":
         machine_name=common.get_configs("machine_name"),
         email_send=common.get_configs("email_send"),
         email_sender=common.get_configs("email_sender"),
-        email_recipients=common.get_configs("email_recipients")
+        email_recipients=common.get_configs("email_recipients"),
+        compress_youtube_video=common.get_configs("compress_youtube_video")
     )
 
     # Cache static secret values once before the loop
