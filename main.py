@@ -11,15 +11,21 @@ import common
 from tqdm import tqdm
 import time
 from types import SimpleNamespace
+# Send email notification that job has finished
+import smtplib
+from email.message import EmailMessage
 
 
 logs(show_level=common.get_configs("logger_level"), show_color=True)
 logger = CustomLogger(__name__)  # use custom logger
 helper = Youtube_Helper()
 
+# flag to record that email was already sent to avoid sending after each loop of While
+email_already_sent = False 
+
 # Execute analysis
 if __name__ == "__main__":
-    # cache static config values once before the loop
+    # Cache static config values once before the loop
     config = SimpleNamespace(
         mapping=common.get_configs("mapping"),
         videos=common.get_configs("videos"),
@@ -39,7 +45,18 @@ if __name__ == "__main__":
         tracking_mode=common.get_configs("tracking_mode"),
         save_annotated_video=common.get_configs("save_annotated_video"),
         sleep_sec=common.get_configs("sleep_sec"),
-        git_pull=common.get_configs("git_pull")
+        git_pull=common.get_configs("git_pull"),
+        machine_name=common.get_configs("machine_name"),
+        email_send=common.get_configs("email_send"),
+        email_sender=common.get_configs("email_sender"),
+        email_recipients=common.get_configs("email_recipients")
+    )
+
+    # Cache static secret values once before the loop
+    secret = SimpleNamespace(
+        email_smtp=common.get_secrets("email_smtp"),
+        email_account=common.get_secrets("email_account"),
+        email_password=common.get_secrets("email_password")
     )
 
     # Load the config file
@@ -58,6 +75,7 @@ if __name__ == "__main__":
         data_folders = config.data  # use the last folder in the list to store data
         data_path = config.data[-1]  # use the last folder in the list to store data
         countries_analyse = config.countries_analyse
+        counter_processed = 0  # number of videos processed during current run
 
         if config.update_ISO_code:
             # Ensure the country column exists
@@ -292,6 +310,7 @@ if __name__ == "__main__":
                                                  seg_mode=seg_mode,
                                                  bbox_mode=bbox_mode,
                                                  flag=config.save_annotated_video)
+                            counter_processed += 1  # record that one more segment was processed
 
                         elif fps_values[vid_index] > 0:
                             logger.info(f"{vid}: YOLO analysis in progress for segment {start_time}-{end_time}s with FPS from mapping {fps_values[vid_index]}.")  # noqa: E501
@@ -302,6 +321,7 @@ if __name__ == "__main__":
                                                  seg_mode=seg_mode,
                                                  bbox_mode=bbox_mode,
                                                  flag=config.save_annotated_video)
+                            counter_processed += 1  # record that one more segment was processed
 
                         else:
                             logger.warning(f"{vid}: FPS value is {video_fps}. Skipping tracking mode.")
@@ -362,6 +382,24 @@ if __name__ == "__main__":
                 # Optionally delete the original video after processing if needed
                 if delete_youtube_video:
                     os.remove(base_video_path)
+
+        # Send email that given mapping been processed
+        if config.email_completed and counter_processed:
+            time_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            msg = EmailMessage()
+            msg.set_content(f"Processing job finished on {config.machine_name} at {time_now}. {counter_processed} " +
+                            " segments were processed.")
+            msg["Subject"] = f"Processing job finished on machine {config.machine_name}"
+            msg["From"] = config.email_sender
+            msg["To"] = ", ".join(config.email_recipients)
+            # Try to send email
+            try:
+                with smtplib.SMTP_SSL(secret.email_smtp, 465) as smtp:
+                    smtp.login(secret.email_smtp, secret.email_password)
+                    smtp.send_message(msg)
+                    logger.info(f"Sent email to: {config.email_recipients}")
+            except Exception as e:
+                logger.error(f"Failed to send email: {e}")
 
         # Pause the file for sleep_sec seconds before doing analysis again
         logger.info(f"Sleeping for {config.sleep_sec} before attempting to go over mapping again.")

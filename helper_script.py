@@ -29,18 +29,6 @@ import yaml
 logger = CustomLogger(__name__)  # use custom logger
 logging.getLogger("ultralytics").setLevel(logging.ERROR)  # Show only errors
 
-mapping = pd.read_csv(common.get_configs("mapping"))
-confidence = common.get_configs("confidence")
-
-display_frame_tracking = common.get_configs("display_frame_tracking")
-display_frame_segmentation = common.get_configs("display_frame_segmentation")
-
-output_path = common.get_configs("videos")
-save_annoted_img = common.get_configs("save_annoted_img")
-save_tracked_img = common.get_configs("save_tracked_img")
-delete_labels = common.get_configs("delete_labels")
-delete_frames = common.get_configs("delete_frames")
-
 # Consts
 LINE_THICKNESS = 1
 RENDER = False
@@ -84,6 +72,20 @@ class Youtube_Helper:
         self.segment_model = common.get_configs("segment_model")
         self.resolution = None
         self.video_title = video_title
+        self.mapping = pd.read_csv(common.get_configs("mapping"))
+        self.confidence = common.get_configs("confidence")
+        self.display_frame_tracking = common.get_configs("display_frame_tracking")
+        self.display_frame_segmentation = common.get_configs("display_frame_segmentation")
+        self.output_path = common.get_configs("videos")
+        self.save_annoted_img = common.get_configs("save_annoted_img")
+        self.save_tracked_img = common.get_configs("save_tracked_img")
+        self.delete_labels = common.get_configs("delete_labels")
+        self.delete_frames = common.get_configs("delete_frames")
+        self.update_package = common.get_configs("update_package")
+        self.need_authentication = common.get_configs("need_authentication")
+        self.client = common.get_configs("client")
+        self.bbox_tracker = common.get_configs("bbox_tracker")
+        self.seg_tracker = common.get_configs("seg_tracker")
 
     def set_video_title(self, title):
         """
@@ -94,8 +96,7 @@ class Youtube_Helper:
         """
         self.video_title = title
 
-    @staticmethod
-    def rename_folder(old_name, new_name):
+    def rename_folder(self, old_name, new_name):
         """
         Renames a folder from old_name to new_name.
 
@@ -114,8 +115,7 @@ class Youtube_Helper:
         except FileExistsError:
             logger.error(f"Error: Folder '{new_name}' already exists.")
 
-    @staticmethod
-    def load_upgrade_log():
+    def load_upgrade_log(self):
         """
         Load package upgrade attempt log from file.
 
@@ -130,8 +130,7 @@ class Youtube_Helper:
         except json.JSONDecodeError:
             return {}
 
-    @staticmethod
-    def save_upgrade_log(log_data):
+    def save_upgrade_log(self, log_data):
         """
         Save package upgrade log to a JSON file.
 
@@ -141,8 +140,7 @@ class Youtube_Helper:
         with open(UPGRADE_LOG_FILE, "w") as file:
             json.dump(log_data, file)
 
-    @staticmethod
-    def was_upgraded_today(package_name):
+    def was_upgraded_today(self, package_name):
         """
         Check whether the given package was already upgraded today.
 
@@ -152,31 +150,29 @@ class Youtube_Helper:
         Returns:
             bool: True if upgraded today, False otherwise.
         """
-        log_data = Youtube_Helper.load_upgrade_log()
+        log_data = self.load_upgrade_log()
         today = datetime.date.today().isoformat()
         return log_data.get(package_name) == today
 
-    @staticmethod
-    def mark_as_upgraded(package_name):
+    def mark_as_upgraded(self, package_name):
         """
         Mark a package as upgraded by saving today's date in the log.
 
         Parameters:
             package_name (str): Name of the package.
         """
-        log_data = Youtube_Helper.load_upgrade_log()
+        log_data = self.load_upgrade_log()
         log_data[package_name] = datetime.date.today().isoformat()
-        Youtube_Helper.save_upgrade_log(log_data)
+        self.save_upgrade_log(log_data)
 
-    @staticmethod
-    def upgrade_package_if_needed(package_name):
+    def upgrade_package_if_needed(self, package_name):
         """
         Upgrades a given Python package using pip if it hasn't been attempted today.
 
         Parameters:
             package_name (str): The name of the package to upgrade.
         """
-        if Youtube_Helper.was_upgraded_today(package_name):
+        if self.was_upgraded_today(package_name):
             logging.debug(f"{package_name} upgrade already attempted today. Skipping.")
             return
 
@@ -184,10 +180,10 @@ class Youtube_Helper:
             logging.info(f"Upgrading {package_name}...")
             subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", package_name])
             logging.info(f"{package_name} upgraded successfully.")
-            Youtube_Helper.mark_as_upgraded(package_name)
+            self.mark_as_upgraded(package_name)
         except subprocess.CalledProcessError as e:
             logging.error(f"Failed to upgrade {package_name}: {e}")
-            Youtube_Helper.mark_as_upgraded(package_name)  # still log it to avoid retrying
+            self.mark_as_upgraded(package_name)  # still log it to avoid retrying
 
     def download_video_with_resolution(self, vid, resolutions=["720p", "480p", "360p", "144p"], output_path="."):
         """
@@ -206,23 +202,23 @@ class Youtube_Helper:
         """
         try:
             # Optionally upgrade pytubefix (if configured and it is Monday)
-            if common.get_configs("update_package") and datetime.datetime.today().weekday() == 0:
-                Youtube_Helper.upgrade_package_if_needed("pytube")
-                Youtube_Helper.upgrade_package_if_needed("pytubefix")
+            if self.update_package and datetime.datetime.today().weekday() == 0:
+                self.upgrade_package_if_needed("pytube")
+                self.upgrade_package_if_needed("pytubefix")
 
             # Construct the YouTube URL.
             youtube_url = f"https://www.youtube.com/watch?v={vid}"
 
             # Create a YouTube object using the provided client configuration.
-            if common.get_configs("need_authentication"):
+            if self.need_authentication:
                 youtube_object = YouTube(youtube_url,
-                                         common.get_configs('client'),
+                                         self.client,
                                          use_oauth=True,
                                          allow_oauth_cache=True,
                                          on_progress_callback=on_progress)
             else:
                 youtube_object = YouTube(youtube_url,
-                                         common.get_configs('client'),
+                                         self.client,
                                          on_progress_callback=on_progress)
 
             selected_stream = None
@@ -265,8 +261,8 @@ class Youtube_Helper:
         # ----- Fallback method: using yt_dlp -----
         try:
             # Optionally upgrade yt_dlp (if the configuration requires it and it is Monday)
-            if common.get_configs("update_package") and datetime.datetime.today().weekday() == 0:
-                Youtube_Helper.upgrade_package_if_needed("yt_dlp")
+            if self.update_package and datetime.datetime.today().weekday() == 0:
+                self.upgrade_package_if_needed("yt_dlp")
 
             # Construct the YouTube URL.
             youtube_url = f"https://www.youtube.com/watch?v={vid}"
@@ -388,8 +384,7 @@ class Youtube_Helper:
             logger.error(f"Failed to retrieve FPS: {e}")
             return None
 
-    @staticmethod
-    def trim_video(input_path, output_path, start_time, end_time):
+    def trim_video(self, input_path, output_path, start_time, end_time):
         """
         Trims a segment from a video and saves the result to a specified file.
 
@@ -507,8 +502,7 @@ class Youtube_Helper:
         cap.release()
         out.release()
 
-    @staticmethod
-    def detect_gpu():
+    def detect_gpu(self):
         """
         Detects whether an NVIDIA or Intel GPU is available and returns the appropriate FFmpeg encoder.
 
@@ -531,8 +525,7 @@ class Youtube_Helper:
 
         return None  # No compatible GPU found
 
-    @staticmethod
-    def compress_video(input_path, codec="libx265", preset="slow", crf=17):
+    def compress_video(self, input_path, codec="libx265", preset="slow", crf=17):
         """
         Compresses a video using codec=codec.
 
@@ -558,7 +551,7 @@ class Youtube_Helper:
         output_path = os.path.join(common.root_dir, filename)
 
         # Detect available GPU and set appropriate encoder
-        codec_hw = Youtube_Helper.detect_gpu()
+        codec_hw = self.detect_gpu()
         if codec_hw:
             codec = codec_hw  # Use detected hardware
 
@@ -576,7 +569,7 @@ class Youtube_Helper:
 
         try:
             # Run ffmpeg command
-            video_id = Youtube_Helper.extract_youtube_id(input_path)
+            video_id = self.extract_youtube_id(input_path)
             logger.info(f"Started compression of {video_id} with {codec} codec. Current size={os.path.getsize(input_path)}.")  # noqa: E501
             subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1)
             logger.info(f"Finished compression of {video_id} with {codec} codec. New size={os.path.getsize(output_path)}.")  # noqa: E501
@@ -588,8 +581,7 @@ class Youtube_Helper:
                 os.remove(output_path)
             logger.error(f"Video compression failed: {e.stderr.decode()}. Using uncompressed file.")  # type: ignore
 
-    @staticmethod
-    def extract_youtube_id(file_path):
+    def extract_youtube_id(self, file_path):
         """
         Extracts the YouTube video ID from a given file path.
 
@@ -610,9 +602,8 @@ class Youtube_Helper:
 
         return youtube_id
 
-    @staticmethod
-    def create_video_from_images(image_folder, output_path, video_title,
-                                 seg_mode=False, bbox_mode=False, frame_rate=30):
+    def create_video_from_images(self, image_folder, output_path, video_title, seg_mode=False, bbox_mode=False,
+                                 frame_rate=30):
         """
         Creates a video file from a sequence of image frames.
         The output filename will reflect the mode used.
@@ -673,8 +664,7 @@ class Youtube_Helper:
         logger.info(f"Video created successfully at: {output_video_path}")
         return output_video_path
 
-    @staticmethod
-    def merge_txt_to_csv_dynamically_bbox(txt_location, output_csv, frame_count):
+    def merge_txt_to_csv_dynamically_bbox(self, txt_location, output_csv, frame_count):
         """
         Merges YOLO-format label data from a .txt file into a CSV, frame by frame.
 
@@ -705,8 +695,7 @@ class Youtube_Helper:
         else:
             df.to_csv(output_csv, index=False, mode='a', header=False)  # If it exists, append without header
 
-    @staticmethod
-    def merge_txt_to_csv_dynamically_seg(txt_location, output_csv, frame_count):
+    def merge_txt_to_csv_dynamically_seg(self, txt_location, output_csv, frame_count):
         """
         Merges YOLO-format segmentation+tracking label data from a .txt file into a CSV, frame by frame.
         Handles possible formatting issues gracefully.
@@ -743,8 +732,7 @@ class Youtube_Helper:
         else:
             df.to_csv(output_csv, index=False, mode='a', header=False)
 
-    @staticmethod
-    def delete_folder(folder_path):
+    def delete_folder(self, folder_path):
         """
         Deletes the folder and all its contents recursively.
 
@@ -766,8 +754,7 @@ class Youtube_Helper:
             logger.info(f"Folder '{folder_path}' does not exist.")
             return False
 
-    @staticmethod
-    def check_missing_mapping(mapping):
+    def check_missing_mapping(self, mapping):
         """
         Checks the mapping DataFrame for missing CSV label files based on video ID and start time.
 
@@ -780,15 +767,14 @@ class Youtube_Helper:
             for vid_index, (vid, start_times_list) in enumerate(zip(video_ids, start_times)):
                 for start_time in start_times_list:
                     file_name = f'{vid}_{start_time}.csv'
-                    file_path = os.path.join(common.get_configs("data"), file_name)
+                    file_path = os.path.join(self.data, file_name)
                     # Check if the file exists
                     if os.path.isfile(file_path):
                         pass
                     else:
                         logger.info(f"The file '{file_name}' does not exist.")
 
-    @staticmethod
-    def get_iso_alpha_3(country_name, existing_iso):
+    def get_iso_alpha_3(self, country_name, existing_iso):
         """
         Converts a country name to ISO 3166-1 alpha-3 format.
 
@@ -806,8 +792,7 @@ class Youtube_Helper:
                 return "XKX"  # User-assigned code for Kosovo
             return existing_iso if existing_iso else None
 
-    @staticmethod
-    def get_latest_population():
+    def get_latest_population(self):
         """
         Fetches the latest available population data from World Bank.
 
@@ -835,8 +820,7 @@ class Youtube_Helper:
 
         return population_df
 
-    @staticmethod
-    def update_population_in_csv(data):
+    def update_population_in_csv(self, data):
         """
         Updates the mapping DataFrame with the latest country population data.
 
@@ -852,7 +836,7 @@ class Youtube_Helper:
             data["population_country"] = None  # Initialise the column if it doesn't exist
 
         # Get the latest population data
-        latest_population = Youtube_Helper.get_latest_population()
+        latest_population = self.get_latest_population()
 
         # Create a dictionary for quick lookup
         population_dict = dict(zip(latest_population['iso3'], latest_population['Population']))
@@ -861,14 +845,14 @@ class Youtube_Helper:
         for index, row in data.iterrows():
             iso3 = row["iso3"]
             population = population_dict.get(iso3, None)
-            data.at[index, "population_country"] = population  # Always update with the latest population data
+            # Always update with the latest population data
+            data.at[index, "population_country"] = population
 
         # Save the updated DataFrame back to the same CSV
-        data.to_csv(common.get_configs("mapping"), index=False)
-        logger.info("Mapping file updated sucessfully with country population.")
+        data.to_csv(self.mapping, index=False)
+        logger.info("Mapping file updated successfully with country population.")
 
-    @staticmethod
-    def get_continent_from_country(country):
+    def get_continent_from_country(self, country):
         """
         Returns the continent based on the country name using pycountry_convert.
         """
@@ -936,11 +920,10 @@ class Youtube_Helper:
             df.at[index, 'fps_list'] = process_videos(row['videos'], row.get('fps_list', None))
 
         # Save the updated DataFrame back to the same file
-        df.to_csv(common.get_configs("mapping"), index=False)
+        df.to_csv(self.mapping, index=False)
         logger.info("Mapping file updated successfully with FPS data.")
 
-    @staticmethod
-    def get_upload_date(video_id):
+    def get_upload_date(self, video_id):
         """
         Retrieves the upload date of a YouTube video given its video ID.
 
@@ -968,8 +951,7 @@ class Youtube_Helper:
         except Exception:
             return None
 
-    @staticmethod
-    def get_latest_traffic_mortality():
+    def get_latest_traffic_mortality(self):
         """
         Fetch the latest traffic mortality data from the World Bank.
 
@@ -1001,8 +983,7 @@ class Youtube_Helper:
 
         return traffic_df[['ISO_country', 'traffic_mortality']]
 
-    @staticmethod
-    def fill_traffic_mortality(df):
+    def fill_traffic_mortality(self, df):
         """
         Fill the traffic mortality rate column in a CSV file using World Bank data.
 
@@ -1016,7 +997,7 @@ class Youtube_Helper:
                 return
 
             # Get the latest traffic mortality data
-            traffic_df = Youtube_Helper.get_latest_traffic_mortality()
+            traffic_df = self.get_latest_traffic_mortality()
 
             # Merge the traffic mortality data with the existing DataFrame
             updated_df = pd.merge(df, traffic_df, on='iso3', how='left', suffixes=('', '_new'))
@@ -1029,14 +1010,13 @@ class Youtube_Helper:
             updated_df = updated_df.drop(columns=['traffic_mortality_new'])
 
             # Save the updated DataFrame back to the same CSV file
-            updated_df.to_csv(common.get_configs("mapping"), index=False)
+            updated_df.to_csv(self.mapping, index=False)
             logger.info("Mapping file updated successfully with traffic mortality rate.")
 
         except Exception as e:
             logger.error(f"An error occurred: {e}")
 
-    @staticmethod
-    def get_latest_gini_values():
+    def get_latest_gini_values(self):
         """
         Fetch the latest GINI index data from the World Bank.
 
@@ -1065,8 +1045,7 @@ class Youtube_Helper:
 
         return geni_df[['iso3', 'gini']]
 
-    @staticmethod
-    def fill_gini_data(df):
+    def fill_gini_data(self, df):
         """
         Fill the GINI index column in a CSV file using World Bank data.
 
@@ -1080,7 +1059,7 @@ class Youtube_Helper:
                 return
 
             # Get the latest GINI index data
-            geni_df = Youtube_Helper.get_latest_gini_values()
+            geni_df = self.get_latest_gini_values()
 
             # Merge the GINI index data with the existing DataFrame
             updated_df = pd.merge(df, geni_df, on='iso3', how='left', suffixes=('', '_new'))
@@ -1092,7 +1071,7 @@ class Youtube_Helper:
             updated_df = updated_df.drop(columns=['gini_new'])
 
             # Save the updated DataFrame back to the same CSV file
-            updated_df.to_csv(common.get_configs("mapping"), index=False)
+            updated_df.to_csv(self.mapping, index=False)
             logger.info("Mapping file updated successfully with GINI value.")
 
         except Exception as e:
@@ -1137,12 +1116,12 @@ class Youtube_Helper:
         """
 
         # If using a custom tracker configuration, update YAML buffer
-        if common.get_configs("bbox_tracker") == "bbox_custom_tracker.yaml" and bbox_mode is True:
+        if self.bbox_tracker == "bbox_custom_tracker.yaml" and bbox_mode is True:
             # Update tracker YAML
             yaml_path = 'bbox_custom_tracker.yaml'  # actual tracker yaml file path
             self.update_track_buffer_in_yaml(yaml_path, video_fps)
 
-        if common.get_configs("seg_tracker") == "seg_custom_tracker.yaml" and seg_mode is True:
+        if self.seg_tracker == "seg_custom_tracker.yaml" and seg_mode is True:
             # Update tracker YAML
             yaml_path = 'seg_custom_tracker.yaml'  # actual tracker yaml file path
             self.update_track_buffer_in_yaml(yaml_path, video_fps)
@@ -1228,9 +1207,9 @@ class Youtube_Helper:
 
                 if seg_mode:
                     seg_results = seg_model.track(frame,
-                                                  tracker=common.get_configs("seg_tracker"),
+                                                  tracker=self.seg_tracker,
                                                   persist=True,
-                                                  conf=confidence,
+                                                  conf=self.confidence,
                                                   save=True,
                                                   save_txt=True,
                                                   line_width=LINE_THICKNESS,
@@ -1241,9 +1220,9 @@ class Youtube_Helper:
 
                 if bbox_mode:
                     bbox_results = bbox_model.track(frame,
-                                                    tracker=common.get_configs("bbox_tracker"),
+                                                    tracker=self.bbox_tracker,
                                                     persist=True,
-                                                    conf=confidence,
+                                                    conf=self.confidence,
                                                     save=True,
                                                     save_txt=True,
                                                     line_width=LINE_THICKNESS,
@@ -1321,13 +1300,13 @@ class Youtube_Helper:
 
                 # Dynamically save each of the labels to the aggregated csv files
                 if seg_mode:
-                    Youtube_Helper.merge_txt_to_csv_dynamically_seg(seg_labels_path,
+                    self.merge_txt_to_csv_dynamically_seg(seg_labels_path,
                                                                     seg_output_csv_path,
                                                                     frame_count)
                     os.remove(seg_text_filename)
 
                 if bbox_mode:
-                    Youtube_Helper.merge_txt_to_csv_dynamically_bbox(bbox_labels_path,
+                    self.merge_txt_to_csv_dynamically_bbox(bbox_labels_path,
                                                                      bbox_output_csv_path,
                                                                      frame_count)
                     os.remove(bbox_text_filename)
@@ -1416,13 +1395,13 @@ class Youtube_Helper:
 
         if flag:
             if seg_mode:
-                Youtube_Helper.create_video_from_images(image_folder=seg_tracked_frame_output_path,
+                self.create_video_from_images(image_folder=seg_tracked_frame_output_path,
                                                         output_path=output_video_path,
                                                         video_title=video_title,
                                                         seg_mode=seg_mode,
                                                         frame_rate=video_fps)
             if bbox_mode:
-                Youtube_Helper.create_video_from_images(image_folder=bbox_tracked_frame_output_path,
+                self.create_video_from_images(image_folder=bbox_tracked_frame_output_path,
                                                         output_path=output_video_path,
                                                         video_title=video_title,
                                                         bbox_mode=bbox_mode,
