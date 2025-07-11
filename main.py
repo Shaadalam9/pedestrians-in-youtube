@@ -383,7 +383,7 @@ if __name__ == "__main__":
                 if delete_youtube_video:
                     os.remove(base_video_path)
 
-        # Send email that given mapping been processed
+        # Send email that given mapping has been processed
         if config.email_completed and counter_processed:
             time_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             msg = EmailMessage()
@@ -402,8 +402,9 @@ if __name__ == "__main__":
                 logger.error(f"Failed to send email: {e}")
 
         # Pause the file for sleep_sec seconds before doing analysis again
-        logger.info(f"Sleeping for {config.sleep_sec} before attempting to go over mapping again.")
-        time.sleep(config.sleep_sec)
+        if config.sleep_sec:
+            logger.info(f"Sleeping for {config.sleep_sec} before attempting to go over mapping again.")
+            time.sleep(config.sleep_sec)
 
         # Run git pull to get the latest changes in the mapping file
         if config.git_pull:
