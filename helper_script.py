@@ -617,9 +617,9 @@ class Youtube_Helper:
             frame_rate (int or float): Frame rate for the video.
         """
         # Decide on the output filename based on mode
-        if bbox_mode:
+        if self.bbox_mode:
             output_filename = f"{video_title}_mod_bbox.mp4"
-        elif seg_mode:
+        elif self.seg_mode:
             output_filename = f"{video_title}_mod_seg.mp4"
         else:
             output_filename = f"{video_title}_mod.mp4"
@@ -1127,10 +1127,10 @@ class Youtube_Helper:
             self.update_track_buffer_in_yaml(yaml_path, video_fps)
 
         # --- Model Initialisation ---
-        if bbox_mode:
+        if self.bbox_mode:
             bbox_model = YOLO(self.tracking_model)        # e.g. "yolo11x.pt"
 
-        if seg_mode:
+        if self.seg_mode:
             seg_model = YOLO(self.segment_model)          # e.g. "yolo11x-seg.pt"
 
         cap = cv2.VideoCapture(input_video_path)
@@ -1138,7 +1138,7 @@ class Youtube_Helper:
         frame_width, frame_height = int(cap.get(3)), int(cap.get(4))
 
         # Set up output directories for bounding box mode
-        if bbox_mode:
+        if self.bbox_mode:
             bbox_frames_output_path = os.path.join("runs", "detect", "frames")
             bbox_annotated_frame_output_path = os.path.join("runs", "detect", "annotated_frames")
             bbox_tracked_frame_output_path = os.path.join("runs", "detect", "tracked_frame")
@@ -1152,7 +1152,7 @@ class Youtube_Helper:
             os.makedirs(bbox_tracked_frame_output_path, exist_ok=True)
 
         # Set up output directories for segmentation mode
-        if seg_mode:
+        if self.seg_mode:
             seg_frames_output_path = os.path.join("runs", "segment", "frames")
             seg_annotated_frame_output_path = os.path.join("runs", "segment", "annotated_frames")
             seg_tracked_frame_output_path = os.path.join("runs", "segment", "tracked_frame")
@@ -1168,13 +1168,13 @@ class Youtube_Helper:
         # Initialise video writers for displaying tracking/segmentation results
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # type: ignore
 
-        if bbox_mode and display_frame_tracking:
+        if self.bbox_mode and self.display_frame_tracking:
             bbox_video_writer = cv2.VideoWriter(bbox_display_video_output_path,
                                                 fourcc,
                                                 video_fps,
                                                 (frame_width, frame_height))
 
-        if seg_mode and display_frame_segmentation:
+        if self.seg_mode and self.display_frame_segmentation:
             seg_video_writer = cv2.VideoWriter(seg_display_video_output_path,
                                                fourcc,
                                                video_fps,
@@ -1190,10 +1190,10 @@ class Youtube_Helper:
         frame_count = 0  # Variable to track the frame number
 
         # Track history for drawing tracking lines
-        if seg_mode:
+        if self.seg_mode:
             seg_track_history = defaultdict(lambda: [])
 
-        if bbox_mode:
+        if self.bbox_mode:
             bbox_track_history = defaultdict(lambda: [])
 
         while cap.isOpened():
@@ -1205,7 +1205,7 @@ class Youtube_Helper:
                 frame_count += 1  # Increment frame count
                 # Run YOLO tracking on the frame, persisting tracks between frames
 
-                if seg_mode:
+                if self.seg_mode:
                     seg_results = seg_model.track(frame,
                                                   tracker=self.seg_tracker,
                                                   persist=True,
@@ -1218,7 +1218,7 @@ class Youtube_Helper:
                                                   show=RENDER,
                                                   verbose=False)
 
-                if bbox_mode:
+                if self.bbox_mode:
                     bbox_results = bbox_model.track(frame,
                                                     tracker=self.bbox_tracker,
                                                     persist=True,
@@ -1235,39 +1235,39 @@ class Youtube_Helper:
                 progress_bar.update(1)
 
                 # Get the boxes and track IDs
-                if seg_mode:
+                if self.seg_mode:
                     seg_boxes = seg_results[0].boxes.xywh.cpu()  # type: ignore
                     if seg_boxes.size(0) == 0:
                         with open(seg_text_filename, 'w') as file:   # noqa: F841
                             pass
 
                 # Get the boxes and track IDs
-                if bbox_mode:
+                if self.bbox_mode:
                     bbox_boxes = bbox_results[0].boxes.xywh.cpu()  # type: ignore
                     if bbox_boxes.size(0) == 0:
                         with open(bbox_text_filename, 'w') as file:   # noqa: F841
                             pass
 
                 try:
-                    if seg_mode:
+                    if self.seg_mode:
                         seg_track_ids = seg_results[0].boxes.id.int().cpu().tolist()  # type: ignore
-                    if bbox_mode:
+                    if self.bbox_mode:
                         bbox_track_ids = bbox_results[0].boxes.id.int().cpu().tolist()  # type: ignore
 
                     # Visualise the results on the frame
-                    if seg_mode:
+                    if self.seg_mode:
                         seg_annotated_frame = seg_results[0].plot()
-                    if bbox_mode:
+                    if self.bbox_mode:
                         bbox_annotated_frame = bbox_results[0].plot()
 
                 # Save annotated frame to file
-                    if save_annoted_img:
-                        if seg_mode:
+                    if self.save_annoted_img:
+                        if self.seg_mode:
                             seg_frame_filename = os.path.join(seg_annotated_frame_output_path,
                                                               f"frame_{frame_count}.jpg")
                             cv2.imwrite(seg_frame_filename, seg_annotated_frame)
 
-                        if bbox_mode:
+                        if self.bbox_mode:
                             bbox_frame_filename = os.path.join(bbox_annotated_frame_output_path,
                                                                f"frame_{frame_count}.jpg")
                             cv2.imwrite(bbox_frame_filename, bbox_annotated_frame)
@@ -1276,7 +1276,7 @@ class Youtube_Helper:
                     pass
 
                 # Save txt file with bounding box information
-                if seg_mode:
+                if self.seg_mode:
                     with open(seg_text_filename, 'r') as seg_text_file:
                         seg_data = seg_text_file.read()
                     new_txt_file_name_seg = os.path.join("runs", "segment", "labels", f"label_{frame_count}.txt")
@@ -1287,7 +1287,7 @@ class Youtube_Helper:
                     seg_labels_path = os.path.join("runs", "segment", "labels")
                     seg_output_csv_path = os.path.join("runs", "segment", f"{self.video_title}.csv")
 
-                if bbox_mode:
+                if self.bbox_mode:
                     with open(bbox_text_filename, 'r') as bbox_text_file:
                         bbox_data = bbox_text_file.read()
                     new_txt_file_name_bbox = os.path.join("runs", "detect", "labels", f"label_{frame_count}.txt")
@@ -1299,39 +1299,39 @@ class Youtube_Helper:
                     bbox_output_csv_path = os.path.join("runs", "detect", f"{self.video_title}.csv")
 
                 # Dynamically save each of the labels to the aggregated csv files
-                if seg_mode:
+                if self.seg_mode:
                     self.merge_txt_to_csv_dynamically_seg(seg_labels_path,
-                                                                    seg_output_csv_path,
-                                                                    frame_count)
+                                                          seg_output_csv_path,
+                                                          frame_count)
                     os.remove(seg_text_filename)
 
-                if bbox_mode:
+                if self.bbox_mode:
                     self.merge_txt_to_csv_dynamically_bbox(bbox_labels_path,
-                                                                     bbox_output_csv_path,
-                                                                     frame_count)
+                                                           bbox_output_csv_path,
+                                                           frame_count)
                     os.remove(bbox_text_filename)
 
-                if delete_labels is True:
-                    if seg_mode:
+                if self.delete_labels is True:
+                    if self.seg_mode:
                         os.remove(os.path.join("runs", "segment", "labels", f"label_{frame_count}.txt"))
-                    if bbox_mode:
+                    if self.bbox_mode:
                         os.remove(os.path.join("runs", "detect", "labels", f"label_{frame_count}.txt"))
 
                 # save the labelled image
-                if delete_frames is False:
-                    if seg_mode:
+                if self.delete_frames is False:
+                    if self.seg_mode:
                         seg_image_filename = os.path.join("runs", "segment", "track", "image0.jpg")
                         seg_new_img_file_name = os.path.join("runs", "segment", "frames", f"frame_{frame_count}.jpg")
                         shutil.move(seg_image_filename, seg_new_img_file_name)
 
-                    if bbox_mode:
+                    if self.bbox_mode:
                         bbox_image_filename = os.path.join("runs", "segment", "track", "image0.jpg")
                         bbox_new_img_file_name = os.path.join("runs", "segment", "frames", f"frame_{frame_count}.jpg")
                         shutil.move(bbox_image_filename, bbox_new_img_file_name)
 
                 # Plot the tracks
                 try:
-                    if seg_mode:
+                    if self.seg_mode:
                         for box, track_id in zip(seg_boxes, seg_track_ids):
                             x, y, w, h = box
                             track = seg_track_history[track_id]
@@ -1344,7 +1344,7 @@ class Youtube_Helper:
                             cv2.polylines(seg_annotated_frame, [points], isClosed=False, color=(230, 230, 230),
                                           thickness=LINE_THICKNESS*5)
 
-                    if bbox_mode:
+                    if self.bbox_mode:
                         for box, track_id in zip(bbox_boxes, bbox_track_ids):
                             x, y, w, h = box
                             track = bbox_track_history[track_id]
@@ -1361,23 +1361,23 @@ class Youtube_Helper:
                     pass
 
                 # Display the annotated frame
-                if display_frame_tracking:
-                    if seg_mode:
+                if self.display_frame_tracking:
+                    if self.seg_mode:
                         cv2.imshow("YOLOv11 Segmentation & Tracking", seg_annotated_frame)
                         seg_video_writer.write(seg_annotated_frame)
 
-                    if bbox_mode:
+                    if self.bbox_mode:
                         cv2.imshow("YOLOv11 Tracking", bbox_annotated_frame)
                         bbox_video_writer.write(bbox_annotated_frame)
 
                 # Save the annotated frame here
-                if save_tracked_img:
-                    if seg_mode:
+                if self.save_tracked_img:
+                    if self.seg_mode:
                         seg_frame_filename = os.path.join(seg_tracked_frame_output_path,
                                                           f"frame_tracked_{frame_count}.jpg")
                         cv2.imwrite(seg_frame_filename, seg_annotated_frame)
 
-                    if bbox_mode:
+                    if self.bbox_mode:
                         bbox_frame_filename = os.path.join(bbox_tracked_frame_output_path,
                                                            f"frame_tracked_{frame_count}.jpg")
                         cv2.imwrite(bbox_frame_filename, bbox_annotated_frame)
@@ -1394,15 +1394,15 @@ class Youtube_Helper:
         progress_bar.close()
 
         if flag:
-            if seg_mode:
+            if self.seg_mode:
                 self.create_video_from_images(image_folder=seg_tracked_frame_output_path,
-                                                        output_path=output_video_path,
-                                                        video_title=video_title,
-                                                        seg_mode=seg_mode,
-                                                        frame_rate=video_fps)
-            if bbox_mode:
+                                              output_path=output_video_path,
+                                              video_title=video_title,
+                                              seg_mode=seg_mode,
+                                              frame_rate=video_fps)
+            if self.bbox_mode:
                 self.create_video_from_images(image_folder=bbox_tracked_frame_output_path,
-                                                        output_path=output_video_path,
-                                                        video_title=video_title,
-                                                        bbox_mode=bbox_mode,
-                                                        frame_rate=video_fps)
+                                              output_path=output_video_path,
+                                              video_title=video_title,
+                                              bbox_mode=bbox_mode,
+                                              frame_rate=video_fps)
