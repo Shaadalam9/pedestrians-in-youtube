@@ -2761,8 +2761,8 @@ if __name__ == "__main__":
         logger.info(f"Duration of videos in seconds: {total_duration}, in minutes: {total_duration/60:.2f}, in " +
                     f"hours: {total_duration/60/60:.2f}.")
         logger.info("Total number of videos: {}.", Analysis.calculate_total_videos(df_mapping))
-        country, number = Analysis.get_unique_values(df_mapping, "country")
-        logger.info("Total number of countries: {}.", number)
+        country, number = Analysis.get_unique_values(df_mapping, "iso3")
+        logger.info("Total number of countries and territories: {}.", number)
 
         city, number = Analysis.get_unique_values(df_mapping, "city")
         logger.info("Total number of cities: {}.", number)
@@ -2822,7 +2822,9 @@ if __name__ == "__main__":
 
             for file in tqdm(os.listdir(folder_path), desc=f"Processing files in {folder_path}"):
                 file = analysis_class.filter_csv_files(file=file, df_mapping=df_mapping)
-                if file is None:
+                # list of misc and trash files
+                misc_files = ["DS_Store" , "seg", "bbox"]
+                if file is None or file in misc_files:  # exclude not useful files
                     continue
                 else:
                     filename_no_ext = os.path.splitext(file)[0]
