@@ -13,6 +13,7 @@ import ast
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut, GeocoderUnavailable
 from datetime import datetime
+from yt_dlp import YoutubeDL
 
 
 app = Flask(__name__)
@@ -236,7 +237,7 @@ def form():
             upload_date_video = request.form.get('upload_date_video')
             channel_video = request.form.get('channel_video')
             # fps_video = request.form.get('fps_video')
-            fps_video = '30'
+            fps_video = get_fps_from_url(video_url)
             vehicle_type_video = request.form.get('vehicle_type')
             time_of_day_video = request.form.get('time_of_day')
             gini = request.form.get('gini')
@@ -788,6 +789,23 @@ def get_coordinates(city, state, country):
     except GeocoderUnavailable:
         print(f"Geocoding server could not be reached for {location_query}.")
         return None, None  # Return None if city is not found
+
+
+def get_fps_from_url(video_url):
+    """Get FPS value of the video"""
+    ydl_opts = {
+        'quiet': True,
+        'skip_download': True,
+        'format': 'bestvideo[height=720]',
+    }
+
+    with YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(video_url, download=False)
+        formats = info.get('formats', [])
+        for fmt in formats:
+            if fmt.get('height') == 720 and 'fps' in fmt:
+                return int(fmt['fps'])
+    return 0
 
 
 if __name__ == "__main__":
