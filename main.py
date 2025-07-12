@@ -385,7 +385,7 @@ if __name__ == "__main__":
                     os.remove(base_video_path)
 
         # Send email that given mapping has been processed
-        if config.email_completed and counter_processed:
+        if config.email_send and counter_processed:
             time_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             msg = EmailMessage()
             msg.set_content(f"Processing job finished on {config.machine_name} at {time_now}. {counter_processed} " +
