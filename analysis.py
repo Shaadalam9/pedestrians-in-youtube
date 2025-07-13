@@ -2733,7 +2733,12 @@ if __name__ == "__main__":
         hover_data = list(set(df.columns) - set(columns_remove))
 
         # mapbox map with all data
-        plots_class.get_mapbox_map(df=df, hover_data=hover_data, file_name='mapbox_map_all')
+        plots_class.mapbox_map(df=df, hover_data=hover_data, file_name='mapbox_map_all')
+        plots_class.mapbox_map(df=df,
+                               hover_data=hover_data,
+                               density_col='population_city',
+                               density_radius=10,
+                               file_name='mapbox_map_all_pop')
 
         # Get the population threshold from the configuration
         population_threshold = common.get_configs("population_threshold")
@@ -3218,12 +3223,17 @@ if __name__ == "__main__":
                       'channel']
     hover_data = list(set(df_mapping.columns) - set(columns_remove))
 
-    # Analysis.get_world_map(df_mapping)
     df = df_mapping.copy()  # copy df to manipulate for output
     df['state'] = df['state'].fillna('NA')  # Set state to NA
 
-    # plots_class.get_mapbox_map(df=df, hover_data=hover_data)  # type: ignore # mapbox map
-    # plots_class.get_world_map(df_mapping=df)  # map with countries
+    # Maps
+    plots_class.mapbox_map(df=df, hover_data=hover_data, file_name='mapbox_map')
+    plots_class.mapbox_map(df=df,
+                           hover_data=hover_data,
+                           density_col='total_time',
+                           density_radius=10,
+                           file_name='mapbox_map_time')
+    plots_class.world_map(df_mapping=df)  # map with countries
 
     plots_class.violin_plot(data_index=22, name="speed", min_threshold=common.get_configs("min_speed_limit"),
                             max_threshold=common.get_configs("max_speed_limit"), df_mapping=df_mapping, save_file=True)

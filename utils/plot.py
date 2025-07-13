@@ -1333,7 +1333,8 @@ class Plots():
                                 save_eps=False,
                                 save_png=False)
 
-    def get_mapbox_map(self, df, hover_data=None, file_name="mapbox_map", save_final=True):
+    def mapbox_map(self, df, density_col=None, density_radius=30, hover_data=None, file_name="mapbox_map",
+                   save_final=True):
         """Generate world map with cities using mapbox.
 
         Args:
@@ -1341,28 +1342,56 @@ class Plots():
             hover_data (list, optional): list of params to show on hover.
             file_name (str, optional): name of file
         """
-        # Draw map
-        fig = px.scatter_map(df,
-                             lat="lat",
-                             lon="lon",
-                             hover_data=hover_data,
-                             hover_name="city",
-                             color=df["continent"],
-                             zoom=1.3)  # type: ignore
+        # Draw map without density layer
+        if not density_col:
+            fig = px.scatter_map(df,
+                                 lat="lat",
+                                 lon="lon",
+                                 hover_data=hover_data,
+                                 hover_name="city",
+                                 color=df["continent"],
+                                 zoom=1.3)  # type: ignore
+        # Draw map with density layer
+        else:
+            fig = px.density_mapbox(
+                df,
+                lat="lat",
+                lon="lon",
+                z=density_col,
+                radius=density_radius,  # tune for spread
+                zoom=2.5,
+                center=dict(lat=df["lat"].mean(), lon=df["lon"].mean()),
+                mapbox_style="carto-positron",
+                hover_name="city",
+                hover_data=hover_data,
+            )
+
+            # fig.update_layout(
+            #     height=700
+            # )
+
         # Update layout
         fig.update_layout(
-            margin=dict(l=0, r=0, t=0, b=0),  # Reduce margins
-            # modebar_remove=["toImage"],  # remove modebar image button
-            # showlegend=False,  # hide legend if not needed
-            # annotations=[],  # remove any extra annotations
+            margin=dict(l=0, r=0, t=0, b=0),
             mapbox=dict(zoom=1.3),
-            font=dict(family=common.get_configs('font_family'),  # update font family
-                      size=common.get_configs('font_size'))  # update font size
+            font=dict(family=common.get_configs('font_family'),
+                      size=common.get_configs('font_size')),
+            legend=dict(
+                x=1,
+                y=1,
+                xanchor='right',
+                yanchor='top',
+                bgcolor='rgba(255,255,255,0.6)',  # transparent white
+                bordercolor='rgba(0,0,0,0.1)',
+                borderwidth=1
+            ),
+            legend_title_text=""  # remove legend title
         )
+
         # Save and display the figure
         self.save_plotly_figure(fig, file_name, save_final=True)
 
-    def get_world_map(self, df_mapping):
+    def world_map(self, df_mapping):
         """
         Generate a world map with highlighted countries and red markers for cities using Plotly.
 
