@@ -1359,7 +1359,7 @@ class Plots():
                 lon="lon",
                 z=density_col,
                 radius=density_radius,  # tune for spread
-                zoom=2.5,
+                zoom=2.5,  # type: ignore
                 center=dict(lat=df["lat"].mean(), lon=df["lon"].mean()),
                 mapbox_style="carto-positron",
                 hover_name="city",
