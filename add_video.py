@@ -449,7 +449,7 @@ def form():
                         'med_age': med_age,
                         'upload_date': '[' + upload_date_video.strip() + ']',
                         'channel': '[' + channel_video.strip() + ']',
-                        'fps_list': '[' + fps_video.strip() + ']',
+                        'fps_list': '[' + str(fps_video).strip() + ']',
                         'vehicle_type': '[' + vehicle_type_video.strip() + ']',
                         'gini': gini,
                         'traffic_index': traffic_index,
