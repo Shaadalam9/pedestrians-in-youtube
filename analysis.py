@@ -2728,6 +2728,7 @@ if __name__ == "__main__":
         df = df.sort_values(by=["continent", "city"], ascending=[True, True])
         # Count of videos
         df['video_count'] = df['videos'].apply(lambda x: len(x.strip('[]').split(',')) if pd.notna(x) else 0)
+
         # Total amount of seconds in segments
         def flatten(lst):
             """Flattens nested lists like [[1, 2], [3, 4]] -> [1, 2, 3, 4]"""
@@ -2793,6 +2794,7 @@ if __name__ == "__main__":
         logger.info(f"Duration of videos in seconds: {total_duration}, in minutes: {total_duration/60:.2f}, in " +
                     f"hours: {total_duration/60/60:.2f}.")
         logger.info("Total number of videos: {}.", Analysis.calculate_total_videos(df_mapping))
+
         country, number = Analysis.get_unique_values(df_mapping, "iso3")
         logger.info("Total number of countries and territories: {}.", number)
 
@@ -2855,7 +2857,7 @@ if __name__ == "__main__":
             for file in tqdm(os.listdir(folder_path), desc=f"Processing files in {folder_path}"):
                 file = analysis_class.filter_csv_files(file=file, df_mapping=df_mapping)
                 # list of misc and trash files
-                misc_files = ["DS_Store" , "seg", "bbox"]
+                misc_files = ["DS_Store", "seg", "bbox"]
                 if file is None or file in misc_files:  # exclude not useful files
                     continue
                 else:
