@@ -2726,19 +2726,46 @@ if __name__ == "__main__":
 
         # Sort by continent and city, both in ascending order
         df = df.sort_values(by=["continent", "city"], ascending=[True, True])
+        # Count of videos
+        df['video_count'] = df['videos'].apply(lambda x: len(x.strip('[]').split(',')) if pd.notna(x) else 0)
+        # Total amount of seconds in segments
+        def flatten(lst):
+            """Flattens nested lists like [[1, 2], [3, 4]] -> [1, 2, 3, 4]"""
+            return [item for sublist in lst for item in (sublist if isinstance(sublist, list) else [sublist])]
+
+        def compute_total_time(row):
+            try:
+                start_times = flatten(ast.literal_eval(row['start_time']))
+                end_times = flatten(ast.literal_eval(row['end_time']))
+                return sum(e - s for s, e in zip(start_times, end_times))
+            except Exception as e:
+                print(f"Error in row {row['id']}: {e}")
+                return 0
+
+        df['total_time'] = df.apply(compute_total_time, axis=1)
 
         # Data to avoid showing on hover in scatter plots
         columns_remove = ['videos', 'time_of_day', 'start_time', 'end_time', 'upload_date', 'fps_list', 'vehicle_type',
                           'channel']
         hover_data = list(set(df.columns) - set(columns_remove))
 
-        # mapbox map with all data
+        # maps with all data
         plots_class.mapbox_map(df=df, hover_data=hover_data, file_name='mapbox_map_all')
         plots_class.mapbox_map(df=df,
                                hover_data=hover_data,
                                density_col='population_city',
                                density_radius=10,
                                file_name='mapbox_map_all_pop')
+        plots_class.mapbox_map(df=df,
+                               hover_data=hover_data,
+                               density_col='video_count',
+                               density_radius=10,
+                               file_name='mapbox_map_all_videos')
+        plots_class.mapbox_map(df=df,
+                               hover_data=hover_data,
+                               density_col='total_time',
+                               density_radius=10,
+                               file_name='mapbox_map_all_time')
 
         # Get the population threshold from the configuration
         population_threshold = common.get_configs("population_threshold")
@@ -3226,7 +3253,7 @@ if __name__ == "__main__":
     df = df_mapping.copy()  # copy df to manipulate for output
     df['state'] = df['state'].fillna('NA')  # Set state to NA
 
-    # Maps
+    # Maps with filtered data
     plots_class.mapbox_map(df=df, hover_data=hover_data, file_name='mapbox_map')
     plots_class.mapbox_map(df=df,
                            hover_data=hover_data,
