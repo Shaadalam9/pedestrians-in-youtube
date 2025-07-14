@@ -3853,6 +3853,7 @@ if __name__ == "__main__":
         plots_class.scatter(df=df_countries,
                             x="total_time",
                             y="person",
+                            extension=common.get_configs("analysis_level"),
                             color="continent",
                             text="iso3",
                             xaxis_title='Total time of footage (s)',
