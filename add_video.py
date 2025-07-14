@@ -800,7 +800,11 @@ def get_fps_from_url(video_url):
     }
 
     with YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(video_url, download=False)
+        try:
+            info = ydl.extract_info(video_url, download=False)
+        except Exception as e:
+            print(f"Error while try to fetch FPS of video: {e}")
+            return 0
         formats = info.get('formats', [])
         for fmt in formats:
             if fmt.get('height') == 720 and 'fps' in fmt:
