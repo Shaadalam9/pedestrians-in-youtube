@@ -13,8 +13,7 @@ import ast
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut, GeocoderUnavailable
 from datetime import datetime
-from yt_dlp import YoutubeDL
-
+import yt_dlp
 
 app = Flask(__name__)
 
@@ -799,16 +798,16 @@ def get_fps_from_url(video_url):
         'format': 'bestvideo[height=720]',
     }
 
-    with YoutubeDL(ydl_opts) as ydl:
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         try:
             info = ydl.extract_info(video_url, download=False)
+            formats = info.get('formats', [])
+            for fmt in formats:
+                if fmt.get('height') == 720 and 'fps' in fmt:
+                    return int(fmt['fps'])
         except Exception as e:
             print(f"Error while try to fetch FPS of video: {e}")
             return 0
-        formats = info.get('formats', [])
-        for fmt in formats:
-            if fmt.get('height') == 720 and 'fps' in fmt:
-                return int(fmt['fps'])
     return 0
 
 
