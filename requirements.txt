@@ -1,7 +1,7 @@
 Flask==3.0.3
 geopy==2.4.1
 moviepy==1.0.3
-numpy==2.3.1
+numpy==1.26.2
 opencv_python==4.8.1.78
 pandas==2.3.1
 plotly==6.0.0
