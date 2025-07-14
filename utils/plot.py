@@ -2213,7 +2213,7 @@ class Plots():
                                               column_value2=None,
                                               target_column="iso3")
 
-            if country is not None or iso_code is not None:
+            if country is not None and iso_code is not None:
                 # Initialise the country's dictionary if not already present
                 if f'{country}' not in final_dict:
                     final_dict[f'{country}'] = {f"{metric}_0": None, f"{metric}_1": None,
@@ -2699,8 +2699,8 @@ class Plots():
                                               column_value2=None,
                                               target_column="iso3")
 
-            if country or iso_code is not None:
-                # Initialize the country's dictionary if not already present
+            if country and iso_code is not None:
+                # Initialise the country's dictionary if not already present
                 if f'{country}' not in final_dict:
                     final_dict[f"{country}"] = {
                         "speed_0": None, "speed_1": None, "time_0": None, "time_1": None,

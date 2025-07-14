@@ -7,6 +7,8 @@ import pycountry
 import math
 from tqdm import tqdm
 from collections import defaultdict
+import pandas as pd
+import os
 
 # Suppress the specific FutureWarning
 warnings.filterwarnings("ignore", category=FutureWarning, module="plotly")
@@ -239,11 +241,28 @@ class Wrappers():
             str: A flag emoji corresponding to the country code, or 🇽🇰 (Kosovo) as a fallback.
         """
         logger.debug(f"Converting iso2 {iso2} to flag.")
-        if iso2 is None:
-            # Return a placeholder or an empty string if the ISO-2 code is not available
-            logger.debug("Set ISO-2 to Kosovo.")
-            return "🇽🇰"
-        return chr(ord('🇦') + (ord(iso2[0]) - ord('A'))) + chr(ord('🇦') + (ord(iso2[1]) - ord('A')))
+
+        if not iso2 or len(iso2) != 2 or not iso2.isalpha():
+            return "🏳️"
+        iso2 = iso2.upper()
+
+        # Load the CSV - ideally, you should cache this in self.flag_data!
+        flag_data = pd.read_csv(os.path.join(common.root_dir, 'countries.csv'), dtype=str)
+
+        # Ensure column names are stripped of whitespace
+        flag_data.columns = flag_data.columns.str.strip()
+
+        # Find the row where iso2 matches
+        result = flag_data.loc[flag_data['iso2'].str.upper() == iso2, 'flag']
+
+        if not result.empty and isinstance(result.iloc[0], str) and result.iloc[0].strip():  # type: ignore
+            return result.iloc[0]  # type: ignore
+
+        # Fallback: Unicode flag emoji from iso2 code
+        try:
+            return chr(0x1F1E6 + ord(iso2[0]) - ord('A')) + chr(0x1F1E6 + ord(iso2[1]) - ord('A'))
+        except Exception:
+            return "🏳️"
 
     def iso3_to_iso2(self, iso3_code):
         """
