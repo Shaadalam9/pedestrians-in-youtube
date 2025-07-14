@@ -3,7 +3,7 @@ geopy==2.4.1
 moviepy==1.0.3
 numpy==1.24.4
 opencv_python==4.8.1.78
-pandas==2.3.1
+pandas==2.0.3
 plotly==6.0.0
 pycountry==22.3.5
 pycountry_convert==0.7.2
