@@ -1948,11 +1948,12 @@ class Plots():
         else:
             fig.show()
 
-    def scatter(self, df, x, y, color=None, symbol=None, size=None, text=None, trendline=None, hover_data=None,
-                marker_size=None, pretty_text=False, marginal_x='violin', marginal_y='violin', xaxis_title=None,
-                yaxis_title=None, xaxis_range=None, yaxis_range=None, name_file=None, save_file=False,
-                save_final=False, fig_save_width=1320, fig_save_height=680, font_family=None, font_size=None,
-                hover_name=None, legend_title=None, legend_x=None, legend_y=None, label_distance_factor=1.0):
+    def scatter(self, df, x, y, extension=None, color=None, symbol=None, size=None, text=None, trendline=None,
+                hover_data=None, marker_size=None, pretty_text=False, marginal_x='violin', marginal_y='violin',
+                xaxis_title=None, yaxis_title=None, xaxis_range=None, yaxis_range=None, name_file=None,
+                save_file=False, save_final=False, fig_save_width=1320, fig_save_height=680, font_family=None,
+                font_size=None, hover_name=None, legend_title=None, legend_x=None, legend_y=None,
+                label_distance_factor=1.0):
         """
         Output scatter plot of variables x and y with optional assignment of colour and size.
 
@@ -2078,12 +2079,15 @@ class Plots():
                           yaxis_title=yaxis_title,
                           xaxis_range=xaxis_range,
                           yaxis_range=yaxis_range)
+
         # change marker size
         if marker_size:
             fig.update_traces(marker=dict(size=marker_size))
+
         # update legend title
         if legend_title is not None:
             fig.update_layout(legend_title_text=legend_title)
+
         # update font family
         if font_family:
             # use given value
@@ -2091,6 +2095,7 @@ class Plots():
         else:
             # use value from config file
             fig.update_layout(font=dict(family=common.get_configs('font_family')))
+
         # update font size
         if font_size:
             # use given value
@@ -2098,14 +2103,20 @@ class Plots():
         else:
             # use value from config file
             fig.update_layout(font=dict(size=common.get_configs('font_size')))
+
         # legend
         if legend_x and legend_y:
             fig.update_layout(legend=dict(x=legend_x, y=legend_y, bgcolor='rgba(0,0,0,0)'))
+
         # save file to local output folder
         if save_file:
             # build filename
             if not name_file:
-                name_file = 'scatter_' + x + '-' + y
+                if extension is not None:
+                    name_file = 'scatter_' + x + '-' + y + '-' + extension
+                else:
+                    name_file = 'scatter_' + x + '-' + y
+
             # Final adjustments and display
             fig.update_layout(margin=dict(l=10, r=10, t=10, b=10))
             self.save_plotly_figure(fig, name_file, save_final=True)
@@ -2213,7 +2224,7 @@ class Plots():
                                               column_value2=None,
                                               target_column="iso3")
 
-            if country is not None or iso_code is not None:
+            if country is not None and iso_code is not None:
                 # Initialise the country's dictionary if not already present
                 if f'{country}' not in final_dict:
                     final_dict[f'{country}'] = {f"{metric}_0": None, f"{metric}_1": None,
@@ -2699,8 +2710,8 @@ class Plots():
                                               column_value2=None,
                                               target_column="iso3")
 
-            if country or iso_code is not None:
-                # Initialize the country's dictionary if not already present
+            if country and iso_code is not None:
+                # Initialise the country's dictionary if not already present
                 if f'{country}' not in final_dict:
                     final_dict[f"{country}"] = {
                         "speed_0": None, "speed_1": None, "time_0": None, "time_1": None,

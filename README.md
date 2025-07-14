@@ -168,6 +168,9 @@ Crossing decision time and crossing speed (sorted by countries). -->
 [![Total time of footage over number of detected pedestrians](figures/scatter_total_time-person.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/scatter_total_time-person.html)
 Total time of footage over number of detected pedestrians.
 
+[![Detected pedestrian over time of footage](figures/scatter_total_time-person.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/scatter_total_time-person.html)
+Detected pedestrian over time of footage (countries).
+
 ### Description of dataset (cities included in analysis)
 [![Locations of cities with footage in dataset](figures/mapbox_map.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/mapbox_map.html)
 Locations of cities with footage in dataset. *Note:* continents are based on geography, i.e., the cities in Russia east from Ural mountains are shown as Asia.
@@ -217,6 +220,7 @@ Crossing speed in day (sorted by average of day and night).
 Crossing speed in night (sorted by average of day and night).
 
 ### Relationship between computed and statistical metrics
+
 [![Speed of crossing over crossing decision time](figures/scatter_speed_crossing-time_crossing.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/scatter_speed_crossing-time_crossing.html)
 Crossing speed over crossing decision time.
 
