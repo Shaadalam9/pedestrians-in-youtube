@@ -1,4 +1,4 @@
-Flask==3.1.1
+Flask==3.0.3
 geopy==2.4.1
 moviepy==1.0.3
 numpy==2.3.1
