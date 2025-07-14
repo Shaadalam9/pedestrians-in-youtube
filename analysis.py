@@ -2791,6 +2791,8 @@ if __name__ == "__main__":
         bus_counter, truck_counter, cellphone_counter, traffic_light_counter, stop_sign_counter = 0, 0, 0, 0, 0
 
         total_duration = Analysis.calculate_total_seconds(df_mapping)
+
+        # Displays values after applying filters
         logger.info(f"Duration of videos in seconds: {total_duration}, in minutes: {total_duration/60:.2f}, in " +
                     f"hours: {total_duration/60/60:.2f}.")
         logger.info("Total number of videos: {}.", Analysis.calculate_total_videos(df_mapping))
@@ -3208,7 +3210,7 @@ if __name__ == "__main__":
         for dict_name, d in [('avg_speed_country', avg_speed_country), ('avg_time_country', avg_time_country)]:
             keys_to_remove = [key for key in d if key.split('_')[0] in remove_countries]
             for key in keys_to_remove:
-                logger.info(f"Deleting from {dict_name}: {key} -> {d[key]}")
+                logger.debug(f"Deleting from {dict_name}: {key} -> {d[key]}")
                 del d[key]
 
         # --- Remove low-detection cities from city-level speed/time ---
