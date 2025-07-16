@@ -140,6 +140,179 @@ class Analysis():
                 return  # Skip to the next file if reading fails
         return file
 
+    def parse_videos(self, s):
+        """Parse a bracketed, comma-separated video string into a list of IDs.
+
+        Args:
+            s (str): String representing video IDs, e.g. '[abc,def,ghi]'.
+
+        Returns:
+            List[str]: List of video IDs as strings, e.g. ['abc', 'def', 'ghi'].
+
+        Example:
+            >>> self.parse_videos('[abc,def]')
+            ['abc', 'def']
+        """
+        s = s.strip()
+        if s.startswith("[") and s.endswith("]"):
+            s = s[1:-1]
+        return [x.strip() for x in s.split(",") if x.strip()]
+
+    def parse_col(self, row, colname):
+        """Safely parse a DataFrame row column (stored as a string) to a Python object.
+
+        Args:
+            row (pd.Series): The DataFrame row containing the column.
+            colname (str): The column name to parse.
+
+        Returns:
+            object: The parsed Python object (e.g., list or int). Returns empty list on failure.
+
+        Example:
+            >>> self.parse_col(row, 'start_time')
+            [[12], [34], [56]]
+        """
+        try:
+            return ast.literal_eval(row[colname])
+        except (ValueError, SyntaxError, KeyError, TypeError):
+            return []
+
+    def delete_video_time_by_filename(self, df, filename, output_file=None):
+        """Remove a specific time entry from a video's lists in the mapping DataFrame.
+
+        For each row, finds the matching video and start_time (from the provided filename),
+        removes the corresponding time-of-day, start_time, and end_time entry. If a video
+        ends up with no times, it is fully removed from all per-video columns. If a row
+        is left with no videos, the row is dropped from the DataFrame.
+
+        Args:
+            df (pd.DataFrame): The mapping DataFrame to update.
+            filename (str): Name of the CSV/video file, e.g. 'l72z2l_1h9A_7645.csv',
+                used to extract the video ID and start_time to remove. The video ID may
+                contain underscores.
+            output_file (str, optional): If provided, writes the cleaned DataFrame to this path.
+
+        Returns:
+            pd.DataFrame: The updated DataFrame with the specified entry removed.
+
+        Example:
+            >>> df = self.delete_video_time_by_filename(df, 'l72z2l_1h9A_7645.csv')
+        """
+
+        # Clean filename if necessary and extract video_id and target_time (last underscore split)
+        filename = self.clean_csv_filename(filename)
+        filename_no_ext = os.path.splitext(filename)[0]
+        video_id, target_time = filename_no_ext.rsplit('_', 1)
+        target_time = int(target_time)
+
+        rows_to_drop = []
+
+        for idx, row in df.iterrows():
+            # Parse video list as in original format: [id1,id2,...] with no quotes
+            videos = self.parse_videos(row['videos'])
+            times_of_day = ast.literal_eval(row['time_of_day'])
+            start_times = ast.literal_eval(row['start_time'])
+            end_times = ast.literal_eval(row['end_time'])
+
+            changed = False  # Track if this row has been modified
+
+            # Prepare new lists for updating the row
+            new_videos = []
+            new_times_of_day = []
+            new_start_times = []
+            new_end_times = []
+            new_vehicle_type = []
+            new_upload_date = []
+            new_fps_list = []
+            new_channel = []
+
+            # Parse per-video columns (if present, else empty lists)
+            vehicle_type = self.parse_col(row, 'vehicle_type')
+            upload_date = self.parse_col(row, 'upload_date')
+            fps_list = self.parse_col(row, 'fps_list')
+            channel = self.parse_col(row, 'channel')
+
+            # Loop through each video for this row
+            for i, vid in enumerate(videos):
+                # Get per-time lists for this video (safely)
+                tod = times_of_day[i] if i < len(times_of_day) else []
+                sts = start_times[i] if i < len(start_times) else []
+                ets = end_times[i] if i < len(end_times) else []
+
+                if vid == video_id:
+                    # Find indices where the start_time does NOT match the target
+                    keep_indices = [j for j, st in enumerate(sts) if st != target_time]
+                    # Keep only the unmatched entries in all per-time lists
+                    new_sts = [sts[j] for j in keep_indices]
+                    new_tod = [tod[j] for j in keep_indices] if isinstance(tod, list) and len(tod) == len(sts) else tod
+                    new_ets = [ets[j] for j in keep_indices] if isinstance(ets, list) and len(ets) == len(sts) else ets
+
+                    if new_sts:
+                        # Still times left for this video, keep it and related info
+                        new_videos.append(vid)
+                        new_times_of_day.append(new_tod)
+                        new_start_times.append(new_sts)
+                        new_end_times.append(new_ets)
+
+                        if vehicle_type:
+                            new_vehicle_type.append(vehicle_type[i])
+                        if upload_date:
+                            new_upload_date.append(upload_date[i])
+                        if fps_list:
+                            new_fps_list.append(fps_list[i])
+                        if channel:
+                            new_channel.append(channel[i])
+                    else:
+                        # No times left, fully remove this video from all columns
+                        changed = True
+                else:
+                    # Unrelated video, keep as-is
+                    new_videos.append(vid)
+                    new_times_of_day.append(tod)
+                    new_start_times.append(sts)
+                    new_end_times.append(ets)
+
+                    if vehicle_type:
+                        new_vehicle_type.append(vehicle_type[i])
+                    if upload_date:
+                        new_upload_date.append(upload_date[i])
+                    if fps_list:
+                        new_fps_list.append(fps_list[i])
+                    if channel:
+                        new_channel.append(channel[i])
+
+            # If all videos are gone for this row, mark row for dropping
+            if len(new_videos) == 0:
+                rows_to_drop.append(idx)
+                continue
+
+            # If something changed, update the row
+            if changed or len(new_videos) != len(videos):
+                # Write videos in original CSV style: [id1,id2,id3]
+                df.at[idx, 'videos'] = "[" + ",".join(new_videos) + "]"
+                # Write per-time columns in str(list) (keeps double brackets)
+                df.at[idx, 'time_of_day'] = str(new_times_of_day)
+                df.at[idx, 'start_time'] = str(new_start_times)
+                df.at[idx, 'end_time'] = str(new_end_times)
+
+                # Only update per-video columns if present (may be missing in some datasets)
+                if vehicle_type:
+                    df.at[idx, 'vehicle_type'] = str(new_vehicle_type)
+                if upload_date:
+                    df.at[idx, 'upload_date'] = str(new_upload_date)
+                if fps_list:
+                    df.at[idx, 'fps_list'] = str(new_fps_list)
+                if channel:
+                    df.at[idx, 'channel'] = str(new_channel)
+
+        # Drop rows where all videos were removed
+        df = df.drop(index=rows_to_drop).reset_index(drop=True)
+
+        # Save to CSV if requested
+        if output_file:
+            df.to_csv(output_file, index=False)
+        return df
+
     @staticmethod
     def count_object(dataframe, id):
         """
@@ -2751,22 +2924,22 @@ if __name__ == "__main__":
         hover_data = list(set(df.columns) - set(columns_remove))
 
         # maps with all data
-        plots_class.mapbox_map(df=df, hover_data=hover_data, file_name='mapbox_map_all')
-        plots_class.mapbox_map(df=df,
-                               hover_data=hover_data,
-                               density_col='population_city',
-                               density_radius=10,
-                               file_name='mapbox_map_all_pop')
-        plots_class.mapbox_map(df=df,
-                               hover_data=hover_data,
-                               density_col='video_count',
-                               density_radius=10,
-                               file_name='mapbox_map_all_videos')
-        plots_class.mapbox_map(df=df,
-                               hover_data=hover_data,
-                               density_col='total_time',
-                               density_radius=10,
-                               file_name='mapbox_map_all_time')
+        # plots_class.mapbox_map(df=df, hover_data=hover_data, file_name='mapbox_map_all')
+        # plots_class.mapbox_map(df=df,
+        #                        hover_data=hover_data,
+        #                        density_col='population_city',
+        #                        density_radius=10,
+        #                        file_name='mapbox_map_all_pop')
+        # plots_class.mapbox_map(df=df,
+        #                        hover_data=hover_data,
+        #                        density_col='video_count',
+        #                        density_radius=10,
+        #                        file_name='mapbox_map_all_videos')
+        # plots_class.mapbox_map(df=df,
+        #                        hover_data=hover_data,
+        #                        density_col='total_time',
+        #                        density_radius=10,
+        #                        file_name='mapbox_map_all_time')
 
         total_duration = Analysis.calculate_total_seconds(df_mapping)
 
@@ -2802,19 +2975,6 @@ if __name__ == "__main__":
 
         person_counter, bicycle_counter, car_counter, motorcycle_counter = 0, 0, 0, 0
         bus_counter, truck_counter, cellphone_counter, traffic_light_counter, stop_sign_counter = 0, 0, 0, 0, 0
-
-        total_duration = Analysis.calculate_total_seconds(df_mapping)
-
-        # Displays values after applying filters
-        logger.info(f"Duration of videos in seconds: {total_duration}, in minutes: {total_duration/60:.2f}, in " +
-                    f"hours: {total_duration/60/60:.2f}.")
-        logger.info("Total number of videos: {}.", Analysis.calculate_total_videos(df_mapping))
-
-        country, number = Analysis.get_unique_values(df_mapping, "iso3")
-        logger.info("Total number of countries and territories: {}.", number)
-
-        city, number = Analysis.get_unique_values(df_mapping, "city")
-        logger.info("Total number of cities: {}.", number)
 
         # add information for each city to then be appended to mapping
         df_mapping['person'] = 0
@@ -2869,8 +3029,10 @@ if __name__ == "__main__":
                 logger.warning(f"Folder does not exist: {folder_path}.")
                 continue
 
-            for file in tqdm(os.listdir(folder_path), desc=f"Processing files in {folder_path}"):
-                file = analysis_class.filter_csv_files(file=file, df_mapping=df_mapping)
+            for file_name in tqdm(os.listdir(folder_path), desc=f"Processing files in {folder_path}"):
+                file = analysis_class.filter_csv_files(file=file_name, df_mapping=df_mapping)
+                if file is None:
+                    df_mapping = analysis_class.delete_video_time_by_filename(df_mapping, file_name)
                 # list of misc and trash files
                 misc_files = ["DS_Store", "seg", "bbox"]
                 if file is None or file in misc_files:  # exclude not useful files
@@ -2985,6 +3147,21 @@ if __name__ == "__main__":
         if len(avg_time_city) == 0 or len(avg_speed_city) == 0:
             logger.error("No speed and time data to analyse.")
             exit()
+
+        total_duration = Analysis.calculate_total_seconds(df_mapping)
+
+        # Displays values after applying filters
+        logger.info(f"Duration of videos in seconds after filtering: {total_duration}, in" +
+                    f" minutes after filtering: {total_duration/60:.2f}, in " +
+                    f"hours: {total_duration/60/60:.2f}.")
+
+        logger.info("Total number of videos after filtering: {}.", Analysis.calculate_total_videos(df_mapping))
+
+        country, number = Analysis.get_unique_values(df_mapping, "iso3")
+        logger.info("Total number of countries and territories after filtering: {}.", number)
+
+        city, number = Analysis.get_unique_values(df_mapping, "city")
+        logger.info("Total number of cities after filtering: {}.", number)
 
         df_mapping = analysis_class.add_speed_and_time_to_mapping(df_mapping=df_mapping,
                                                                   avg_speed_city=avg_speed_city,

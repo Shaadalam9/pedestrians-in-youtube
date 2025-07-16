@@ -619,7 +619,7 @@ class Youtube_Helper:
         # Decide on the output filename based on mode
         if bbox_mode:
             output_filename = f"{video_title}_mod_bbox.mp4"
-        elif self.seg_mode:
+        elif seg_mode:
             output_filename = f"{video_title}_mod_seg.mp4"
         else:
             output_filename = f"{video_title}_mod.mp4"
