@@ -2768,6 +2768,19 @@ if __name__ == "__main__":
                                density_radius=10,
                                file_name='mapbox_map_all_time')
 
+        total_duration = Analysis.calculate_total_seconds(df_mapping)
+
+        # Displays values before applying filters
+        logger.info(f"Duration of videos in seconds: {total_duration}, in minutes: {total_duration/60:.2f}, in " +
+                    f"hours: {total_duration/60/60:.2f} before filtering.")
+        logger.info("Total number of videos before filtering: {}.", Analysis.calculate_total_videos(df_mapping))
+
+        country, number = Analysis.get_unique_values(df_mapping, "iso3")
+        logger.info("Total number of countries and territories before filtering: {}.", number)
+
+        city, number = Analysis.get_unique_values(df_mapping, "city")
+        logger.info("Total number of cities before filtering: {}.", number)
+
         # Get the population threshold from the configuration
         population_threshold = common.get_configs("population_threshold")
 
