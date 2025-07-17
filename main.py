@@ -21,7 +21,7 @@ logger = CustomLogger(__name__)  # use custom logger
 helper = Youtube_Helper()
 
 # flag to record that email was already sent to avoid sending after each loop of While
-email_already_sent = False 
+email_already_sent = False
 
 # Execute analysis
 if __name__ == "__main__":
