@@ -2559,3 +2559,4 @@ id,city,state,country,iso3,continent,lat,lon,gmp,population_city,population_coun
 2558,Tilburg,,Netherlands,NLD,Europe,51.55829,5.086653,0.0,199613.0,16655799,4.0,0.0,177.0,42.2,28.1,82.4,"[Uuiqz2gha7o,hxDGUpYj9AI]","[[0],[0]]","[[7],[240]]","[[420],[499]]","[1,0]","[22062019,19112018]","[30,30]","[UCC4k7wJfqzbVDwJnz79WqJQ,UCzjN_mRrTufGOHp7AECuDWA]"
 2559,Partille,,Sweden,SWE,Europe,57.74448,12.108313,0.0,37931.0,10353442,3.1,0.0,174.0,41.0,30.0,0.0,[UOunphw2X2Y],[[0]],[[7]],[[1226]],[0],[27062024],[30],[UCR3WlBEuZ_q7rc3w3EvQDbw]
 2560,Kungälv,,Sweden,SWE,Europe,57.8707951,11.9799616,0.0,24101.0,10353442,3.1,0.0,174.0,41.0,30.0,0.0,[3dwRbktnWEg],[[0]],[[7]],[[1516]],[0],[02072024],[30],[UCR3WlBEuZ_q7rc3w3EvQDbw]
+2561,Ullared,,Sweden,SWE,Europe,57.1360985,12.7155832,0.0,699,10353442,3.1,0.0,174,41,30.0,0.0,[C0qn_yBKPFA],[[0]],[[7]],[[574]],[0],[28072024],[30],[UCR3WlBEuZ_q7rc3w3EvQDbw]
