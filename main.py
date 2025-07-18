@@ -20,8 +20,9 @@ helper = Youtube_Helper()
 # flag to record that email was already sent to avoid sending after each loop of While
 email_already_sent = False
 
-# Execute analysis
+# Execute processing
 if __name__ == "__main__":
+    # Wrap loop in try to send an email in case of a crash
     try:
         # Cache static config values once before the loop
         config = SimpleNamespace(
