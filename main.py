@@ -388,7 +388,7 @@ if __name__ == "__main__":
                 time_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 common.send_email(subject=f"✅ Processing job finished on machine {config.machine_name}",
                                   content=f"Processing job finished on {config.machine_name} at {time_now}. " +
-                                          "{counter_processed} segments were processed.",
+                                          f"{counter_processed} segments were processed.",
                                   sender=config.email_sender,
                                   recipients=config.email_recipients)
 
