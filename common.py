@@ -8,6 +8,8 @@ import sys
 import pycountry
 from custom_logger import CustomLogger
 import subprocess
+import smtplib
+from email.message import EmailMessage
 
 root_dir = os.path.dirname(__file__)
 cache_dir = os.path.join(root_dir, '_cache')
@@ -251,3 +253,20 @@ def git_pull():
         logger.info(f"Git pull successful:\n{result.stdout}")
     except subprocess.CalledProcessError as e:
         logger.error(f"Git pull failed with error:\n{e.stderr}")
+
+
+# Send email with certain message
+def send_email(subject, content, sender, recipients):
+    msg = EmailMessage()
+    msg.set_content(content)
+    msg["Subject"] = subject
+    msg["From"] = sender
+    msg["To"] = ", ".join(recipients)
+    # Try to send email
+    try:
+        with smtplib.SMTP_SSL(get_secrets("email_smtp"), 465) as smtp:
+            smtp.login(get_secrets("email_account"), get_secrets("email_password"))
+            smtp.send_message(msg)
+            logger.info(f"Sent email to: {recipients}")
+    except Exception as e:
+        logger.error(f"Failed to send email: {e}")
