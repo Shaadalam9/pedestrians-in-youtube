@@ -197,7 +197,7 @@ class Algorithms():
 
         return output
 
-    def avg_speed_of_crossing_city(self, all_speed):
+    def avg_speed_of_crossing_city(self, df_mapping, all_speed):
         """
         Calculate the average crossing speed for each city-condition combination.
 
@@ -212,7 +212,7 @@ class Algorithms():
         Returns:
             dict: A dictionary where keys are city-condition strings and values are average speeds.
         """
-        avg_speed = {}
+        avg_speed_city, all_speed_city = {}, {}
 
         for city_lat_lang_condition, value_1 in all_speed.items():
             city, lat, long, cond = city_lat_lang_condition.split("_")
@@ -223,9 +223,10 @@ class Algorithms():
                     if common.get_configs("min_speed_limit") <= speed <= common.get_configs("max_speed_limit"):
                         box.append(speed)
             if len(box) > 0:
-                avg_speed[city_lat_lang_condition] = (sum(box) / len(box))
+                all_speed_city[city_lat_lang_condition] = box
+                avg_speed_city[city_lat_lang_condition] = (sum(box) / len(box))
 
-        return avg_speed
+        return avg_speed_city, all_speed_city
 
     def avg_speed_of_crossing_country(self, df_mapping, all_speed):
         """
@@ -264,7 +265,7 @@ class Algorithms():
             if speed_list:  # Avoid division by zero
                 avg_speed_result[country_condition] = sum(speed_list) / len(speed_list)
 
-        return avg_speed_result
+        return avg_speed_result, avg_speed
 
     def time_to_start_cross(self, df_mapping, df, data, person_id=0):
         """
@@ -375,7 +376,7 @@ class Algorithms():
         Returns:
             dict: Dictionary mapping each city_condition to its average adjusted crossing time (float).
         """
-        avg_over_time = {}
+        avg_time_city, all_time_city = {}, {}
 
         # Iterate over each city condition in the all_time dictionary
         for city_condition, value_1 in all_time.items():
@@ -401,9 +402,10 @@ class Algorithms():
 
             # Compute average adjusted time for the current city condition
             if len(box) > 0:
-                avg_over_time[city_condition] = sum(box) / len(box)
+                all_time_city[city_condition] = box
+                avg_time_city[city_condition] = sum(box) / len(box)
 
-        return avg_over_time
+        return avg_time_city, all_time_city
 
     def avg_time_to_start_cross_country(self, df_mapping, all_time):
         """
@@ -450,7 +452,7 @@ class Algorithms():
             if time_list:  # Avoid division by zero
                 avg_over_time_result[country_condition] = sum(time_list) / len(time_list)
 
-        return avg_over_time_result
+        return avg_over_time_result, avg_over_time
 
     def is_rider_id(self, df, id, avg_height, min_shared_frames=5,
                     dist_thresh=80, similarity_thresh=0.8, overlap_ratio=0.7):

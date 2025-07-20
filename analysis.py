@@ -623,7 +623,7 @@ class Analysis():
     @staticmethod
     def crossing_event_with_traffic_equipment(df_mapping, data):
         """
-        Analyze pedestrian crossing events in relation to the presence of traffic equipment (YOLO_id 9 or 11).
+        Analyse pedestrian crossing events in relation to the presence of traffic equipment (YOLO_id 9 or 11).
 
         For each video and crossing, counts are computed for crossings where
         relevant traffic equipment was present or absent during the crossing.
@@ -691,7 +691,7 @@ class Analysis():
                 if value is None:
                     continue  # Skip if file not found
 
-                # Analyze crossings for presence of traffic equipment
+                # Analyse crossings for presence of traffic equipment
                 for unique_id, _ in crossings.items():
                     unique_id_indices = value.index[value['Unique Id'] == unique_id]
                     if unique_id_indices.empty:
@@ -2396,7 +2396,7 @@ class Analysis():
                               'time_crossing_night_city', 'time_crossing_day_night_city_avg',
                               'with_trf_light_day_city', 'with_trf_light_night_city',
                               'without_trf_light_day_city', 'without_trf_light_night_city',
-                              'channel'], errors='ignore')
+                              'crossing_detected_city', 'channel'], errors='ignore')
 
         static_columns = [
             'country', 'continent', 'population_country', 'traffic_mortality',
@@ -2404,7 +2404,7 @@ class Analysis():
             'speed_crossing_night_country', 'speed_crossing_day_night_country_avg',
             'time_crossing_day_country', 'time_crossing_night_country', 'time_crossing_day_night_country_avg',
             'with_trf_light_day_country', 'with_trf_light_night_country', 'without_trf_light_day_country',
-            'without_trf_light_night_country'
+            'without_trf_light_night_country', 'crossing_detected_country'
             ]
 
         # Columns to merge as lists
@@ -2885,7 +2885,11 @@ if __name__ == "__main__":
              crossings_without_traffic_equipment_country,   # 32
              min_max_speed,                                 # 33
              min_max_time,                                  # 34
-             pedestrian_cross_country                       # 35
+             pedestrian_cross_country,                      # 35
+             all_speed_city,                                # 36
+             all_time_city,                                 # 37
+             all_speed_country,                             # 38
+             all_time_country                               # 39
              ) = pickle.load(file)
 
         logger.info("Loaded analysis results from pickle file.")
@@ -2913,7 +2917,7 @@ if __name__ == "__main__":
                 end_times = flatten(ast.literal_eval(row['end_time']))
                 return sum(e - s for s, e in zip(start_times, end_times))
             except Exception as e:
-                print(f"Error in row {row['id']}: {e}")
+                logger.error(f"Error in row {row['id']}: {e}")
                 return 0
 
         df['total_time'] = df.apply(compute_total_time, axis=1)
@@ -2924,22 +2928,22 @@ if __name__ == "__main__":
         hover_data = list(set(df.columns) - set(columns_remove))
 
         # maps with all data
-        plots_class.mapbox_map(df=df, hover_data=hover_data, file_name='mapbox_map_all')
-        plots_class.mapbox_map(df=df,
-                               hover_data=hover_data,
-                               density_col='population_city',
-                               density_radius=10,
-                               file_name='mapbox_map_all_pop')
-        plots_class.mapbox_map(df=df,
-                               hover_data=hover_data,
-                               density_col='video_count',
-                               density_radius=10,
-                               file_name='mapbox_map_all_videos')
-        plots_class.mapbox_map(df=df,
-                               hover_data=hover_data,
-                               density_col='total_time',
-                               density_radius=10,
-                               file_name='mapbox_map_all_time')
+        # plots_class.mapbox_map(df=df, hover_data=hover_data, file_name='mapbox_map_all')
+        # plots_class.mapbox_map(df=df,
+        #                        hover_data=hover_data,
+        #                        density_col='population_city',
+        #                        density_radius=10,
+        #                        file_name='mapbox_map_all_pop')
+        # plots_class.mapbox_map(df=df,
+        #                        hover_data=hover_data,
+        #                        density_col='video_count',
+        #                        density_radius=10,
+        #                        file_name='mapbox_map_all_videos')
+        # plots_class.mapbox_map(df=df,
+        #                        hover_data=hover_data,
+        #                        density_col='total_time',
+        #                        density_radius=10,
+        #                        file_name='mapbox_map_all_time')
 
         total_duration = Analysis.calculate_total_seconds(df_mapping)
 
@@ -3018,6 +3022,9 @@ if __name__ == "__main__":
 
         df_mapping['without_trf_light_day_country'] = 0.0
         df_mapping['without_trf_light_night_country'] = 0.0
+
+        df_mapping['crossing_detected_city'] = 0
+        df_mapping['crossing_detected_country'] = 0
 
         all_speed = {}
         all_time = {}
@@ -3136,12 +3143,12 @@ if __name__ == "__main__":
                         all_time.update(time_value)
 
         # Record the average speed and time of crossing on country basis
-        avg_speed_country = algorithms_class.avg_speed_of_crossing_country(df_mapping, all_speed)
-        avg_time_country = algorithms_class.avg_time_to_start_cross_country(df_mapping, all_speed)
+        avg_speed_country, all_speed_country = algorithms_class.avg_speed_of_crossing_country(df_mapping, all_speed)
+        avg_time_country, all_time_country = algorithms_class.avg_time_to_start_cross_country(df_mapping, all_speed)
 
         # Record the average speed and time of crossing on city basis
-        avg_speed_city = algorithms_class.avg_speed_of_crossing_city(all_speed)
-        avg_time_city = algorithms_class.avg_time_to_start_cross_city(df_mapping, all_time)
+        avg_speed_city, all_speed_city = algorithms_class.avg_speed_of_crossing_city(df_mapping, all_speed)
+        avg_time_city, all_time_city = algorithms_class.avg_time_to_start_cross_city(df_mapping, all_time)
 
         # Kill the program if there is no data to analyse
         if len(avg_time_city) == 0 or len(avg_speed_city) == 0:
@@ -3274,6 +3281,26 @@ if __name__ == "__main__":
                 colname
             ] = float(value)
 
+        # ---------------------------------------
+        # Add city-level crossing counts detected
+        # ---------------------------------------
+        for city, value in pedestrian_cross_city.items():
+
+            df_mapping.loc[
+                (df_mapping["city"] == city),
+                "crossing_detected_city"
+            ] = float(value)
+
+        # ---------------------------------------
+        # Add city-level crossing counts detected
+        # ---------------------------------------
+        for country, value in pedestrian_cross_country.items():
+
+            df_mapping.loc[
+                (df_mapping["country"] == country),
+                "crossing_detected_country"
+            ] = float(value)
+
         # Add column with count of videos
         df_mapping["total_videos"] = df_mapping["videos"].apply(lambda x: len(x.strip("[]").split(",")) if x.strip("[]") else 0)  # noqa: E501
 
@@ -3325,7 +3352,11 @@ if __name__ == "__main__":
                          crossings_without_traffic_equipment_country,       # 32
                          min_max_speed,                                     # 33
                          min_max_time,                                      # 34
-                         pedestrian_cross_country),                         # 35
+                         pedestrian_cross_country,                          # 35
+                         all_speed_city,                                    # 36
+                         all_time_city,                                     # 37
+                         all_speed_country,                                 # 38
+                         all_time_country),                                 # 39
                         file)
         logger.info("Analysis results saved to pickle file.")
 
@@ -3337,7 +3368,7 @@ if __name__ == "__main__":
         # Compute average speed for each country using mapping and speed data
         avg_speed_country = algorithms_class.avg_speed_of_crossing_country(df_mapping, all_speed)
         # Compute average speed for each city using speed data
-        avg_speed_city = algorithms_class.avg_speed_of_crossing_city(all_speed)
+        avg_speed_city = algorithms_class.avg_speed_of_crossing_city(df_mapping, all_speed)
 
         # Add computed speed values to the main mapping dataframe
         df_mapping = analysis_class.add_speed_and_time_to_mapping(
@@ -3398,10 +3429,10 @@ if __name__ == "__main__":
 
         # Remove all entries in avg_speed_country and avg_time_country for those countries
         for dict_name, d in [('avg_speed_country', avg_speed_country), ('avg_time_country', avg_time_country)]:
-            keys_to_remove = [key for key in d if key.split('_')[0] in remove_countries]
+            keys_to_remove = [key for key in d if key.split('_')[0] in remove_countries]  # type: ignore
             for key in keys_to_remove:
-                logger.debug(f"Deleting from {dict_name}: {key} -> {d[key]}")
-                del d[key]
+                logger.debug(f"Deleting from {dict_name}: {key} -> {d[key]}")  # type: ignore
+                del d[key]  # type: ignore
 
         # --- Remove low-detection cities from city-level speed/time ---
         # Sum all conditions for each city in pedestrian_cross_city
@@ -3419,10 +3450,10 @@ if __name__ == "__main__":
 
         # Remove all entries in avg_speed_city and avg_time_city for those cities
         for dict_name, d in [('avg_speed_city', avg_speed_city), ('avg_time_city', avg_time_city)]:
-            keys_to_remove = [key for key in d if key.split('_')[0] in remove_cities]
+            keys_to_remove = [key for key in d if key.split('_')[0] in remove_cities]  # type: ignore
             for key in keys_to_remove:
-                logger.info(f"Deleting from {dict_name}: {key} -> {d[key]}")
-                del d[key]
+                logger.debug(f"Deleting from {dict_name}: {key} -> {d[key]}")  # type: ignore
+                del d[key]  # type: ignore
 
     # Sort by continent and city, both in ascending order
     df_mapping = df_mapping.sort_values(by=["continent", "city"], ascending=[True, True])
@@ -4107,6 +4138,17 @@ if __name__ == "__main__":
                                        metric="time",
                                        data_view="combined",
                                        title_text="Time to start crossing (s)",
+                                       filename="time_crossing_avg",
+                                       font_size_captions=common.get_configs("font_size") + 8,
+                                       legend_x=0.87,
+                                       legend_y=0.04,
+                                       legend_spacing=0.02)
+
+        plots_class.stack_plot_country(df_countries,
+                                       order_by="condition",
+                                       metric="speed",
+                                       data_view="combined",
+                                       title_text="Mean speed of crossing (in m/s)",
                                        filename="time_crossing_avg",
                                        font_size_captions=common.get_configs("font_size") + 8,
                                        legend_x=0.87,

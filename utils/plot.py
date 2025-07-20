@@ -1417,8 +1417,8 @@ class Plots():
 
         # Create the country list to highlight in the choropleth map
         countries_set = set(countries)  # Use set to avoid duplicates
-        if "Denmark" in countries_set:
-            countries_set.add('Greenland')
+        # if "Denmark" in countries_set:
+        #     countries_set.add('Greenland')
         if "Türkiye" in countries_set:
             countries_set.add('Turkey')
         if "Somalia" in countries_set:
@@ -2181,7 +2181,9 @@ class Plots():
             ("average", "speed", "combined"): "Plotting speed to cross by average.",
             ("average", "time", "day"): "Plotting time to start cross by average during day time.",
             ("average", "time", "night"): "Plotting time to start cross by average during night time.",
-            ("average", "time", "combined"): "Plotting time to start cross by average."
+            ("average", "time", "combined"): "Plotting time to start cross by average.",
+            ("condition", "time", "combined"): "Plotting time to start cross sorted by day values.",
+            ("condition", "speed", "combined"): "Plotting speed to cross sorted by day values."
         }
 
         message = log_messages.get((order_by, metric, data_view))
@@ -2193,7 +2195,9 @@ class Plots():
         # Map metric names to their index in the data tuple
         metric_index_map = {
             "speed": 27,
-            "time": 28
+            "time": 28,
+            "all_speed_country": 38,
+            "all_time_country": 39
             }
 
         if metric not in metric_index_map:
@@ -2289,6 +2293,21 @@ class Plots():
                         ((final_dict[country].get(f"{metric}_0") or 0) + (final_dict[country].get(f"{metric}_1") or 0)) / 2  # noqa:E501  # type: ignore
                     ), reverse=True
                 )
+
+        elif order_by == "condition":
+            if data_view == "combined":
+                countries_ordered = sorted(
+                    [
+                        country for country in final_dict.keys()
+                        if (final_dict[country].get(f"{metric}_0") is not None or final_dict[country].get(f"{metric}_1") is not None)  # noqa:E501
+                        and ((final_dict[country].get(f"{metric}_0") or final_dict[country].get(f"{metric}_1") or 0) >= 0.005)  # noqa:E501
+                    ],
+                    key=lambda country: (
+                        final_dict[country].get(f"{metric}_0")
+                        if final_dict[country].get(f"{metric}_0") is not None
+                        else final_dict[country].get(f"{metric}_1") or 0
+                        ), reverse=True
+                    )
 
         if len(countries_ordered) == 0:
             return
