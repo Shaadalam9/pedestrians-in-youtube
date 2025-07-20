@@ -17,6 +17,7 @@ from tqdm import tqdm
 import plotly.express as px
 from scipy.spatial import KDTree
 import statistics
+import itertools
 
 
 # Suppress the specific FutureWarning
@@ -2207,6 +2208,7 @@ class Plots():
             data_tuple = pickle.load(file)
 
         metric_data = data_tuple[metric_index_map[metric]]
+        all_values = data_tuple[metric_index_map[f"all_{metric}_country"]]
 
         if metric_data is None:
             raise ValueError(f"'{metric}' returned None, please check the input data or calculations.")
@@ -2217,7 +2219,7 @@ class Plots():
             if not (isinstance(value, float) and math.isnan(value))
         }
 
-        for country_condition, _ in tqdm(metric_data.items()):
+        for country_condition, metric_values in tqdm(metric_data.items()):
             country, condition = country_condition.split('_')
 
             # Get the iso3 from the mapping file
@@ -2231,10 +2233,21 @@ class Plots():
             if country is not None and iso_code is not None:
                 # Initialise the country's dictionary if not already present
                 if f'{country}' not in final_dict:
-                    final_dict[f'{country}'] = {f"{metric}_0": None, f"{metric}_1": None,
-                                                "country": country, "iso3": iso_code}
+                    final_dict[f'{country}'] = {f"{metric}_0": None,
+                                                f"{metric}_1": None,
+                                                f"{metric}_sd_0": None,
+                                                f"{metric}_sd_1": None,
+                                                f"{metric}_sd_avg": None,
+                                                "country": country,
+                                                "iso3": iso_code}
+
                 # Populate the corresponding speed based on the condition
-                final_dict[f'{country}'][f"{metric}_{condition}"] = _  # type: ignore
+                final_dict[f'{country}'][f"{metric}_{condition}"] = metric_values
+                final_dict[f'{country}'][f"{metric}_sd_{condition}"] = np.std(all_values[f"{country}_{condition}"])
+
+                vals = [v for k, v in all_values.items() if k.startswith(f"{country}_") and v is not None]
+                flat_vals = list(itertools.chain.from_iterable(vals))
+                final_dict[country][f"{metric}_sd_avg"] = np.std(flat_vals)
 
         if order_by == "alphabetical":
             if data_view == "day":
@@ -2315,16 +2328,28 @@ class Plots():
         # Prepare data for day and night stacking
         day_key = f"{metric}_0"
         night_key = f"{metric}_1"
+        day_sd_key = f"{metric}_sd_0"
+        night_sd_key = f"{metric}_sd_1"
+        all_sd_key = f"{metric}_sd_avg"
 
         if data_view == "combined":
             day_values = [final_dict[country][day_key] for country in countries_ordered]
             night_values = [final_dict[country][night_key] for country in countries_ordered]
+            day_sd = [final_dict[country][day_sd_key] for country in countries_ordered]
+            night_sd = [final_dict[country][night_sd_key] for country in countries_ordered]
+            all_sd = [final_dict[country][all_sd_key] for country in countries_ordered]
+
         elif data_view == "day":
             day_values = [final_dict[country][day_key] for country in countries_ordered]
+            day_sd = [final_dict[country][day_sd_key] for country in countries_ordered]
             night_values = [0 for country in countries_ordered]
+            night_sd = [0 for country in countries_ordered]
+
         elif data_view == "night":
             day_values = [0 for country in countries_ordered]
+            day_sd = [0 for country in countries_ordered]
             night_values = [final_dict[country][night_key] for country in countries_ordered]
+            night_sd = [final_dict[country][night_sd_key] for country in countries_ordered]
 
         # Determine how many countries will be in each column
         num_countries_per_col = len(countries_ordered) // 2 + len(countries_ordered) % 2  # Split cities
@@ -2356,11 +2381,19 @@ class Plots():
                 else:
                     value = (day_values[i] + night_values[i])
 
+                # Determine the y value
+                if order_by == "condition":
+                    y_value = [
+                        f"{country} {value:.2f}±{all_sd[i]:.2f} "
+                        f"(D={day_values[i]:.2f}±{day_sd[i]:.2f}, "
+                        f"N={night_values[i]:.2f}±{night_sd[i]:.2f})"]
+                else:
+                    y_value = [f'{country} {value:.2f}']
+
                 fig.add_trace(go.Bar(
                     x=[day_values[i]],
-                    y=[f'{country} {value:.2f}'],
+                    y=y_value,
                     orientation='h',
-                    name=f"{country} {metric} during day",
                     marker=dict(color=bar_colour_1),
                     text=[''],
                     textposition='inside',
@@ -2373,9 +2406,8 @@ class Plots():
 
                 fig.add_trace(go.Bar(
                     x=[night_values[i]],
-                    y=[f'{country} {value:.2f}'],
+                    y=y_value,
                     orientation='h',
-                    name=f"{country} {metric} during night",
                     marker=dict(color=bar_colour_2),
                     text=[''],
                     textposition='inside',
@@ -2385,11 +2417,17 @@ class Plots():
 
             elif day_values[i] is not None:  # Only day data available
                 value = day_values[i]
+
+                # Determine the y value
+                if order_by == "condition":
+                    y_value = [f"{country} {value:.2f}±{day_sd[i]:.2f}"]
+                else:
+                    y_value = [f'{country} {value:.2f}']
+
                 fig.add_trace(go.Bar(
                     x=[day_values[i]],
-                    y=[f'{country} {value:.2f}'],
+                    y=y_value,
                     orientation='h',
-                    name=f"{country} {metric} during day",
                     marker=dict(color=bar_colour_1),
                     text=[''],
                     textposition='inside',
@@ -2402,11 +2440,17 @@ class Plots():
 
             elif night_values[i] is not None:  # Only night data available
                 value = night_values[i]
+
+                # Determine the y value
+                if order_by == "condition":
+                    y_value = [f"{country} {value:.2f}±{night_sd[i]:.2f}"]
+                else:
+                    y_value = [f'{country} {value:.2f}']
+
                 fig.add_trace(go.Bar(
                     x=[night_values[i]],
-                    y=[f'{country} {value:.2f}'],
+                    y=y_value,
                     orientation='h',
-                    name=f"{country} {metric} during night",
                     marker=dict(color=bar_colour_2),
                     text=[''],
                     textposition='inside',
@@ -2434,9 +2478,18 @@ class Plots():
                 else:
                     value = (day_values[idx] + night_values[idx])
 
+                # Determine the y value
+                if order_by == "condition":
+                    y_value = [
+                        f"{country} {value:.2f}±{all_sd[idx]:.2f} "
+                        f"(D={day_values[idx]:.2f}±{day_sd[idx]:.2f}, "
+                        f"N={night_values[idx]:.2f}±{night_sd[idx]:.2f})"]
+                else:
+                    y_value = [f'{country} {value:.2f}']
+
                 fig.add_trace(go.Bar(
                     x=[day_values[idx]],
-                    y=[f'{country} {value:.2f}'],
+                    y=y_value,
                     orientation='h',
                     name=f"{country} {metric} during day",
                     marker=dict(color=bar_colour_1),
@@ -2451,7 +2504,7 @@ class Plots():
 
                 fig.add_trace(go.Bar(
                     x=[night_values[idx]],
-                    y=[f'{country} {value:.2f}'],
+                    y=y_value,
                     orientation='h',
                     name=f"{country} {metric} during night",
                     marker=dict(color=bar_colour_2),
@@ -2463,9 +2516,16 @@ class Plots():
 
             elif day_values[idx] is not None:
                 value = day_values[idx]
+
+                # Determine the y value
+                if order_by == "condition":
+                    y_value = [f"{country} {value:.2f}±{day_sd[idx]:.2f}"]
+                else:
+                    y_value = [f'{country} {value:.2f}']
+
                 fig.add_trace(go.Bar(
                     x=[day_values[idx]],
-                    y=[f'{country} {value:.2f}'],
+                    y=y_value,
                     orientation='h',
                     name=f"{country} {metric} during day",
                     marker=dict(color=bar_colour_1),
@@ -2480,9 +2540,16 @@ class Plots():
 
             elif night_values[idx] is not None:
                 value = night_values[idx]
+
+                # Determine the y value
+                if order_by == "condition":
+                    y_value = [f"{country} {value:.2f}±{night_sd[idx]:.2f}"]
+                else:
+                    y_value = [f'{country} {value:.2f}']
+
                 fig.add_trace(go.Bar(
                     x=[night_values[idx]],
-                    y=[f'{country} {value:.2f}'],
+                    y=y_value,
                     orientation='h',
                     name=f"{country} {metric} during night",
                     marker=dict(color=bar_colour_2),
