@@ -1682,7 +1682,7 @@ class Analysis():
         # Rename the variables in the correlation matrix
         rename_dict_1 = {
             'avg_speed_0': 'Speed of', 'avg_speed_1': 'Crossing speed',
-            'avg_time_0': 'Crossing decision time', 'avg_time_1': 'Crossing decision time',
+            'avg_time_0': 'Time to start crossing', 'avg_time_1': 'Time to start crossing',
             'ped_cross_city_0': 'Crossing', 'ped_cross_city_1': 'Crossing',
             'person_city_0': 'Detected persons', 'person_city_1': 'Detected persons',
             'bicycle_city_0': 'Detected bicycles', 'bicycle_city_1': 'Detected bicycles',
@@ -1801,7 +1801,7 @@ class Analysis():
 
         # Rename the variables in the correlation matrix (example: renaming keys)
         rename_dict_2 = {
-            'avg_speed_val': 'Crossing speed', 'avg_time_val': 'Crossing decision time',
+            'avg_speed_val': 'Crossing speed', 'avg_time_val': 'Time to start crossing',
             'ped_cross_city': 'Crossing', 'person_city': 'Detected persons',
             'bicycle_city': 'Detected bicycles', 'car_city': 'Detected cars',
             'motorcycle_city': 'Detected motorcycles', 'bus_city': 'Detected bus',
@@ -1902,7 +1902,7 @@ class Analysis():
 
             # Rename the variables in the correlation matrix (example: renaming keys)
             rename_dict_3 = {
-                'avg_speed_val': 'Crossing speed', 'avg_time_val': 'Crossing decision time',
+                'avg_speed_val': 'Crossing speed', 'avg_time_val': 'Time to start crossing',
                 'ped_cross_city': 'Crossing', 'person_city': 'Detected persons',
                 'bicycle_city': 'Detected bicycles', 'car_city': 'Detected cars',
                 'motorcycle_city': 'Detected motorcycles', 'bus_city': 'Detected bus',
@@ -2103,7 +2103,7 @@ class Analysis():
         # Rename the variables in the correlation matrix
         rename_dict_1 = {
             'avg_speed_0': 'Speed', 'avg_speed_1': 'Crossing speed',
-            'avg_time_0': 'Crossing decision time', 'avg_time_1': 'Crossing decision time',
+            'avg_time_0': 'Time to start crossing', 'avg_time_1': 'Time to start crossing',
             'ped_cross_city_0': 'Crossing', 'ped_cross_city_1': 'Crossing',
             'person_city_0': 'Detected persons', 'person_city_1': 'Detected persons',
             'bicycle_city_0': 'Detected bicycles', 'bicycle_city_1': 'Detected bicycles',
@@ -2222,7 +2222,7 @@ class Analysis():
 
         # Rename the variables in the correlation matrix (example: renaming keys)
         rename_dict_2 = {
-            'avg_day_night_speed': 'Crossing speed', 'avg_day_night_time': 'Crossing decision time',
+            'avg_day_night_speed': 'Crossing speed', 'avg_day_night_time': 'Time to start crossing',
             'ped_cross_city': 'Crossing', 'person_city': 'Detected persons',
             'bicycle_city': 'Detected bicycles', 'car_city': 'Detected cars',
             'motorcycle_city': 'Detected motorcycles', 'bus_city': 'Detected bus',
@@ -2334,7 +2334,7 @@ class Analysis():
 
             # Rename the variables in the correlation matrix (example: renaming keys)
             rename_dict_3 = {
-                'avg_day_night_speed': 'Crossing speed', "avg_day_night_time": 'Crossing decision time',
+                'avg_day_night_speed': 'Crossing speed', "avg_day_night_time": 'Time to start crossing',
                 'ped_cross_city': 'Crossing', 'person_city': 'Detected persons',
                 'bicycle_city': 'Detected bicycles', 'car_city': 'Detected cars',
                 'motorcycle_city': 'Detected motorcycles', 'bus_city': 'Detected bus',
@@ -3706,7 +3706,7 @@ if __name__ == "__main__":
                             color="continent",
                             text="city",
                             xaxis_title='Crossing speed during daytime (in m/s)',
-                            yaxis_title='Crossing decision time during daytime (in s)',
+                            yaxis_title='Time to start crossing during daytime (in s)',
                             pretty_text=False,
                             marker_size=10,
                             save_file=True,
@@ -3729,7 +3729,7 @@ if __name__ == "__main__":
                             color="continent",
                             text="city",
                             xaxis_title='Crossing speed during night time (in m/s)',
-                            yaxis_title='Crossing decision time during night time (in s)',
+                            yaxis_title='Time to start crossing during night time (in s)',
                             pretty_text=False,
                             marker_size=10,
                             save_file=True,
@@ -4294,7 +4294,7 @@ if __name__ == "__main__":
                             color="continent",
                             text="iso3",
                             xaxis_title='Crossing speed during daytime (in m/s)',
-                            yaxis_title='Crossing decision time during daytime (in s)',
+                            yaxis_title='Time to start crossing during daytime (in s)',
                             pretty_text=False,
                             marker_size=10,
                             save_file=True,
@@ -4316,7 +4316,7 @@ if __name__ == "__main__":
                             color="continent",
                             text="iso3",
                             xaxis_title='Crossing speed during night time (in m/s)',
-                            yaxis_title='Crossing decision time during night time (in s)',
+                            yaxis_title='Time to start crossing during night time (in s)',
                             pretty_text=False,
                             marker_size=10,
                             save_file=True,
