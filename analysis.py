@@ -43,7 +43,7 @@ geometry_class = Geometry()
 template = common.get_configs('plotly_template')
 
 # File to store the city coordinates
-file_results = 'results_.pickle'
+file_results = 'results.pickle'
 
 # Colours in graphs
 bar_colour_1 = 'rgb(251, 180, 174)'
