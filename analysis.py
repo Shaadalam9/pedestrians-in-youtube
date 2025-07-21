@@ -4107,7 +4107,6 @@ if __name__ == "__main__":
         hover_data_raw = list(set(df_countries.columns) - set(columns_remove) - set(columns_remove_raw))
 
         df_countries.to_csv(os.path.join(common.output_dir, "mapping_countries.csv"))
-        df_countries_raw.to_csv(os.path.join(common.output_dir, "mapping_countries_raw.csv"))
 
         # Map with images. currently works on a 13" MacBook air screen in chrome, as things are hardcoded...
         plots_class.map_political(df=df_countries_raw, df_mapping=df_mapping, show_cities=True, show_images=True,
@@ -4118,6 +4117,13 @@ if __name__ == "__main__":
         # Map with no images
         plots_class.map_political(df=df_countries, df_mapping=df_mapping, show_cities=True, show_images=False,
                                   hover_data=hover_data, save_file=True, save_final=True, name="map")
+
+        df_countries_raw.drop(['speed_crossing_day_country', 'speed_crossing_night_country',
+                               'speed_crossing_day_night_country_avg',
+                               'time_crossing_day_country', 'time_crossing_night_country',
+                               'time_crossing_day_night_country_avg'
+                               ], axis=1, inplace=True)
+        df_countries_raw.to_csv(os.path.join(common.output_dir, "mapping_countries_raw.csv"))
 
         # Amount of footage
         plots_class.scatter(df=df_countries,
