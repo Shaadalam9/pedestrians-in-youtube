@@ -59,15 +59,15 @@ if __name__ == "__main__":
             email_password=common.get_secrets("email_password")
         )
 
-        # Load the config file
-        mapping = pd.read_csv(config.mapping)
-
-        # Check for missing mapping file
-        if config.check_missing_mapping:
-            helper.check_missing_mapping(mapping)
-
         # Run this script loop forever
         while True:
+            # Load the config file
+            mapping = pd.read_csv(config.mapping)
+
+            # Check for missing mapping file
+            if config.check_missing_mapping:
+                helper.check_missing_mapping(mapping)
+                
             video_paths = config.videos  # folders with videos
             output_path = config.videos[-1]  # use the last folder with videos to download
             delete_runs_files = config.delete_runs_files
@@ -223,7 +223,7 @@ if __name__ == "__main__":
                         helper.set_video_title(video_title)
                         video_fps = helper.get_video_fps(base_video_path)  # try to get FPS value of existing file
 
-                    for start_time, end_time, time_of_day_value in zip(start_times_list, end_times_list, time_of_day_list):
+                    for start_time, end_time, time_of_day_value in zip(start_times_list, end_times_list, time_of_day_list):  # noqa: E501
                         bbox_folders, seg_folders, bbox_paths, seg_paths = [], [], [], []
                         filename = f"{vid}_{start_time}.csv"
 
@@ -394,12 +394,13 @@ if __name__ == "__main__":
 
             # Pause the file for sleep_sec seconds before doing analysis again
             if config.sleep_sec:
-                logger.info(f"Sleeping for {config.sleep_sec} before attempting to go over mapping again.")
+                logger.info(f"Sleeping for {config.sleep_sec} s before attempting to go over mapping again.")
                 time.sleep(config.sleep_sec)
 
             # Run git pull to get the latest changes in the mapping file
             if config.git_pull:
                 common.git_pull()
+
     # Send email if script crashed
     except Exception as e:
         if config.email_send:
