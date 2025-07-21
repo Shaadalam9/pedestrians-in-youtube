@@ -1662,19 +1662,19 @@ class Plots():
         # Filter out rows where the color value is 0 or NaN
         df_filtered = df[df[color].fillna(0) != 0].copy()
 
-        # Get Denmark's value for the specified column
-        denmark_value = df_filtered.loc[df_filtered['country'] == 'Denmark', color].values
-        if len(denmark_value) > 0:
-            greenland_row = {
-                'country': 'Greenland',
-                color: denmark_value[0]
-            }
-            # Add any other required columns with default or NaN
-            for col in df_filtered.columns:
-                if col not in greenland_row:
-                    greenland_row[col] = None
+        # # Get Denmark's value for the specified column
+        # denmark_value = df_filtered.loc[df_filtered['country'] == 'Denmark', color].values
+        # if len(denmark_value) > 0:
+        #     greenland_row = {
+        #         'country': 'Greenland',
+        #         color: denmark_value[0]
+        #     }
+        #     # Add any other required columns with default or NaN
+        #     for col in df_filtered.columns:
+        #         if col not in greenland_row:
+        #             greenland_row[col] = None
 
-            df_filtered = pd.concat([df_filtered, pd.DataFrame([greenland_row])], ignore_index=True)
+        #     df_filtered = pd.concat([df_filtered, pd.DataFrame([greenland_row])], ignore_index=True)
 
         # ---- HANDLE COUNTRY NAME MISMATCHES ----
         country_name_map = {
@@ -1714,17 +1714,17 @@ class Plots():
             fig.show()
 
     def map_political(self, df, df_mapping, show_images=False, show_cities=True, hover_data=None, save_file=False,
-                      save_final=False):
+                      save_final=False, name="map"):
         """Generate world map with countries colored by continent using choropleth.
 
         Args:
             df (dataframe): dataframe with 'country' and 'continent' columns.
             hover_data (list, optional): list of params to show on hover.
         """
-        if 'Denmark' in df['country'].values:
-            denmark_value = df.loc[df['country'] == 'Denmark', 'continent'].values[0]
-            df = pd.concat([df, pd.DataFrame([{'country': 'Greenland', 'continent': denmark_value}])],
-                           ignore_index=True)
+        # if 'Denmark' in df['country'].values:
+        #     denmark_value = df.loc[df['country'] == 'Denmark', 'continent'].values[0]
+        #     df = pd.concat([df, pd.DataFrame([{'country': 'Greenland', 'continent': denmark_value}])],
+        #                    ignore_index=True)
 
         country_name_map = {
             "Türkiye": "Turkey"
@@ -1941,10 +1941,10 @@ class Plots():
             fig.update_layout(margin=dict(l=10, r=10, t=10, b=10))
             # with screenshots
             if show_images:
-                self.save_plotly_figure(fig, "map_screenshots", save_final=False)
+                self.save_plotly_figure(fig, name, save_final=save_final)
             # without screenshots
             else:
-                self.save_plotly_figure(fig, "map", save_final=True)
+                self.save_plotly_figure(fig, name, save_final=save_final)
         # open it in localhost instead
         else:
             fig.show()

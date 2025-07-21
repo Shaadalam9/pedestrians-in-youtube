@@ -14,6 +14,7 @@ from utils.values import Values
 from utils.wrappers import Wrappers
 from utils.plot import Plots
 from utils.geometry import Geometry
+from utils.tools import Tools
 import common
 from custom_logger import CustomLogger
 from logmod import logs
@@ -38,6 +39,7 @@ values_class = Values()
 wrapper_class = Wrappers()
 plots_class = Plots()
 geometry_class = Geometry()
+tools_class = Tools()
 
 # set template for plotly output
 template = common.get_configs('plotly_template')
@@ -314,30 +316,6 @@ class Analysis():
         return df
 
     @staticmethod
-    def count_object(dataframe, id):
-        """
-        Counts the number of unique instances of an object with a specific ID in a DataFrame.
-
-        Args:
-            dataframe (DataFrame): The DataFrame containing object data.
-            id (int): The unique ID assigned to the object.
-
-        Returns:
-            int: The number of unique instances of the object with the specified ID.
-        """
-
-        # Filter the DataFrame to include only entries for the specified object ID
-        crossed_ids = dataframe[(dataframe["YOLO_id"] == id)]
-
-        # Group the filtered data by Unique ID
-        crossed_ids_grouped = crossed_ids.groupby("Unique Id")
-
-        # Count the number of groups, which represents the number of unique instances of the object
-        num_groups = crossed_ids_grouped.ngroups
-
-        return num_groups
-
-    @staticmethod
     def calculate_total_seconds(df):
         """Calculates the total seconds of the total video according to mapping file."""
         grand_total_seconds = 0
@@ -411,7 +389,7 @@ class Analysis():
             all metrics, each mapped via `wrapper_class.city_country_wrapper` for aggregation.
 
         Metrics computed (keys in cache):
-            - "cell_phones": cell phone detections per person, normalized for time
+            - "cellphones": cell phone detections per person, normalized for time
             - "traffic_signs": count of detected traffic signs (YOLO ids 9, 11)
             - "vehicles": count of all vehicles (YOLO ids 2, 3, 5, 7)
             - "bicycles": count of bicycles (YOLO id 1)
@@ -439,7 +417,7 @@ class Analysis():
                     csv_files[file] = os.path.join(folder_path, file)
 
         # Prepare result containers for each metric type
-        cell_phone_info = {}
+        cellphone_info = {}
         traffic_signs_layer = {}
         vehicle_layer = {}
         bicycle_layer = {}
@@ -485,8 +463,8 @@ class Analysis():
                     mobile_ids = len(dataframe[dataframe["YOLO_id"] == 67]["Unique Id"].unique())
                     num_person = len(dataframe[dataframe["YOLO_id"] == 0]["Unique Id"].unique())
                     if num_person > 0 and mobile_ids > 0:
-                        avg_cell_phone = ((mobile_ids * 60) / duration / num_person) * 1000
-                        cell_phone_info[video_key] = avg_cell_phone
+                        avg_cellphone = ((mobile_ids * 60) / duration / num_person) * 1000
+                        cellphone_info[video_key] = avg_cellphone
 
                     # ---- TRAFFIC SIGNS (YOLO 9, 11) ----
                     traffic_sign_ids = dataframe[dataframe["YOLO_id"].isin([9, 11])]["Unique Id"].unique()
@@ -531,7 +509,7 @@ class Analysis():
 
         # --- WRAPPING AS CITY_LONGITUDE_LATITUDE_CONDITION ---
         metric_dicts = [
-            ("cell_phones", cell_phone_info),
+            ("cellphones", cellphone_info),
             ("traffic_signs", traffic_signs_layer),
             ("vehicles", vehicle_layer),
             ("bicycles", bicycle_layer),
@@ -563,7 +541,7 @@ class Analysis():
             cls._compute_all_metrics(df_mapping)
 
     @classmethod
-    def calculate_cell_phones(cls, df_mapping):
+    def calculate_cellphones(cls, df_mapping):
         """
         Return the cached cell phone metric, computing all metrics if needed.
         Raises:
@@ -572,7 +550,7 @@ class Analysis():
         cls._ensure_cache(df_mapping)
         if cls._all_metrics_cache is None:
             raise RuntimeError("Metric cache not populated.")
-        return cls._all_metrics_cache["cell_phones"]
+        return cls._all_metrics_cache["cellphones"]
 
     @classmethod
     def calculate_traffic_signs(cls, df_mapping):
@@ -2406,13 +2384,13 @@ class Analysis():
         """
 
         # Drop location-specific columns
-        df = df.drop(columns=['id', 'city', 'state', 'lat', 'lon', 'gmp', 'population_city', 'traffic_index',
-                              'upload_date', 'speed_crossing_day_city', 'speed_crossing_night_city',
-                              'speed_crossing_day_night_city_avg', 'time_crossing_day_city',
-                              'time_crossing_night_city', 'time_crossing_day_night_city_avg',
-                              'with_trf_light_day_city', 'with_trf_light_night_city',
-                              'without_trf_light_day_city', 'without_trf_light_night_city',
-                              'crossing_detected_city', 'channel'], errors='ignore')
+        drop_columns = ['id', 'city', 'state', 'lat', 'lon', 'gmp', 'population_city', 'traffic_index',
+                        'upload_date', 'speed_crossing_day_city', 'speed_crossing_night_city',
+                        'speed_crossing_day_night_city_avg', 'time_crossing_day_city',
+                        'time_crossing_night_city', 'time_crossing_day_night_city_avg',
+                        'with_trf_light_day_city', 'with_trf_light_night_city',
+                        'without_trf_light_day_city', 'without_trf_light_night_city',
+                        'crossing_detected_city', 'channel']
 
         static_columns = [
             'country', 'continent', 'population_country', 'traffic_mortality',
@@ -2427,26 +2405,48 @@ class Analysis():
         merge_columns = ['videos', 'time_of_day', 'start_time', 'end_time', 'vehicle_type', 'fps_list']
 
         sum_columns = [
-            'person', 'bicycle', 'car', 'motorcycle', 'bus', 'truck',
-            'cellphone', 'traffic_light', 'stop_sign', 'total_time', 'total_videos'
+            'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat',
+            'traffic_light', 'fire_hydrant', 'stop_sign', 'parking_meter', 'bench', 'bird', 'cat',
+            'dog', 'horse', 'sheep', 'cow', 'elephant', 'bear', 'zebra', 'giraffe', 'backpack',
+            'umbrella', 'handbag', 'tie', 'suitcase', 'frisbee', 'skis', 'snowboard', 'sports_ball',
+            'kite', 'baseball_bat', 'baseball_glove', 'skateboard', 'surfboard', 'tennis_racket',
+            'bottle', 'wine_glass', 'cup', 'fork', 'knife', 'spoon', 'bowl', 'banana', 'apple',
+            'sandwich', 'orange', 'broccoli', 'carrot', 'hot_dog', 'pizza', 'donut', 'cake', 'chair',
+            'couch', 'potted_plant', 'bed', 'dining_table', 'toilet', 'tv', 'laptop', 'mouse',
+            'remote', 'keyboard', 'cellphone', 'microwave', 'oven', 'toaster', 'sink', 'refrigerator',
+            'book', 'clock', 'vase', 'scissors', 'teddy_bear', 'hair_drier', 'toothbrush', 'total_time', 'total_videos'
         ]
 
-        agg_dict = {col: 'first' for col in static_columns}
-        agg_dict.update({col: lambda x: list(x) for col in merge_columns})  # type: ignore
-        agg_dict.update({col: 'sum' for col in sum_columns})
+        # Only keep columns that exist in df
+        drop_columns = [c for c in drop_columns if c in df.columns]
+        static_columns = [c for c in static_columns if c in df.columns]
+        merge_columns = [c for c in merge_columns if c in df.columns]
+        sum_columns = [c for c in sum_columns if c in df.columns]
 
-        # Fix continent assignment - assign most frequent continent per iso3
-        continent_mode = (
-            df.groupby('iso3')['continent']
-            .agg(lambda x: x.mode().iloc[0] if not x.mode().empty else x.iloc[0])
-            .reset_index()
-            .rename(columns={'continent': 'continent_majority'})
-        )
+        # Drop location-specific columns
+        df = df.drop(columns=drop_columns, errors='ignore')
 
-        # Merge back to df to fix 'continent' column
-        df = df.drop('continent', axis=1)
-        df = df.merge(continent_mode, on='iso3', how='left')
-        df = df.rename(columns={'continent_majority': 'continent'})
+        # Aggregation dictionary
+        agg_dict = {
+            **{col: 'first' for col in static_columns},
+            **{col: (lambda x: list(x)) for col in merge_columns},
+            **{col: 'sum' for col in sum_columns}
+        }
+
+        # Fix continent assignment if present
+        if 'continent' in df.columns:
+            continent_mode = (
+                df.groupby('iso3')['continent']
+                .agg(lambda x: x.mode().iloc[0] if not x.mode().empty else x.iloc[0])
+                .reset_index()
+                .rename(columns={'continent': 'continent_majority'})
+            )
+            df = df.drop('continent', axis=1)
+            df = df.merge(continent_mode, on='iso3', how='left')
+            df = df.rename(columns={'continent_majority': 'continent'})
+
+        # Only keep columns in agg_dict that exist in df
+        agg_dict = {k: v for k, v in agg_dict.items() if k in df.columns}
 
         # Aggregate
         df_grouped = df.groupby('iso3').agg(agg_dict).reset_index()
@@ -2905,7 +2905,8 @@ if __name__ == "__main__":
              all_speed_city,                                # 36
              all_time_city,                                 # 37
              all_speed_country,                             # 38
-             all_time_country                               # 39
+             all_time_country,                              # 39
+             df_mapping_raw                                 # 40
              ) = pickle.load(file)
 
         logger.info("Loaded analysis results from pickle file.")
@@ -2980,67 +2981,70 @@ if __name__ == "__main__":
         # Get the minimum percentage of country population from the configuration
         min_percentage = common.get_configs("min_city_population_percentage")
 
-        # Filter df_mapping to include cities that meet either of the following criteria:
-        # 1. The city's population is greater than the threshold
-        # 2. The city's population is at least the minimum percentage of the country's population
-        df_mapping = df_mapping[
-            (df_mapping["population_city"] >= population_threshold) |  # Condition 1
-            (df_mapping["population_city"] >= min_percentage * df_mapping["population_country"])  # Condition 2
-        ]
+        (person_counter, bicycle_counter, car_counter, motorcycle_counter, airplane_counter, bus_counter,
+         train_counter, truck_counter, boat_counter, traffic_light_counter, fire_hydrant_counter, stop_sign_counter,
+         parking_meter_counter, bench_counter, bird_counter, cat_counter, dog_counter, horse_counter, sheep_counter,
+         cow_counter, elephant_counter, bear_counter, zebra_counter, giraffe_counter, backpack_counter,
+         umbrella_counter, handbag_counter, tie_counter, suitcase_counter, frisbee_counter, skis_counter,
+         snowboard_counter, sports_ball_counter, kite_counter, baseball_bat_counter, baseball_glove_counter,
+         skateboard_counter, surfboard_counter, tennis_racket_counter, bottle_counter, wine_glass_counter,
+         cup_counter, fork_counter, knife_counter, spoon_counter, bowl_counter, banana_counter, apple_counter,
+         sandwich_counter, orange_counter, broccoli_counter, carrot_counter, hot_dog_counter, pizza_counter,
+         donut_counter, cake_counter, chair_counter, couch_counter, potted_plant_counter, bed_counter,
+         dining_table_counter, toilet_counter, tv_counter, laptop_counter, mouse_counter, remote_counter,
+         keyboard_counter, cellphone_counter, microwave_counter, oven_counter, toaster_counter, sink_counter,
+         refrigerator_counter, book_counter, clock_counter, vase_counter, scissors_counter, teddy_bear_counter,
+         hair_drier_counter, toothbrush_counter) = [0] * 80
 
-        # Limit countries if required
-        countries_include = common.get_configs("countries_analyse")
-        if countries_include:
-            df_mapping = df_mapping[df_mapping["iso3"].isin(common.get_configs("countries_analyse"))]
+        # Make a dict for all columns
+        city_country_cols = {
+            # Object columns
+            'person': 0, 'bicycle': 0, 'car': 0, 'motorcycle': 0, 'airplane': 0, 'bus': 0, 'train': 0,
+            'truck': 0, 'boat': 0, 'traffic_light': 0, 'fire_hydrant': 0, 'stop_sign': 0, 'parking_meter': 0,
+            'bench': 0, 'bird': 0, 'cat': 0, 'dog': 0, 'horse': 0, 'sheep': 0, 'cow': 0, 'elephant': 0, 'bear': 0,
+            'zebra': 0, 'giraffe': 0, 'backpack': 0, 'umbrella': 0, 'handbag': 0, 'tie': 0, 'suitcase': 0,
+            'frisbee': 0, 'skis': 0, 'snowboard': 0, 'sports_ball': 0, 'kite': 0, 'baseball_bat': 0,
+            'baseball_glove': 0, 'skateboard': 0, 'surfboard': 0, 'tennis_racket': 0, 'bottle': 0, 'wine_glass': 0,
+            'cup': 0, 'fork': 0, 'knife': 0, 'spoon': 0, 'bowl': 0, 'banana': 0, 'apple': 0, 'sandwich': 0,
+            'orange': 0, 'broccoli': 0, 'carrot': 0, 'hot_dog': 0, 'pizza': 0, 'donut': 0, 'cake': 0, 'chair': 0,
+            'couch': 0, 'potted_plant': 0, 'bed': 0, 'dining_table': 0, 'toilet': 0, 'tv': 0, 'laptop': 0,
+            'mouse': 0, 'remote': 0, 'keyboard': 0, 'cellphone': 0, 'microwave': 0, 'oven': 0, 'toaster': 0,
+            'sink': 0, 'refrigerator': 0, 'book': 0, 'clock': 0, 'vase': 0, 'scissors': 0, 'teddy_bear': 0,
+            'hair_drier': 0, 'toothbrush': 0,
 
-        person_counter, bicycle_counter, car_counter, motorcycle_counter = 0, 0, 0, 0
-        bus_counter, truck_counter, cellphone_counter, traffic_light_counter, stop_sign_counter = 0, 0, 0, 0, 0
+            'total_time': 0,
+            'total_crossing_detect': 0,
 
-        # add information for each city to then be appended to mapping
-        df_mapping['person'] = 0
-        df_mapping['bicycle'] = 0
-        df_mapping['car'] = 0
-        df_mapping['motorcycle'] = 0
-        df_mapping['bus'] = 0
-        df_mapping['truck'] = 0
-        df_mapping['cellphone'] = 0
-        df_mapping['traffic_light'] = 0
-        df_mapping['stop_sign'] = 0
-        df_mapping['total_time'] = 0
-        df_mapping['total_crossing_detect'] = 0
+            # City-level columns
+            'speed_crossing_day_city': math.nan,
+            'speed_crossing_night_city': math.nan,
+            'speed_crossing_day_night_city_avg': math.nan,
+            'time_crossing_day_city': math.nan,
+            'time_crossing_night_city': math.nan,
+            'time_crossing_day_night_city_avg': math.nan,
+            'with_trf_light_day_city': 0.0,
+            'with_trf_light_night_city': 0.0,
+            'without_trf_light_day_city': 0.0,
+            'without_trf_light_night_city': 0.0,
 
-        # City-level columns
-        df_mapping['speed_crossing_day_city'] = math.nan
-        df_mapping['speed_crossing_night_city'] = math.nan
-        df_mapping['speed_crossing_day_night_city_avg'] = math.nan
+            # Country-level columns
+            'speed_crossing_day_country': math.nan,
+            'speed_crossing_night_country': math.nan,
+            'speed_crossing_day_night_country_avg': math.nan,
+            'time_crossing_day_country': math.nan,
+            'time_crossing_night_country': math.nan,
+            'time_crossing_day_night_country_avg': math.nan,
+            'with_trf_light_day_country': 0.0,
+            'with_trf_light_night_country': 0.0,
+            'without_trf_light_day_country': 0.0,
+            'without_trf_light_night_country': 0.0,
+            'crossing_detected_city': 0,
+            'crossing_detected_country': 0,
+        }
 
-        df_mapping['time_crossing_day_city'] = math.nan
-        df_mapping['time_crossing_night_city'] = math.nan
-        df_mapping['time_crossing_day_night_city_avg'] = math.nan
-
-        df_mapping['with_trf_light_day_city'] = 0.0
-        df_mapping['with_trf_light_night_city'] = 0.0
-
-        df_mapping['without_trf_light_day_city'] = 0.0
-        df_mapping['without_trf_light_night_city'] = 0.0
-
-        # Country-level columns
-        df_mapping['speed_crossing_day_country'] = math.nan
-        df_mapping['speed_crossing_night_country'] = math.nan
-        df_mapping['speed_crossing_day_night_country_avg'] = math.nan
-
-        df_mapping['time_crossing_day_country'] = math.nan
-        df_mapping['time_crossing_night_country'] = math.nan
-        df_mapping['time_crossing_day_night_country_avg'] = math.nan
-
-        df_mapping['with_trf_light_day_country'] = 0.0
-        df_mapping['with_trf_light_night_country'] = 0.0
-
-        df_mapping['without_trf_light_day_country'] = 0.0
-        df_mapping['without_trf_light_night_country'] = 0.0
-
-        df_mapping['crossing_detected_city'] = 0
-        df_mapping['crossing_detected_country'] = 0
+        # Add all columns at once!
+        for col, val in city_country_cols.items():
+            df_mapping[col] = val
 
         all_speed = {}
         all_time = {}
@@ -3075,9 +3079,9 @@ if __name__ == "__main__":
                     video_id, start_index = filename_no_ext.rsplit("_", 1)  # split to extract id and index
 
                     video_city_id = Analysis.find_city_id(df_mapping, video_id, int(start_index))
-                    video_city = df_mapping.loc[df_mapping["id"] == video_city_id, "city"].values[0]
-                    video_state = df_mapping.loc[df_mapping["id"] == video_city_id, "state"].values[0]
-                    video_country = df_mapping.loc[df_mapping["id"] == video_city_id, "country"].values[0]
+                    video_city = df_mapping.loc[df_mapping["id"] == video_city_id, "city"].values[0]  # type: ignore
+                    video_state = df_mapping.loc[df_mapping["id"] == video_city_id, "state"].values[0]  # type: ignore
+                    video_country = df_mapping.loc[df_mapping["id"] == video_city_id, "country"].values[0]  # type: ignore   # noqa: E501
 
                     logger.debug(f"{file}: found values {video_city}, {video_state}, {video_country}.")
 
@@ -3099,49 +3103,44 @@ if __name__ == "__main__":
                                                                df_mapping)
                     data[filename_no_ext] = temp_data
 
-                    # Calculate the total number of different objects detected
-                    person_video = Analysis.count_object(df, 0)
-                    person_counter += person_video
-                    df_mapping.loc[df_mapping["id"] == video_city_id, "person"] += person_video
+                    # List of all 80 class names in COCO order
+                    coco_classes = ['person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck',
+                                    'boat', 'traffic_light', 'fire_hydrant', 'stop_sign', 'parking_meter', 'bench',
+                                    'bird', 'cat', 'dog', 'horse', 'sheep', 'cow', 'elephant', 'bear', 'zebra',
+                                    'giraffe', 'backpack', 'umbrella', 'handbag', 'tie', 'suitcase', 'frisbee',
+                                    'skis', 'snowboard', 'sports_ball', 'kite', 'baseball_bat', 'baseball_glove',
+                                    'skateboard', 'surfboard', 'tennis_racket', 'bottle', 'wine_glass', 'cup',
+                                    'fork', 'knife', 'spoon', 'bowl', 'banana', 'apple', 'sandwich', 'orange',
+                                    'broccoli', 'carrot', 'hot_dog', 'pizza', 'donut', 'cake', 'chair', 'couch',
+                                    'potted_plant', 'bed', 'dining_table', 'toilet', 'tv', 'laptop', 'mouse',
+                                    'remote', 'keyboard', 'cellphone', 'microwave', 'oven', 'toaster', 'sink',
+                                    'refrigerator', 'book', 'clock', 'vase', 'scissors', 'teddy_bear', 'hair_drier',
+                                    'toothbrush']
 
-                    bicycle_video = Analysis.count_object(df, 1)
-                    bicycle_counter += bicycle_video
-                    df_mapping.loc[df_mapping["id"] == video_city_id, "bicycle"] += bicycle_video
+                    # --- Ensure all needed columns exist and are integer type ---
+                    for class_name in coco_classes:
+                        if class_name not in df_mapping.columns:
+                            df_mapping[class_name] = 0
+                        df_mapping[class_name] = pd.to_numeric(df_mapping[class_name],
+                                                               errors='coerce').fillna(0).astype(int)
 
-                    car_video = Analysis.count_object(df, 2)
-                    car_counter += car_video
-                    df_mapping.loc[df_mapping["id"] == video_city_id, "car"] += car_video
+                    # --- Count unique objects per YOLO_id ---
+                    object_counts = (
+                        df.drop_duplicates(['YOLO_id', 'Unique Id'])['YOLO_id']
+                        .value_counts().sort_index()
+                    )
+                    counters = {class_name: int(object_counts.get(i, 0)) for i, class_name in enumerate(coco_classes)}
 
-                    motorcycle_video = Analysis.count_object(df, 3)
-                    motorcycle_counter += motorcycle_video
-                    df_mapping.loc[df_mapping["id"] == video_city_id, "motorcycle"] += motorcycle_video
+                    # --- Update df_mapping for the given video_city_id ---
+                    for class_name in coco_classes:
+                        df_mapping.loc[df_mapping["id"] == video_city_id, class_name] += counters[class_name]  # type: ignore  # noqa: E501
 
-                    bus_video = Analysis.count_object(df, 5)
-                    bus_counter += bus_video
-                    df_mapping.loc[df_mapping["id"] == video_city_id, "bus"] += bus_video
-
-                    truck_video = Analysis.count_object(df, 7)
-                    truck_counter += truck_video
-                    df_mapping.loc[df_mapping["id"] == video_city_id, "truck"] += truck_video
-
-                    cellphone_video = Analysis.count_object(df, 67)
-                    cellphone_counter += cellphone_video
-                    df_mapping.loc[df_mapping["id"] == video_city_id, "cellphone"] += cellphone_video
-
-                    traffic_light_video = Analysis.count_object(df, 9)
-                    traffic_light_counter += traffic_light_video
-                    df_mapping.loc[df_mapping["id"] == video_city_id, "traffic_light"] += traffic_light_video
-
-                    stop_sign_video = Analysis.count_object(df, 11)
-                    stop_sign_counter += stop_sign_video
-                    df_mapping.loc[df_mapping["id"] == video_city_id, "stop_sign"] += stop_sign_video
-
-                    # add duration of segment
+                    # Add duration of segment
                     time_video = analysis_class.get_duration(df_mapping, video_id, int(start_index))
                     df_mapping.loc[df_mapping["id"] == video_city_id, "total_time"] += time_video  # type: ignore
 
-                    # add total crossing detected
-                    df_mapping.loc[df_mapping["id"] == video_city_id, "total_crossing_detect"] += len(ids)
+                    # Add total crossing detected
+                    df_mapping.loc[df_mapping["id"] == video_city_id, "total_crossing_detect"] += len(ids)  # type: ignore  # noqa: E501
 
                     # Aggregated values
                     speed_value = algorithms_class.calculate_speed_of_crossing(df_mapping,
@@ -3171,34 +3170,10 @@ if __name__ == "__main__":
             logger.error("No speed and time data to analyse.")
             exit()
 
-        total_duration = Analysis.calculate_total_seconds(df_mapping)
-
-        # Displays values after applying filters
-        logger.info(f"Duration of videos in seconds after filtering: {total_duration}, in" +
-                    f" minutes after filtering: {total_duration/60:.2f}, in " +
-                    f"hours: {total_duration/60/60:.2f}.")
-
-        logger.info("Total number of videos after filtering: {}.", Analysis.calculate_total_videos(df_mapping))
-
-        country, number = Analysis.get_unique_values(df_mapping, "iso3")
-        logger.info("Total number of countries and territories after filtering: {}.", number)
-
-        city, number = Analysis.get_unique_values(df_mapping, "city")
-        logger.info("Total number of cities after filtering: {}.", number)
-
-        df_mapping = analysis_class.add_speed_and_time_to_mapping(df_mapping=df_mapping,
-                                                                  avg_speed_city=avg_speed_city,
-                                                                  avg_speed_country=avg_speed_country,
-                                                                  avg_time_city=avg_time_city,
-                                                                  avg_time_country=avg_time_country)
-
-        min_max_speed = analysis_class.get_duration_segment(all_speed, df_mapping, name="speed", duration=None)
-        min_max_time = analysis_class.get_duration_segment(all_time, df_mapping, name="time", duration=None)
-
         logger.info("Calculating counts of detected traffic signs.")
         traffic_sign_city = analysis_class.calculate_traffic_signs(df_mapping)
         logger.info("Calculating counts of detected mobile phones.")
-        cellphone_city = Analysis.calculate_cell_phones(df_mapping)
+        cellphone_city = Analysis.calculate_cellphones(df_mapping)
         logger.info("Calculating counts of detected vehicles.")
         vehicle_city = analysis_class.calculate_traffic(df_mapping, motorcycle=1, car=1, bus=1, truck=1)
         logger.info("Calculating counts of detected bicycles.")
@@ -3240,7 +3215,7 @@ if __name__ == "__main__":
 
             # Optional: Extract state if available
             state = df_mapping.loc[df_mapping["city"] == city,
-                                   "state"].iloc[0] if "state" in df_mapping.columns else None
+                                   "state"].iloc[0] if "state" in df_mapping.columns else None  # type: ignore
 
             colname = "with_trf_light_day_city" if not time_of_day else "with_trf_light_night_city"
 
@@ -3259,7 +3234,7 @@ if __name__ == "__main__":
 
             # Optional: Extract state if available
             state = df_mapping.loc[df_mapping["city"] == city,
-                                   "state"].iloc[0] if "state" in df_mapping.columns else None
+                                   "state"].iloc[0] if "state" in df_mapping.columns else None  # type: ignore
 
             colname = "without_trf_light_day_city" if not time_of_day else "without_trf_light_night_city"
 
@@ -3330,6 +3305,52 @@ if __name__ == "__main__":
                 df_mapping.at[index, 'lat'] = lat
                 df_mapping.at[index, 'lon'] = lon
 
+        # Save the raw file for further investigation
+        df_mapping_raw = df_mapping.copy()
+        df_mapping_raw.drop(['lat', 'lon', 'gmp', 'population_city', 'population_country', 'traffic_mortality',
+                             'literacy_rate', 'avg_height', 'med_age', 'gini', 'traffic_index', 'videos',
+                             'time_of_day', 'start_time', 'end_time', 'vehicle_type', 'upload_date', 'fps_list',
+                             ], axis=1, inplace=True)
+        df_mapping_raw['channel'] = df_mapping_raw['channel'].apply(tools_class.count_unique_channels)
+        df_mapping_raw.to_csv(os.path.join(common.output_dir, "mapping_city_raw.csv"))
+
+        # Filter df_mapping to include cities that meet either of the following criteria:
+        # 1. The city's population is greater than the threshold
+        # 2. The city's population is at least the minimum percentage of the country's population
+        df_mapping = df_mapping[
+            (df_mapping["population_city"] >= population_threshold) |  # Condition 1
+            (df_mapping["population_city"] >= min_percentage * df_mapping["population_country"])  # Condition 2
+        ]
+
+        # Limit countries if required
+        countries_include = common.get_configs("countries_analyse")
+        if countries_include:
+            df_mapping = df_mapping[df_mapping["iso3"].isin(common.get_configs("countries_analyse"))]
+
+        total_duration = Analysis.calculate_total_seconds(df_mapping)
+
+        # Displays values after applying filters
+        logger.info(f"Duration of videos in seconds after filtering: {total_duration}, in" +
+                    f" minutes after filtering: {total_duration/60:.2f}, in " +
+                    f"hours: {total_duration/60/60:.2f}.")
+
+        logger.info("Total number of videos after filtering: {}.", Analysis.calculate_total_videos(df_mapping))
+
+        country, number = Analysis.get_unique_values(df_mapping, "iso3")
+        logger.info("Total number of countries and territories after filtering: {}.", number)
+
+        city, number = Analysis.get_unique_values(df_mapping, "city")
+        logger.info("Total number of cities after filtering: {}.", number)
+
+        df_mapping = analysis_class.add_speed_and_time_to_mapping(df_mapping=df_mapping,
+                                                                  avg_speed_city=avg_speed_city,
+                                                                  avg_speed_country=avg_speed_country,
+                                                                  avg_time_city=avg_time_city,
+                                                                  avg_time_country=avg_time_country)
+
+        min_max_speed = analysis_class.get_duration_segment(all_speed, df_mapping, name="speed", duration=None)
+        min_max_time = analysis_class.get_duration_segment(all_time, df_mapping, name="time", duration=None)
+
         # Save the results to a pickle file
         logger.info("Saving results to a pickle file {}.", file_results)
         with open(file_results, 'wb') as file:
@@ -3372,7 +3393,8 @@ if __name__ == "__main__":
                          all_speed_city,                                    # 36
                          all_time_city,                                     # 37
                          all_speed_country,                                 # 38
-                         all_time_country),                                 # 39
+                         all_time_country,                                  # 39
+                         df_mapping_raw),                                   # 40
                         file)
         logger.info("Analysis results saved to pickle file.")
 
@@ -4075,16 +4097,27 @@ if __name__ == "__main__":
 
     if common.get_configs("analysis_level") == "country":
         df_countries = analysis_class.aggregate_by_iso3(df_mapping)
+        df_countries_raw = analysis_class.aggregate_by_iso3(df_mapping_raw)
+
         columns_remove = ['videos', 'time_of_day', 'start_time', 'end_time', 'upload_date', 'fps_list', 'vehicle_type']
         hover_data = list(set(df_countries.columns) - set(columns_remove))
-        df_countries.to_csv(os.path.join(common.output_dir, "mapping_updated_countries.csv"))
+
+        columns_remove_raw = ['gini', 'traffic_mortality', 'avg_height', 'population_country', 'population_city',
+                              'med_age', 'literacy_rate']
+        hover_data_raw = list(set(df_countries.columns) - set(columns_remove) - set(columns_remove_raw))
+
+        df_countries.to_csv(os.path.join(common.output_dir, "mapping_countries.csv"))
+        df_countries_raw.to_csv(os.path.join(common.output_dir, "mapping_countries_raw.csv"))
 
         # Map with images. currently works on a 13" MacBook air screen in chrome, as things are hardcoded...
+        plots_class.map_political(df=df_countries_raw, df_mapping=df_mapping, show_cities=True, show_images=True,
+                                  hover_data=hover_data_raw, save_file=True, save_final=False, name="raw_map")
+
         plots_class.map_political(df=df_countries, df_mapping=df_mapping, show_cities=True, show_images=True,
-                                  hover_data=hover_data, save_file=True, save_final=False)
+                                  hover_data=hover_data, save_file=True, save_final=False, name="map_screenshots")
         # Map with no images
         plots_class.map_political(df=df_countries, df_mapping=df_mapping, show_cities=True, show_images=False,
-                                  hover_data=hover_data, save_file=True, save_final=True)
+                                  hover_data=hover_data, save_file=True, save_final=True, name="map")
 
         # Amount of footage
         plots_class.scatter(df=df_countries,
