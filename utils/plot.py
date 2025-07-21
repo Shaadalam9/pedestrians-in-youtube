@@ -30,7 +30,7 @@ values_class = Values()
 wrapper_class = Wrappers()
 
 # File to store the city coordinates
-file_results = 'results.pickle'
+file_results = 'results_.pickle'
 
 # Colours in graphs
 bar_colour_1 = 'rgb(251, 180, 174)'
@@ -2148,7 +2148,8 @@ class Plots():
 
     def stack_plot_country(self, df_mapping, order_by, metric, data_view, title_text, filename,
                            legend_x=0.87, legend_y=0.04, font_size_captions=40,
-                           legend_spacing=0.02, left_margin=10, right_margin=10):
+                           legend_spacing=0.02, left_margin=10, right_margin=10, top_margin=0,
+                           bottom_margin=0):
         """
         Plots a stacked bar graph based on the provided data and configuration.
 
@@ -2754,7 +2755,10 @@ class Plots():
         fig.update_layout(font=dict(family=common.get_configs('font_family')))
 
         # Final adjustments and display
-        fig.update_layout(margin=dict(l=80, r=80, t=110, b=10))
+        fig.update_layout(margin=dict(l=left_margin,
+                                      r=right_margin,
+                                      t=top_margin,
+                                      b=bottom_margin))
         self.save_plotly_figure(fig=fig,
                                 filename=filename,
                                 width=2400,
