@@ -116,7 +116,7 @@ class Plots():
         Parameters:
             df_mapping (dict): A dictionary mapping categories to their respective DataFrames.
             order_by (str): Criterion to order the bars, e.g., 'alphabetical' or 'average'.
-            metric (str): The metric to visualize, such as 'speed' or 'time'.
+            metric (str): The metric to visualise, such as 'speed' or 'time'.
             data_view (str): Determines which subset of data to visualise, such as 'day', 'night', or 'combined'.
             title_text (str): The title of the plot.
             filename (str): The name of the file to save the plot as.
@@ -1642,7 +1642,7 @@ class Plots():
                 # points='all'  # Optional: show individual points
             ))
 
-        # Update layout to improve visualization
+        # Update layout to improve visualisation
         fig.update_layout(
             xaxis_title="Country",
             yaxis_title="Values",
@@ -2156,16 +2156,15 @@ class Plots():
         return [positions[i % len(positions)] for i in range(len(x))]
 
     def stack_plot_country(self, df_mapping, order_by, metric, data_view, title_text, filename,
-                           legend_x=0.87, legend_y=0.04, font_size_captions=40,
-                           legend_spacing=0.02, left_margin=10, right_margin=10, top_margin=0,
-                           bottom_margin=0):
+                           legend_x=0.87, legend_y=0.04, font_size_captions=40, legend_spacing=0.02, left_margin=10,
+                           right_margin=10, top_margin=0, bottom_margin=0, height=2400, width=2480):
         """
         Plots a stacked bar graph based on the provided data and configuration.
 
         Parameters:
             df_mapping (dict): A dictionary mapping categories to their respective DataFrames.
             order_by (str): Criterion to order the bars, e.g., 'alphabetical' or 'average'.
-            metric (str): The metric to visualize, such as 'speed' or 'time'.
+            metric (str): The metric to visualise, such as 'speed' or 'time'.
             data_view (str): Determines which subset of data to visualise, such as 'day', 'night', or 'combined'.
             title_text (str): The title of the plot.
             filename (str): The name of the file to save the plot as.
@@ -2209,7 +2208,7 @@ class Plots():
             "time": 28,
             "all_speed_country": 38,
             "all_time_country": 39
-            }
+        }
 
         if metric not in metric_index_map:
             raise ValueError(f"Unsupported metric: {metric}")
@@ -2354,12 +2353,14 @@ class Plots():
             day_sd = [final_dict[country][day_sd_key] for country in countries_ordered]
             night_values = [0 for country in countries_ordered]
             night_sd = [0 for country in countries_ordered]
+            all_sd = [final_dict[country][all_sd_key] for country in countries_ordered]
 
         elif data_view == "night":
             day_values = [0 for country in countries_ordered]
             day_sd = [0 for country in countries_ordered]
             night_values = [final_dict[country][night_key] for country in countries_ordered]
             night_sd = [final_dict[country][night_sd_key] for country in countries_ordered]
+            all_sd = [final_dict[country][all_sd_key] for country in countries_ordered]
 
         # Determine how many countries will be in each column
         num_countries_per_col = len(countries_ordered) // 2 + len(countries_ordered) % 2  # Split cities
@@ -2391,14 +2392,10 @@ class Plots():
                 else:
                     value = (day_values[i] + night_values[i])
 
-                # Determine the y value
-                if order_by == "condition":
-                    y_value = [
-                        f"{country} {value:.2f}±{all_sd[i]:.2f} "
-                        f"(D={day_values[i]:.2f}±{day_sd[i]:.2f}, "
-                        f"N={night_values[i]:.2f}±{night_sd[i]:.2f})"]
-                else:
-                    y_value = [f'{country} {value:.2f}']
+                y_value = [
+                    f"{country} {value:.2f}±{all_sd[i]:.2f} "
+                    f"(D={day_values[i]:.2f}±{day_sd[i]:.2f}, "
+                    f"N={night_values[i]:.2f}±{night_sd[i]:.2f})"]
 
                 fig.add_trace(go.Bar(
                     x=[day_values[i]],
@@ -2429,10 +2426,7 @@ class Plots():
                 value = day_values[i]
 
                 # Determine the y value
-                if order_by == "condition":
-                    y_value = [f"{country} {value:.2f}±{day_sd[i]:.2f}"]
-                else:
-                    y_value = [f'{country} {value:.2f}']
+                y_value = [f"{country} {value:.2f}±{day_sd[i]:.2f}"]
 
                 fig.add_trace(go.Bar(
                     x=[day_values[i]],
@@ -2452,10 +2446,7 @@ class Plots():
                 value = night_values[i]
 
                 # Determine the y value
-                if order_by == "condition":
-                    y_value = [f"{country} {value:.2f}±{night_sd[i]:.2f}"]
-                else:
-                    y_value = [f'{country} {value:.2f}']
+                y_value = [f"{country} {value:.2f}±{night_sd[i]:.2f}"]
 
                 fig.add_trace(go.Bar(
                     x=[night_values[i]],
@@ -2489,13 +2480,10 @@ class Plots():
                     value = (day_values[idx] + night_values[idx])
 
                 # Determine the y value
-                if order_by == "condition":
-                    y_value = [
-                        f"{country} {value:.2f}±{all_sd[idx]:.2f} "
-                        f"(D={day_values[idx]:.2f}±{day_sd[idx]:.2f}, "
-                        f"N={night_values[idx]:.2f}±{night_sd[idx]:.2f})"]
-                else:
-                    y_value = [f'{country} {value:.2f}']
+                y_value = [
+                    f"{country} {value:.2f}±{all_sd[idx]:.2f} "
+                    f"(D={day_values[idx]:.2f}±{day_sd[idx]:.2f}, "
+                    f"N={night_values[idx]:.2f}±{night_sd[idx]:.2f})"]
 
                 fig.add_trace(go.Bar(
                     x=[day_values[idx]],
@@ -2528,10 +2516,7 @@ class Plots():
                 value = day_values[idx]
 
                 # Determine the y value
-                if order_by == "condition":
-                    y_value = [f"{country} {value:.2f}±{day_sd[idx]:.2f}"]
-                else:
-                    y_value = [f'{country} {value:.2f}']
+                y_value = [f"{country} {value:.2f}±{day_sd[idx]:.2f}"]
 
                 fig.add_trace(go.Bar(
                     x=[day_values[idx]],
@@ -2552,10 +2537,7 @@ class Plots():
                 value = night_values[idx]
 
                 # Determine the y value
-                if order_by == "condition":
-                    y_value = [f"{country} {value:.2f}±{night_sd[idx]:.2f}"]
-                else:
-                    y_value = [f'{country} {value:.2f}']
+                y_value = [f"{country} {value:.2f}±{night_sd[idx]:.2f}"]
 
                 fig.add_trace(go.Bar(
                     x=[night_values[idx]],
@@ -2623,31 +2605,6 @@ class Plots():
                     side='bottom', showgrid=False
                 )
 
-        # Set the x-axis labels (title_text) only for the last row and the first row
-        fig.update_xaxes(
-            title=dict(text=title_text,
-                       font=dict(size=font_size_captions)),
-            tickfont=dict(size=font_size_captions),
-            ticks='outside',
-            ticklen=10,
-            tickwidth=2,
-            tickcolor='black',
-            row=1,
-            col=1
-        )
-
-        fig.update_xaxes(
-            title=dict(text=title_text,
-                       font=dict(size=font_size_captions)),
-            tickfont=dict(size=font_size_captions),
-            ticks='outside',
-            ticklen=10,
-            tickwidth=2,
-            tickcolor='black',
-            row=1,
-            col=2
-        )
-
         # Update both y-axes (for left and right columns) to hide the tick labels
         fig.update_yaxes(showticklabels=False)
 
@@ -2660,19 +2617,19 @@ class Plots():
             plot_bgcolor='white',
             paper_bgcolor='white',
             barmode='stack',
-            height=2400,
-            width=2480,
+            height=height,
+            width=width,
             showlegend=False,  # Hide the default legend
-            margin=dict(t=150, b=150),
+            margin=dict(t=0, b=0),
             bargap=0,
             bargroupgap=0
         )
 
         # Define gridline generation parameters
         if metric == "speed":
-            start, step, count = 1, 1, 19
+            start, step, count = 0.5, 0.5, 9
         elif metric == "time":
-            start, step, count = 0.5, 0.5, 3
+            start, step, count = 0.5, 0.5, 9
 
         # Generate gridline positions
         x_grid_values = [start + i * step for i in range(count)]
@@ -2703,6 +2660,30 @@ class Plots():
                 line=dict(color="darkgray", width=1),  # Customize the appearance of the gridlines
                 layer="above"  # Draw the gridlines above the bars
             )
+        # Set the x-axis labels (title_text) only for the last row and the first row
+        fig.update_xaxes(
+            title=dict(text=title_text,
+                       font=dict(size=font_size_captions)),
+            tickfont=dict(size=font_size_captions),
+            ticks='outside',
+            ticklen=10,
+            tickwidth=2,
+            tickcolor='black',
+            row=1,
+            col=1
+        )
+
+        fig.update_xaxes(
+            title=dict(text=title_text,
+                       font=dict(size=font_size_captions)),
+            tickfont=dict(size=font_size_captions),
+            ticks='outside',
+            ticklen=10,
+            tickwidth=2,
+            tickcolor='black',
+            row=1,
+            col=2
+        )
 
         if data_view == "combined":
             # Define the legend items
@@ -2768,12 +2749,13 @@ class Plots():
                                       r=right_margin,
                                       t=top_margin,
                                       b=bottom_margin))
+
         self.save_plotly_figure(fig=fig,
                                 filename=filename,
-                                width=2400,
-                                height=TALL_FIG_HEIGHT,
+                                width=width,
+                                height=height,
                                 scale=SCALE,
-                                save_eps=False,
+                                save_eps=True,
                                 save_final=True)
 
     def speed_and_time_to_start_cross_country(self, df_mapping, font_size_captions=40, x_axis_title_height=150,
