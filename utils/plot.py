@@ -1766,6 +1766,7 @@ class Plots():
             city_images = [
                 {
                     "city": "Tokyo",
+                    "country": "Japan",
                     "file": "tokyo.png",
                     "x": 0.933, "y": 0.58,
                     "approx_lon": 165.2, "approx_lat": 7.2,
@@ -1776,6 +1777,7 @@ class Plots():
                 },
                 {
                     "city": "Nairobi",
+                    "country": "Kenya",
                     "file": "nairobi.png",
                     "x": 0.72, "y": 0.38,
                     "approx_lon": 70.2, "approx_lat": -20.0,
@@ -1786,6 +1788,7 @@ class Plots():
                 },
                 {
                     "city": "Los Angeles",
+                    "country": "United States",
                     "file": "los_angeles.png",
                     "x": 0.12, "y": 0.5,
                     "approx_lon": -121.7, "approx_lat": 0.0,
@@ -1796,6 +1799,7 @@ class Plots():
                 },
                 {
                     "city": "Paris",
+                    "country": "France",
                     "file": "paris.png",
                     "x": 0.3915, "y": 0.68,
                     "approx_lon": -30.6, "approx_lat": 30.4,
@@ -1806,6 +1810,7 @@ class Plots():
                 },
                 {
                     "city": "Rio de Janeiro",
+                    "country": "Brazil",
                     "file": "rio_de_janeiro.png",
                     "x": 0.47, "y": 0.2,
                     "approx_lon": -1.8, "approx_lat": -60.2,
@@ -1816,6 +1821,7 @@ class Plots():
                 },
                 {
                     "city": "Melbourne",
+                    "country": "Australia",
                     "file": "melbourne.png",
                     "x": 0.74, "y": 0.22,
                     "approx_lon": 90.0, "approx_lat": -52.0,
@@ -1856,7 +1862,10 @@ class Plots():
 
             # draw arrows from image to city location
             for item in city_images:
-                row = df_mapping[df_mapping['city'].str.lower() == item['city'].lower()]
+                row = df_mapping[
+                    (df_mapping['city'].str.lower() == item['city'].lower()) &
+                    (df_mapping['country'].str.lower() == item['country'].lower())
+                    ]
                 if not row.empty:
                     fig.add_trace(go.Scattergeo(
                         lon=[item['approx_lon'], row['lon'].values[0]],

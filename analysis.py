@@ -4193,7 +4193,7 @@ if __name__ == "__main__":
                                        metric="time",
                                        data_view="combined",
                                        title_text="Time to start crossing (s)",
-                                       filename="time_crossing_avg",
+                                       filename="time_crossing_avg_country",
                                        font_size_captions=common.get_configs("font_size") + 8,
                                        legend_x=0.87,
                                        legend_y=0.04,
@@ -4205,7 +4205,19 @@ if __name__ == "__main__":
                                        metric="speed",
                                        data_view="combined",
                                        title_text="Mean speed of crossing (in m/s)",
-                                       filename="time_crossing_avg",
+                                       filename="crossing_speed_combined_country",
+                                       font_size_captions=common.get_configs("font_size") + 8,
+                                       legend_x=0.87,
+                                       legend_y=0.04,
+                                       legend_spacing=0.02,
+                                       top_margin=100)
+
+        plots_class.stack_plot_country(df_countries,
+                                       order_by="condition",
+                                       metric="time",
+                                       data_view="combined",
+                                       title_text="Time to start crossing (s)",
+                                       filename="time_crossing_combined_country",
                                        font_size_captions=common.get_configs("font_size") + 8,
                                        legend_x=0.87,
                                        legend_y=0.04,
@@ -4217,7 +4229,7 @@ if __name__ == "__main__":
                                        metric="time",
                                        data_view="combined",
                                        title_text="Time to start crossing (s)",
-                                       filename="time_crossing_alphabetical",
+                                       filename="time_crossing_alphabetical_country",
                                        font_size_captions=common.get_configs("font_size"),
                                        legend_x=0.94,
                                        legend_y=0.03,
@@ -4229,7 +4241,7 @@ if __name__ == "__main__":
                                        metric="speed",
                                        data_view="combined",
                                        title_text="Mean speed of crossing (in m/s)",
-                                       filename="crossing_speed_avg",
+                                       filename="crossing_speed_avg_country",
                                        font_size_captions=common.get_configs("font_size") + 8,
                                        legend_x=0.87,
                                        legend_y=0.04,
@@ -4241,7 +4253,7 @@ if __name__ == "__main__":
                                        metric="speed",
                                        data_view="combined",
                                        title_text="Mean speed of crossing (in m/s)",
-                                       filename="crossing_speed_alphabetical",
+                                       filename="crossing_speed_alphabetical_country",
                                        font_size_captions=common.get_configs("font_size"),
                                        legend_x=0.94,
                                        legend_y=0.03,
@@ -4254,7 +4266,7 @@ if __name__ == "__main__":
                                        metric="time",
                                        data_view="day",
                                        title_text="Time to start crossing (s)",
-                                       filename="time_crossing_avg_day",
+                                       filename="time_crossing_avg_day_country",
                                        font_size_captions=common.get_configs("font_size"),
                                        top_margin=100)
 
@@ -4263,7 +4275,7 @@ if __name__ == "__main__":
                                        metric="time",
                                        data_view="day",
                                        title_text="Time to start crossing (s)",
-                                       filename="time_crossing_alphabetical_day",
+                                       filename="time_crossing_alphabetical_day_country",
                                        font_size_captions=common.get_configs("font_size"),
                                        top_margin=100)
 
@@ -4272,7 +4284,7 @@ if __name__ == "__main__":
                                        metric="speed",
                                        data_view="day",
                                        title_text="Mean speed of crossing (in m/s)",
-                                       filename="crossing_speed_avg_day",
+                                       filename="crossing_speed_avg_day_country",
                                        font_size_captions=common.get_configs("font_size"),
                                        top_margin=100)
 
@@ -4281,7 +4293,7 @@ if __name__ == "__main__":
                                        metric="speed",
                                        data_view="day",
                                        title_text="Mean speed of crossing (in m/s)",
-                                       filename="crossing_speed_alphabetical_day",
+                                       filename="crossing_speed_alphabetical_day_country",
                                        font_size_captions=common.get_configs("font_size"),
                                        top_margin=100)
 
@@ -4291,7 +4303,7 @@ if __name__ == "__main__":
                                        metric="time",
                                        data_view="night",
                                        title_text="Time to start crossing (s)",
-                                       filename="time_crossing_avg_night",
+                                       filename="time_crossing_avg_night_country",
                                        font_size_captions=common.get_configs("font_size"))
 
         plots_class.stack_plot_country(df_countries,
@@ -4299,7 +4311,7 @@ if __name__ == "__main__":
                                        metric="time",
                                        data_view="night",
                                        title_text="Time to start crossing (s)",
-                                       filename="time_crossing_alphabetical_night",
+                                       filename="time_crossing_alphabetical_night_country",
                                        font_size_captions=common.get_configs("font_size"),
                                        top_margin=100)
 
@@ -4308,7 +4320,7 @@ if __name__ == "__main__":
                                        metric="speed",
                                        data_view="night",
                                        title_text="Mean speed of crossing (in m/s)",
-                                       filename="crossing_speed_avg_night",
+                                       filename="crossing_speed_avg_night_country",
                                        font_size_captions=common.get_configs("font_size"),
                                        top_margin=100)
 
@@ -4317,7 +4329,7 @@ if __name__ == "__main__":
                                        metric="speed",
                                        data_view="night",
                                        title_text="Mean speed of crossing (in m/s)",
-                                       filename="crossing_speed_alphabetical_night",
+                                       filename="crossing_speed_alphabetical_night_country",
                                        font_size_captions=common.get_configs("font_size"),
                                        top_margin=100)
 
