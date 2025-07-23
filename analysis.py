@@ -2975,11 +2975,10 @@ if __name__ == "__main__":
         city, number = Analysis.get_unique_values(df_mapping, "city")
         logger.info("Total number of cities before filtering: {}.", number)
 
-        # Get the population threshold from the configuration
-        population_threshold = common.get_configs("population_threshold")
-
-        # Get the minimum percentage of country population from the configuration
-        min_percentage = common.get_configs("min_city_population_percentage")
+        # Limit countries if required
+        countries_include = common.get_configs("countries_analyse")
+        if countries_include:
+            df_mapping = df_mapping[df_mapping["iso3"].isin(common.get_configs("countries_analyse"))]
 
         (person_counter, bicycle_counter, car_counter, motorcycle_counter, airplane_counter, bus_counter,
          train_counter, truck_counter, boat_counter, traffic_light_counter, fire_hydrant_counter, stop_sign_counter,
@@ -3315,6 +3314,12 @@ if __name__ == "__main__":
         df_mapping_raw['channel'] = df_mapping_raw['channel'].apply(tools_class.count_unique_channels)
         df_mapping_raw.to_csv(os.path.join(common.output_dir, "mapping_city_raw.csv"))
 
+        # Get the population threshold from the configuration
+        population_threshold = common.get_configs("population_threshold")
+
+        # Get the minimum percentage of country population from the configuration
+        min_percentage = common.get_configs("min_city_population_percentage")
+
         # Filter df_mapping to include cities that meet either of the following criteria:
         # 1. The city's population is greater than the threshold
         # 2. The city's population is at least the minimum percentage of the country's population
@@ -3326,10 +3331,10 @@ if __name__ == "__main__":
         # Remove the rows of the cities where the footage recorded is less than threshold
         df_mapping = values_class.remove_columns_below_threshold(df_mapping, common.get_configs("footage_threshold"))
 
-        # Limit countries if required
-        countries_include = common.get_configs("countries_analyse")
-        if countries_include:
-            df_mapping = df_mapping[df_mapping["iso3"].isin(common.get_configs("countries_analyse"))]
+        # # Limit countries if required
+        # countries_include = common.get_configs("countries_analyse")
+        # if countries_include:
+        #     df_mapping = df_mapping[df_mapping["iso3"].isin(common.get_configs("countries_analyse"))]
 
         total_duration = Analysis.calculate_total_seconds(df_mapping)
 
