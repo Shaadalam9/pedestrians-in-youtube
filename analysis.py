@@ -1660,7 +1660,7 @@ class Analysis():
         # Rename the variables in the correlation matrix
         rename_dict_1 = {
             'avg_speed_0': 'Speed of', 'avg_speed_1': 'Crossing speed',
-            'avg_time_0': 'Time to start crossing', 'avg_time_1': 'Time to start crossing',
+            'avg_time_0': 'Crossing initiation time', 'avg_time_1': 'Crossing initiation time',
             'ped_cross_city_0': 'Crossing', 'ped_cross_city_1': 'Crossing',
             'person_city_0': 'Detected persons', 'person_city_1': 'Detected persons',
             'bicycle_city_0': 'Detected bicycles', 'bicycle_city_1': 'Detected bicycles',
@@ -1779,7 +1779,7 @@ class Analysis():
 
         # Rename the variables in the correlation matrix (example: renaming keys)
         rename_dict_2 = {
-            'avg_speed_val': 'Crossing speed', 'avg_time_val': 'Time to start crossing',
+            'avg_speed_val': 'Crossing speed', 'avg_time_val': 'Crossing initiation time',
             'ped_cross_city': 'Crossing', 'person_city': 'Detected persons',
             'bicycle_city': 'Detected bicycles', 'car_city': 'Detected cars',
             'motorcycle_city': 'Detected motorcycles', 'bus_city': 'Detected bus',
@@ -1880,7 +1880,7 @@ class Analysis():
 
             # Rename the variables in the correlation matrix (example: renaming keys)
             rename_dict_3 = {
-                'avg_speed_val': 'Crossing speed', 'avg_time_val': 'Time to start crossing',
+                'avg_speed_val': 'Crossing speed', 'avg_time_val': 'Crossing initiation time',
                 'ped_cross_city': 'Crossing', 'person_city': 'Detected persons',
                 'bicycle_city': 'Detected bicycles', 'car_city': 'Detected cars',
                 'motorcycle_city': 'Detected motorcycles', 'bus_city': 'Detected bus',
@@ -2081,7 +2081,7 @@ class Analysis():
         # Rename the variables in the correlation matrix
         rename_dict_1 = {
             'avg_speed_0': 'Crossing speed', 'avg_speed_1': 'Crossing speed',
-            'avg_time_0': 'Time to start crossing', 'avg_time_1': 'Time to start crossing',
+            'avg_time_0': 'Crossing initiation time', 'avg_time_1': 'Crossing initiation time',
             'ped_cross_city_0': 'Detected Crossing', 'ped_cross_city_1': 'Detected Crossing',
             'person_city_0': 'Detected persons', 'person_city_1': 'Detected persons',
             'bicycle_city_0': 'Detected bicycles', 'bicycle_city_1': 'Detected bicycles',
@@ -2214,7 +2214,7 @@ class Analysis():
 
         # Rename the variables in the correlation matrix (example: renaming keys)
         rename_dict_2 = {
-            'avg_day_night_speed': 'Crossing speed', 'avg_day_night_time': 'Time to start crossing',
+            'avg_day_night_speed': 'Crossing speed', 'avg_day_night_time': 'Crossing initiation time',
             'ped_cross_city': 'Detected Crossing', 'person_city': 'Detected persons',
             'bicycle_city': 'Detected bicycles', 'car_city': 'Detected cars',
             'motorcycle_city': 'Detected motorcycles', 'bus_city': 'Detected bus',
@@ -2328,7 +2328,7 @@ class Analysis():
 
             # Rename the variables in the correlation matrix (example: renaming keys)
             rename_dict_3 = {
-                'avg_day_night_speed': 'Crossing speed', "avg_day_night_time": 'Time to start crossing',
+                'avg_day_night_speed': 'Crossing speed', "avg_day_night_time": 'Crossing initiation time',
                 'ped_cross_city': 'Detected Crossing', 'person_city': 'Detected persons',
                 'bicycle_city': 'Detected bicycles', 'car_city': 'Detected cars',
                 'motorcycle_city': 'Detected motorcycles', 'bus_city': 'Detected bus',
@@ -3584,7 +3584,7 @@ if __name__ == "__main__":
                                order_by="alphabetical",
                                metric="time",
                                data_view="combined",
-                               title_text="Time to start crossing (s)",
+                               title_text="Crossing initiation time (s)",
                                filename="time_crossing_alphabetical",
                                font_size_captions=common.get_configs("font_size") + 8,
                                left_margin=80,
@@ -3595,7 +3595,7 @@ if __name__ == "__main__":
                                order_by="alphabetical",
                                metric="time",
                                data_view="day",
-                               title_text="Time to start crossing (s)",
+                               title_text="Crossing initiation time (s)",
                                filename="time_crossing_alphabetical_day",
                                font_size_captions=common.get_configs("font_size") + 8,
                                left_margin=80,
@@ -3606,7 +3606,7 @@ if __name__ == "__main__":
                                order_by="alphabetical",
                                metric="time",
                                data_view="night",
-                               title_text="Time to start crossing (s)",
+                               title_text="Crossing initiation time (s)",
                                filename="time_crossing_alphabetical_night",
                                font_size_captions=common.get_configs("font_size") + 8,
                                left_margin=80,
@@ -3617,7 +3617,7 @@ if __name__ == "__main__":
                                order_by="average",
                                metric="time",
                                data_view="combined",
-                               title_text="Time to start crossing (s)",
+                               title_text="Crossing initiation time (s)",
                                filename="time_crossing_avg",
                                font_size_captions=common.get_configs("font_size") + 8,
                                left_margin=10,
@@ -3628,7 +3628,7 @@ if __name__ == "__main__":
                                order_by="average",
                                metric="time",
                                data_view="day",
-                               title_text="Time to start crossing (s)",
+                               title_text="Crossing initiation time (s)",
                                filename="time_crossing_avg_day",
                                font_size_captions=common.get_configs("font_size") + 8,
                                left_margin=10,
@@ -3639,7 +3639,7 @@ if __name__ == "__main__":
                                order_by="average",
                                metric="time",
                                data_view="night",
-                               title_text="Time to start crossing (s)",
+                               title_text="Crossing initiation time (s)",
                                filename="time_crossing_avg_night",
                                font_size_captions=common.get_configs("font_size") + 8,
                                left_margin=10,
@@ -3723,8 +3723,8 @@ if __name__ == "__main__":
                             y="time_crossing",
                             color="continent",
                             text="city",
-                            xaxis_title='Mean speed of crossing (in m/s)',
-                            yaxis_title='Mean time to start crossing (in s)',
+                            xaxis_title='Speed of crossing (in m/s)',
+                            yaxis_title='Crossing initiation time (in s)',
                             pretty_text=False,
                             marker_size=10,
                             save_file=True,
@@ -3748,7 +3748,7 @@ if __name__ == "__main__":
                             color="continent",
                             text="city",
                             xaxis_title='Crossing speed during daytime (in m/s)',
-                            yaxis_title='Time to start crossing during daytime (in s)',
+                            yaxis_title='Crossing initiation time during daytime (in s)',
                             pretty_text=False,
                             marker_size=10,
                             save_file=True,
@@ -3771,7 +3771,7 @@ if __name__ == "__main__":
                             color="continent",
                             text="city",
                             xaxis_title='Crossing speed during night time (in m/s)',
-                            yaxis_title='Time to start crossing during night time (in s)',
+                            yaxis_title='Crossing initiation time during night time (in s)',
                             pretty_text=False,
                             marker_size=10,
                             save_file=True,
@@ -3793,7 +3793,7 @@ if __name__ == "__main__":
                             y="population_city",
                             color="continent",
                             text="city",
-                            xaxis_title='Mean time to start crossing (in s)',
+                            xaxis_title='Crossing initiation time (in s)',
                             yaxis_title='Population of city',
                             pretty_text=False,
                             marker_size=10,
@@ -3839,7 +3839,7 @@ if __name__ == "__main__":
                             y="traffic_mortality",
                             color="continent",
                             text="city",
-                            xaxis_title='Mean time to start crossing (in s)',
+                            xaxis_title='Crossing initiation time (in s)',
                             yaxis_title='National traffic mortality rate (per 100,000 of population)',
                             pretty_text=False,
                             marker_size=10,
@@ -3885,7 +3885,7 @@ if __name__ == "__main__":
                             y="literacy_rate",
                             color="continent",
                             text="city",
-                            xaxis_title='Mean time to start crossing (in s)',
+                            xaxis_title='Crossing initiation time (in s)',
                             yaxis_title='Literacy rate',
                             pretty_text=False,
                             marker_size=10,
@@ -3931,7 +3931,7 @@ if __name__ == "__main__":
                             y="gini",
                             color="continent",
                             text="city",
-                            xaxis_title='Mean time to start crossing (in s)',
+                            xaxis_title='Crossing initiation time (in s)',
                             yaxis_title='Gini coefficient',
                             pretty_text=False,
                             marker_size=10,
@@ -3978,7 +3978,7 @@ if __name__ == "__main__":
                             color="continent",
                             text="city",
                             # size="gmp",
-                            xaxis_title='Mean time to start crossing (in s)',
+                            xaxis_title='Crossing initiation time (in s)',
                             yaxis_title='Traffic index',
                             pretty_text=False,
                             marker_size=10,
@@ -4024,7 +4024,7 @@ if __name__ == "__main__":
                             y="cellphone_normalised",
                             color="continent",
                             text="city",
-                            xaxis_title='Mean time to start crossing (in s)',
+                            xaxis_title='Crossing initiation time (in s)',
                             yaxis_title='Mobile phones detected (normalised over time)',
                             pretty_text=False,
                             marker_size=10,
@@ -4196,7 +4196,7 @@ if __name__ == "__main__":
                                        order_by="average",
                                        metric="time",
                                        data_view="combined",
-                                       title_text="Time to start crossing (s)",
+                                       title_text="Crossing initiation time (s)",
                                        filename="time_crossing_avg_country",
                                        font_size_captions=common.get_configs("font_size") + 8,
                                        legend_x=0.95,
@@ -4222,7 +4222,7 @@ if __name__ == "__main__":
                                        order_by="condition",
                                        metric="time",
                                        data_view="combined",
-                                       title_text="Time to start crossing (s)",
+                                       title_text="Crossing initiation time (s)",
                                        filename="time_crossing_combined_country",
                                        font_size_captions=common.get_configs("font_size") + 8,
                                        legend_x=0.95,
@@ -4250,7 +4250,7 @@ if __name__ == "__main__":
                                        order_by="condition",
                                        metric="time",
                                        data_view="combined",
-                                       title_text="Time to start crossing (s)",
+                                       title_text="Crossing initiation time (s)",
                                        filename="time_crossing_combined_country_raw",
                                        font_size_captions=common.get_configs("font_size") + 8,
                                        legend_x=0.95,
@@ -4264,7 +4264,7 @@ if __name__ == "__main__":
                                        order_by="alphabetical",
                                        metric="time",
                                        data_view="combined",
-                                       title_text="Time to start crossing (s)",
+                                       title_text="Crossing initiation time (s)",
                                        filename="time_crossing_alphabetical_country",
                                        font_size_captions=common.get_configs("font_size"),
                                        legend_x=0.94,
@@ -4301,7 +4301,7 @@ if __name__ == "__main__":
                                        order_by="average",
                                        metric="time",
                                        data_view="day",
-                                       title_text="Time to start crossing (s)",
+                                       title_text="Crossing initiation time (s)",
                                        filename="time_crossing_avg_day_country",
                                        font_size_captions=common.get_configs("font_size"),
                                        top_margin=100)
@@ -4310,7 +4310,7 @@ if __name__ == "__main__":
                                        order_by="alphabetical",
                                        metric="time",
                                        data_view="day",
-                                       title_text="Time to start crossing (s)",
+                                       title_text="Crossing initiation time (s)",
                                        filename="time_crossing_alphabetical_day_country",
                                        font_size_captions=common.get_configs("font_size"),
                                        top_margin=100)
@@ -4338,7 +4338,7 @@ if __name__ == "__main__":
                                        order_by="average",
                                        metric="time",
                                        data_view="night",
-                                       title_text="Time to start crossing (s)",
+                                       title_text="Crossing initiation time (s)",
                                        filename="time_crossing_avg_night_country",
                                        font_size_captions=common.get_configs("font_size"))
 
@@ -4346,7 +4346,7 @@ if __name__ == "__main__":
                                        order_by="alphabetical",
                                        metric="time",
                                        data_view="night",
-                                       title_text="Time to start crossing (s)",
+                                       title_text="Crossing initiation time (s)",
                                        filename="time_crossing_alphabetical_night_country",
                                        font_size_captions=common.get_configs("font_size"),
                                        top_margin=100)
@@ -4378,7 +4378,7 @@ if __name__ == "__main__":
 
         Analysis.correlation_matrix_country(df_mapping, df_countries)
 
-        # Speed of crossing vs time to start crossing
+        # Speed of crossing vs Crossing initiation time
         df = df_countries[df_countries["speed_crossing_day_night_country_avg"] != 0].copy()
         df = df[df["time_crossing_day_night_country_avg"] != 0]
         plots_class.scatter(df=df,
@@ -4387,7 +4387,7 @@ if __name__ == "__main__":
                             color="continent",
                             text="iso3",
                             xaxis_title='Mean speed of crossing (in m/s)',
-                            yaxis_title='Mean time to start crossing (in s)',
+                            yaxis_title='Crossing initiation time (s)',
                             pretty_text=False,
                             marker_size=10,
                             save_file=True,
@@ -4409,7 +4409,7 @@ if __name__ == "__main__":
                             color="continent",
                             text="iso3",
                             xaxis_title='Crossing speed during daytime (in m/s)',
-                            yaxis_title='Time to start crossing during daytime (in s)',
+                            yaxis_title='Crossing initiation time during daytime (in s)',
                             pretty_text=False,
                             marker_size=10,
                             save_file=True,
@@ -4431,7 +4431,7 @@ if __name__ == "__main__":
                             color="continent",
                             text="iso3",
                             xaxis_title='Crossing speed during night time (in m/s)',
-                            yaxis_title='Time to start crossing during night time (in s)',
+                            yaxis_title='Crossing initiation time during night time (in s)',
                             pretty_text=False,
                             marker_size=10,
                             save_file=True,
@@ -4452,7 +4452,7 @@ if __name__ == "__main__":
                             y="population_country",
                             color="continent",
                             text="iso3",
-                            xaxis_title='Mean time to start crossing (in s)',
+                            xaxis_title='Crossing initiation time (s)',
                             yaxis_title='Population of country',
                             pretty_text=False,
                             marker_size=10,
@@ -4496,7 +4496,7 @@ if __name__ == "__main__":
                             y="traffic_mortality",
                             color="continent",
                             text="iso3",
-                            xaxis_title='Mean time to start crossing (in s)',
+                            xaxis_title='Crossing initiation time (in s)',
                             yaxis_title='National traffic mortality rate (per 100,000 of population)',
                             pretty_text=False,
                             marker_size=10,
@@ -4540,7 +4540,7 @@ if __name__ == "__main__":
                             y="literacy_rate",
                             color="continent",
                             text="iso3",
-                            xaxis_title='Mean time to start crossing (in s)',
+                            xaxis_title='Crossing initiation time (in s)',
                             yaxis_title='Literacy rate',
                             pretty_text=False,
                             marker_size=10,
@@ -4584,7 +4584,7 @@ if __name__ == "__main__":
                             y="gini",
                             color="continent",
                             text="iso3",
-                            xaxis_title='Mean time to start crossing (in s)',
+                            xaxis_title='Crossing initiation time (in s)',
                             yaxis_title='Gini coefficient',
                             pretty_text=False,
                             marker_size=10,
@@ -4629,7 +4629,7 @@ if __name__ == "__main__":
                             color="continent",
                             text="iso3",
                             # size="gmp",
-                            xaxis_title='Mean time to start crossing (in s)',
+                            xaxis_title='Crossing initiation time (in s)',
                             yaxis_title='Median age (in years)',
                             pretty_text=False,
                             marker_size=10,
@@ -4673,7 +4673,7 @@ if __name__ == "__main__":
                             y="cellphone_normalised",
                             color="continent",
                             text="iso3",
-                            xaxis_title='Mean time to start crossing (in s)',
+                            xaxis_title='Crossing initiation time (in s)',
                             yaxis_title='Mobile phones detected (normalised over time)',
                             pretty_text=False,
                             marker_size=10,
@@ -4713,7 +4713,7 @@ if __name__ == "__main__":
         plots_class.map(df_countries, 'speed_crossing_day_night_country_avg',
                         "Mean speed of crossing (in m/s)", save_file=True)
         plots_class.map(df_countries, 'time_crossing_day_night_country_avg',
-                        "Mean time to start crossing (in s)", save_file=True)
+                        "Crossing initiation time (in s)", save_file=True)
 
         # Crossing with and without traffic lights
         df = df_countries.copy()
