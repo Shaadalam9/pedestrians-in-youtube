@@ -407,17 +407,8 @@ if __name__ == "__main__":
             time_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             # Sometimes, can joke around a bit ='.'=
             image_url = "https://i.pinimg.com/474x/20/82/0f/20820fd73c946d3e1d2e6efe23e1b2f3.jpg"
-            # Body of email to send
-            body = f"""
-                <html>
-                  <body>
-                    <pre>Processing job crashed on {config.machine_name} at {time_now}. " +
-                    "Error message: {e}</pre>
-                    {"<br><img src='cid:crashimage'>" if image_url else ""}
-                  </body>
-                </html>
-                """
             common.send_email(subject=f"‼️ Processing job crashed on machine {config.machine_name}",
-                              content=body,
+                              content=f"Processing job crashed on {config.machine_name} at {time_now}. " +
+                                      f"{counter_processed} segments were processed. Error message: {e}.",
                               sender=config.email_sender,
                               recipients=config.email_recipients)
