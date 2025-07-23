@@ -179,3 +179,35 @@ class Values():
                 total_seconds += (int(e) - int(s))
 
         return total_seconds
+
+    def remove_columns_below_threshold(self, df, threshold):
+        """
+        Removes columns from the DataFrame if their total seconds (per city) is below a given threshold.
+        Returns the modified DataFrame.
+        """
+        cols_to_remove = []
+
+        # Assume all city/state rows, so iterate over columns that have start/end times
+        for col in df.columns:
+            # Check if this column is a 'start_time' or 'end_time' column
+            if col.startswith("start_time") or col.startswith("end_time"):
+                # Derive base name to match start/end pairs
+                base = col.replace("start_time", "").replace("end_time", "")
+                start_col = f"start_time{base}"
+                end_col = f"end_time{base}"
+
+                if start_col in df.columns and end_col in df.columns:
+                    total_seconds = 0
+                    for idx, row in df.iterrows():
+                        start_times = ast.literal_eval(row[start_col])
+                        end_times = ast.literal_eval(row[end_col])
+                        for start, end in zip(start_times, end_times):
+                            for s, e in zip(start, end):
+                                total_seconds += (int(e) - int(s))
+                    if total_seconds < threshold:
+                        cols_to_remove += [start_col, end_col]
+
+        # Remove duplicate column names just in case
+        cols_to_remove = list(set(cols_to_remove))
+        df_modified = df.drop(columns=cols_to_remove)
+        return df_modified

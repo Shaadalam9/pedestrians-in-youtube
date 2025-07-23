@@ -2366,7 +2366,7 @@ class Plots():
         num_countries_per_col = len(countries_ordered) // 2 + len(countries_ordered) % 2  # Split cities
 
         # Define a base height per row and calculate total figure height
-        TALL_FIG_HEIGHT = num_countries_per_col * BASE_HEIGHT_PER_ROW
+        # TALL_FIG_HEIGHT = num_countries_per_col * BASE_HEIGHT_PER_ROW
 
         fig = make_subplots(
             rows=num_countries_per_col, cols=2,  # Two columns

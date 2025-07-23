@@ -109,13 +109,13 @@ class Analysis():
                 if vehicle_type not in vehicle_list:
                     return None
 
-            # Check if the footage duration meets the minimum threshold
-            total_seconds = values_class.calculate_total_seconds_for_city(
-                df_mapping, values[4], values[5]
-            )
+            # # Check if the footage duration meets the minimum threshold
+            # total_seconds = values_class.calculate_total_seconds_for_city(
+            #     df_mapping, values[4], values[5]
+            # )
 
-            if total_seconds <= common.get_configs("footage_threshold"):
-                return None  # Skip if not enough seconds
+            # if total_seconds <= common.get_configs("footage_threshold"):
+            #     return None  # Skip if not enough seconds
 
             file_path = os.path.join(folder_path, file)
             try:
@@ -3307,6 +3307,7 @@ if __name__ == "__main__":
 
         # Save the raw file for further investigation
         df_mapping_raw = df_mapping.copy()
+
         df_mapping_raw.drop(['lat', 'lon', 'gmp', 'population_city', 'population_country', 'traffic_mortality',
                              'literacy_rate', 'avg_height', 'med_age', 'gini', 'traffic_index', 'videos',
                              'time_of_day', 'start_time', 'end_time', 'vehicle_type', 'upload_date', 'fps_list',
@@ -3321,6 +3322,9 @@ if __name__ == "__main__":
             (df_mapping["population_city"] >= population_threshold) |  # Condition 1
             (df_mapping["population_city"] >= min_percentage * df_mapping["population_country"])  # Condition 2
         ]
+
+        # Remove the rows of the cities where the footage recorded is less than threshold
+        df_mapping = values_class.remove_columns_below_threshold(df_mapping, common.get_configs("footage_threshold"))
 
         # Limit countries if required
         countries_include = common.get_configs("countries_analyse")
@@ -4195,7 +4199,7 @@ if __name__ == "__main__":
                                        title_text="Time to start crossing (s)",
                                        filename="time_crossing_avg_country",
                                        font_size_captions=common.get_configs("font_size") + 8,
-                                       legend_x=0.87,
+                                       legend_x=0.95,
                                        legend_y=0.04,
                                        legend_spacing=0.02,
                                        top_margin=100)
@@ -4207,10 +4211,12 @@ if __name__ == "__main__":
                                        title_text="Mean speed of crossing (in m/s)",
                                        filename="crossing_speed_combined_country",
                                        font_size_captions=common.get_configs("font_size") + 8,
-                                       legend_x=0.87,
+                                       legend_x=0.95,
                                        legend_y=0.04,
                                        legend_spacing=0.02,
-                                       top_margin=100)
+                                       top_margin=100,
+                                       height=3200,
+                                       width=3200)
 
         plots_class.stack_plot_country(df_countries,
                                        order_by="condition",
@@ -4219,10 +4225,40 @@ if __name__ == "__main__":
                                        title_text="Time to start crossing (s)",
                                        filename="time_crossing_combined_country",
                                        font_size_captions=common.get_configs("font_size") + 8,
-                                       legend_x=0.87,
+                                       legend_x=0.95,
                                        legend_y=0.04,
                                        legend_spacing=0.02,
-                                       top_margin=100)
+                                       top_margin=100,
+                                       height=2480,
+                                       width=2400)
+
+        plots_class.stack_plot_country(df_countries_raw,
+                                       order_by="condition",
+                                       metric="speed",
+                                       data_view="combined",
+                                       title_text="Mean speed of crossing (in m/s)",
+                                       filename="crossing_speed_combined_country_raw",
+                                       font_size_captions=common.get_configs("font_size") + 8,
+                                       legend_x=0.95,
+                                       legend_y=0.04,
+                                       legend_spacing=0.01,
+                                       top_margin=100,
+                                       height=2400,
+                                       width=2480)
+
+        plots_class.stack_plot_country(df_countries_raw,
+                                       order_by="condition",
+                                       metric="time",
+                                       data_view="combined",
+                                       title_text="Time to start crossing (s)",
+                                       filename="time_crossing_combined_country_raw",
+                                       font_size_captions=common.get_configs("font_size") + 8,
+                                       legend_x=0.95,
+                                       legend_y=0.04,
+                                       legend_spacing=0.01,
+                                       top_margin=100,
+                                       height=2400,
+                                       width=2480)
 
         plots_class.stack_plot_country(df_countries,
                                        order_by="alphabetical",
