@@ -2949,22 +2949,22 @@ if __name__ == "__main__":
         hover_data = list(set(df.columns) - set(columns_remove))
 
         # maps with all data
-        # plots_class.mapbox_map(df=df, hover_data=hover_data, file_name='mapbox_map_all')
-        # plots_class.mapbox_map(df=df,
-        #                        hover_data=hover_data,
-        #                        density_col='population_city',
-        #                        density_radius=10,
-        #                        file_name='mapbox_map_all_pop')
-        # plots_class.mapbox_map(df=df,
-        #                        hover_data=hover_data,
-        #                        density_col='video_count',
-        #                        density_radius=10,
-        #                        file_name='mapbox_map_all_videos')
-        # plots_class.mapbox_map(df=df,
-        #                        hover_data=hover_data,
-        #                        density_col='total_time',
-        #                        density_radius=10,
-        #                        file_name='mapbox_map_all_time')
+        plots_class.mapbox_map(df=df, hover_data=hover_data, file_name='mapbox_map_all')
+        plots_class.mapbox_map(df=df,
+                               hover_data=hover_data,
+                               density_col='population_city',
+                               density_radius=10,
+                               file_name='mapbox_map_all_pop')
+        plots_class.mapbox_map(df=df,
+                               hover_data=hover_data,
+                               density_col='video_count',
+                               density_radius=10,
+                               file_name='mapbox_map_all_videos')
+        plots_class.mapbox_map(df=df,
+                               hover_data=hover_data,
+                               density_col='total_time',
+                               density_radius=10,
+                               file_name='mapbox_map_all_time')
 
         total_duration = Analysis.calculate_total_seconds(df_mapping)
 
@@ -3055,9 +3055,10 @@ if __name__ == "__main__":
             'crossing_detected_country_all_night': 0,
         }
 
-        # Add all columns at once!
-        for col, val in city_country_cols.items():
-            df_mapping[col] = val
+        # Efficiently add all columns at once
+        cols_df = pd.DataFrame([city_country_cols] * len(df_mapping), index=df_mapping.index)
+
+        df_mapping = pd.concat([df_mapping, cols_df], axis=1)
 
         all_speed = {}
         all_time = {}
@@ -3627,22 +3628,22 @@ if __name__ == "__main__":
     df['state'] = df['state'].fillna('NA')  # Set state to NA
 
     # Maps with filtered data
-    # plots_class.mapbox_map(df=df, hover_data=hover_data, file_name='mapbox_map')
-    # plots_class.mapbox_map(df=df,
-    #                        hover_data=hover_data,
-    #                        density_col='total_time',
-    #                        density_radius=10,
-    #                        file_name='mapbox_map_time')
-    # plots_class.world_map(df_mapping=df)  # map with countries
+    plots_class.mapbox_map(df=df, hover_data=hover_data, file_name='mapbox_map')
+    plots_class.mapbox_map(df=df,
+                           hover_data=hover_data,
+                           density_col='total_time',
+                           density_radius=10,
+                           file_name='mapbox_map_time')
+    plots_class.world_map(df_mapping=df)  # map with countries
 
-    # plots_class.violin_plot(data_index=22, name="speed", min_threshold=common.get_configs("min_speed_limit"),
-    #                         max_threshold=common.get_configs("max_speed_limit"), df_mapping=df_mapping, save_file=True)
+    plots_class.violin_plot(data_index=22, name="speed", min_threshold=common.get_configs("min_speed_limit"),
+                            max_threshold=common.get_configs("max_speed_limit"), df_mapping=df_mapping, save_file=True)
 
-    # plots_class.hist(data_index=22, name="speed", min_threshold=common.get_configs("min_speed_limit"),
-    #                  max_threshold=common.get_configs("max_speed_limit"), save_file=True)
+    plots_class.hist(data_index=22, name="speed", min_threshold=common.get_configs("min_speed_limit"),
+                     max_threshold=common.get_configs("max_speed_limit"), save_file=True)
 
-    # plots_class.hist(data_index=23, name="time", min_threshold=common.get_configs("min_waiting_time"),
-    #                  max_threshold=common.get_configs("max_waiting_time"), save_file=True)
+    plots_class.hist(data_index=23, name="time", min_threshold=common.get_configs("min_waiting_time"),
+                     max_threshold=common.get_configs("max_waiting_time"), save_file=True)
 
     if common.get_configs("analysis_level") == "city":
 
@@ -4219,14 +4220,14 @@ if __name__ == "__main__":
         df_countries.to_csv(os.path.join(common.output_dir, "mapping_countries.csv"))
 
         # Map with images. currently works on a 13" MacBook air screen in chrome, as things are hardcoded...
-        # plots_class.map_political(df=df_countries_raw, df_mapping=df_mapping, show_cities=True, show_images=True,
-        #                           hover_data=hover_data_raw, save_file=True, save_final=False, name="raw_map")
+        plots_class.map_political(df=df_countries_raw, df_mapping=df_mapping, show_cities=True, show_images=True,
+                                  hover_data=hover_data_raw, save_file=True, save_final=False, name="raw_map")
 
-        # plots_class.map_political(df=df_countries, df_mapping=df_mapping, show_cities=True, show_images=True,
-        #                           hover_data=hover_data, save_file=True, save_final=False, name="map_screenshots")
-        # # Map with no images
-        # plots_class.map_political(df=df_countries, df_mapping=df_mapping, show_cities=True, show_images=False,
-        #                           hover_data=hover_data, save_file=True, save_final=True, name="map")
+        plots_class.map_political(df=df_countries, df_mapping=df_mapping, show_cities=True, show_images=True,
+                                  hover_data=hover_data, save_file=True, save_final=False, name="map_screenshots")
+        # Map with no images
+        plots_class.map_political(df=df_countries, df_mapping=df_mapping, show_cities=True, show_images=False,
+                                  hover_data=hover_data, save_file=True, save_final=True, name="map")
 
         df_countries_raw.drop(['speed_crossing_day_country', 'speed_crossing_night_country',
                                'speed_crossing_day_night_country_avg',
