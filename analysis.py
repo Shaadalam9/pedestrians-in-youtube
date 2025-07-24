@@ -4221,13 +4221,30 @@ if __name__ == "__main__":
 
         # Map with images. currently works on a 13" MacBook air screen in chrome, as things are hardcoded...
         plots_class.map_political(df=df_countries_raw, df_mapping=df_mapping, show_cities=True, show_images=True,
-                                  hover_data=hover_data_raw, save_file=True, save_final=False, name="raw_map")
-
-        plots_class.map_political(df=df_countries, df_mapping=df_mapping, show_cities=True, show_images=True,
-                                  hover_data=hover_data, save_file=True, save_final=False, name="map_screenshots")
+                                  hover_data=hover_data_raw, save_file=True, save_final=False, name_file="raw_map")
+        # Map with screenshots and countries colours by continent
+        plots_class.map_political(df=df_countries,
+                                  df_mapping=df_mapping,
+                                  show_cities=True,
+                                  show_images=True,
+                                  hover_data=hover_data,
+                                  color="continent",
+                                  save_file=True,
+                                  save_final=False,
+                                  name_file="map_screenshots")
+        # Map with screenshots and countries colours by amount of footage
+        plots_class.map_political(df=df_countries,
+                                  df_mapping=df_mapping,
+                                  show_cities=True,
+                                  show_images=True,
+                                  hover_data=hover_data,
+                                  color="total_time",
+                                  save_file=True,
+                                  save_final=False,
+                                  name_file="map_screenshots_total_time")
         # Map with no images
         plots_class.map_political(df=df_countries, df_mapping=df_mapping, show_cities=True, show_images=False,
-                                  hover_data=hover_data, save_file=True, save_final=True, name="map")
+                                  hover_data=hover_data, save_file=True, save_final=True, name_file="map")
 
         df_countries_raw.drop(['speed_crossing_day_country', 'speed_crossing_night_country',
                                'speed_crossing_day_night_country_avg',

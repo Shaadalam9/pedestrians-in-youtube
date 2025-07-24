@@ -1651,6 +1651,7 @@ class Plots():
 
         fig.show()
 
+    # todo: add docstring to all methods where missing.
     def map(self, df, color, title, title_colorbar=None, save_file=False):
         """Map of countries of participation with colour based on column in dataframe.
 
@@ -1713,13 +1714,20 @@ class Plots():
         else:
             fig.show()
 
-    def map_political(self, df, df_mapping, show_images=False, show_cities=True, hover_data=None, save_file=False,
-                      save_final=False, name="map"):
+    def map_political(self, df, df_mapping, show_images=False, show_cities=True, hover_data=None, color="continent",
+                      save_file=False, save_final=False, name_file="map"):
         """Generate world map with countries colored by continent using choropleth.
-
+        
         Args:
             df (dataframe): dataframe with 'country' and 'continent' columns.
+            df_mapping (TYPE): mapping dataframe.
+            show_images (bool, optional): show screenshots on top of the map.
+            show_cities (bool, optional): show cities as markers
             hover_data (list, optional): list of params to show on hover.
+            color (str, optional): parameter to colour countries.
+            save_file (bool, optional): flag for saving an html file with plot.
+            save_final (bool, optional): flag for saving an a final figure to /figures.
+            name_file (str, optional): name of file.
         """
         # if 'Denmark' in df['country'].values:
         #     denmark_value = df.loc[df['country'] == 'Denmark', 'continent'].values[0]
@@ -1737,7 +1745,7 @@ class Plots():
         fig = px.choropleth(df,
                             locations="country",
                             locationmode="country names",
-                            color="continent",
+                            color=color,
                             hover_name="country",
                             hover_data=hover_data,
                             projection="natural earth")
