@@ -2216,6 +2216,8 @@ class Plots():
         with open(file_results, 'rb') as file:
             data_tuple = pickle.load(file)
 
+        no_of_crossing = data_tuple[35]
+
         metric_data = data_tuple[metric_index_map[metric]]
         all_values = data_tuple[metric_index_map[f"all_{metric}_country"]]
 
@@ -2229,6 +2231,8 @@ class Plots():
         }
 
         for country_condition, metric_values in tqdm(metric_data.items()):
+            if no_of_crossing[country_condition] < common.get_configs("min_crossing_detect"):
+                continue
             country, condition = country_condition.split('_')
 
             # Get the iso3 from the mapping file

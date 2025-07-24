@@ -825,9 +825,9 @@ class Analysis():
             city, lat, _, cond = city_lat_long_cond.split("_")
             country = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "country")
             if country in final:
-                final[country] += value
+                final[f"{country}_{cond}"] += value
             else:
-                final[country] = value
+                final[f"{country}_{cond}"] = value
 
         return final
 
@@ -2398,7 +2398,9 @@ class Analysis():
             'speed_crossing_night_country', 'speed_crossing_day_night_country_avg',
             'time_crossing_day_country', 'time_crossing_night_country', 'time_crossing_day_night_country_avg',
             'with_trf_light_day_country', 'with_trf_light_night_country', 'without_trf_light_day_country',
-            'without_trf_light_night_country', 'crossing_detected_country'
+            'without_trf_light_night_country', 'crossing_detected_country_all', 'crossing_detected_country_all_day',
+            'crossing_detected_country_all_night', 'crossing_detected_country_day', 'crossing_detected_country',
+            'crossing_detected_country_night'
             ]
 
         # Columns to merge as lists
@@ -2906,7 +2908,9 @@ if __name__ == "__main__":
              all_time_city,                                 # 37
              all_speed_country,                             # 38
              all_time_country,                              # 39
-             df_mapping_raw                                 # 40
+             df_mapping_raw,                                # 40
+             pedestrian_cross_city_all,                     # 41
+             pedestrian_cross_country_all                   # 42
              ) = pickle.load(file)
 
         logger.info("Loaded analysis results from pickle file.")
@@ -2945,22 +2949,22 @@ if __name__ == "__main__":
         hover_data = list(set(df.columns) - set(columns_remove))
 
         # maps with all data
-        plots_class.mapbox_map(df=df, hover_data=hover_data, file_name='mapbox_map_all')
-        plots_class.mapbox_map(df=df,
-                               hover_data=hover_data,
-                               density_col='population_city',
-                               density_radius=10,
-                               file_name='mapbox_map_all_pop')
-        plots_class.mapbox_map(df=df,
-                               hover_data=hover_data,
-                               density_col='video_count',
-                               density_radius=10,
-                               file_name='mapbox_map_all_videos')
-        plots_class.mapbox_map(df=df,
-                               hover_data=hover_data,
-                               density_col='total_time',
-                               density_radius=10,
-                               file_name='mapbox_map_all_time')
+        # plots_class.mapbox_map(df=df, hover_data=hover_data, file_name='mapbox_map_all')
+        # plots_class.mapbox_map(df=df,
+        #                        hover_data=hover_data,
+        #                        density_col='population_city',
+        #                        density_radius=10,
+        #                        file_name='mapbox_map_all_pop')
+        # plots_class.mapbox_map(df=df,
+        #                        hover_data=hover_data,
+        #                        density_col='video_count',
+        #                        density_radius=10,
+        #                        file_name='mapbox_map_all_videos')
+        # plots_class.mapbox_map(df=df,
+        #                        hover_data=hover_data,
+        #                        density_col='total_time',
+        #                        density_radius=10,
+        #                        file_name='mapbox_map_all_time')
 
         total_duration = Analysis.calculate_total_seconds(df_mapping)
 
@@ -3025,6 +3029,12 @@ if __name__ == "__main__":
             'with_trf_light_night_city': 0.0,
             'without_trf_light_day_city': 0.0,
             'without_trf_light_night_city': 0.0,
+            'crossing_detected_city': 0,
+            'crossing_detected_city_day': 0,
+            'crossing_detected_city_night': 0,
+            'crossing_detected_city_all': 0,
+            'crossing_detected_city_all_day': 0,
+            'crossing_detected_city_all_night': 0,
 
             # Country-level columns
             'speed_crossing_day_country': math.nan,
@@ -3037,8 +3047,12 @@ if __name__ == "__main__":
             'with_trf_light_night_country': 0.0,
             'without_trf_light_day_country': 0.0,
             'without_trf_light_night_country': 0.0,
-            'crossing_detected_city': 0,
             'crossing_detected_country': 0,
+            'crossing_detected_country_day': 0,
+            'crossing_detected_country_night': 0,
+            'crossing_detected_country_all': 0,
+            'crossing_detected_country_all_day': 0,
+            'crossing_detected_country_all_night': 0,
         }
 
         # Add all columns at once!
@@ -3050,6 +3064,7 @@ if __name__ == "__main__":
 
         logger.info("Processing csv files.")
         pedestrian_crossing_count, data = {}, {}
+        pedestrian_crossing_count_all = {}
         for folder_path in common.get_configs('data'):
             if not os.path.exists(folder_path):
                 logger.warning(f"Folder does not exist: {folder_path}.")
@@ -3085,15 +3100,16 @@ if __name__ == "__main__":
                     logger.debug(f"{file}: found values {video_city}, {video_state}, {video_country}.")
 
                     # Get the number of number and unique id of the object crossing the road
-                    ids = algorithms_class.pedestrian_crossing(df,
-                                                               filename_no_ext,
-                                                               df_mapping,
-                                                               common.get_configs("boundary_left"),
-                                                               common.get_configs("boundary_right"),
-                                                               person_id=0)
+                    ids, all_ids = algorithms_class.pedestrian_crossing(df,
+                                                                        filename_no_ext,
+                                                                        df_mapping,
+                                                                        common.get_configs("boundary_left"),
+                                                                        common.get_configs("boundary_right"),
+                                                                        person_id=0)
 
                     # Saving it in a dictionary in: {video-id_time: count, ids}
                     pedestrian_crossing_count[filename_no_ext] = {"ids": ids}
+                    pedestrian_crossing_count_all[filename_no_ext] = {"ids": all_ids}
 
                     # Saves the time to cross in form {name_time: {id(s): time(s)}}
                     temp_data = algorithms_class.time_to_cross(df,
@@ -3191,8 +3207,10 @@ if __name__ == "__main__":
         cross_evnt_city = Analysis.crossing_event_wt_traffic_light(df_mapping, data)
         logger.info("Calculating counts of crossing events in cities.")
         pedestrian_cross_city = Analysis.pedestrian_cross_per_city(pedestrian_crossing_count, df_mapping)
+        pedestrian_cross_city_all = Analysis.pedestrian_cross_per_city(pedestrian_crossing_count_all, df_mapping)
         logger.info("Calculating counts of crossing events in countries.")
         pedestrian_cross_country = Analysis.pedestrian_cross_per_country(pedestrian_cross_city, df_mapping)
+        pedestrian_cross_country_all = Analysis.pedestrian_cross_per_country(pedestrian_cross_city_all, df_mapping)
 
         # Jaywalking data
         logger.info("Calculating parameters for detection of jaywalking.")
@@ -3274,22 +3292,90 @@ if __name__ == "__main__":
         # ---------------------------------------
         # Add city-level crossing counts detected
         # ---------------------------------------
-        for city, value in pedestrian_cross_city.items():
-
+        for city_long_lat_cond, value in pedestrian_cross_city.items():
+            city, lat, long, cond = city_long_lat_cond.split('_')
+            lat = float(lat)  # if your lat column is float
+            # Set the correct column name based on condition
+            if cond == "0":
+                target_column = "crossing_detected_city_day"
+            elif cond == "1":
+                target_column = "crossing_detected_city_night"
+            else:
+                continue  # skip if cond is not recognized
+            # Set the value in the right place
             df_mapping.loc[
-                (df_mapping["city"] == city),
-                "crossing_detected_city"
+                (df_mapping["city"] == city) & (df_mapping["lat"] == lat),
+                target_column
             ] = float(value)
 
-        # ---------------------------------------
-        # Add city-level crossing counts detected
-        # ---------------------------------------
-        for country, value in pedestrian_cross_country.items():
+        for city_long_lat_cond, value in pedestrian_cross_city_all.items():
+            city, lat, long, cond = city_long_lat_cond.split('_')
+            lat = float(lat)  # if your lat column is float
+            # Set the correct column name based on condition
+            if cond == "0":
+                target_column = "crossing_detected_city_all_day"
+            elif cond == "1":
+                target_column = "crossing_detected_city_all_night"
+            else:
+                continue  # skip if cond is not recognized
+            # Set the value in the right place
+            df_mapping.loc[
+                (df_mapping["city"] == city) & (df_mapping["lat"] == lat),
+                target_column
+            ] = float(value)
 
+        df_mapping["crossing_detected_city"] = (
+            df_mapping["crossing_detected_city_day"].fillna(0)
+            + df_mapping["crossing_detected_city_night"].fillna(0)
+        )
+
+        df_mapping["crossing_detected_city_all"] = (
+            df_mapping["crossing_detected_city_all_day"].fillna(0)
+            + df_mapping["crossing_detected_city_all_night"].fillna(0)
+        )
+
+        # ---------------------------------------
+        # Add country-level crossing counts detected
+        # ---------------------------------------
+        for country_cond, value in pedestrian_cross_country.items():
+            country, cond = country_cond.split('_')
+            # Set the correct column name based on condition
+            if cond == "0":
+                target_column = "crossing_detected_country_day"
+            elif cond == "1":
+                target_column = "crossing_detected_country_night"
+            else:
+                continue  # skip if cond is not recognized
+            # Set the value in the right place
             df_mapping.loc[
                 (df_mapping["country"] == country),
-                "crossing_detected_country"
+                target_column
             ] = float(value)
+
+        for country_cond, value in pedestrian_cross_country_all.items():
+            country, cond = country_cond.split('_')
+            # Set the correct column name based on condition
+            if cond == "0":
+                target_column = "crossing_detected_country_all_day"
+            elif cond == "1":
+                target_column = "crossing_detected_country_all_night"
+            else:
+                continue  # skip if cond is not recognized
+            # Set the value in the right place
+            df_mapping.loc[
+                (df_mapping["country"] == country),
+                target_column
+            ] = float(value)
+
+        df_mapping["crossing_detected_country"] = (
+            df_mapping["crossing_detected_country_day"].fillna(0)
+            + df_mapping["crossing_detected_country_night"].fillna(0)
+        )
+
+        df_mapping["crossing_detected_country_all"] = (
+            df_mapping["crossing_detected_country_all_day"].fillna(0)
+            + df_mapping["crossing_detected_country_all_night"].fillna(0)
+        )
 
         # Add column with count of videos
         df_mapping["total_videos"] = df_mapping["videos"].apply(lambda x: len(x.strip("[]").split(",")) if x.strip("[]") else 0)  # noqa: E501
@@ -3403,8 +3489,11 @@ if __name__ == "__main__":
                          all_time_city,                                     # 37
                          all_speed_country,                                 # 38
                          all_time_country,                                  # 39
-                         df_mapping_raw),                                   # 40
+                         df_mapping_raw,                                    # 40
+                         pedestrian_cross_city_all,                         # 41
+                         pedestrian_cross_country_all),                     # 42
                         file)
+
         logger.info("Analysis results saved to pickle file.")
 
     # Set index as ID
@@ -3466,20 +3555,32 @@ if __name__ == "__main__":
 
     # --- Remove countries/cities with insufficient crossing detections ---
     if common.get_configs("min_crossing_detect") != 0:
-        # --- Remove low-detection countries from country-level speed/time ---
-        # Find countries with crossings below threshold
-        remove_countries = {country for country, value in pedestrian_cross_country.items()
-                            if value < common.get_configs("min_crossing_detect")}
+        # Group values by country
+        threshold = common.get_configs("min_crossing_detect")
+        country_detect = {}
+
+        for key, value in pedestrian_cross_country.items():
+            country, cond = key.rsplit('_', 1)
+            value = float(value)
+            if country not in country_detect:
+                country_detect[country] = {}
+            country_detect[country][cond] = value
+
+        # Find countries where BOTH conditions are below threshold
+        remove_countries = {
+            country for country, vals in country_detect.items()
+            if all(vals.get(str(cond), 0) < threshold for cond in [0, 1])
+        }
 
         # Remove rows from df_mapping where 'country' is in remove_countries
         df_mapping = df_mapping[~df_mapping['country'].isin(remove_countries)].copy()
 
-        # Remove all entries in avg_speed_country and avg_time_country for those countries
-        for dict_name, d in [('avg_speed_country', avg_speed_country), ('avg_time_country', avg_time_country)]:
-            keys_to_remove = [key for key in d if key.split('_')[0] in remove_countries]  # type: ignore
-            for key in keys_to_remove:
-                logger.debug(f"Deleting from {dict_name}: {key} -> {d[key]}")  # type: ignore
-                del d[key]  # type: ignore
+        # # Remove all entries in avg_speed_country and avg_time_country for those countries
+        # for dict_name, d in [('avg_speed_country', avg_speed_country), ('avg_time_country', avg_time_country)]:
+        #     keys_to_remove = [key for key in d if key.split('_')[0] in remove_countries]  # type: ignore
+        #     for key in keys_to_remove:
+        #         logger.debug(f"Deleting from {dict_name}: {key} -> {d[key]}")  # type: ignore
+        #         del d[key]  # type: ignore
 
         # --- Remove low-detection cities from city-level speed/time ---
         # Sum all conditions for each city in pedestrian_cross_city
@@ -3526,22 +3627,22 @@ if __name__ == "__main__":
     df['state'] = df['state'].fillna('NA')  # Set state to NA
 
     # Maps with filtered data
-    plots_class.mapbox_map(df=df, hover_data=hover_data, file_name='mapbox_map')
-    plots_class.mapbox_map(df=df,
-                           hover_data=hover_data,
-                           density_col='total_time',
-                           density_radius=10,
-                           file_name='mapbox_map_time')
-    plots_class.world_map(df_mapping=df)  # map with countries
+    # plots_class.mapbox_map(df=df, hover_data=hover_data, file_name='mapbox_map')
+    # plots_class.mapbox_map(df=df,
+    #                        hover_data=hover_data,
+    #                        density_col='total_time',
+    #                        density_radius=10,
+    #                        file_name='mapbox_map_time')
+    # plots_class.world_map(df_mapping=df)  # map with countries
 
-    plots_class.violin_plot(data_index=22, name="speed", min_threshold=common.get_configs("min_speed_limit"),
-                            max_threshold=common.get_configs("max_speed_limit"), df_mapping=df_mapping, save_file=True)
+    # plots_class.violin_plot(data_index=22, name="speed", min_threshold=common.get_configs("min_speed_limit"),
+    #                         max_threshold=common.get_configs("max_speed_limit"), df_mapping=df_mapping, save_file=True)
 
-    plots_class.hist(data_index=22, name="speed", min_threshold=common.get_configs("min_speed_limit"),
-                     max_threshold=common.get_configs("max_speed_limit"), save_file=True)
+    # plots_class.hist(data_index=22, name="speed", min_threshold=common.get_configs("min_speed_limit"),
+    #                  max_threshold=common.get_configs("max_speed_limit"), save_file=True)
 
-    plots_class.hist(data_index=23, name="time", min_threshold=common.get_configs("min_waiting_time"),
-                     max_threshold=common.get_configs("max_waiting_time"), save_file=True)
+    # plots_class.hist(data_index=23, name="time", min_threshold=common.get_configs("min_waiting_time"),
+    #                  max_threshold=common.get_configs("max_waiting_time"), save_file=True)
 
     if common.get_configs("analysis_level") == "city":
 
@@ -4118,14 +4219,14 @@ if __name__ == "__main__":
         df_countries.to_csv(os.path.join(common.output_dir, "mapping_countries.csv"))
 
         # Map with images. currently works on a 13" MacBook air screen in chrome, as things are hardcoded...
-        plots_class.map_political(df=df_countries_raw, df_mapping=df_mapping, show_cities=True, show_images=True,
-                                  hover_data=hover_data_raw, save_file=True, save_final=False, name="raw_map")
+        # plots_class.map_political(df=df_countries_raw, df_mapping=df_mapping, show_cities=True, show_images=True,
+        #                           hover_data=hover_data_raw, save_file=True, save_final=False, name="raw_map")
 
-        plots_class.map_political(df=df_countries, df_mapping=df_mapping, show_cities=True, show_images=True,
-                                  hover_data=hover_data, save_file=True, save_final=False, name="map_screenshots")
-        # Map with no images
-        plots_class.map_political(df=df_countries, df_mapping=df_mapping, show_cities=True, show_images=False,
-                                  hover_data=hover_data, save_file=True, save_final=True, name="map")
+        # plots_class.map_political(df=df_countries, df_mapping=df_mapping, show_cities=True, show_images=True,
+        #                           hover_data=hover_data, save_file=True, save_final=False, name="map_screenshots")
+        # # Map with no images
+        # plots_class.map_political(df=df_countries, df_mapping=df_mapping, show_cities=True, show_images=False,
+        #                           hover_data=hover_data, save_file=True, save_final=True, name="map")
 
         df_countries_raw.drop(['speed_crossing_day_country', 'speed_crossing_night_country',
                                'speed_crossing_day_night_country_avg',

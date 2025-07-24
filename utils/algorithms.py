@@ -64,7 +64,7 @@ class Algorithms():
 
             pedestrian_ids.append(uid)
 
-        return pedestrian_ids
+        return pedestrian_ids, crossed_ids
 
     def time_to_cross(self, dataframe, ids, video_id, df_mapping):
         """Calculates the time taken for each object with specified IDs to cross the road.
