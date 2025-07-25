@@ -2112,6 +2112,8 @@ class Analysis():
 
         # Update font family and size
         fig.update_layout(
+            coloraxis_showscale=False,
+            margin=dict(l=0, r=0, t=0, b=0),  # Remove all margins
             font=dict(
                 family=common.get_configs('font_family'),
                 size=common.get_configs('font_size')
@@ -2133,6 +2135,8 @@ class Analysis():
 
         # Update font family and size
         fig.update_layout(
+            coloraxis_showscale=False,
+            margin=dict(l=0, r=0, t=0, b=0),  # Remove all margins
             font=dict(
                 family=common.get_configs('font_family'),
                 size=common.get_configs('font_size')
@@ -2236,6 +2240,8 @@ class Analysis():
 
         # Update font family and size
         fig.update_layout(
+            coloraxis_showscale=False,
+            margin=dict(l=0, r=0, t=0, b=0),  # Remove all margins
             font=dict(
                 family=common.get_configs('font_family'),
                 size=common.get_configs('font_size')
@@ -2349,11 +2355,14 @@ class Analysis():
 
             fig.update_layout(coloraxis_showscale=False)
 
-            # update font family
-            fig.update_layout(font=dict(family=common.get_configs('font_family')))
-
-            # use value from config file
-            fig.update_layout(font=dict(size=common.get_configs('font_size')))
+            fig.update_layout(
+                coloraxis_showscale=False,
+                margin=dict(l=0, r=0, t=0, b=0),  # Remove all margins
+                font=dict(
+                    family=common.get_configs('font_family'),
+                    size=common.get_configs('font_size')
+                )
+            )
 
             # Update text font size inside heatmap
             fig.update_traces(textfont_size=14)
