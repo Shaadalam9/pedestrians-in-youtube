@@ -242,6 +242,11 @@ class Wrappers():
         """
         logger.debug(f"Converting iso2 {iso2} to flag.")
 
+        # Special case for Kosovo
+        # todo: handle Kosovo ISO2
+        if not iso2:
+            return "🇽🇰"
+
         if not iso2 or len(iso2) != 2 or not iso2.isalpha():
             return "🏳️"
         iso2 = iso2.upper()

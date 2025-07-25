@@ -1715,7 +1715,7 @@ class Plots():
             fig.show()
 
     def map_political(self, df, df_mapping, show_images=False, show_cities=True, hover_data=None, color="continent",
-                      save_file=False, save_final=False, name_file="map"):
+                      save_file=False, save_final=False, name_file="map", show_colorbar=False, colorbar_title=None):
         """Generate world map with countries colored by continent using choropleth.
 
         Args:
@@ -1728,6 +1728,8 @@ class Plots():
             save_file (bool, optional): flag for saving an html file with plot.
             save_final (bool, optional): flag for saving an a final figure to /figures.
             name_file (str, optional): name of file.
+            show_colorbar (bool): Whether to show a color bar.
+            colorbar_title (str): Optional custom title for the color bar.
         """
         # if 'Denmark' in df['country'].values:
         #     denmark_value = df.loc[df['country'] == 'Denmark', 'continent'].values[0]
@@ -1940,8 +1942,26 @@ class Plots():
                 )
             )
 
-        # Remove color bar
-        fig.update_coloraxes(showscale=False)
+        # Use column name as default colorbar title if not provided
+        if colorbar_title is None:
+            colorbar_title = color
+
+        # Show or hide color bar
+        fig.update_coloraxes(
+            showscale=show_colorbar,
+            colorbar=dict(
+                title=colorbar_title,
+                orientation="h",
+                x=0.5,
+                y=0.035,
+                xanchor="center",
+                yanchor="bottom",
+                len=0.5,
+                thickness=10,
+                bgcolor='rgba(255,255,255,0.7)',
+                tickfont=dict(size=10)
+            ) if show_colorbar else {}
+        )
 
         # Update layout
         fig.update_layout(

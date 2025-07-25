@@ -3636,22 +3636,22 @@ if __name__ == "__main__":
     df['state'] = df['state'].fillna('NA')  # Set state to NA
 
     # Maps with filtered data
-    plots_class.mapbox_map(df=df, hover_data=hover_data, file_name='mapbox_map')
-    plots_class.mapbox_map(df=df,
-                           hover_data=hover_data,
-                           density_col='total_time',
-                           density_radius=10,
-                           file_name='mapbox_map_time')
-    plots_class.world_map(df_mapping=df)  # map with countries
+    # plots_class.mapbox_map(df=df, hover_data=hover_data, file_name='mapbox_map')
+    # plots_class.mapbox_map(df=df,
+    #                        hover_data=hover_data,
+    #                        density_col='total_time',
+    #                        density_radius=10,
+    #                        file_name='mapbox_map_time')
+    # plots_class.world_map(df_mapping=df)  # map with countries
 
-    plots_class.violin_plot(data_index=22, name="speed", min_threshold=common.get_configs("min_speed_limit"),
-                            max_threshold=common.get_configs("max_speed_limit"), df_mapping=df_mapping, save_file=True)
+    # plots_class.violin_plot(data_index=22, name="speed", min_threshold=common.get_configs("min_speed_limit"),
+    #                         max_threshold=common.get_configs("max_speed_limit"), df_mapping=df_mapping, save_file=True)
 
-    plots_class.hist(data_index=22, name="speed", min_threshold=common.get_configs("min_speed_limit"),
-                     max_threshold=common.get_configs("max_speed_limit"), save_file=True)
+    # plots_class.hist(data_index=22, name="speed", min_threshold=common.get_configs("min_speed_limit"),
+    #                  max_threshold=common.get_configs("max_speed_limit"), save_file=True)
 
-    plots_class.hist(data_index=23, name="time", min_threshold=common.get_configs("min_waiting_time"),
-                     max_threshold=common.get_configs("max_waiting_time"), save_file=True)
+    # plots_class.hist(data_index=23, name="time", min_threshold=common.get_configs("min_waiting_time"),
+    #                  max_threshold=common.get_configs("max_waiting_time"), save_file=True)
 
     if common.get_configs("analysis_level") == "city":
 
@@ -4227,32 +4227,35 @@ if __name__ == "__main__":
 
         df_countries.to_csv(os.path.join(common.output_dir, "mapping_countries.csv"))
 
-        # Map with images. currently works on a 13" MacBook air screen in chrome, as things are hardcoded...
-        plots_class.map_political(df=df_countries_raw, df_mapping=df_mapping, show_cities=True, show_images=True,
-                                  hover_data=hover_data_raw, save_file=True, save_final=False, name_file="raw_map")
-        # Map with screenshots and countries colours by continent
-        plots_class.map_political(df=df_countries,
-                                  df_mapping=df_mapping,
-                                  show_cities=True,
-                                  show_images=True,
-                                  hover_data=hover_data,
-                                  color="continent",
-                                  save_file=True,
-                                  save_final=False,
-                                  name_file="map_screenshots")
+        # # Map with images. currently works on a 13" MacBook air screen in chrome, as things are hardcoded...
+        # plots_class.map_political(df=df_countries_raw, df_mapping=df_mapping, show_cities=True, show_images=True,
+        #                           hover_data=hover_data_raw, save_file=True, save_final=False, name_file="raw_map")
+        # # Map with screenshots and countries colours by continent
+        # plots_class.map_political(df=df_countries,
+        #                           df_mapping=df_mapping,
+        #                           show_cities=True,
+        #                           show_images=True,
+        #                           hover_data=hover_data,
+        #                           color="continent",
+        #                           save_file=True,
+        #                           save_final=False,
+        #                           name_file="map_screenshots")
         # Map with screenshots and countries colours by amount of footage
-        plots_class.map_political(df=df_countries,
+        hover_data = list(set(df_countries_raw.columns) - set(columns_remove))
+        plots_class.map_political(df=df_countries_raw,
                                   df_mapping=df_mapping,
                                   show_cities=True,
                                   show_images=True,
                                   hover_data=hover_data,
                                   color="total_time",
+                                  show_colorbar=True,
+                                  colorbar_title="Footage (in s)",
                                   save_file=True,
                                   save_final=False,
                                   name_file="map_screenshots_total_time")
-        # Map with no images
-        plots_class.map_political(df=df_countries, df_mapping=df_mapping, show_cities=True, show_images=False,
-                                  hover_data=hover_data, save_file=True, save_final=True, name_file="map")
+        # # Map with no images
+        # plots_class.map_political(df=df_countries, df_mapping=df_mapping, show_cities=True, show_images=False,
+        #                           hover_data=hover_data, save_file=True, save_final=True, name_file="map")
 
         df_countries_raw.drop(['speed_crossing_day_country', 'speed_crossing_night_country',
                                'speed_crossing_day_night_country_avg',
