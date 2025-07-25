@@ -824,11 +824,10 @@ class Analysis():
         for city_lat_long_cond, value in pedestrian_cross_city.items():
             city, lat, _, cond = city_lat_long_cond.split("_")
             country = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "country")
-            if country in final:
+            if f"{country}_{cond}" in final:
                 final[f"{country}_{cond}"] += value
             else:
                 final[f"{country}_{cond}"] = value
-
         return final
 
     @staticmethod
@@ -2949,22 +2948,22 @@ if __name__ == "__main__":
         hover_data = list(set(df.columns) - set(columns_remove))
 
         # maps with all data
-        plots_class.mapbox_map(df=df, hover_data=hover_data, file_name='mapbox_map_all')
-        plots_class.mapbox_map(df=df,
-                               hover_data=hover_data,
-                               density_col='population_city',
-                               density_radius=10,
-                               file_name='mapbox_map_all_pop')
-        plots_class.mapbox_map(df=df,
-                               hover_data=hover_data,
-                               density_col='video_count',
-                               density_radius=10,
-                               file_name='mapbox_map_all_videos')
-        plots_class.mapbox_map(df=df,
-                               hover_data=hover_data,
-                               density_col='total_time',
-                               density_radius=10,
-                               file_name='mapbox_map_all_time')
+        # plots_class.mapbox_map(df=df, hover_data=hover_data, file_name='mapbox_map_all')
+        # plots_class.mapbox_map(df=df,
+        #                        hover_data=hover_data,
+        #                        density_col='population_city',
+        #                        density_radius=10,
+        #                        file_name='mapbox_map_all_pop')
+        # plots_class.mapbox_map(df=df,
+        #                        hover_data=hover_data,
+        #                        density_col='video_count',
+        #                        density_radius=10,
+        #                        file_name='mapbox_map_all_videos')
+        # plots_class.mapbox_map(df=df,
+        #                        hover_data=hover_data,
+        #                        density_col='total_time',
+        #                        density_radius=10,
+        #                        file_name='mapbox_map_all_time')
 
         total_duration = Analysis.calculate_total_seconds(df_mapping)
 

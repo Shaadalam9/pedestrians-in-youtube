@@ -1717,7 +1717,7 @@ class Plots():
     def map_political(self, df, df_mapping, show_images=False, show_cities=True, hover_data=None, color="continent",
                       save_file=False, save_final=False, name_file="map"):
         """Generate world map with countries colored by continent using choropleth.
-        
+
         Args:
             df (dataframe): dataframe with 'country' and 'continent' columns.
             df_mapping (TYPE): mapping dataframe.
@@ -1958,10 +1958,10 @@ class Plots():
             fig.update_layout(margin=dict(l=10, r=10, t=10, b=10))
             # with screenshots
             if show_images:
-                self.save_plotly_figure(fig, name, save_final=save_final)
+                self.save_plotly_figure(fig, name_file, save_final=save_final)
             # without screenshots
             else:
-                self.save_plotly_figure(fig, name, save_final=save_final)
+                self.save_plotly_figure(fig, name_file, save_final=save_final)
         # open it in localhost instead
         else:
             fig.show()
