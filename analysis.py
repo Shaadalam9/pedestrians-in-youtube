@@ -3653,11 +3653,21 @@ if __name__ == "__main__":
     # plots_class.violin_plot(data_index=22, name="speed", min_threshold=common.get_configs("min_speed_limit"),
     #                         max_threshold=common.get_configs("max_speed_limit"), df_mapping=df_mapping, save_file=True)
 
-    # plots_class.hist(data_index=22, name="speed", min_threshold=common.get_configs("min_speed_limit"),
-    #                  max_threshold=common.get_configs("max_speed_limit"), save_file=True)
+    plots_class.hist(data_index=22,
+                     name="speed",
+                     marginal="violin",
+                     nbins=100,
+                     min_threshold=common.get_configs("min_speed_limit"),
+                     max_threshold=common.get_configs("max_speed_limit"),
+                     save_file=True)
 
-    # plots_class.hist(data_index=23, name="time", min_threshold=common.get_configs("min_waiting_time"),
-    #                  max_threshold=common.get_configs("max_waiting_time"), save_file=True)
+    plots_class.hist(data_index=23,
+                     name="time",
+                     marginal="violin",
+                     # nbins=100,
+                     min_threshold=common.get_configs("min_waiting_time"),
+                     max_threshold=common.get_configs("max_waiting_time"),
+                     save_file=True)
 
     if common.get_configs("analysis_level") == "city":
 
