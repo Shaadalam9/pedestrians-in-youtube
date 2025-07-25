@@ -1,3 +1,4 @@
+# by Shadab Alam <md_shadab_alam@outlook.com> and Pavlo Bazilinskyy <pavlo.bazilinskyy@gmail.com>
 import common
 from custom_logger import CustomLogger
 from logmod import logs
@@ -104,8 +105,8 @@ class Plots():
                 if save_final:
                     shutil.copy(os.path.join(common.output_dir, filename + ".eps"),
                                 os.path.join(output_final, filename + ".eps"))
-        except ValueError:
-            logger.error(f"Value error raised when attempted to save image {filename}.")
+        except ValueError as e:
+            logger.error(f"Value error raised when attempted to save image {filename}: {e}")
 
     def stack_plot(self, df_mapping, order_by, metric, data_view, title_text, filename, analysis_level="city",
                    font_size_captions=40, x_axis_title_height=110, legend_x=0.92, legend_y=0.015, legend_spacing=0.02,
