@@ -1652,8 +1652,9 @@ class Plots():
         fig.show()
 
     # todo: add docstring to all methods where missing.
+    # todo: consider merging map and map_political, as they are somewhat duplicate
     def map(self, df, color, title, title_colorbar=None, save_file=False,
-            show_colorbar=False, colorbar_title=None):
+            show_colorbar=False, colorbar_title=None, projection="natural earth"):
         """Map of countries of participation with colour based on column in dataframe.
 
         Args:
@@ -1693,6 +1694,7 @@ class Plots():
                             locationmode='country names',
                             color=color,
                             hover_name='country',
+                            projection=projection,
                             color_continuous_scale="YlOrRd")
         fig.update_layout(
             font=dict(
@@ -1788,7 +1790,7 @@ class Plots():
                 mode='markers',
                 hoverinfo='skip',
                 marker=dict(
-                    size=4,
+                    size=3,
                     color='black',
                     opacity=0.7,
                     symbol='circle'

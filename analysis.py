@@ -2987,6 +2987,7 @@ if __name__ == "__main__":
         if countries_include:
             df_mapping = df_mapping[df_mapping["iso3"].isin(common.get_configs("countries_analyse"))]
 
+        # todo: this is hard to maintain, dictionary of any kind is suggested
         (person_counter, bicycle_counter, car_counter, motorcycle_counter, airplane_counter, bus_counter,
          train_counter, truck_counter, boat_counter, traffic_light_counter, fire_hydrant_counter, stop_sign_counter,
          parking_meter_counter, bench_counter, bird_counter, cat_counter, dog_counter, horse_counter, sheep_counter,
@@ -4248,24 +4249,29 @@ if __name__ == "__main__":
 
         # Map with screenshots and countries colours by amount of footage
         hover_data = list(set(df_countries_raw.columns) - set(columns_remove))
-
         # log(1 + x) to avoid -inf for zero
         df_countries_raw["log_total_time"] = np.log1p(df_countries_raw["total_time"])
+        # todo: remove dropping of columns from df_mapping_raw and remove this bit
+        df_mapping_cites = pd.read_csv(common.get_configs("mapping"))
 
-        # plots_class.map_political(df=df_countries_raw,
-        #                           df_mapping=df_mapping,
-        #                           show_cities=True,
-        #                           show_images=True,
-        #                           hover_data=hover_data,
-        #                           color="log_total_time",
-        #                           show_colorbar=True,
-        #                           colorbar_title="Footage (log)",
-        #                           save_file=True,
-        #                           save_final=False,
-        #                           name_file="map_screenshots_total_time")
-        # # Map with no images
-        # plots_class.map_political(df=df_countries, df_mapping=df_mapping, show_cities=True, show_images=False,
-        #                           hover_data=hover_data, save_file=True, save_final=True, name_file="map")
+        # Produce map with all data
+        df = df_mapping_cites.copy()  # copy df to manipulate for output
+        df['state'] = df['state'].fillna('NA')  # Set state to NA
+
+        # Sort by continent and city, both in ascending order
+        df = df.sort_values(by=["continent", "city"], ascending=[True, True])
+
+        plots_class.map_political(df=df_countries_raw,
+                                  df_mapping=df,
+                                  show_cities=True,
+                                  show_images=True,
+                                  hover_data=hover_data,
+                                  color="log_total_time",
+                                  show_colorbar=True,
+                                  colorbar_title="Footage (log)",
+                                  save_file=True,
+                                  save_final=False,
+                                  name_file="map_screenshots_total_time")
 
         df_countries_raw.drop(['speed_crossing_day_country', 'speed_crossing_night_country',
                                'speed_crossing_day_night_country_avg',
