@@ -3659,6 +3659,7 @@ if __name__ == "__main__":
                      nbins=100,
                      min_threshold=common.get_configs("min_speed_limit"),
                      max_threshold=common.get_configs("max_speed_limit"),
+                     font_size=common.get_configs("font_size") + 4,
                      save_file=True)
 
     plots_class.hist(data_index=23,
@@ -3667,6 +3668,7 @@ if __name__ == "__main__":
                      # nbins=100,
                      min_threshold=common.get_configs("min_waiting_time"),
                      max_threshold=common.get_configs("max_waiting_time"),
+                     font_size=common.get_configs("font_size") + 4,
                      save_file=True)
 
     if common.get_configs("analysis_level") == "city":
