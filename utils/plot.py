@@ -1652,11 +1652,14 @@ class Plots():
         fig.show()
 
     # todo: add docstring to all methods where missing.
-    def map(self, df, color, title, title_colorbar=None, save_file=False):
+    def map(self, df, color, title, title_colorbar=None, save_file=False,
+            show_colorbar=False, colorbar_title=None):
         """Map of countries of participation with colour based on column in dataframe.
 
         Args:
             df (dataframe): dataframe with keypress data.
+            show_colorbar (bool): Whether to show a color bar.
+            colorbar_title (str): Optional custom title for the color bar.
         """
         logger.info('Creating visualisation of heatmap of participants by country with colour defined by {}.', color)
 
@@ -1690,7 +1693,7 @@ class Plots():
                             locationmode='country names',
                             color=color,
                             hover_name='country',
-                            color_continuous_scale=px.colors.sequential.Plasma)
+                            color_continuous_scale="YlOrRd")
         fig.update_layout(
             font=dict(
                 family=common.get_configs('font_family'),
@@ -1705,6 +1708,28 @@ class Plots():
                 title=title_colorbar     # optional: title for clarity
             )
         )
+
+        # Use column name as default colorbar title if not provided
+        if colorbar_title is None:
+            colorbar_title = color
+
+        # Show or hide color bar
+        fig.update_coloraxes(
+            showscale=show_colorbar,
+            colorbar=dict(
+                title=colorbar_title,
+                orientation="h",
+                x=0.5,
+                y=0.06,
+                xanchor="center",
+                yanchor="bottom",
+                len=0.5,
+                thickness=10,
+                bgcolor='rgba(255,255,255,0.7)',
+                tickfont=dict(size=10)
+            ) if show_colorbar else {}
+        )
+        
         # save file to local output folder
         if save_file:
             # Final adjustments and display
@@ -1750,7 +1775,8 @@ class Plots():
                             color=color,
                             hover_name="country",
                             hover_data=hover_data,
-                            projection="natural earth")
+                            projection="natural earth",
+                            color_continuous_scale="YlOrRd")
 
         # add markers of cities
         if show_cities:
