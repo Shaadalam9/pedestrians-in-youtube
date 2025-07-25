@@ -1779,9 +1779,9 @@ class Plots():
                     "x": 0.933, "y": 0.58,
                     "approx_lon": 165.2, "approx_lat": 7.2,
                     "label": "Tokyo, Japan",
-                    "x_label": 0.983, "y_label": 0.641,
+                    "x_label": 0.982, "y_label": 0.641,
                     "video": "oDejyTLYUTE",
-                    "x_video": 0.933-0.0021, "y_video": 0.58-0.059
+                    "x_video": 0.933-0.0025, "y_video": 0.58-0.059
                 },
                 {
                     "city": "Nairobi",
@@ -1792,7 +1792,7 @@ class Plots():
                     "label": "Nairobi, Kenya",
                     "x_label": 0.7695, "y_label": 0.38+0.062,
                     "video": "VNLqnwoJqmM",
-                    "x_video": 0.72+0.00529, "y_video": 0.38-0.069,
+                    "x_video": 0.72+0.00129, "y_video": 0.38-0.069,
                 },
                 {
                     "city": "Los Angeles",
@@ -1801,9 +1801,9 @@ class Plots():
                     "x": 0.12, "y": 0.5,
                     "approx_lon": -121.7, "approx_lat": 0.0,
                     "label": "Los Angeles, CA, USA",
-                    "x_label": 0.07, "y_label": 0.5+0.062,
+                    "x_label": 0.0705, "y_label": 0.5+0.062,
                     "video": "4uhMg5na888",
-                    "x_video": 0.12-0.002, "y_video": 0.5-0.06,
+                    "x_video": 0.12+0.006, "y_video": 0.5-0.06,
                 },
                 {
                     "city": "Paris",
@@ -1812,9 +1812,9 @@ class Plots():
                     "x": 0.3915, "y": 0.68,
                     "approx_lon": -30.6, "approx_lat": 30.4,
                     "label": "Paris, France",
-                    "x_label": 0.37, "y_label": 0.68+0.072,
+                    "x_label": 0.366, "y_label": 0.68+0.072,
                     "video": "ZTmjk8mSCq8",
-                    "x_video": 0.3915-0.0225, "y_video": 0.68-0.06,
+                    "x_video": 0.3915+0.0256, "y_video": 0.68-0.06,
                 },
                 {
                     "city": "Rio de Janeiro",
@@ -1823,9 +1823,9 @@ class Plots():
                     "x": 0.47, "y": 0.2,
                     "approx_lon": -1.8, "approx_lat": -60.2,
                     "label": "Rio de Janeiro, Brazil",
-                    "x_label": 0.4746, "y_label": 0.2+0.05,
+                    "x_label": 0.4815, "y_label": 0.2+0.05,
                     "video": "q83bl_GcsCo",
-                    "x_video": 0.47-0.026, "y_video": 0.2-0.069,
+                    "x_video": 0.47-0.029, "y_video": 0.2-0.069,
                 },
                 {
                     "city": "Melbourne",
@@ -1834,9 +1834,9 @@ class Plots():
                     "x": 0.74, "y": 0.22,
                     "approx_lon": 90.0, "approx_lat": -52.0,
                     "label": "Melbourne, Australia",
-                    "x_label": 0.7783, "y_label": 0.22+0.05,
+                    "x_label": 0.7893, "y_label": 0.22+0.05,
                     "video": "gQ-9mmnfJjE",
-                    "x_video": 0.74, "y_video": 0.22-0.069,
+                    "x_video": 0.733, "y_video": 0.22-0.069,
                 }
             ]
 
@@ -1914,7 +1914,7 @@ class Plots():
             fig.add_annotation(
                 dict(
                     text="Example of YOLO output (New York, NY, USA)",
-                    x=0.1001, y=0.25+0.1115,
+                    x=0.101, y=0.25+0.111,
                     xref="paper", yref="paper",
                     showarrow=False,
                     font=dict(size=12, color="black"),
@@ -1929,7 +1929,7 @@ class Plots():
             fig.add_annotation(
                 dict(
                     text="Wyg213IZDI",
-                    x=0.253, y=0.25-0.119,
+                    x=0.258, y=0.25-0.119,
                     xref="paper", yref="paper",
                     showarrow=False,
                     font=dict(size=10, color="black"),
