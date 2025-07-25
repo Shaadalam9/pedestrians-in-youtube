@@ -1726,10 +1726,10 @@ class Plots():
                 len=0.5,
                 thickness=10,
                 bgcolor='rgba(255,255,255,0.7)',
-                tickfont=dict(size=10)
+                tickfont=dict(size=common.get_configs('font_size')-5),
             ) if show_colorbar else {}
         )
-        
+
         # save file to local output folder
         if save_file:
             # Final adjustments and display
@@ -1977,15 +1977,17 @@ class Plots():
             showscale=show_colorbar,
             colorbar=dict(
                 title=colorbar_title,
+                title_side="right",
                 orientation="h",
                 x=0.5,
                 y=0.035,
                 xanchor="center",
                 yanchor="bottom",
-                len=0.5,
+                len=0.55,
                 thickness=10,
-                bgcolor='rgba(255,255,255,0.7)',
-                tickfont=dict(size=10)
+                bgcolor='rgba(255,255,255,0.9)',
+                tickfont=dict(size=common.get_configs('font_size')-5),
+                # pad=dict(t=10, b=0, l=4, r=4)  # add left/right padding
             ) if show_colorbar else {}
         )
 

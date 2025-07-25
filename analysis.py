@@ -4242,14 +4242,16 @@ if __name__ == "__main__":
         #                           name_file="map_screenshots")
         # Map with screenshots and countries colours by amount of footage
         hover_data = list(set(df_countries_raw.columns) - set(columns_remove))
+        # log(1 + x) to avoid -inf for zero
+        df_countries_raw["log_total_time"] = np.log1p(df_countries_raw["total_time"])
         plots_class.map_political(df=df_countries_raw,
                                   df_mapping=df_mapping,
                                   show_cities=True,
                                   show_images=True,
                                   hover_data=hover_data,
-                                  color="total_time",
+                                  color="log_total_time",
                                   show_colorbar=True,
-                                  colorbar_title="",
+                                  colorbar_title="Footage (log)",
                                   save_file=True,
                                   save_final=False,
                                   name_file="map_screenshots_total_time")
