@@ -3624,6 +3624,7 @@ if __name__ == "__main__":
     os.makedirs(common.output_dir, exist_ok=True)  # check if folder
     df_mapping.to_csv(os.path.join(common.output_dir, "mapping_updated.csv"))
 
+    # todo: this output is broken with pkl file
     logger.info("Detected:")
     logger.info(f"person: {person_counter}; bicycle: {bicycle_counter}; car: {car_counter}")
     logger.info(f"motorcycle: {motorcycle_counter}; bus: {bus_counter}; truck: {truck_counter}")
