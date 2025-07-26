@@ -3426,18 +3426,18 @@ if __name__ == "__main__":
         df_mapping_raw.to_csv(os.path.join(common.output_dir, "mapping_city_raw.csv"))
 
         # Get the population threshold from the configuration
-        population_threshold = common.get_configs("population_threshold")
+        # population_threshold = common.get_configs("population_threshold")
 
         # Get the minimum percentage of country population from the configuration
-        min_percentage = common.get_configs("min_city_population_percentage")
+        # min_percentage = common.get_configs("min_city_population_percentage")
 
         # Filter df_mapping to include cities that meet either of the following criteria:
         # 1. The city's population is greater than the threshold
         # 2. The city's population is at least the minimum percentage of the country's population
-        df_mapping = df_mapping[
-            (df_mapping["population_city"] >= population_threshold) |  # Condition 1
-            (df_mapping["population_city"] >= min_percentage * df_mapping["population_country"])  # Condition 2
-        ]
+        # df_mapping = df_mapping[
+        #     (df_mapping["population_city"] >= population_threshold) |  # Condition 1
+        #     (df_mapping["population_city"] >= min_percentage * df_mapping["population_country"])  # Condition 2
+        # ]
 
         # Remove the rows of the cities where the footage recorded is less than threshold
         df_mapping = values_class.remove_columns_below_threshold(df_mapping, common.get_configs("footage_threshold"))
