@@ -2016,10 +2016,10 @@ class Analysis():
                     final_dict[f'{country}'][f"trf_sign_city_{condition}"] = trf_sign_city.get(
                         f'{country}_{condition}', 0)
 
-                    final_dict[f'{country}'][f"traffic_mortality_{condition}"] = traffic_mortality
-                    final_dict[f'{country}'][f"literacy_rate_{condition}"] = literacy_rate
-                    final_dict[f'{country}'][f"gini_{condition}"] = gini
-                    final_dict[f'{country}'][f"med_age_{condition}"] = med_age
+                    final_dict[f'{country}'][f"traffic_mortality_{condition}"] = None if traffic_mortality == 0 else traffic_mortality  # noqa:E501
+                    final_dict[f'{country}'][f"literacy_rate_{condition}"] = None if literacy_rate == 0 else literacy_rate  # noqa:E501
+                    final_dict[f'{country}'][f"gini_{condition}"] = None if gini == 0 else gini
+                    final_dict[f'{country}'][f"med_age_{condition}"] = None if med_age == 0 else med_age
                     final_dict[f'{country}'][f"continent_{condition}"] = continent
 
                     final_dict[f'{country}']["avg_day_night_speed"] = avg_day_night_speed

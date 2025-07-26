@@ -2692,7 +2692,7 @@ class Plots():
         if metric == "speed":
             start, step, count = 0.5, 0.5, 9
         elif metric == "time":
-            start, step, count = 0.5, 0.5, 9
+            start, step, count = 2, 2, 14
 
         # Generate gridline positions
         x_grid_values = [start + i * step for i in range(count)]
