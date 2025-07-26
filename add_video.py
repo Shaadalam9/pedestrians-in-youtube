@@ -29,14 +29,29 @@ def load_csv(file_path):
     if os.path.exists(file_path):
         return pd.read_csv(file_path)
     else:
-        return pd.DataFrame(columns=['city', 'state', 'country', 'iso3', 'videos', 'time_of_day', 'vehicle_type',
-                                     'start_time', 'end_time', 'gmp', 'population_city', 'population_country',
-                                     'traffic_mortality', 'continent', 'literacy_rate', 'avg_height', 'med_age',
-                                     'upload_date', 'channel', 'fps_list', 'gini', 'traffic_index'])
+        return pd.DataFrame(columns=['city', 'city_aka', 'state', 'country', 'iso3', 'videos', 'time_of_day',
+                                     'vehicle_type', 'start_time', 'end_time', 'gmp', 'population_city',
+                                     'population_country', 'traffic_mortality', 'continent', 'literacy_rate',
+                                     'avg_height', 'med_age', 'upload_date', 'channel', 'fps_list', 'gini',
+                                     'traffic_index'])
 
 
 def save_csv(df, file_path):
     df.to_csv(file_path, index=False)
+
+
+# --- Check if city, state and country exist in the CSV, including city_aka ---
+def city_matches(row, city_input):
+    city_input = city_input.strip().lower()
+    main = str(row['city']).strip().lower()
+
+    # Manually parse city_aka list like "[Kiev,Київ,Киев]"
+    aka_raw = str(row.get('city_aka', '')).strip()
+    aka_list = []
+    if aka_raw.startswith("[") and aka_raw.endswith("]"):
+        aka_list = [item.strip().lower() for item in aka_raw[1:-1].split(',') if item.strip()]
+    
+    return city_input == main or city_input in aka_list
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -44,6 +59,7 @@ def form():
     df = load_csv(FILE_PATH)
     message = ''
     city = ''
+    city_aka = []
     country = ''
     video_url = ''
     state = ''
@@ -133,15 +149,20 @@ def form():
                     yt_title=yt_title, yt_description=yt_description, yt_upload_date=yt_upload_date
                 )
 
-            # Check if city, state and country exist in the CSV
+            # Apply filtering
             if state:
-                existing_data = df[(df['city'] == city) & (df['state'] == state) & (df['country'] == country)]
+                filtered_df = df[(df['state'] == state) & (df['country'] == country)]
             else:
-                existing_data = df[(df['city'] == city) & (df['country'] == country)]
+                filtered_df = df[df['country'] == country]
+
+            # Now check if any row matches city name or aliases
+            existing_data = filtered_df[filtered_df.apply(lambda row: city_matches(row, city), axis=1)]
+
             if not existing_data.empty:
                 message = "Entry for city found. You can update data."
-                existing_data_row = existing_data.iloc[0].to_dict()  # Convert to dictionary
-
+                existing_data_row = existing_data.iloc[0].to_dict()
+                # Assign the main city name
+                city = existing_data_row.get('city')
                 # Get the list of videos for the city (state) and country
                 videos_list = existing_data_row.get('videos', '').split(',')
                 videos_list = [video.strip('[]') for video in videos_list]
@@ -153,6 +174,8 @@ def form():
                 channel_list = [channel.strip('[]') for channel in channel_list]
                 vehicle_type_list = existing_data_row.get('vehicle_type', '').split(',')
                 vehicle_type_list = [vehicle_type.strip('[]') for vehicle_type in vehicle_type_list]
+                city_aka_list = existing_data_row.get('city_aka', '').split(',')
+                city_aka_list = [city_aka.strip('[]') for city_aka in city_aka_list]
                 if video_id in videos_list:
                     position = videos_list.index(video_id)
                     fps_video = fps_list[position].strip()
@@ -175,6 +198,7 @@ def form():
                 # get coordinates
                 lat, lon = get_coordinates(city, state, common.correct_country(country))
                 existing_data_row = {'city': city,
+                                     'city_aka': city_aka,
                                      'country': country,
                                      'iso3': iso3_code,
                                      'lat': lat,
@@ -230,6 +254,7 @@ def form():
             population_country = request.form.get('population_country')
             traffic_mortality = request.form.get('traffic_mortality')
             continent = request.form.get('continent')
+            city_aka = request.form.get('city_aka')
             literacy_rate = request.form.get('literacy_rate')
             avg_height = request.form.get('avg_height')
             med_age = request.form.get('med_age')
@@ -369,6 +394,7 @@ def form():
                     else:
                         df.at[idx, 'traffic_mortality'] = 0.0
                     df.at[idx, 'continent'] = continent
+                    df.at[idx, 'city_aka'] = city_aka
                     if literacy_rate:
                         df.at[idx, 'literacy_rate'] = float(literacy_rate)
                     else:
@@ -429,6 +455,7 @@ def form():
                     new_row = {
                         'id': int(df.iloc[-1]['id']+1),
                         'city': city,
+                        'city_aka': city_aka,
                         'state': state,
                         'country': country,
                         'iso3': common.get_iso3_country_code(common.correct_country(country)),

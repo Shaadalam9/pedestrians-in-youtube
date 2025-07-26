@@ -41,7 +41,7 @@ print(f"Backed up {base_file} -> {backup_file}")
 
 # list-type columns
 list_columns = ['videos', 'time_of_day', 'start_time', 'end_time', 'vehicle_type', 'upload_date', 'fps_list',
-                'channel']
+                'channel', 'city_aka']
 nested_list_columns = ['time_of_day', 'start_time', 'end_time']
 
 # load main mapping.csv
