@@ -695,22 +695,26 @@ def get_gmp(city: str, state: str, iso3: str) -> float:
 def get_traffic_index_lat_lon(lat, lon, api="tomtom"):
     if api == "tomtom":
         url = f"https://api.tomtom.com/traffic/services/4/flowSegmentData/absolute/10/json?key={common.get_secrets('tomtom_api_key')}&point={lat},{lon}"  # noqa: E501
-        response = requests.get(url)
+        try:
+            response = requests.get(url)
 
-        if response.status_code == 200:
-            data = response.json()
-            if "flowSegmentData" in data:
-                current_speed = data["flowSegmentData"]["currentSpeed"]
-                free_flow_speed = data["flowSegmentData"]["freeFlowSpeed"]
-                try:  # free_flow_speed can be 0
-                    traffic_index = round((1 - current_speed / free_flow_speed) * 100, 2)
-                except ZeroDivisionError:
-                    traffic_index = 0.0 
-                return traffic_index
+            if response.status_code == 200:
+                data = response.json()
+                if "flowSegmentData" in data:
+                    current_speed = data["flowSegmentData"]["currentSpeed"]
+                    free_flow_speed = data["flowSegmentData"]["freeFlowSpeed"]
+                    try:  # free_flow_speed can be 0
+                        traffic_index = round((1 - current_speed / free_flow_speed) * 100, 2)
+                    except ZeroDivisionError:
+                        traffic_index = 0.0 
+                    return traffic_index
+                else:
+                    return 0.0
             else:
+                print(f"Error fetching traffic index for {lat}, {lon}: {response.status_code}")
                 return 0.0
-        else:
-            print(f"Error fetching traffic index for {lat}, {lon}: {response.status_code}")
+        except ConnectionError as e:
+            print(f"An error occurred: {e}")
             return 0.0
     elif api == "trafiklab":
         url = f"https://api.trafiklab.se/v1/trafficindex?lat={lat}&lon={lon}&apikey={common.get_secrets('trafiklab_api_key')}"  # noqa: E501
