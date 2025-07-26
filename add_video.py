@@ -183,7 +183,7 @@ def form():
                                      'videos': [],
                                      'time_of_day': [],
                                      'gmp': 0.0,  # get_gmp(city, state, iso3),
-                                     'population_city': get_city_population(city_data),
+                                     'population_city': int(get_city_population(city_data)),
                                      'population_country': country_population,
                                      'traffic_mortality': get_country_traffic_mortality(iso3_code),
                                      'start_time': [],
@@ -357,13 +357,13 @@ def form():
                     else:
                         df.at[idx, 'gmp'] = 0.0
                     if population_city:
-                        df.at[idx, 'population_city'] = float(population_city)
+                        df.at[idx, 'population_city'] = int(population_city)
                     else:
-                        df.at[idx, 'population_city'] = 0.0
+                        df.at[idx, 'population_city'] = 0
                     if population_country:
-                        df.at[idx, 'population_country'] = float(population_country)
+                        df.at[idx, 'population_country'] = int(population_country)
                     else:
-                        df.at[idx, 'population_country'] = 0.0
+                        df.at[idx, 'population_country'] = 0
                     if traffic_mortality:
                         df.at[idx, 'traffic_mortality'] = float(traffic_mortality)
                     else:
@@ -608,7 +608,7 @@ def get_city_population(city_data):
     if 'geonames' in city_data and len(city_data['geonames']) > 0:
         return city_data['geonames'][0].get('population', None)
     else:
-        return 0.0
+        return 0
 
 
 # Fetch average height by ISO-3 code
