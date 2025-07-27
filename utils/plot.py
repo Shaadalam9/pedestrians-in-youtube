@@ -2099,7 +2099,8 @@ class Plots():
                 logger.debug('Tried to prettify {} with exception {}.', text, e)
 
         # check and clean the data
-        df = df.replace([np.inf, -np.inf], np.nan).dropna()  # Remove NaNs and Infs
+        # df = df.replace([np.inf, -np.inf], np.nan).dropna()  # Remove NaNs and Infs
+        print(df.shape[0])
 
         if text:
             if text in df.columns:
