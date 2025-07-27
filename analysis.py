@@ -4986,3 +4986,32 @@ if __name__ == "__main__":
 
         logger.info(f"Mean crossing time (non-zero): {time_mean:.2f}")
         logger.info(f"Standard deviation of crossing time (non-zero): {time_std:.2f}")
+
+        stats = df_countries[['total_time', 'total_videos']].agg(['mean', 'std', 'sum'])
+
+        logger.info(
+            f"Average total_time: {stats.loc['mean', 'total_time']:.2f}, "
+            f"Standard deviation: {stats.loc['std', 'total_time']:.2f}, "
+            f"Sum: {stats.loc['sum', 'total_time']:.2f}"
+        )
+        logger.info(
+            f"Average total_videos: {stats.loc['mean', 'total_videos']:.2f}, "
+            f"Standard deviation: {stats.loc['std', 'total_videos']:.2f}, "
+            f"Sum: {stats.loc['sum', 'total_videos']:.2f}"
+        )
+
+        # Max total_time
+        max_row = df_countries.loc[df_countries['total_time'].idxmax()]
+        logger.info(
+            f"Country with maximum total_time: {max_row['country']}, "
+            f"total_time: {max_row['total_time']}, "
+            f"total_videos: {max_row['total_videos']}"
+        )
+
+        # Min total_time
+        min_row = df_countries.loc[df_countries['total_time'].idxmin()]
+        logger.info(
+            f"Country with minimum total_time: {min_row['country']}, "
+            f"total_time: {min_row['total_time']}, "
+            f"total_videos: {min_row['total_videos']}"
+        )
