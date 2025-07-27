@@ -1662,8 +1662,8 @@ class Analysis():
             'motorcycle_city_0': 'Detected motorcycles', 'motorcycle_city_1': 'Detected motorcycles',
             'bus_city_0': 'Detected buses', 'bus_city_1': 'Detected buses',
             'truck_city_0': 'Detected trucks', 'truck_city_1': 'Detected trucks',
-            'cross_evnt_city_0': 'Detected crossings without traffic lights',
-            'cross_evnt_city_1': 'Detected crossings without traffic lights',
+            'cross_evnt_city_0': 'Crossings without traffic lights',
+            'cross_evnt_city_1': 'Crossings without traffic lights',
             'vehicle_city_0': 'Detected motor vehicles',
             'vehicle_city_1': 'Detected motor vehicles',
             'cellphone_city_0': 'Detected cellphones', 'cellphone_city_1': 'Detected cellphones',
@@ -1904,7 +1904,7 @@ class Analysis():
 
             plots_class.save_plotly_figure(fig, f"correlation_matrix_heatmap_{continents}", save_final=True)
 
-    # todo: should be in plot class (analysis.py shall not have any plotting methods)
+    # todo: should be in plot class (analysis.py shall not have any plotting methods). should be not a static method in the plots class
     @staticmethod
     def correlation_matrix_country(df_mapping, df_country, save_file=True):
         logger.info("Plotting correlation matrices.")
@@ -1947,6 +1947,7 @@ class Analysis():
             country, condition = country_condition.split('_')
 
             # Get the country from the previously stored city_country_map
+            # todo: this comment is hard to understand and it does not relate to what is below the line
             iso_code = values_class.get_value(df_mapping, "country", country, None, None, "iso3")
             continent = values_class.get_value(df_mapping, "country", country, None, None, "continent")
             traffic_mortality = values_class.get_value(df_mapping, "country", country, None, None, "traffic_mortality")
@@ -1983,14 +1984,14 @@ class Analysis():
                                                 "bus_city_1": 0,
                                                 "truck_city_0": 0,
                                                 "truck_city_1": 0,
-                                                "cross_evnt_city_0": 0,
-                                                "cross_evnt_city_1": 0,
                                                 "vehicle_city_0": 0,
                                                 "vehicle_city_1": 0,
                                                 "cellphone_city_0": 0,
                                                 "cellphone_city_1": 0,
                                                 "trf_sign_city_0": 0,
                                                 "trf_sign_city_1": 0,
+                                                "cross_evnt_city_0": 0,
+                                                "cross_evnt_city_1": 0,
                                                 }
 
                 # Populate the corresponding speed and time based on the condition
@@ -2013,13 +2014,13 @@ class Analysis():
                         f'{country}_{condition}', 0)
                     final_dict[f'{country}'][f"truck_city_{condition}"] = truck_city.get(
                         f'{country}_{condition}', 0)
-                    final_dict[f'{country}'][f"cross_evnt_city_{condition}"] = cross_no_equip_country.get(
-                        f'{country}_{condition}', 0)
                     final_dict[f'{country}'][f"vehicle_city_{condition}"] = vehicle_city.get(
                         f'{country}_{condition}', None)
                     final_dict[f'{country}'][f"cellphone_city_{condition}"] = cellphone_city.get(
                         f'{country}_{condition}', 0)
                     final_dict[f'{country}'][f"trf_sign_city_{condition}"] = trf_sign_city.get(
+                        f'{country}_{condition}', 0)
+                    final_dict[f'{country}'][f"cross_evnt_city_{condition}"] = cross_no_equip_country.get(
                         f'{country}_{condition}', 0)
 
                     final_dict[f'{country}'][f"traffic_mortality_{condition}"] = None if traffic_mortality == 0 else traffic_mortality  # noqa:E501
@@ -2089,12 +2090,11 @@ class Analysis():
             'motorcycle_city_0': 'Detected motorcycles', 'motorcycle_city_1': 'Detected motorcycles',
             'bus_city_0': 'Detected buses', 'bus_city_1': 'Detected buses',
             'truck_city_0': 'Detected trucks', 'truck_city_1': 'Detected trucks',
-            'cross_evnt_city_0': 'Detected crossings without traffic lights',
-            'cross_evnt_city_1': 'Detected crossings without traffic lights',
-            'vehicle_city_0': 'Detected motor vehicles',
-            'vehicle_city_1': 'Detected motor vehicles',
+            'vehicle_city_0': 'Detected all motor vehicles', 'vehicle_city_1': 'Detected all motor vehicles',
             'cellphone_city_0': 'Detected cellphones', 'cellphone_city_1': 'Detected cellphones',
             'trf_sign_city_0': 'Detected traffic signs', 'trf_sign_city_1': 'Detected traffic signs',
+            'cross_evnt_city_0': 'Crossings without traffic lights',
+            'cross_evnt_city_1': 'Crossings without traffic lights',
             'traffic_mortality_0': 'Traffic mortality', 'traffic_mortality_1': 'Traffic mortality',
             'literacy_rate_0': 'Literacy rate', 'literacy_rate_1': 'Literacy rate',
             'gini_0': 'Gini coefficient', 'gini_1': 'Gini coefficient', 'med_age_0': 'Median age',
@@ -2223,9 +2223,10 @@ class Analysis():
             'ped_cross_city': 'Detected crossings', 'person_city': 'Detected persons',
             'bicycle_city': 'Detected bicycles', 'car_city': 'Detected cars',
             'motorcycle_city': 'Detected motorcycles', 'bus_city': 'Detected buses',
-            'truck_city': 'Detected trucks', 'cross_evnt_city': 'Crossings without traffic light',
+            'truck_city': 'Detected trucks',
             'vehicle_city': 'Detected all motor vehicles', 'cellphone_city': 'Detected cellphones',
             'trf_sign_city': 'Detected traffic signs',
+            'cross_evnt_city': 'Crossings without traffic light',
             'traffic_mortality': 'Traffic mortality', 'literacy_rate': 'Literacy rate',
             'gini': 'Gini coefficient', 'med_age': 'Median age'
             }
@@ -2339,9 +2340,10 @@ class Analysis():
                 'ped_cross_city': 'Detected crossings', 'person_city': 'Detected persons',
                 'bicycle_city': 'Detected bicycles', 'car_city': 'Detected cars',
                 'motorcycle_city': 'Detected motorcycles', 'bus_city': 'Detected buses',
-                'truck_city': 'Detected trucks', 'cross_evnt_city': 'Crossings without traffic light',
+                'truck_city': 'Detected trucks',
                 'vehicle_city': 'Detected all motor vehicles', 'cellphone_city': 'Detected cellphones',
-                'trf_sign_city': 'Detected traffic signs', 'traffic_mortality': 'Traffic mortality',
+                'trf_sign_city': 'Detected traffic signs', 'cross_evnt_city': 'Crossings without traffic light',
+                'traffic_mortality': 'Traffic mortality',
                 'literacy_rate': 'Literacy rate', 'gini': 'Gini coefficient', 'med_age': 'Median age'
                 }
 
@@ -2393,7 +2395,7 @@ class Analysis():
         """
 
         # Drop location-specific columns
-        drop_columns = ['id', 'city', 'state', 'lat', 'lon', 'gmp', 'population_city', 'traffic_index',
+        drop_columns = ['id', 'city', 'city_aka', 'state', 'lat', 'lon', 'gmp', 'population_city', 'traffic_index',
                         'upload_date', 'speed_crossing_day_city', 'speed_crossing_night_city',
                         'speed_crossing_day_night_city_avg', 'time_crossing_day_city',
                         'time_crossing_night_city', 'time_crossing_day_night_city_avg',
