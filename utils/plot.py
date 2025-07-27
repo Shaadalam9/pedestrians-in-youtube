@@ -2830,6 +2830,7 @@ class Plots():
 
         avg_speed = data_tuple[27]
         avg_time = data_tuple[28]
+        no_of_crossing = data_tuple[35]
 
         # Check if both 'speed' and 'time' are valid dictionaries
         if avg_speed is None or avg_time is None:
@@ -2844,6 +2845,8 @@ class Plots():
 
         # Now populate the final_dict with country-wise data
         for country_condition, speed in tqdm(avg_speed.items()):
+            if no_of_crossing[country_condition] < common.get_configs("min_crossing_detect"):
+                continue
             country, condition = country_condition.split('_')
 
             # Get the iso3 from the mapping file
