@@ -2213,10 +2213,19 @@ class Analysis():
                 condition_cols = [c for c in df.columns if c.startswith(feature_name + "_")]  # type: ignore
                 agg_df[feature_name] = df[condition_cols].mean(axis=1)
 
+        ordered_features = ['avg_day_night_speed', 'avg_day_night_time',
+                            'ped_cross_city', 'person_city', 'bicycle_city', 'car_city',
+                            'motorcycle_city', 'bus_city', 'truck_city', 'vehicle_city',
+                            'cellphone_city', 'trf_sign_city', 'cross_evnt_city',
+                            'traffic_mortality', 'literacy_rate', 'gini', 'med_age']
+
+        ordered_features_in_df = [col for col in ordered_features if col in agg_df.columns]
+        agg_df = agg_df[ordered_features_in_df]
         # Compute the correlation matrix on the aggregated DataFrame
         corr_matrix_avg = agg_df.corr(method='spearman')
 
-        # todo: does not seem optimal to hardcode everything for each corr matrix separately. see the corr() example from older projects. t
+        # todo: does not seem optimal to hardcode everything for each corr matrix separately.
+        # see the corr() example from older projects. t
         # Rename the variables in the correlation matrix (example: renaming keys)
         rename_dict_2 = {
             'avg_day_night_speed': 'Crossing speed', 'avg_day_night_time': 'Crossing initiation time',
@@ -2330,6 +2339,9 @@ class Analysis():
                     # Select the columns for this feature across all conditions
                     condition_cols = [c for c in filtered_df.columns if feature_name in c]
                     agg_df[feature_name] = filtered_df[condition_cols].mean(axis=1)
+
+            ordered_features_in_df = [col for col in ordered_features if col in agg_df.columns]
+            agg_df = agg_df[ordered_features_in_df]
 
             # Compute the correlation matrix on the aggregated DataFrame
             corr_matrix_avg = agg_df.corr(method='spearman')
@@ -4293,7 +4305,7 @@ if __name__ == "__main__":
         # log(1 + x) to avoid -inf for zero
         df_countries_raw["log_total_time"] = np.log1p(df_countries_raw["total_time"])
         # todo: remove dropping of columns from df_mapping_raw and remove this bit
-        df_mapping_cites = pd.read_csv("/Users/pavlo/repos/youtube-pedestrian/national_csv.csv")
+        df_mapping_cites = pd.read_csv("national_csv.csv")
 
         # Produce map with all data
         df = df_mapping_cites.copy()  # copy df to manipulate for output
