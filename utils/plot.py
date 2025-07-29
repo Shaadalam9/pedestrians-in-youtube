@@ -41,8 +41,8 @@ bar_colour_4 = 'rgb(222, 203, 228)'
 
 # Consts
 BASE_HEIGHT_PER_ROW = 30  # Adjust as needed
-FLAG_SIZE = 12
-TEXT_SIZE = 12
+FLAG_SIZE = 22
+TEXT_SIZE = 22
 SCALE = 1  # scale=3 hangs often
 
 
@@ -567,7 +567,7 @@ class Plots():
         if metric == "speed":
             start, step, count = 1, 1, 19
         elif metric == "time":
-            start, step, count = 2, 2, 26
+            start, step, count = 1, 1, 26
 
         # Generate gridline positions
         x_grid_values = [start + i * step for i in range(count)]
@@ -1513,9 +1513,9 @@ class Plots():
         # Save and display the figure
         self.save_plotly_figure(fig, "world_map", save_final=True)
 
-    def hist(self, data_index, name, min_threshold, max_threshold, nbins=None, color=None,
+    def hist(self, data_index, name, min_threshold, max_threshold, nbins=None, raw=True, color=None,
              pretty_text=False, marginal='rug', xaxis_title=None, yaxis_title=None,
-             name_file=None, save_file=False, save_final=False, fig_save_width=1320,
+             name_file=None, df_mapping=None, save_file=False, save_final=False, fig_save_width=1320,
              fig_save_height=680, font_family=None, font_size=None, vlines=None, xrange=None):
         """
         Output histogram of selected data from pickle file.
@@ -1542,10 +1542,33 @@ class Plots():
             data_tuple = pickle.load(file)
         nested_dict = data_tuple[data_index]
 
-        all_values = [speed for city in nested_dict.values() for video in city.values() for speed in video.values()]
-        all_values = [value for value in all_values
-                      if (min_threshold is None or value >= min_threshold)
-                      and (max_threshold is None or value <= max_threshold)]
+        if name == "speed" and raw is True:
+            all_values = [speed for city in nested_dict.values() for video in city.values() for speed in video.values()]
+            all_values = [value for value in all_values
+                          if (min_threshold is None or value >= min_threshold)
+                          and (max_threshold is None or value <= max_threshold)]
+
+        elif name == "time" and raw is True:
+            all_values = []
+            for key, values in nested_dict.items():
+                all_values.extend(values)
+
+        elif name == "speed_filtered" and raw is False:
+            no_of_crossing = data_tuple[35]
+            all_values = []
+            for key, values in nested_dict.items():
+                if no_of_crossing[key] >= common.get_configs("min_crossing_detect"):
+                    all_values.extend(values)
+
+        elif name == "time_filtered" and raw is False:
+            no_of_crossing = data_tuple[35]
+            all_values = []
+            for key, values in nested_dict.items():
+                city, lat, long, cond = key.split("_")
+                country = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "country")
+                if country is not None:
+                    if no_of_crossing[f"{country}_{cond}"] >= common.get_configs("min_crossing_detect"):
+                        all_values.extend(values)
 
         # --- Calculate mean and median ---
         mean_val = np.mean(all_values)
@@ -1605,8 +1628,8 @@ class Plots():
         if save_file:
             if not name_file:
                 name_file = f"hist_{name}"
-            fig.update_layout(margin=dict(l=10, r=10, t=10, b=10))
-            self.save_plotly_figure(fig, name_file, save_final=True)
+            fig.update_layout(margin=dict(l=0, r=0, t=0, b=0))
+            self.save_plotly_figure(fig, name_file, save_final=True, width=fig_save_width, height=fig_save_height)
         else:
             fig.show()
 
@@ -2100,7 +2123,6 @@ class Plots():
 
         # check and clean the data
         # df = df.replace([np.inf, -np.inf], np.nan).dropna()  # Remove NaNs and Infs
-        print(df.shape[0])
 
         if text:
             if text in df.columns:
@@ -2216,8 +2238,8 @@ class Plots():
         return [positions[i % len(positions)] for i in range(len(x))]
 
     def stack_plot_country(self, df_mapping, order_by, metric, data_view, title_text, filename,
-                           legend_x=0.87, legend_y=0.04, font_size_captions=40, legend_spacing=0.02, left_margin=10,
-                           right_margin=10, top_margin=0, bottom_margin=0, height=2400, width=2480):
+                           legend_x=0.87, legend_y=0.04, font_size_captions=40, raw=False, legend_spacing=0.02,
+                           left_margin=10, right_margin=10, top_margin=0, bottom_margin=0, height=2400, width=2480):
         """
         Plots a stacked bar graph based on the provided data and configuration.
 
@@ -2291,8 +2313,9 @@ class Plots():
         }
 
         for country_condition, metric_values in tqdm(metric_data.items()):
-            if no_of_crossing[country_condition] < common.get_configs("min_crossing_detect"):
-                continue
+            if not raw:
+                if no_of_crossing[country_condition] < common.get_configs("min_crossing_detect"):
+                    continue
             country, condition = country_condition.split('_')
 
             # Get the iso3 from the mapping file
@@ -2693,7 +2716,7 @@ class Plots():
         if metric == "speed":
             start, step, count = 0.5, 0.5, 9
         elif metric == "time":
-            start, step, count = 2, 2, 14
+            start, step, count = 2, 2, 30
 
         # Generate gridline positions
         x_grid_values = [start + i * step for i in range(count)]
@@ -2813,6 +2836,52 @@ class Plots():
                                       r=right_margin,
                                       t=top_margin,
                                       b=bottom_margin))
+        # Speed (main text)
+        # fig.add_annotation(
+        #     text="0.5",
+        #     xref="paper", yref="paper",
+        #     x=0.06, y=1.032,  # adjust these values to position the label above the plot
+        #     showarrow=False,
+        #     font=dict(
+        #         size=common.get_configs("font_size")+28,
+        #         family=common.get_configs("font_family")
+        #     )
+        # )
+
+        # fig.add_annotation(
+        #     text="1",
+        #     xref="paper", yref="paper",
+        #     x=0.142, y=1.032,  # adjust these values to position the label above the plot
+        #     showarrow=False,
+        #     font=dict(
+        #         size=common.get_configs("font_size")+28,
+        #         family=common.get_configs("font_family")
+        #     )
+        # )
+
+        # Time (main text)
+        fig.add_annotation(
+            text="2",
+            xref="paper", yref="paper",
+            x=0.595, y=1.032,  # adjust these values to position the label above the plot
+            showarrow=False,
+            font=dict(
+                size=common.get_configs("font_size")+28,
+                family=common.get_configs("font_family")
+            )
+        )
+
+        # # Time (appendix)
+        # fig.add_annotation(
+        #     text="1",
+        #     xref="paper", yref="paper",
+        #     x=0.576, y=1.07,  # adjust these values to position the label above the plot
+        #     showarrow=False,
+        #     font=dict(
+        #         size=common.get_configs("font_size")+28,
+        #         family=common.get_configs("font_family")
+        #     )
+        # )
 
         self.save_plotly_figure(fig=fig,
                                 filename=filename,
