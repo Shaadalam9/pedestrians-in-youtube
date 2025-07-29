@@ -6,6 +6,7 @@ _output/
 video/
 videos/
 data/
+data_country/
 data-bkp/
 data_
 source_videos/
@@ -33,6 +34,7 @@ __pycache__/
 # Instance specific files
 config
 secret
+
 # mapping_queue.csv
 mapping_bkp.csv
 shadab_mapping.csv
