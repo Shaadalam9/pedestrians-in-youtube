@@ -2099,7 +2099,8 @@ class Plots():
                 logger.debug('Tried to prettify {} with exception {}.', text, e)
 
         # check and clean the data
-        df = df.replace([np.inf, -np.inf], np.nan).dropna()  # Remove NaNs and Infs
+        # df = df.replace([np.inf, -np.inf], np.nan).dropna()  # Remove NaNs and Infs
+        print(df.shape[0])
 
         if text:
             if text in df.columns:
@@ -2692,7 +2693,7 @@ class Plots():
         if metric == "speed":
             start, step, count = 0.5, 0.5, 9
         elif metric == "time":
-            start, step, count = 0.5, 0.5, 9
+            start, step, count = 2, 2, 14
 
         # Generate gridline positions
         x_grid_values = [start + i * step for i in range(count)]
@@ -2830,6 +2831,7 @@ class Plots():
 
         avg_speed = data_tuple[27]
         avg_time = data_tuple[28]
+        no_of_crossing = data_tuple[35]
 
         # Check if both 'speed' and 'time' are valid dictionaries
         if avg_speed is None or avg_time is None:
@@ -2844,6 +2846,8 @@ class Plots():
 
         # Now populate the final_dict with country-wise data
         for country_condition, speed in tqdm(avg_speed.items()):
+            if no_of_crossing[country_condition] < common.get_configs("min_crossing_detect"):
+                continue
             country, condition = country_condition.split('_')
 
             # Get the iso3 from the mapping file

@@ -1660,10 +1660,10 @@ class Analysis():
             'bicycle_city_0': 'Detected bicycles', 'bicycle_city_1': 'Detected bicycles',
             'car_city_0': 'Detected cars', 'car_city_1': 'Detected cars',
             'motorcycle_city_0': 'Detected motorcycles', 'motorcycle_city_1': 'Detected motorcycles',
-            'bus_city_0': 'Detected bus', 'bus_city_1': 'Detected bus',
-            'truck_city_0': 'Detected truck', 'truck_city_1': 'Detected truck',
-            'cross_evnt_city_0': 'Detected crossings without traffic lights',
-            'cross_evnt_city_1': 'Detected crossings without traffic lights',
+            'bus_city_0': 'Detected buses', 'bus_city_1': 'Detected buses',
+            'truck_city_0': 'Detected trucks', 'truck_city_1': 'Detected trucks',
+            'cross_evnt_city_0': 'Crossings without traffic lights',
+            'cross_evnt_city_1': 'Crossings without traffic lights',
             'vehicle_city_0': 'Detected motor vehicles',
             'vehicle_city_1': 'Detected motor vehicles',
             'cellphone_city_0': 'Detected cellphones', 'cellphone_city_1': 'Detected cellphones',
@@ -1776,9 +1776,9 @@ class Analysis():
             'avg_speed_val': 'Crossing speed', 'avg_time_val': 'Crossing initiation time',
             'ped_cross_city': 'Crossing', 'person_city': 'Detected persons',
             'bicycle_city': 'Detected bicycles', 'car_city': 'Detected cars',
-            'motorcycle_city': 'Detected motorcycles', 'bus_city': 'Detected bus',
-            'truck_city': 'Detected truck', 'cross_evnt_city': 'Crossing without traffic light',
-            'vehicle_city': 'Detected total number of motor vehicle', 'cellphone_city': 'Detected cellphone',
+            'motorcycle_city': 'Detected motorcycles', 'bus_city': 'Detected buses',
+            'truck_city': 'Detected trucks', 'cross_evnt_city': 'Crossings without traffic light',
+            'vehicle_city': 'Detected all motor vehicles', 'cellphone_city': 'Detected cellphones',
             'trf_sign_city': 'Detected traffic signs', 'gmp_city': 'GMP',
             'traffic_mortality_city': 'Traffic mortality', 'literacy_rate_city': 'Literacy rate',
             'gini': 'Gini coefficient', 'traffic_index': 'Traffic Index'
@@ -1877,9 +1877,9 @@ class Analysis():
                 'avg_speed_val': 'Crossing speed', 'avg_time_val': 'Crossing initiation time',
                 'ped_cross_city': 'Crossing', 'person_city': 'Detected persons',
                 'bicycle_city': 'Detected bicycles', 'car_city': 'Detected cars',
-                'motorcycle_city': 'Detected motorcycles', 'bus_city': 'Detected bus',
-                'truck_city': 'Detected truck', 'cross_evnt_city': 'Crossing without traffic light',
-                'vehicle_city': 'Detected total number of motor vehicle', 'cellphone_city': 'Detected cellphone',
+                'motorcycle_city': 'Detected motorcycles', 'bus_city': 'Detected buses',
+                'truck_city': 'Detected trucks', 'cross_evnt_city': 'Crossings without traffic light',
+                'vehicle_city': 'Detected all motor vehicles', 'cellphone_city': 'Detected cellphones',
                 'trf_sign_city': 'Detected traffic signs', 'gmp': 'GMP',
                 'traffic_mortality': 'Traffic mortality', 'literacy_rate': 'Literacy rate', 'gini': 'Gini coefficient',
                 'traffic_index': 'Traffic Index'
@@ -1904,6 +1904,7 @@ class Analysis():
 
             plots_class.save_plotly_figure(fig, f"correlation_matrix_heatmap_{continents}", save_final=True)
 
+    # todo: should be in plot class (analysis.py shall not have any plotting methods). should be not a static method in the plots class
     @staticmethod
     def correlation_matrix_country(df_mapping, df_country, save_file=True):
         logger.info("Plotting correlation matrices.")
@@ -1914,7 +1915,7 @@ class Analysis():
         (ped_cross_city, _, person_city, bicycle_city, car_city,
          motorcycle_city, bus_city, truck_city, cross_evnt_city, vehicle_city,
          cellphone_city, trf_sign_city, _, _, _, _, _, avg_speed_country, avg_time_country,
-         _, _, _, cross_no_equip_country) = data_tuple[10:33]
+         _, _, _, cross_no_equip_country) = data_tuple[10:33]  # todo: this is not maintainable
 
         ped_cross_city = wrapper_class.country_sum_from_cities(ped_cross_city, df_mapping)
 
@@ -1946,6 +1947,7 @@ class Analysis():
             country, condition = country_condition.split('_')
 
             # Get the country from the previously stored city_country_map
+            # todo: this comment is hard to understand and it does not relate to what is below the line
             iso_code = values_class.get_value(df_mapping, "country", country, None, None, "iso3")
             continent = values_class.get_value(df_mapping, "country", country, None, None, "continent")
             traffic_mortality = values_class.get_value(df_mapping, "country", country, None, None, "traffic_mortality")
@@ -1962,11 +1964,16 @@ class Analysis():
                 # Initialise the city's dictionary if not already present
                 if f'{country}' not in final_dict:
                     final_dict[f'{country}'] = {
-                                                "avg_speed_0": None, "avg_speed_1": None,
-                                                "avg_time_0": None, "avg_time_1": None,
-                                                "avg_day_night_speed": None, "avg_day_night_time": None,
-                                                "ped_cross_city_0": 0, "ped_cross_city_1": 0,
-                                                "person_city_0": 0, "person_city_1": 0,
+                                                "avg_speed_0": None,
+                                                "avg_speed_1": None,
+                                                "avg_time_0": None,
+                                                "avg_time_1": None,
+                                                "avg_day_night_speed": None,
+                                                "avg_day_night_time": None,
+                                                "ped_cross_city_0": 0,
+                                                "ped_cross_city_1": 0,
+                                                "person_city_0": 0,
+                                                "person_city_1": 0,
                                                 "bicycle_city_0": 0,
                                                 "bicycle_city_1": 0,
                                                 "car_city_0": 0,
@@ -1977,14 +1984,14 @@ class Analysis():
                                                 "bus_city_1": 0,
                                                 "truck_city_0": 0,
                                                 "truck_city_1": 0,
-                                                "cross_evnt_city_0": 0,
-                                                "cross_evnt_city_1": 0,
                                                 "vehicle_city_0": 0,
                                                 "vehicle_city_1": 0,
                                                 "cellphone_city_0": 0,
                                                 "cellphone_city_1": 0,
                                                 "trf_sign_city_0": 0,
                                                 "trf_sign_city_1": 0,
+                                                "cross_evnt_city_0": 0,
+                                                "cross_evnt_city_1": 0,
                                                 }
 
                 # Populate the corresponding speed and time based on the condition
@@ -2007,19 +2014,19 @@ class Analysis():
                         f'{country}_{condition}', 0)
                     final_dict[f'{country}'][f"truck_city_{condition}"] = truck_city.get(
                         f'{country}_{condition}', 0)
-                    final_dict[f'{country}'][f"cross_evnt_city_{condition}"] = cross_no_equip_country.get(
-                        f'{country}_{condition}', 0)
                     final_dict[f'{country}'][f"vehicle_city_{condition}"] = vehicle_city.get(
                         f'{country}_{condition}', None)
                     final_dict[f'{country}'][f"cellphone_city_{condition}"] = cellphone_city.get(
                         f'{country}_{condition}', 0)
                     final_dict[f'{country}'][f"trf_sign_city_{condition}"] = trf_sign_city.get(
                         f'{country}_{condition}', 0)
+                    final_dict[f'{country}'][f"cross_evnt_city_{condition}"] = cross_no_equip_country.get(
+                        f'{country}_{condition}', 0)
 
-                    final_dict[f'{country}'][f"traffic_mortality_{condition}"] = traffic_mortality
-                    final_dict[f'{country}'][f"literacy_rate_{condition}"] = literacy_rate
-                    final_dict[f'{country}'][f"gini_{condition}"] = gini
-                    final_dict[f'{country}'][f"med_age_{condition}"] = med_age
+                    final_dict[f'{country}'][f"traffic_mortality_{condition}"] = None if traffic_mortality == 0 else traffic_mortality  # noqa:E501
+                    final_dict[f'{country}'][f"literacy_rate_{condition}"] = None if literacy_rate == 0 else literacy_rate  # noqa:E501
+                    final_dict[f'{country}'][f"gini_{condition}"] = None if gini == 0 else gini
+                    final_dict[f'{country}'][f"med_age_{condition}"] = None if med_age == 0 else med_age
                     final_dict[f'{country}'][f"continent_{condition}"] = continent
 
                     final_dict[f'{country}']["avg_day_night_speed"] = avg_day_night_speed
@@ -2076,19 +2083,18 @@ class Analysis():
         rename_dict_1 = {
             'avg_speed_0': 'Crossing speed', 'avg_speed_1': 'Crossing speed',
             'avg_time_0': 'Crossing initiation time', 'avg_time_1': 'Crossing initiation time',
-            'ped_cross_city_0': 'Detected Crossing', 'ped_cross_city_1': 'Detected Crossing',
+            'ped_cross_city_0': 'Detected crossings', 'ped_cross_city_1': 'Detected crossings',
             'person_city_0': 'Detected persons', 'person_city_1': 'Detected persons',
             'bicycle_city_0': 'Detected bicycles', 'bicycle_city_1': 'Detected bicycles',
             'car_city_0': 'Detected cars', 'car_city_1': 'Detected cars',
             'motorcycle_city_0': 'Detected motorcycles', 'motorcycle_city_1': 'Detected motorcycles',
-            'bus_city_0': 'Detected bus', 'bus_city_1': 'Detected bus',
-            'truck_city_0': 'Detected truck', 'truck_city_1': 'Detected truck',
-            'cross_evnt_city_0': 'Detected crossings without traffic lights',
-            'cross_evnt_city_1': 'Detected crossings without traffic lights',
-            'vehicle_city_0': 'Detected motor vehicles',
-            'vehicle_city_1': 'Detected motor vehicles',
+            'bus_city_0': 'Detected buses', 'bus_city_1': 'Detected buses',
+            'truck_city_0': 'Detected trucks', 'truck_city_1': 'Detected trucks',
+            'vehicle_city_0': 'Detected all motor vehicles', 'vehicle_city_1': 'Detected all motor vehicles',
             'cellphone_city_0': 'Detected cellphones', 'cellphone_city_1': 'Detected cellphones',
             'trf_sign_city_0': 'Detected traffic signs', 'trf_sign_city_1': 'Detected traffic signs',
+            'cross_evnt_city_0': 'Crossings without traffic lights',
+            'cross_evnt_city_1': 'Crossings without traffic lights',
             'traffic_mortality_0': 'Traffic mortality', 'traffic_mortality_1': 'Traffic mortality',
             'literacy_rate_0': 'Literacy rate', 'literacy_rate_1': 'Literacy rate',
             'gini_0': 'Gini coefficient', 'gini_1': 'Gini coefficient', 'med_age_0': 'Median age',
@@ -2207,18 +2213,29 @@ class Analysis():
                 condition_cols = [c for c in df.columns if c.startswith(feature_name + "_")]  # type: ignore
                 agg_df[feature_name] = df[condition_cols].mean(axis=1)
 
+        ordered_features = ['avg_day_night_speed', 'avg_day_night_time',
+                            'ped_cross_city', 'person_city', 'bicycle_city', 'car_city',
+                            'motorcycle_city', 'bus_city', 'truck_city', 'vehicle_city',
+                            'cellphone_city', 'trf_sign_city', 'cross_evnt_city',
+                            'traffic_mortality', 'literacy_rate', 'gini', 'med_age']
+
+        ordered_features_in_df = [col for col in ordered_features if col in agg_df.columns]
+        agg_df = agg_df[ordered_features_in_df]
         # Compute the correlation matrix on the aggregated DataFrame
         corr_matrix_avg = agg_df.corr(method='spearman')
 
+        # todo: does not seem optimal to hardcode everything for each corr matrix separately.
+        # see the corr() example from older projects. t
         # Rename the variables in the correlation matrix (example: renaming keys)
         rename_dict_2 = {
             'avg_day_night_speed': 'Crossing speed', 'avg_day_night_time': 'Crossing initiation time',
-            'ped_cross_city': 'Detected Crossing', 'person_city': 'Detected persons',
+            'ped_cross_city': 'Detected crossings', 'person_city': 'Detected persons',
             'bicycle_city': 'Detected bicycles', 'car_city': 'Detected cars',
-            'motorcycle_city': 'Detected motorcycles', 'bus_city': 'Detected bus',
-            'truck_city': 'Detected truck', 'cross_evnt_city': 'Crossing without traffic light',
-            'vehicle_city': 'Detected total number of motor vehicle', 'cellphone_city': 'Detected cellphone',
+            'motorcycle_city': 'Detected motorcycles', 'bus_city': 'Detected buses',
+            'truck_city': 'Detected trucks',
+            'vehicle_city': 'Detected all motor vehicles', 'cellphone_city': 'Detected cellphones',
             'trf_sign_city': 'Detected traffic signs',
+            'cross_evnt_city': 'Crossings without traffic light',
             'traffic_mortality': 'Traffic mortality', 'literacy_rate': 'Literacy rate',
             'gini': 'Gini coefficient', 'med_age': 'Median age'
             }
@@ -2323,20 +2340,23 @@ class Analysis():
                     condition_cols = [c for c in filtered_df.columns if feature_name in c]
                     agg_df[feature_name] = filtered_df[condition_cols].mean(axis=1)
 
+            ordered_features_in_df = [col for col in ordered_features if col in agg_df.columns]
+            agg_df = agg_df[ordered_features_in_df]
+
             # Compute the correlation matrix on the aggregated DataFrame
             corr_matrix_avg = agg_df.corr(method='spearman')
 
             # Rename the variables in the correlation matrix (example: renaming keys)
             rename_dict_3 = {
                 'avg_day_night_speed': 'Crossing speed', "avg_day_night_time": 'Crossing initiation time',
-                'ped_cross_city': 'Detected Crossing', 'person_city': 'Detected persons',
+                'ped_cross_city': 'Detected crossings', 'person_city': 'Detected persons',
                 'bicycle_city': 'Detected bicycles', 'car_city': 'Detected cars',
-                'motorcycle_city': 'Detected motorcycles', 'bus_city': 'Detected bus',
-                'truck_city': 'Detected truck', 'cross_evnt_city': 'Crossing without traffic light',
-                'vehicle_city': 'Detected total number of motor vehicle', 'cellphone_city': 'Detected cellphone',
-                'trf_sign_city': 'Detected traffic signs',
-                'traffic_mortality': 'Traffic mortality', 'literacy_rate': 'Literacy rate', 'gini': 'Gini coefficient',
-                'med_age': 'Median age'
+                'motorcycle_city': 'Detected motorcycles', 'bus_city': 'Detected buses',
+                'truck_city': 'Detected trucks',
+                'vehicle_city': 'Detected all motor vehicles', 'cellphone_city': 'Detected cellphones',
+                'trf_sign_city': 'Detected traffic signs', 'cross_evnt_city': 'Crossings without traffic light',
+                'traffic_mortality': 'Traffic mortality',
+                'literacy_rate': 'Literacy rate', 'gini': 'Gini coefficient', 'med_age': 'Median age'
                 }
 
             corr_matrix_avg = corr_matrix_avg.rename(columns=rename_dict_3, index=rename_dict_3)
@@ -2387,7 +2407,7 @@ class Analysis():
         """
 
         # Drop location-specific columns
-        drop_columns = ['id', 'city', 'state', 'lat', 'lon', 'gmp', 'population_city', 'traffic_index',
+        drop_columns = ['id', 'city', 'city_aka', 'state', 'lat', 'lon', 'gmp', 'population_city', 'traffic_index',
                         'upload_date', 'speed_crossing_day_city', 'speed_crossing_night_city',
                         'speed_crossing_day_night_city_avg', 'time_crossing_day_city',
                         'time_crossing_night_city', 'time_crossing_day_night_city_avg',
@@ -4285,7 +4305,7 @@ if __name__ == "__main__":
         # log(1 + x) to avoid -inf for zero
         df_countries_raw["log_total_time"] = np.log1p(df_countries_raw["total_time"])
         # todo: remove dropping of columns from df_mapping_raw and remove this bit
-        df_mapping_cites = pd.read_csv(common.get_configs("mapping"))
+        df_mapping_cites = pd.read_csv("national_csv.csv")
 
         # Produce map with all data
         df = df_mapping_cites.copy()  # copy df to manipulate for output
@@ -4966,3 +4986,32 @@ if __name__ == "__main__":
 
         logger.info(f"Mean crossing time (non-zero): {time_mean:.2f}")
         logger.info(f"Standard deviation of crossing time (non-zero): {time_std:.2f}")
+
+        stats = df_countries[['total_time', 'total_videos']].agg(['mean', 'std', 'sum'])
+
+        logger.info(
+            f"Average total_time: {stats.loc['mean', 'total_time']:.2f}, "
+            f"Standard deviation: {stats.loc['std', 'total_time']:.2f}, "
+            f"Sum: {stats.loc['sum', 'total_time']:.2f}"
+        )
+        logger.info(
+            f"Average total_videos: {stats.loc['mean', 'total_videos']:.2f}, "
+            f"Standard deviation: {stats.loc['std', 'total_videos']:.2f}, "
+            f"Sum: {stats.loc['sum', 'total_videos']:.2f}"
+        )
+
+        # Max total_time
+        max_row = df_countries.loc[df_countries['total_time'].idxmax()]
+        logger.info(
+            f"Country with maximum total_time: {max_row['country']}, "
+            f"total_time: {max_row['total_time']}, "
+            f"total_videos: {max_row['total_videos']}"
+        )
+
+        # Min total_time
+        min_row = df_countries.loc[df_countries['total_time'].idxmin()]
+        logger.info(
+            f"Country with minimum total_time: {min_row['country']}, "
+            f"total_time: {min_row['total_time']}, "
+            f"total_videos: {min_row['total_videos']}"
+        )
