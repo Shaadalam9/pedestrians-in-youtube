@@ -8,7 +8,6 @@ videos/
 data/
 data_country/
 data-bkp/
-data_
 source_videos/
 saved_snaps
 
@@ -37,7 +36,6 @@ secret
 
 # mapping_queue.csv
 mapping_bkp.csv
-shadab_mapping.csv
 
 # Pickle files
 *.pickle
@@ -60,3 +58,4 @@ Dockerfile
 
 # log of upgrades
 upgrade_log.json
+

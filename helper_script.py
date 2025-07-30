@@ -686,7 +686,7 @@ class Youtube_Helper:
 
         # Read the newly created text file into a DataFrame
         df = pd.read_csv(new_txt_file_name, delimiter=" ", header=None,
-                         names=["YOLO_id", "X-center", "Y-center", "Width", "Height", "Unique Id"])
+                         names=["YOLO_id", "X-center", "Y-center", "Width", "Height", "Unique Id", "Confidence"])
         df['Frame Count'] = frame_count
 
         # Append the DataFrame to the CSV file
@@ -709,22 +709,23 @@ class Youtube_Helper:
         with open(new_txt_file_name, 'r') as f:
             for line in f:
                 parts = line.strip().split()
-                if len(parts) < 4:
+                if len(parts) < 5:
                     continue  # skip malformed line
                 try:
                     class_id = int(parts[0])
                     # Everything except the first (class_id) and last (track_id) are mask coordinates
-                    mask_coords = parts[1:-1]
-                    track_id = int(parts[-1])
+                    mask_coords = parts[1:-2]
+                    track_id = int(parts[-2])
+                    confidence = float(parts[-1])
                     mask_points = " ".join(mask_coords)
-                    rows.append([class_id, mask_points, track_id, frame_count])
+                    rows.append([class_id, mask_points, track_id, confidence, frame_count])
                 except Exception:
                     continue
 
         if not rows:
             return
 
-        df = pd.DataFrame(rows, columns=["YOLO_id", "Mask_Polygon", "Unique_Id", "Frame_Count"])
+        df = pd.DataFrame(rows, columns=["YOLO_id", "Mask_Polygon", "Unique_Id", "Confidence", "Frame_Count"])
 
         # Append the DataFrame to the CSV file
         if not os.path.exists(output_csv):
@@ -1251,8 +1252,10 @@ class Youtube_Helper:
                 try:
                     if seg_mode:
                         seg_track_ids = seg_results[0].boxes.id.int().cpu().tolist()  # type: ignore
+                        seg_confidences = seg_results[0].boxes.conf.cpu().tolist()  # List of confidence scores
                     if bbox_mode:
                         bbox_track_ids = bbox_results[0].boxes.id.int().cpu().tolist()  # type: ignore
+                        bbox_confidences = bbox_results[0].boxes.conf.cpu().tolist()  # List of confidence scores
 
                     # Visualise the results on the frame
                     if seg_mode:
@@ -1278,22 +1281,35 @@ class Youtube_Helper:
                 # Save txt file with bounding box information
                 if seg_mode:
                     with open(seg_text_filename, 'r') as seg_text_file:
-                        seg_data = seg_text_file.read()
+                        seg_data = seg_text_file.readlines()
+
                     new_txt_file_name_seg = os.path.join("runs", "segment", "labels", f"label_{frame_count}.txt")
 
+                    if len(seg_data) != len(seg_confidences):
+                        logger.warning(f"Warning: Number of bbox lines ({len(seg_data)}) does not match number of confidences ({len(seg_confidences)}).")  # noqa:E501
+
                     with open(new_txt_file_name_seg, 'w') as seg_new_file:
-                        seg_new_file.write(seg_data)
+                        for line, conf in zip(seg_data, seg_confidences):
+                            line = line.rstrip('\n')
+                            seg_new_file.write(f"{line} {conf:.2f}\n")
 
                     seg_labels_path = os.path.join("runs", "segment", "labels")
                     seg_output_csv_path = os.path.join("runs", "segment", f"{self.video_title}.csv")
 
                 if bbox_mode:
                     with open(bbox_text_filename, 'r') as bbox_text_file:
-                        bbox_data = bbox_text_file.read()
+                        bbox_data = bbox_text_file.readlines()
+
                     new_txt_file_name_bbox = os.path.join("runs", "detect", "labels", f"label_{frame_count}.txt")
 
+                    if len(bbox_data) != len(bbox_confidences):
+                        logger.warning(f"Warning: Number of bbox lines ({len(bbox_data)}) does not match number of confidences ({len(bbox_confidences)}).")  # noqa:E501
+
                     with open(new_txt_file_name_bbox, 'w') as bbox_new_file:
-                        bbox_new_file.write(bbox_data)
+                        for line, conf in zip(bbox_data, bbox_confidences):
+                            # Just append confidence to the original line, keeping everything else
+                            line = line.rstrip('\n')
+                            bbox_new_file.write(f"{line} {conf:.6f}\n")
 
                     bbox_labels_path = os.path.join("runs", "detect", "labels")
                     bbox_output_csv_path = os.path.join("runs", "detect", f"{self.video_title}.csv")

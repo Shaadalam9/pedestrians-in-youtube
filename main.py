@@ -67,7 +67,7 @@ if __name__ == "__main__":
             # Check for missing mapping file
             if config.check_missing_mapping:
                 helper.check_missing_mapping(mapping)
-                
+
             video_paths = config.videos  # folders with videos
             output_path = config.videos[-1]  # use the last folder with videos to download
             delete_runs_files = config.delete_runs_files
