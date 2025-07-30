@@ -440,6 +440,7 @@ class Algorithms():
                     # Adjust and store each valid time for the current country
                     for unique_id, time in times.items():
                         if time > 0:
+                            # Convert in real world second from the number of detection
                             time_in_seconds = time / common.get_configs("check_per_sec_time")
                             if common.get_configs("min_waiting_time") <= time_in_seconds <= common.get_configs("max_waiting_time"):  # noqa: E501
                                 if f'{country}_{condition}' not in avg_over_time:

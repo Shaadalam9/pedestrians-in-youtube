@@ -1904,7 +1904,8 @@ class Analysis():
 
             plots_class.save_plotly_figure(fig, f"correlation_matrix_heatmap_{continents}", save_final=True)
 
-    # todo: should be in plot class (analysis.py shall not have any plotting methods). should be not a static method in the plots class
+    # todo: should be in plot class (analysis.py shall not have any plotting methods).
+    # should be not a static method in the plots class
     @staticmethod
     def correlation_matrix_country(df_mapping, df_country, save_file=True):
         logger.info("Plotting correlation matrices.")
@@ -2105,7 +2106,8 @@ class Analysis():
         corr_matrix_night = corr_matrix_night.rename(columns=rename_dict_1, index=rename_dict_1)
 
         # Generate the heatmap using Plotly
-        fig = px.imshow(corr_matrix_day, text_auto=".2f",  # Display correlation values on the heatmap # type: ignore
+        fig = px.imshow(corr_matrix_day,
+                        text_auto=".2f",  # Display correlation values on the heatmap # type: ignore
                         color_continuous_scale='RdBu',  # Color scale
                         aspect="auto")  # Automatically adjust aspect ratio
 
@@ -2113,6 +2115,8 @@ class Analysis():
 
         # Update font family and size
         fig.update_layout(
+            width=1600,
+            height=900,
             coloraxis_showscale=False,
             margin=dict(l=0, r=0, t=0, b=0),  # Remove all margins
             font=dict(
@@ -2123,6 +2127,12 @@ class Analysis():
 
         # Rotate Y axis labels (change angle as desired)
         fig.update_yaxes(tickangle=0, automargin=True)  # 90 for vertical, 45 for slanted
+
+        # Set font size and family for annotation text
+        fig.update_traces(
+            textfont_size=18,
+            textfont_family=common.get_configs('font_family')
+            )
 
         plots_class.save_plotly_figure(fig, "correlation_matrix_heatmap_day", save_final=True)
 
@@ -2132,10 +2142,13 @@ class Analysis():
                         aspect="auto",  # Automatically adjust aspect ratio
                         # title="Correlation Matrix Heatmap in night"  # Title of the heatmap
                         )
+
         fig.update_layout(coloraxis_showscale=False)
 
         # Update font family and size
         fig.update_layout(
+            width=1600,
+            height=900,
             coloraxis_showscale=False,
             margin=dict(l=0, r=0, t=0, b=0),  # Remove all margins
             font=dict(
@@ -2146,6 +2159,12 @@ class Analysis():
 
         # Rotate Y axis labels (change angle as desired)
         fig.update_yaxes(tickangle=0, automargin=True)  # 90 for vertical, 45 for slanted
+
+        # Set font size and family for annotation text
+        fig.update_traces(
+            textfont_size=18,
+            textfont_family=common.get_configs('font_family')
+            )
 
         plots_class.save_plotly_figure(fig, "correlation_matrix_heatmap_night", save_final=True)
 
@@ -2252,6 +2271,8 @@ class Analysis():
 
         # Update font family and size
         fig.update_layout(
+            width=1600,
+            height=900,
             coloraxis_showscale=False,
             margin=dict(l=0, r=0, t=0, b=0),  # Remove all margins
             font=dict(
@@ -2263,6 +2284,12 @@ class Analysis():
         fig.update_traces(textfont_size=common.get_configs('font_size'))
         fig.update_xaxes(tickangle=45, tickfont=dict(size=common.get_configs('font_size')))
         fig.update_yaxes(tickangle=0, tickfont=dict(size=common.get_configs('font_size')))
+
+        # Set font size and family for annotation text
+        fig.update_traces(
+            textfont_size=18,
+            textfont_family=common.get_configs('font_family')
+            )
 
         plots_class.save_plotly_figure(fig, "correlation_matrix_heatmap_averaged", save_final=True)
 
@@ -2372,6 +2399,8 @@ class Analysis():
 
             fig.update_layout(
                 coloraxis_showscale=False,
+                width=1600,
+                height=900,
                 margin=dict(l=0, r=0, t=0, b=0),  # Remove all margins
                 font=dict(
                     family=common.get_configs('font_family'),
@@ -2384,10 +2413,16 @@ class Analysis():
             fig.update_xaxes(tickangle=45, tickfont=dict(size=18))
             fig.update_yaxes(tickangle=0, tickfont=dict(size=18))
 
+            # Set font size and family for annotation text
+            fig.update_traces(
+                textfont_size=18,
+                textfont_family=common.get_configs('font_family')
+                )
+
             # save file to local output folder
             if save_file:
                 # Final adjustments and display
-                fig.update_layout(margin=dict(l=10, r=10, t=10, b=10))
+                fig.update_layout(margin=dict(l=0, r=0, t=0, b=0))
                 plots_class.save_plotly_figure(fig, f"correlation_matrix_heatmap_{continents}", save_final=True)
             # open it in localhost instead
             else:
@@ -3108,7 +3143,8 @@ if __name__ == "__main__":
             for file_name in tqdm(os.listdir(folder_path), desc=f"Processing files in {folder_path}"):
                 file = analysis_class.filter_csv_files(file=file_name, df_mapping=df_mapping)
                 if file is None:
-                    df_mapping = analysis_class.delete_video_time_by_filename(df_mapping, file_name)
+                    continue
+                    # df_mapping = analysis_class.delete_video_time_by_filename(df_mapping, file_name)
                 # list of misc and trash files
                 misc_files = ["DS_Store", "seg", "bbox"]
                 if file is None or file in misc_files:  # exclude not useful files
@@ -3135,6 +3171,8 @@ if __name__ == "__main__":
                     logger.debug(f"{file}: found values {video_city}, {video_state}, {video_country}.")
 
                     # Get the number of number and unique id of the object crossing the road
+                    # ids give the unique of the person who cross the road after applying the filter, while
+                    # all_ids gives every unique_id of the person who crosses the road
                     ids, all_ids = algorithms_class.pedestrian_crossing(df,
                                                                         filename_no_ext,
                                                                         df_mapping,
@@ -3216,6 +3254,8 @@ if __name__ == "__main__":
 
         # Record the average speed and time of crossing on country basis
         avg_speed_country, all_speed_country = algorithms_class.avg_speed_of_crossing_country(df_mapping, all_speed)
+
+        # Output in real world seconds
         avg_time_country, all_time_country = algorithms_class.avg_time_to_start_cross_country(df_mapping, all_time)
 
         # Record the average speed and time of crossing on city basis
@@ -3446,26 +3486,26 @@ if __name__ == "__main__":
         df_mapping_raw.to_csv(os.path.join(common.output_dir, "mapping_city_raw.csv"))
 
         # Get the population threshold from the configuration
-        # population_threshold = common.get_configs("population_threshold")
+        population_threshold = common.get_configs("population_threshold")
 
         # Get the minimum percentage of country population from the configuration
-        # min_percentage = common.get_configs("min_city_population_percentage")
+        min_percentage = common.get_configs("min_city_population_percentage")
 
         # Filter df_mapping to include cities that meet either of the following criteria:
         # 1. The city's population is greater than the threshold
         # 2. The city's population is at least the minimum percentage of the country's population
-        # df_mapping = df_mapping[
-        #     (df_mapping["population_city"] >= population_threshold) |  # Condition 1
-        #     (df_mapping["population_city"] >= min_percentage * df_mapping["population_country"])  # Condition 2
-        # ]
+        df_mapping = df_mapping[
+            (df_mapping["population_city"] >= population_threshold) |  # Condition 1
+            (df_mapping["population_city"] >= min_percentage * df_mapping["population_country"])  # Condition 2
+        ]
 
         # Remove the rows of the cities where the footage recorded is less than threshold
         df_mapping = values_class.remove_columns_below_threshold(df_mapping, common.get_configs("footage_threshold"))
 
-        # # Limit countries if required
-        # countries_include = common.get_configs("countries_analyse")
-        # if countries_include:
-        #     df_mapping = df_mapping[df_mapping["iso3"].isin(common.get_configs("countries_analyse"))]
+        # Limit countries if required
+        countries_include = common.get_configs("countries_analyse")
+        if countries_include:
+            df_mapping = df_mapping[df_mapping["iso3"].isin(common.get_configs("countries_analyse"))]
 
         total_duration = Analysis.calculate_total_seconds(df_mapping)
 
@@ -3693,22 +3733,51 @@ if __name__ == "__main__":
     plots_class.violin_plot(data_index=22, name="speed", min_threshold=common.get_configs("min_speed_limit"),
                             max_threshold=common.get_configs("max_speed_limit"), df_mapping=df_mapping, save_file=True)
 
+    # ------------All values----------------- #
     plots_class.hist(data_index=22,
                      name="speed",
                      marginal="violin",
                      nbins=100,
+                     raw=True,
                      min_threshold=common.get_configs("min_speed_limit"),
                      max_threshold=common.get_configs("max_speed_limit"),
                      font_size=common.get_configs("font_size") + 4,
+                     fig_save_height=650,
                      save_file=True)
 
-    plots_class.hist(data_index=23,
+    plots_class.hist(data_index=39,
                      name="time",
                      marginal="violin",
                      # nbins=100,
-                     min_threshold=common.get_configs("min_waiting_time"),
-                     max_threshold=common.get_configs("max_waiting_time"),
+                     raw=True,
+                     min_threshold=None,
+                     max_threshold=None,
                      font_size=common.get_configs("font_size") + 4,
+                     fig_save_height=650,
+                     save_file=True)
+
+    # ------------Filtered values----------------- #
+    plots_class.hist(data_index=38,
+                     name="speed_filtered",
+                     marginal="violin",
+                     nbins=100,
+                     raw=False,
+                     min_threshold=common.get_configs("min_speed_limit"),
+                     max_threshold=common.get_configs("max_speed_limit"),
+                     font_size=common.get_configs("font_size") + 4,
+                     fig_save_height=650,
+                     save_file=True)
+
+    plots_class.hist(data_index=37,
+                     name="time_filtered",
+                     marginal="violin",
+                     # nbins=100,
+                     raw=False,
+                     min_threshold=None,
+                     max_threshold=None,
+                     font_size=common.get_configs("font_size") + 4,
+                     df_mapping=df_mapping,
+                     fig_save_height=650,
                      save_file=True)
 
     if common.get_configs("analysis_level") == "city":
@@ -4296,14 +4365,16 @@ if __name__ == "__main__":
                                   show_images=True,
                                   hover_data=hover_data,
                                   color="continent",
-                                  save_file=True,
+                                  save_file=False,
                                   save_final=False,
                                   name_file="map_screenshots")
 
         # Map with screenshots and countries colours by amount of footage
         hover_data = list(set(df_countries_raw.columns) - set(columns_remove))
+
         # log(1 + x) to avoid -inf for zero
         df_countries_raw["log_total_time"] = np.log1p(df_countries_raw["total_time"])
+
         # todo: remove dropping of columns from df_mapping_raw and remove this bit
         df_mapping_cites = pd.read_csv("national_csv.csv")
 
@@ -4414,27 +4485,27 @@ if __name__ == "__main__":
                                        data_view="combined",
                                        title_text="Mean speed of crossing (in m/s)",
                                        filename="crossing_speed_combined_country",
-                                       font_size_captions=common.get_configs("font_size") + 8,
-                                       legend_x=0.95,
+                                       font_size_captions=common.get_configs("font_size") + 28,
+                                       legend_x=0.92,
                                        legend_y=0.04,
                                        legend_spacing=0.02,
-                                       top_margin=100,
-                                       height=3200,
-                                       width=3200)
+                                       top_margin=150,
+                                       height=2450,
+                                       width=2480)
 
         plots_class.stack_plot_country(df_countries,
                                        order_by="condition",
                                        metric="time",
                                        data_view="combined",
-                                       title_text="Crossing initiation time (s)",
+                                       title_text="Mean crossing initiation time (in s)",
                                        filename="time_crossing_combined_country",
-                                       font_size_captions=common.get_configs("font_size") + 8,
-                                       legend_x=0.95,
+                                       font_size_captions=common.get_configs("font_size") + 28,
+                                       legend_x=0.92,
                                        legend_y=0.04,
                                        legend_spacing=0.02,
-                                       top_margin=100,
-                                       height=2480,
-                                       width=2400)
+                                       top_margin=150,
+                                       height=2400,
+                                       width=2480)
 
         plots_class.stack_plot_country(df_countries_raw,
                                        order_by="condition",
@@ -4442,11 +4513,12 @@ if __name__ == "__main__":
                                        data_view="combined",
                                        title_text="Mean speed of crossing (in m/s)",
                                        filename="crossing_speed_combined_country_raw",
-                                       font_size_captions=common.get_configs("font_size") + 8,
-                                       legend_x=0.95,
+                                       font_size_captions=common.get_configs("font_size") + 28,
+                                       raw=True,
+                                       legend_x=0.92,
                                        legend_y=0.04,
-                                       legend_spacing=0.01,
-                                       top_margin=100,
+                                       legend_spacing=0.02,
+                                       top_margin=150,
                                        height=2400,
                                        width=2480)
 
@@ -4456,11 +4528,12 @@ if __name__ == "__main__":
                                        data_view="combined",
                                        title_text="Crossing initiation time (s)",
                                        filename="time_crossing_combined_country_raw",
-                                       font_size_captions=common.get_configs("font_size") + 8,
-                                       legend_x=0.95,
+                                       font_size_captions=common.get_configs("font_size") + 28,
+                                       raw=True,
+                                       legend_x=0.92,
                                        legend_y=0.04,
-                                       legend_spacing=0.01,
-                                       top_margin=100,
+                                       legend_spacing=0.02,
+                                       top_margin=150,
                                        height=2400,
                                        width=2480)
 

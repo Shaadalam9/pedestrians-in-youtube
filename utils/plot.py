@@ -1543,7 +1543,7 @@ class Plots():
         nested_dict = data_tuple[data_index]
 
         if name == "speed" and raw is True:
-            all_values = [speed for city in nested_dict.values() for video in city.values() for speed in video.values()]
+            all_values = [speed for city in nested_dict.values() for video in city.values() for speed in video.values()]  # noqa:E501
             all_values = [value for value in all_values
                           if (min_threshold is None or value >= min_threshold)
                           and (max_threshold is None or value <= max_threshold)]
@@ -1786,7 +1786,7 @@ class Plots():
         #     denmark_value = df.loc[df['country'] == 'Denmark', 'continent'].values[0]
         #     df = pd.concat([df, pd.DataFrame([{'country': 'Greenland', 'continent': denmark_value}])],
         #                    ignore_index=True)
-
+        df = df.copy()  # Make a copy so you don't modify the original
         country_name_map = {
             "Türkiye": "Turkey"
         }
@@ -2081,14 +2081,17 @@ class Plots():
             label_distance_factor (float, optional): multiplier for the threshold to control density of text labels.
         """
         logger.info('Creating scatter plot for x={} and y={}.', x, y)
+
         # using size and marker_size is not supported
         if marker_size and size:
             logger.error('Arguments marker_size and size cannot be used together.')
             return -1
+
         # using marker_size with histogram marginal(s) is not supported
         if (marker_size and (marginal_x == 'histogram' or marginal_y == 'histogram')):
             logger.error('Argument marker_size cannot be used together with histogram marginal(s).')
             return -1
+
         # prettify text
         if pretty_text:
             if isinstance(df.iloc[0][x], str):  # check if string
@@ -2122,7 +2125,7 @@ class Plots():
                 logger.debug('Tried to prettify {} with exception {}.', text, e)
 
         # check and clean the data
-        # df = df.replace([np.inf, -np.inf], np.nan).dropna()  # Remove NaNs and Infs
+        df = df[np.isfinite(df[[x, y]]).all(axis=1)].copy()  # Remove NaNs and Infs
 
         if text:
             if text in df.columns:
