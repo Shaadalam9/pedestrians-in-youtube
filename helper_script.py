@@ -1205,7 +1205,6 @@ class Youtube_Helper:
 
                 frame_count += 1  # Increment frame count
                 # Run YOLO tracking on the frame, persisting tracks between frames
-
                 if seg_mode:
                     seg_results = seg_model.track(frame,
                                                   tracker=self.seg_tracker,
@@ -1291,7 +1290,7 @@ class Youtube_Helper:
                     with open(new_txt_file_name_seg, 'w') as seg_new_file:
                         for line, conf in zip(seg_data, seg_confidences):
                             line = line.rstrip('\n')
-                            seg_new_file.write(f"{line} {conf:.2f}\n")
+                            seg_new_file.write(f"{line} {conf:.6f}\n")
 
                     seg_labels_path = os.path.join("runs", "segment", "labels")
                     seg_output_csv_path = os.path.join("runs", "segment", f"{self.video_title}.csv")
