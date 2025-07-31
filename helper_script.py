@@ -1234,48 +1234,67 @@ class Youtube_Helper:
                 # Update progress bar
                 progress_bar.update(1)
 
-                # Get the boxes and track IDs
+                # SEGMENTATION MODE
                 if seg_mode:
-                    seg_boxes = seg_results[0].boxes.xywh.cpu()  # type: ignore
-                    if seg_boxes.size(0) == 0:
-                        with open(seg_text_filename, 'w') as file:   # noqa: F841
-                            pass
+                    seg_boxes_obj = seg_results[0].boxes
+                    seg_boxes_xywh = seg_boxes_obj.xywh.cpu() if seg_boxes_obj is not None else None
 
-                # Get the boxes and track IDs
-                if bbox_mode:
-                    bbox_boxes = bbox_results[0].boxes.xywh.cpu()  # type: ignore
-                    if bbox_boxes.size(0) == 0:
-                        with open(bbox_text_filename, 'w') as file:   # noqa: F841
-                            pass
+                    if seg_boxes_xywh is not None and seg_boxes_xywh.size(0) > 0:
+                        # id might be None!
+                        if hasattr(seg_boxes_obj, "id") and seg_boxes_obj.id is not None:
+                            seg_track_ids = seg_boxes_obj.id.int().cpu().tolist()
+                        else:
+                            seg_track_ids = []
 
-                try:
-                    if seg_mode:
-                        seg_track_ids = seg_results[0].boxes.id.int().cpu().tolist()  # type: ignore
-                        seg_confidences = seg_results[0].boxes.conf.cpu().tolist()  # List of confidence scores
-                    if bbox_mode:
-                        bbox_track_ids = bbox_results[0].boxes.id.int().cpu().tolist()  # type: ignore
-                        bbox_confidences = bbox_results[0].boxes.conf.cpu().tolist()  # List of confidence scores
-
-                    # Visualise the results on the frame
-                    if seg_mode:
+                        # conf might also be None!
+                        if hasattr(seg_boxes_obj, "conf") and seg_boxes_obj.conf is not None:
+                            seg_confidences = seg_boxes_obj.conf.cpu().tolist()
+                        else:
+                            seg_confidences = []
                         seg_annotated_frame = seg_results[0].plot()
-                    if bbox_mode:
+                    else:
+                        seg_track_ids = []
+                        seg_confidences = []
+                        seg_annotated_frame = frame.copy()
+                        with open(seg_text_filename, 'w') as file:
+                            pass
+
+                # BOUNDING BOX MODE
+                if bbox_mode:
+                    bbox_boxes_obj = bbox_results[0].boxes
+                    bbox_boxes_xywh = bbox_boxes_obj.xywh.cpu() if bbox_boxes_obj is not None else None
+
+                    if bbox_boxes_xywh is not None and bbox_boxes_xywh.size(0) > 0:
+                        # id might be None!
+                        if hasattr(bbox_boxes_obj, "id") and bbox_boxes_obj.id is not None:
+                            bbox_track_ids = bbox_boxes_obj.id.int().cpu().tolist()
+                        else:
+                            bbox_track_ids = []
+
+                        # conf might be None!
+                        if hasattr(bbox_boxes_obj, "conf") and bbox_boxes_obj.conf is not None:
+                            bbox_confidences = bbox_boxes_obj.conf.cpu().tolist()
+                        else:
+                            bbox_confidences = []
                         bbox_annotated_frame = bbox_results[0].plot()
+                    else:
+                        bbox_track_ids = []
+                        bbox_confidences = []
+                        bbox_annotated_frame = frame.copy()
+                        with open(bbox_text_filename, 'w') as file:
+                            pass
 
                 # Save annotated frame to file
-                    if self.save_annoted_img:
-                        if seg_mode:
-                            seg_frame_filename = os.path.join(seg_annotated_frame_output_path,
-                                                              f"frame_{frame_count}.jpg")
-                            cv2.imwrite(seg_frame_filename, seg_annotated_frame)
+                if self.save_annoted_img:
+                    if seg_mode:
+                        seg_frame_filename = os.path.join(seg_annotated_frame_output_path,
+                                                          f"frame_{frame_count}.jpg")
+                        cv2.imwrite(seg_frame_filename, seg_annotated_frame)
 
-                        if bbox_mode:
-                            bbox_frame_filename = os.path.join(bbox_annotated_frame_output_path,
-                                                               f"frame_{frame_count}.jpg")
-                            cv2.imwrite(bbox_frame_filename, bbox_annotated_frame)
-
-                except Exception:
-                    pass
+                    if bbox_mode:
+                        bbox_frame_filename = os.path.join(bbox_annotated_frame_output_path,
+                                                           f"frame_{frame_count}.jpg")
+                        cv2.imwrite(bbox_frame_filename, bbox_annotated_frame)
 
                 # Save txt file with bounding box information
                 if seg_mode:
