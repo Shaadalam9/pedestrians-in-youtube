@@ -17,6 +17,7 @@ from pycountry_convert import country_name_to_country_alpha2, country_alpha2_to_
 from custom_logger import CustomLogger
 import common
 import ast
+import torch
 import subprocess
 import sys
 import logging
@@ -1116,6 +1117,8 @@ class Youtube_Helper:
             - Optionally, creates a final output video from tracked frames if `flag` is set.
         """
 
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
         # If using a custom tracker configuration, update YAML buffer
         if self.bbox_tracker == "bbox_custom_tracker.yaml" and bbox_mode is True:
             # Update tracker YAML
@@ -1216,7 +1219,8 @@ class Youtube_Helper:
                                                   show_labels=SHOW_LABELS,
                                                   show_conf=SHOW_CONF,
                                                   show=RENDER,
-                                                  verbose=False)
+                                                  verbose=False,
+                                                  device=device)
 
                 if bbox_mode:
                     bbox_results = bbox_model.track(frame,
@@ -1229,7 +1233,8 @@ class Youtube_Helper:
                                                     show_labels=SHOW_LABELS,
                                                     show_conf=SHOW_CONF,
                                                     show=RENDER,
-                                                    verbose=False)
+                                                    verbose=False,
+                                                    device=device)
 
                 # Update progress bar
                 progress_bar.update(1)
@@ -1237,18 +1242,18 @@ class Youtube_Helper:
                 # SEGMENTATION MODE
                 if seg_mode:
                     seg_boxes_obj = seg_results[0].boxes
-                    seg_boxes_xywh = seg_boxes_obj.xywh.cpu() if seg_boxes_obj is not None else None
+                    seg_boxes_xywh = seg_boxes_obj.xywh.cpu() if seg_boxes_obj is not None else None  # type: ignore
 
                     if seg_boxes_xywh is not None and seg_boxes_xywh.size(0) > 0:
                         # id might be None!
-                        if hasattr(seg_boxes_obj, "id") and seg_boxes_obj.id is not None:
-                            seg_track_ids = seg_boxes_obj.id.int().cpu().tolist()
+                        if hasattr(seg_boxes_obj, "id") and seg_boxes_obj.id is not None:  # type: ignore
+                            seg_track_ids = seg_boxes_obj.id.int().cpu().tolist()  # type: ignore
                         else:
                             seg_track_ids = []
 
                         # conf might also be None!
-                        if hasattr(seg_boxes_obj, "conf") and seg_boxes_obj.conf is not None:
-                            seg_confidences = seg_boxes_obj.conf.cpu().tolist()
+                        if hasattr(seg_boxes_obj, "conf") and seg_boxes_obj.conf is not None:  # type: ignore
+                            seg_confidences = seg_boxes_obj.conf.cpu().tolist()  # type: ignore
                         else:
                             seg_confidences = []
                         seg_annotated_frame = seg_results[0].plot()
@@ -1262,18 +1267,18 @@ class Youtube_Helper:
                 # BOUNDING BOX MODE
                 if bbox_mode:
                     bbox_boxes_obj = bbox_results[0].boxes
-                    bbox_boxes_xywh = bbox_boxes_obj.xywh.cpu() if bbox_boxes_obj is not None else None
+                    bbox_boxes_xywh = bbox_boxes_obj.xywh.cpu() if bbox_boxes_obj is not None else None  # type: ignore
 
                     if bbox_boxes_xywh is not None and bbox_boxes_xywh.size(0) > 0:
                         # id might be None!
-                        if hasattr(bbox_boxes_obj, "id") and bbox_boxes_obj.id is not None:
-                            bbox_track_ids = bbox_boxes_obj.id.int().cpu().tolist()
+                        if hasattr(bbox_boxes_obj, "id") and bbox_boxes_obj.id is not None:  # type: ignore
+                            bbox_track_ids = bbox_boxes_obj.id.int().cpu().tolist()  # type: ignore
                         else:
                             bbox_track_ids = []
 
                         # conf might be None!
-                        if hasattr(bbox_boxes_obj, "conf") and bbox_boxes_obj.conf is not None:
-                            bbox_confidences = bbox_boxes_obj.conf.cpu().tolist()
+                        if hasattr(bbox_boxes_obj, "conf") and bbox_boxes_obj.conf is not None:  # type: ignore
+                            bbox_confidences = bbox_boxes_obj.conf.cpu().tolist()  # type: ignore
                         else:
                             bbox_confidences = []
                         bbox_annotated_frame = bbox_results[0].plot()
@@ -1281,7 +1286,7 @@ class Youtube_Helper:
                         bbox_track_ids = []
                         bbox_confidences = []
                         bbox_annotated_frame = frame.copy()
-                        with open(bbox_text_filename, 'w') as file:
+                        with open(bbox_text_filename, 'w') as file:  # noqa: F841
                             pass
 
                 # Save annotated frame to file
