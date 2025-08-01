@@ -1115,33 +1115,29 @@ class Youtube_Helper:
                 * Optionally displays frames and saves annotated images.
                 * Aggregates detection labels to CSV files.
             - Optionally, creates a final output video from tracked frames if `flag` is set.
+        (docstring as in your code)
         """
-
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-        # If using a custom tracker configuration, update YAML buffer
         if self.bbox_tracker == "bbox_custom_tracker.yaml" and bbox_mode is True:
-            # Update tracker YAML
-            yaml_path = 'bbox_custom_tracker.yaml'  # actual tracker yaml file path
+            yaml_path = 'bbox_custom_tracker.yaml'
             self.update_track_buffer_in_yaml(yaml_path, video_fps)
 
         if self.seg_tracker == "seg_custom_tracker.yaml" and seg_mode is True:
-            # Update tracker YAML
-            yaml_path = 'seg_custom_tracker.yaml'  # actual tracker yaml file path
+            yaml_path = 'seg_custom_tracker.yaml'
             self.update_track_buffer_in_yaml(yaml_path, video_fps)
 
         # --- Model Initialisation ---
         if bbox_mode:
-            bbox_model = YOLO(self.tracking_model)        # e.g. "yolo11x.pt"
-
+            bbox_model = YOLO(self.tracking_model)
         if seg_mode:
-            seg_model = YOLO(self.segment_model)          # e.g. "yolo11x-seg.pt"
+            seg_model = YOLO(self.segment_model)
 
         cap = cv2.VideoCapture(input_video_path)
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         frame_width, frame_height = int(cap.get(3)), int(cap.get(4))
 
-        # Set up output directories for bounding box mode
+        # Output directories
         if bbox_mode:
             bbox_frames_output_path = os.path.join("runs", "detect", "frames")
             bbox_annotated_frame_output_path = os.path.join("runs", "detect", "annotated_frames")
@@ -1149,13 +1145,11 @@ class Youtube_Helper:
             bbox_txt_output_path = os.path.join("runs", "detect", "labels")
             bbox_text_filename = os.path.join("runs", "detect", "track", "labels", "image0.txt")
             bbox_display_video_output_path = os.path.join("runs", "detect", "display_video.mp4")
-            # Ensure output directories exist
             os.makedirs(bbox_frames_output_path, exist_ok=True)
             os.makedirs(bbox_txt_output_path, exist_ok=True)
             os.makedirs(bbox_annotated_frame_output_path, exist_ok=True)
             os.makedirs(bbox_tracked_frame_output_path, exist_ok=True)
 
-        # Set up output directories for segmentation mode
         if seg_mode:
             seg_frames_output_path = os.path.join("runs", "segment", "frames")
             seg_annotated_frame_output_path = os.path.join("runs", "segment", "annotated_frames")
@@ -1163,46 +1157,40 @@ class Youtube_Helper:
             seg_txt_output_path = os.path.join("runs", "segment", "labels")
             seg_text_filename = os.path.join("runs", "segment", "track", "labels", "image0.txt")
             seg_display_video_output_path = os.path.join("runs", "segment", "display_video.mp4")
-            # Ensure output directories exist
             os.makedirs(seg_frames_output_path, exist_ok=True)
             os.makedirs(seg_txt_output_path, exist_ok=True)
             os.makedirs(seg_annotated_frame_output_path, exist_ok=True)
             os.makedirs(seg_tracked_frame_output_path, exist_ok=True)
 
-        # Initialise video writers for displaying tracking/segmentation results
+        # Video writers
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # type: ignore
 
         if bbox_mode and self.display_frame_tracking:
-            bbox_video_writer = cv2.VideoWriter(bbox_display_video_output_path,
-                                                fourcc,
-                                                video_fps,
-                                                (frame_width, frame_height))
-
+            bbox_video_writer = cv2.VideoWriter(
+                bbox_display_video_output_path, fourcc, video_fps, (frame_width, frame_height)
+            )
         if seg_mode and self.display_frame_segmentation:
-            seg_video_writer = cv2.VideoWriter(seg_display_video_output_path,
-                                               fourcc,
-                                               video_fps,
-                                               (frame_width, frame_height))
+            seg_video_writer = cv2.VideoWriter(
+                seg_display_video_output_path, fourcc, video_fps, (frame_width, frame_height)
+            )
 
-        # Handle progress bar for feedback
+        # Progress bar
         if total_frames == 0:
             logger.warning("Warning: Could not determine total frames. Progress bar may not work correctly.")
-            total_frames = None  # Prevent tqdm from setting a fixed length
+            total_frames = None
 
-        # Setup progress bar
         progress_bar = tqdm(total=total_frames, unit="frames", dynamic_ncols=True)
-        frame_count = 0  # Variable to track the frame number
+        frame_count = 0
 
-        # Track history for drawing tracking lines
+        # Track history
         if seg_mode:
             seg_track_history = defaultdict(lambda: [])
-
         if bbox_mode:
             bbox_track_history = defaultdict(lambda: [])
 
         while cap.isOpened():
-            # Read a frame from the video
             success, frame = cap.read()
+<<<<<<< Updated upstream
 
             if success:
 
@@ -1425,23 +1413,243 @@ class Youtube_Helper:
                 if cv2.waitKey(1) & 0xFF == ord("q"):
                     break
             else:
+=======
+            if not success:
+>>>>>>> Stashed changes
                 break
 
-        # Release the video capture object and close the display window
+            frame_count += 1
+
+            # -------- SEGMENTATION MODE --------
+            seg_failed = False
+            seg_boxes_xywh = None
+            seg_track_ids = []
+            seg_confidences = []
+            seg_annotated_frame = frame.copy()
+            # Track attempt
+            if seg_mode:
+                try:
+                    seg_results = seg_model.track(
+                        frame,
+                        tracker=self.seg_tracker,
+                        persist=True,
+                        conf=self.confidence,
+                        save=True,
+                        save_txt=True,
+                        line_width=LINE_THICKNESS,
+                        show_labels=SHOW_LABELS,
+                        show_conf=SHOW_CONF,
+                        show=RENDER,
+                        verbose=False,
+                        device=device,
+                    )
+                    seg_boxes_obj = seg_results[0].boxes
+                    seg_boxes_xywh = seg_boxes_obj.xywh.cpu() if seg_boxes_obj is not None else None  # type: ignore
+                    if seg_boxes_xywh is not None and seg_boxes_xywh.size(0) > 0:
+                        seg_track_ids = (
+                            seg_boxes_obj.id.int().cpu().tolist()  # type: ignore
+                            if hasattr(seg_boxes_obj, "id") and seg_boxes_obj.id is not None  # type: ignore
+                            else []
+                        )
+                        seg_confidences = (
+                            seg_boxes_obj.conf.cpu().tolist()  # type: ignore
+                            if hasattr(seg_boxes_obj, "conf") and seg_boxes_obj.conf is not None  # type: ignore
+                            else []
+                        )
+                        seg_annotated_frame = seg_results[0].plot()
+                    else:
+                        logger.info(f"[Frame {frame_count}] Segmentation: No objects found. Using original frame.")
+                        print(f"Segmentation found no objects at frame {frame_count}")
+                        with open(seg_text_filename, 'w') as file:
+                            pass
+                except Exception as e:
+                    logger.error(f"[Frame {frame_count}] Segmentation failed: {e}. Using original frame.")
+                    print(f"Segmentation tracking failed at frame {frame_count}")
+                    seg_failed = True
+
+            # -------- BBOX MODE --------
+            bbox_failed = False
+            bbox_boxes_xywh = None
+            bbox_track_ids = []
+            bbox_confidences = []
+            bbox_annotated_frame = frame.copy()
+            if bbox_mode:
+                try:
+                    bbox_results = bbox_model.track(
+                        frame,
+                        tracker=self.bbox_tracker,
+                        persist=True,
+                        conf=self.confidence,
+                        save=True,
+                        save_txt=True,
+                        line_width=LINE_THICKNESS,
+                        show_labels=SHOW_LABELS,
+                        show_conf=SHOW_CONF,
+                        show=RENDER,
+                        verbose=False,
+                        device=device,
+                    )
+                    bbox_boxes_obj = bbox_results[0].boxes
+                    bbox_boxes_xywh = bbox_boxes_obj.xywh.cpu() if bbox_boxes_obj is not None else None  # type: ignore
+                    if bbox_boxes_xywh is not None and bbox_boxes_xywh.size(0) > 0:
+                        bbox_track_ids = (
+                            bbox_boxes_obj.id.int().cpu().tolist()  # type: ignore
+                            if hasattr(bbox_boxes_obj, "id") and bbox_boxes_obj.id is not None  # type: ignore
+                            else []
+                        )
+                        bbox_confidences = (
+                            bbox_boxes_obj.conf.cpu().tolist()  # type: ignore
+                            if hasattr(bbox_boxes_obj, "conf") and bbox_boxes_obj.conf is not None  # type: ignore
+                            else []
+                        )
+                        bbox_annotated_frame = bbox_results[0].plot()
+                    else:
+                        logger.warning(f"[Frame {frame_count}] BBox: No objects found. Using original frame.")
+                        with open(bbox_text_filename, 'w') as file:  # noqa: F841
+                            pass
+                except Exception as e:
+                    logger.error(f"[Frame {frame_count}] BBox failed: {e}. Using original frame.")
+                    bbox_failed = True
+
+            progress_bar.update(1)
+
+            # Save annotated frames
+            if self.save_annoted_img:
+                if seg_mode:
+                    seg_frame_filename = os.path.join(seg_annotated_frame_output_path, f"frame_{frame_count}.jpg")
+                    cv2.imwrite(seg_frame_filename, seg_annotated_frame)
+                if bbox_mode:
+                    bbox_frame_filename = os.path.join(bbox_annotated_frame_output_path, f"frame_{frame_count}.jpg")
+                    cv2.imwrite(bbox_frame_filename, bbox_annotated_frame)
+
+            # Save txt files (only if detections found and not failed)
+            if seg_mode and not seg_failed and seg_boxes_xywh is not None and seg_boxes_xywh.size(0) > 0:
+                with open(seg_text_filename, 'r') as seg_text_file:
+                    seg_data = seg_text_file.readlines()
+                new_txt_file_name_seg = os.path.join("runs", "segment", "labels", f"label_{frame_count}.txt")
+
+                if len(seg_data) != len(seg_confidences):
+                    logger.error(f"Warning: Number of bbox lines ({len(seg_data)}) does not match number of confidences ({len(seg_confidences)}).")  # noqa:E501
+
+                with open(new_txt_file_name_seg, 'w') as seg_new_file:
+                    for line, conf in zip(seg_data, seg_confidences):
+                        line = line.rstrip('\n')
+                        seg_new_file.write(f"{line} {conf:.6f}\n")
+                seg_labels_path = os.path.join("runs", "segment", "labels")
+                seg_output_csv_path = os.path.join("runs", "segment", f"{self.video_title}.csv")
+                self.merge_txt_to_csv_dynamically_seg(seg_labels_path, seg_output_csv_path, frame_count)
+                os.remove(seg_text_filename)
+
+            if bbox_mode and not bbox_failed and bbox_boxes_xywh is not None and bbox_boxes_xywh.size(0) > 0:
+                with open(bbox_text_filename, 'r') as bbox_text_file:
+                    bbox_data = bbox_text_file.readlines()
+                new_txt_file_name_bbox = os.path.join("runs", "detect", "labels", f"label_{frame_count}.txt")
+
+                if len(bbox_data) != len(bbox_confidences):
+                    logger.error(f"Warning: Number of bbox lines ({len(bbox_data)}) does not match number of confidences ({len(bbox_confidences)}).")  # noqa:E501
+
+                with open(new_txt_file_name_bbox, 'w') as bbox_new_file:
+                    for line, conf in zip(bbox_data, bbox_confidences):
+                        line = line.rstrip('\n')
+                        bbox_new_file.write(f"{line} {conf:.6f}\n")
+                bbox_labels_path = os.path.join("runs", "detect", "labels")
+                bbox_output_csv_path = os.path.join("runs", "detect", f"{self.video_title}.csv")
+                self.merge_txt_to_csv_dynamically_bbox(bbox_labels_path, bbox_output_csv_path, frame_count)
+                os.remove(bbox_text_filename)
+
+            if self.delete_labels is True:
+                if seg_mode and not seg_failed and seg_boxes_xywh is not None and seg_boxes_xywh.size(0) > 0:
+                    os.remove(os.path.join("runs", "segment", "labels", f"label_{frame_count}.txt"))
+                if bbox_mode and not bbox_failed and bbox_boxes_xywh is not None and bbox_boxes_xywh.size(0) > 0:
+                    os.remove(os.path.join("runs", "detect", "labels", f"label_{frame_count}.txt"))
+
+            # Save labeled image
+            if self.delete_frames is False:
+                if seg_mode and not seg_failed and seg_boxes_xywh is not None and seg_boxes_xywh.size(0) > 0:
+                    seg_image_filename = os.path.join("runs", "segment", "track", "image0.jpg")
+                    seg_new_img_file_name = os.path.join("runs", "segment", "frames", f"frame_{frame_count}.jpg")
+                    shutil.move(seg_image_filename, seg_new_img_file_name)
+
+                if bbox_mode and not bbox_failed and bbox_boxes_xywh is not None and bbox_boxes_xywh.size(0) > 0:
+                    bbox_image_filename = os.path.join("runs", "detect", "track", "image0.jpg")
+                    bbox_new_img_file_name = os.path.join("runs", "detect", "frames", f"frame_{frame_count}.jpg")
+                    shutil.move(bbox_image_filename, bbox_new_img_file_name)
+
+            # Plot the tracks
+            try:
+                if seg_mode and not seg_failed and seg_boxes_xywh is not None and seg_boxes_xywh.size(0) > 0:
+                    for box, track_id in zip(seg_boxes_xywh, seg_track_ids):
+                        x, y, w, h = box
+                        track = seg_track_history[track_id]
+                        track.append((float(x), float(y)))
+                        if len(track) > 30:
+                            track.pop(0)
+                        points = np.hstack(track).astype(np.int32).reshape((-1, 1, 2))
+                        cv2.polylines(seg_annotated_frame,
+                                      [points],
+                                      isClosed=False,
+                                      color=(230, 230, 230),
+                                      thickness=LINE_THICKNESS * 5)
+
+                if bbox_mode and not bbox_failed and bbox_boxes_xywh is not None and bbox_boxes_xywh.size(0) > 0:
+                    for box, track_id in zip(bbox_boxes_xywh, bbox_track_ids):
+                        x, y, w, h = box
+                        track = bbox_track_history[track_id]
+                        track.append((float(x), float(y)))
+                        if len(track) > 30:
+                            track.pop(0)
+                        points = np.hstack(track).astype(np.int32).reshape((-1, 1, 2))
+                        cv2.polylines(bbox_annotated_frame, [points],
+                                      isClosed=False,
+                                      color=(230, 230, 230),
+                                      thickness=LINE_THICKNESS * 5)
+            except Exception:
+                pass
+
+            # Display the annotated frame
+            if self.display_frame_tracking:
+                if seg_mode:
+                    cv2.imshow("YOLOv11 Segmentation & Tracking", seg_annotated_frame)
+                    seg_video_writer.write(seg_annotated_frame)
+                if bbox_mode:
+                    cv2.imshow("YOLOv11 Tracking", bbox_annotated_frame)
+                    bbox_video_writer.write(bbox_annotated_frame)
+
+            # Save the tracked frame here
+            if self.save_tracked_img:
+                if seg_mode:
+                    seg_frame_filename = os.path.join(seg_tracked_frame_output_path,
+                                                      f"frame_tracked_{frame_count}.jpg")
+                    cv2.imwrite(seg_frame_filename, seg_annotated_frame)
+
+                if bbox_mode:
+                    bbox_frame_filename = os.path.join(bbox_tracked_frame_output_path,
+                                                       f"frame_tracked_{frame_count}.jpg")
+                    cv2.imwrite(bbox_frame_filename, bbox_annotated_frame)
+
+            # Break the loop if 'q' is pressed
+            if cv2.waitKey(1) & 0xFF == ord("q"):
+                break
+
+        # Release resources
         cap.release()
         cv2.destroyAllWindows()
         progress_bar.close()
 
         if flag:
             if self.seg_mode:
-                self.create_video_from_images(image_folder=seg_tracked_frame_output_path,
-                                              output_path=output_video_path,
-                                              video_title=video_title,
-                                              seg_mode=seg_mode,
-                                              frame_rate=video_fps)
+                self.create_video_from_images(
+                    image_folder=seg_tracked_frame_output_path,
+                    output_path=output_video_path,
+                    video_title=video_title,
+                    seg_mode=seg_mode,
+                    frame_rate=video_fps,
+                )
             if self.bbox_mode:
-                self.create_video_from_images(image_folder=bbox_tracked_frame_output_path,
-                                              output_path=output_video_path,
-                                              video_title=video_title,
-                                              bbox_mode=bbox_mode,
-                                              frame_rate=video_fps)
+                self.create_video_from_images(
+                    image_folder=bbox_tracked_frame_output_path,
+                    output_path=output_video_path,
+                    video_title=video_title,
+                    bbox_mode=bbox_mode,
+                    frame_rate=video_fps,
+                )
