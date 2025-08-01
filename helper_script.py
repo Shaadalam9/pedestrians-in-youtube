@@ -1213,12 +1213,10 @@ class Youtube_Helper:
                         seg_annotated_frame = seg_results[0].plot()
                     else:
                         logger.info(f"[Frame {frame_count}] Segmentation: No objects found. Using original frame.")
-                        print(f"Segmentation found no objects at frame {frame_count}")
                         with open(seg_text_filename, 'w') as file:
                             pass
                 except Exception as e:
                     logger.error(f"[Frame {frame_count}] Segmentation failed: {e}. Using original frame.")
-                    print(f"Segmentation tracking failed at frame {frame_count}")
                     seg_failed = True
 
             # -------- BBOX MODE --------
@@ -1259,12 +1257,10 @@ class Youtube_Helper:
                         bbox_annotated_frame = bbox_results[0].plot()
                     else:
                         logger.info(f"[Frame {frame_count}] BBox: No objects found. Using original frame.")
-                        print(f"BBox found no objects at frame {frame_count}")
                         with open(bbox_text_filename, 'w') as file:  # noqa:F841
                             pass
                 except Exception as e:
                     logger.error(f"[Frame {frame_count}] BBox failed: {e}. Using original frame.")
-                    print(f"BBox tracking failed at frame {frame_count}")
                     bbox_failed = True
 
             progress_bar.update(1)
@@ -1283,12 +1279,15 @@ class Youtube_Helper:
                 with open(seg_text_filename, 'r') as seg_text_file:
                     seg_data = seg_text_file.readlines()
                 new_txt_file_name_seg = os.path.join("runs", "segment", "labels", f"label_{frame_count}.txt")
+
                 if len(seg_data) != len(seg_confidences):
                     logger.warning(f"Warning: Number of bbox lines ({len(seg_data)}) does not match number of confidences ({len(seg_confidences)}).")  # noqa:E501
+
                 with open(new_txt_file_name_seg, 'w') as seg_new_file:
                     for line, conf in zip(seg_data, seg_confidences):
                         line = line.rstrip('\n')
                         seg_new_file.write(f"{line} {conf:.6f}\n")
+
                 seg_labels_path = os.path.join("runs", "segment", "labels")
                 seg_output_csv_path = os.path.join("runs", "segment", f"{self.video_title}.csv")
                 self.merge_txt_to_csv_dynamically_seg(seg_labels_path, seg_output_csv_path, frame_count)
@@ -1298,8 +1297,10 @@ class Youtube_Helper:
                 with open(bbox_text_filename, 'r') as bbox_text_file:
                     bbox_data = bbox_text_file.readlines()
                 new_txt_file_name_bbox = os.path.join("runs", "detect", "labels", f"label_{frame_count}.txt")
+
                 if len(bbox_data) != len(bbox_confidences):
                     logger.warning(f"Warning: Number of bbox lines ({len(bbox_data)}) does not match number of confidences ({len(bbox_confidences)}).")  # noqa:E501
+
                 with open(new_txt_file_name_bbox, 'w') as bbox_new_file:
                     for line, conf in zip(bbox_data, bbox_confidences):
                         line = line.rstrip('\n')
