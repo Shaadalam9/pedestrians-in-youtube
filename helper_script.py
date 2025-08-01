@@ -1364,8 +1364,8 @@ class Youtube_Helper:
                         shutil.move(seg_image_filename, seg_new_img_file_name)
 
                     if bbox_mode:
-                        bbox_image_filename = os.path.join("runs", "segment", "track", "image0.jpg")
-                        bbox_new_img_file_name = os.path.join("runs", "segment", "frames", f"frame_{frame_count}.jpg")
+                        bbox_image_filename = os.path.join("runs", "detect", "track", "image0.jpg")
+                        bbox_new_img_file_name = os.path.join("runs", "detect", "frames", f"frame_{frame_count}.jpg")
                         shutil.move(bbox_image_filename, bbox_new_img_file_name)
 
                 # Plot the tracks
