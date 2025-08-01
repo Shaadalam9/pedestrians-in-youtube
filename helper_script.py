@@ -1094,27 +1094,6 @@ class Youtube_Helper:
     def tracking_mode(self, input_video_path, output_video_path, video_title, video_fps, seg_mode, bbox_mode, flag=0):
         """
         Performs object tracking on a video using YOLO models and saves results.
-
-        Args:
-            input_video_path (str): Path to the input video file.
-            output_video_path (str): Path to save the final output video.
-            video_fps (int): Frames per second for the output video.
-            flag (int, optional): If set to 1, compiles a video from tracked frames. Defaults to 0.
-
-        Raises:
-            Exception: If there are errors during video processing or file operations.
-
-        Process:
-            - Updates tracker YAML if custom config is detected.
-            - Initialises YOLO tracking and/or segmentation models.
-            - Sets up directories for outputs (frames, labels, tracked images, videos).
-            - Processes each frame of the input video:
-                * Runs YOLO tracking (detection and/or segmentation mode).
-                * Saves annotated frames and bounding box labels.
-                * Maintains and draws track histories for objects.
-                * Optionally displays frames and saves annotated images.
-                * Aggregates detection labels to CSV files.
-            - Optionally, creates a final output video from tracked frames if `flag` is set.
         (docstring as in your code)
         """
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -1190,232 +1169,7 @@ class Youtube_Helper:
 
         while cap.isOpened():
             success, frame = cap.read()
-<<<<<<< Updated upstream
-
-            if success:
-
-                frame_count += 1  # Increment frame count
-                # Run YOLO tracking on the frame, persisting tracks between frames
-                if seg_mode:
-                    seg_results = seg_model.track(frame,
-                                                  tracker=self.seg_tracker,
-                                                  persist=True,
-                                                  conf=self.confidence,
-                                                  save=True,
-                                                  save_txt=True,
-                                                  line_width=LINE_THICKNESS,
-                                                  show_labels=SHOW_LABELS,
-                                                  show_conf=SHOW_CONF,
-                                                  show=RENDER,
-                                                  verbose=False,
-                                                  device=device)
-
-                if bbox_mode:
-                    bbox_results = bbox_model.track(frame,
-                                                    tracker=self.bbox_tracker,
-                                                    persist=True,
-                                                    conf=self.confidence,
-                                                    save=True,
-                                                    save_txt=True,
-                                                    line_width=LINE_THICKNESS,
-                                                    show_labels=SHOW_LABELS,
-                                                    show_conf=SHOW_CONF,
-                                                    show=RENDER,
-                                                    verbose=False,
-                                                    device=device)
-
-                # Update progress bar
-                progress_bar.update(1)
-
-                # SEGMENTATION MODE
-                if seg_mode:
-                    seg_boxes_obj = seg_results[0].boxes
-                    seg_boxes_xywh = seg_boxes_obj.xywh.cpu() if seg_boxes_obj is not None else None  # type: ignore
-
-                    if seg_boxes_xywh is not None and seg_boxes_xywh.size(0) > 0:
-                        # id might be None!
-                        if hasattr(seg_boxes_obj, "id") and seg_boxes_obj.id is not None:  # type: ignore
-                            seg_track_ids = seg_boxes_obj.id.int().cpu().tolist()  # type: ignore
-                        else:
-                            seg_track_ids = []
-
-                        # conf might also be None!
-                        if hasattr(seg_boxes_obj, "conf") and seg_boxes_obj.conf is not None:  # type: ignore
-                            seg_confidences = seg_boxes_obj.conf.cpu().tolist()  # type: ignore
-                        else:
-                            seg_confidences = []
-                        seg_annotated_frame = seg_results[0].plot()
-                    else:
-                        seg_track_ids = []
-                        seg_confidences = []
-                        seg_annotated_frame = frame.copy()
-                        with open(seg_text_filename, 'w') as file:
-                            pass
-
-                # BOUNDING BOX MODE
-                if bbox_mode:
-                    bbox_boxes_obj = bbox_results[0].boxes
-                    bbox_boxes_xywh = bbox_boxes_obj.xywh.cpu() if bbox_boxes_obj is not None else None  # type: ignore
-
-                    if bbox_boxes_xywh is not None and bbox_boxes_xywh.size(0) > 0:
-                        # id might be None!
-                        if hasattr(bbox_boxes_obj, "id") and bbox_boxes_obj.id is not None:  # type: ignore
-                            bbox_track_ids = bbox_boxes_obj.id.int().cpu().tolist()  # type: ignore
-                        else:
-                            bbox_track_ids = []
-
-                        # conf might be None!
-                        if hasattr(bbox_boxes_obj, "conf") and bbox_boxes_obj.conf is not None:  # type: ignore
-                            bbox_confidences = bbox_boxes_obj.conf.cpu().tolist()  # type: ignore
-                        else:
-                            bbox_confidences = []
-                        bbox_annotated_frame = bbox_results[0].plot()
-                    else:
-                        bbox_track_ids = []
-                        bbox_confidences = []
-                        bbox_annotated_frame = frame.copy()
-                        with open(bbox_text_filename, 'w') as file:  # noqa: F841
-                            pass
-
-                # Save annotated frame to file
-                if self.save_annoted_img:
-                    if seg_mode:
-                        seg_frame_filename = os.path.join(seg_annotated_frame_output_path,
-                                                          f"frame_{frame_count}.jpg")
-                        cv2.imwrite(seg_frame_filename, seg_annotated_frame)
-
-                    if bbox_mode:
-                        bbox_frame_filename = os.path.join(bbox_annotated_frame_output_path,
-                                                           f"frame_{frame_count}.jpg")
-                        cv2.imwrite(bbox_frame_filename, bbox_annotated_frame)
-
-                # Save txt file with bounding box information
-                if seg_mode:
-                    with open(seg_text_filename, 'r') as seg_text_file:
-                        seg_data = seg_text_file.readlines()
-
-                    new_txt_file_name_seg = os.path.join("runs", "segment", "labels", f"label_{frame_count}.txt")
-
-                    if len(seg_data) != len(seg_confidences):
-                        logger.warning(f"Warning: Number of bbox lines ({len(seg_data)}) does not match number of confidences ({len(seg_confidences)}).")  # noqa:E501
-
-                    with open(new_txt_file_name_seg, 'w') as seg_new_file:
-                        for line, conf in zip(seg_data, seg_confidences):
-                            line = line.rstrip('\n')
-                            seg_new_file.write(f"{line} {conf:.6f}\n")
-
-                    seg_labels_path = os.path.join("runs", "segment", "labels")
-                    seg_output_csv_path = os.path.join("runs", "segment", f"{self.video_title}.csv")
-
-                if bbox_mode:
-                    with open(bbox_text_filename, 'r') as bbox_text_file:
-                        bbox_data = bbox_text_file.readlines()
-
-                    new_txt_file_name_bbox = os.path.join("runs", "detect", "labels", f"label_{frame_count}.txt")
-
-                    if len(bbox_data) != len(bbox_confidences):
-                        logger.warning(f"Warning: Number of bbox lines ({len(bbox_data)}) does not match number of confidences ({len(bbox_confidences)}).")  # noqa:E501
-
-                    with open(new_txt_file_name_bbox, 'w') as bbox_new_file:
-                        for line, conf in zip(bbox_data, bbox_confidences):
-                            # Just append confidence to the original line, keeping everything else
-                            line = line.rstrip('\n')
-                            bbox_new_file.write(f"{line} {conf:.6f}\n")
-
-                    bbox_labels_path = os.path.join("runs", "detect", "labels")
-                    bbox_output_csv_path = os.path.join("runs", "detect", f"{self.video_title}.csv")
-
-                # Dynamically save each of the labels to the aggregated csv files
-                if seg_mode:
-                    self.merge_txt_to_csv_dynamically_seg(seg_labels_path,
-                                                          seg_output_csv_path,
-                                                          frame_count)
-                    os.remove(seg_text_filename)
-
-                if bbox_mode:
-                    self.merge_txt_to_csv_dynamically_bbox(bbox_labels_path,
-                                                           bbox_output_csv_path,
-                                                           frame_count)
-                    os.remove(bbox_text_filename)
-
-                if self.delete_labels is True:
-                    if seg_mode:
-                        os.remove(os.path.join("runs", "segment", "labels", f"label_{frame_count}.txt"))
-                    if bbox_mode:
-                        os.remove(os.path.join("runs", "detect", "labels", f"label_{frame_count}.txt"))
-
-                # save the labelled image
-                if self.delete_frames is False:
-                    if seg_mode:
-                        seg_image_filename = os.path.join("runs", "segment", "track", "image0.jpg")
-                        seg_new_img_file_name = os.path.join("runs", "segment", "frames", f"frame_{frame_count}.jpg")
-                        shutil.move(seg_image_filename, seg_new_img_file_name)
-
-                    if bbox_mode:
-                        bbox_image_filename = os.path.join("runs", "detect", "track", "image0.jpg")
-                        bbox_new_img_file_name = os.path.join("runs", "detect", "frames", f"frame_{frame_count}.jpg")
-                        shutil.move(bbox_image_filename, bbox_new_img_file_name)
-
-                # Plot the tracks
-                try:
-                    if seg_mode:
-                        for box, track_id in zip(seg_boxes, seg_track_ids):
-                            x, y, w, h = box
-                            track = seg_track_history[track_id]
-                            track.append((float(x), float(y)))  # x, y center point
-                            if len(track) > 30:
-                                track.pop(0)
-
-                            # Draw the tracking lines
-                            points = np.hstack(track).astype(np.int32).reshape((-1, 1, 2))
-                            cv2.polylines(seg_annotated_frame, [points], isClosed=False, color=(230, 230, 230),
-                                          thickness=LINE_THICKNESS*5)
-
-                    if bbox_mode:
-                        for box, track_id in zip(bbox_boxes, bbox_track_ids):
-                            x, y, w, h = box
-                            track = bbox_track_history[track_id]
-                            track.append((float(x), float(y)))  # x, y center point
-                            if len(track) > 30:
-                                track.pop(0)
-
-                            # Draw the tracking lines
-                            points = np.hstack(track).astype(np.int32).reshape((-1, 1, 2))
-                            cv2.polylines(bbox_annotated_frame, [points], isClosed=False, color=(230, 230, 230),
-                                          thickness=LINE_THICKNESS*5)
-
-                except Exception:
-                    pass
-
-                # Display the annotated frame
-                if self.display_frame_tracking:
-                    if seg_mode:
-                        cv2.imshow("YOLOv11 Segmentation & Tracking", seg_annotated_frame)
-                        seg_video_writer.write(seg_annotated_frame)
-
-                    if bbox_mode:
-                        cv2.imshow("YOLOv11 Tracking", bbox_annotated_frame)
-                        bbox_video_writer.write(bbox_annotated_frame)
-
-                # Save the annotated frame here
-                if self.save_tracked_img:
-                    if seg_mode:
-                        seg_frame_filename = os.path.join(seg_tracked_frame_output_path,
-                                                          f"frame_tracked_{frame_count}.jpg")
-                        cv2.imwrite(seg_frame_filename, seg_annotated_frame)
-
-                    if bbox_mode:
-                        bbox_frame_filename = os.path.join(bbox_tracked_frame_output_path,
-                                                           f"frame_tracked_{frame_count}.jpg")
-                        cv2.imwrite(bbox_frame_filename, bbox_annotated_frame)
-
-                # Break the loop if 'q' is pressed
-                if cv2.waitKey(1) & 0xFF == ord("q"):
-                    break
-            else:
-=======
             if not success:
->>>>>>> Stashed changes
                 break
 
             frame_count += 1
@@ -1504,11 +1258,13 @@ class Youtube_Helper:
                         )
                         bbox_annotated_frame = bbox_results[0].plot()
                     else:
-                        logger.warning(f"[Frame {frame_count}] BBox: No objects found. Using original frame.")
-                        with open(bbox_text_filename, 'w') as file:  # noqa: F841
+                        logger.info(f"[Frame {frame_count}] BBox: No objects found. Using original frame.")
+                        print(f"BBox found no objects at frame {frame_count}")
+                        with open(bbox_text_filename, 'w') as file:  # noqa:F841
                             pass
                 except Exception as e:
                     logger.error(f"[Frame {frame_count}] BBox failed: {e}. Using original frame.")
+                    print(f"BBox tracking failed at frame {frame_count}")
                     bbox_failed = True
 
             progress_bar.update(1)
@@ -1527,10 +1283,8 @@ class Youtube_Helper:
                 with open(seg_text_filename, 'r') as seg_text_file:
                     seg_data = seg_text_file.readlines()
                 new_txt_file_name_seg = os.path.join("runs", "segment", "labels", f"label_{frame_count}.txt")
-
                 if len(seg_data) != len(seg_confidences):
-                    logger.error(f"Warning: Number of bbox lines ({len(seg_data)}) does not match number of confidences ({len(seg_confidences)}).")  # noqa:E501
-
+                    logger.warning(f"Warning: Number of bbox lines ({len(seg_data)}) does not match number of confidences ({len(seg_confidences)}).")  # noqa:E501
                 with open(new_txt_file_name_seg, 'w') as seg_new_file:
                     for line, conf in zip(seg_data, seg_confidences):
                         line = line.rstrip('\n')
@@ -1544,10 +1298,8 @@ class Youtube_Helper:
                 with open(bbox_text_filename, 'r') as bbox_text_file:
                     bbox_data = bbox_text_file.readlines()
                 new_txt_file_name_bbox = os.path.join("runs", "detect", "labels", f"label_{frame_count}.txt")
-
                 if len(bbox_data) != len(bbox_confidences):
-                    logger.error(f"Warning: Number of bbox lines ({len(bbox_data)}) does not match number of confidences ({len(bbox_confidences)}).")  # noqa:E501
-
+                    logger.warning(f"Warning: Number of bbox lines ({len(bbox_data)}) does not match number of confidences ({len(bbox_confidences)}).")  # noqa:E501
                 with open(new_txt_file_name_bbox, 'w') as bbox_new_file:
                     for line, conf in zip(bbox_data, bbox_confidences):
                         line = line.rstrip('\n')
@@ -1569,7 +1321,6 @@ class Youtube_Helper:
                     seg_image_filename = os.path.join("runs", "segment", "track", "image0.jpg")
                     seg_new_img_file_name = os.path.join("runs", "segment", "frames", f"frame_{frame_count}.jpg")
                     shutil.move(seg_image_filename, seg_new_img_file_name)
-
                 if bbox_mode and not bbox_failed and bbox_boxes_xywh is not None and bbox_boxes_xywh.size(0) > 0:
                     bbox_image_filename = os.path.join("runs", "detect", "track", "image0.jpg")
                     bbox_new_img_file_name = os.path.join("runs", "detect", "frames", f"frame_{frame_count}.jpg")
@@ -1599,10 +1350,12 @@ class Youtube_Helper:
                         if len(track) > 30:
                             track.pop(0)
                         points = np.hstack(track).astype(np.int32).reshape((-1, 1, 2))
-                        cv2.polylines(bbox_annotated_frame, [points],
+                        cv2.polylines(bbox_annotated_frame,
+                                      [points],
                                       isClosed=False,
                                       color=(230, 230, 230),
                                       thickness=LINE_THICKNESS * 5)
+
             except Exception:
                 pass
 
@@ -1621,7 +1374,6 @@ class Youtube_Helper:
                     seg_frame_filename = os.path.join(seg_tracked_frame_output_path,
                                                       f"frame_tracked_{frame_count}.jpg")
                     cv2.imwrite(seg_frame_filename, seg_annotated_frame)
-
                 if bbox_mode:
                     bbox_frame_filename = os.path.join(bbox_tracked_frame_output_path,
                                                        f"frame_tracked_{frame_count}.jpg")
