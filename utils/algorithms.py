@@ -38,17 +38,17 @@ class Algorithms():
         """
 
         # Filter dataframe to include only entries for the specified person
-        crossed_ids = dataframe[(dataframe["YOLO_id"] == person_id)]
+        crossed_ids = dataframe[(dataframe["yolo-id"] == person_id)]
 
         # Group entries by Unique ID
-        crossed_ids_grouped = crossed_ids.groupby("Unique Id")
+        crossed_ids_grouped = crossed_ids.groupby("unique-id")
 
         # Filter entries based on x-coordinate boundaries
         filtered_crossed_ids = crossed_ids_grouped.filter(
-            lambda x: (x["X-center"] <= min_x).any() and (x["X-center"] >= max_x).any())
+            lambda x: (x["x-center"] <= min_x).any() and (x["x-center"] >= max_x).any())
 
         # Get unique IDs of the person who crossed the road within boundaries
-        crossed_ids = filtered_crossed_ids["Unique Id"].unique()
+        crossed_ids = filtered_crossed_ids["unique-id"].unique()
 
         result = values_class.find_values_with_video_id(df_mapping, video_id)
         if result is not None:
@@ -77,7 +77,7 @@ class Algorithms():
             dict: A dictionary where keys are object IDs and values are the time taken for
             each object to cross the road, in seconds.
         """
-        if 'Frame Count' not in dataframe.columns:
+        if 'frame-count' not in dataframe.columns:
             return {}
 
         result = values_class.find_values_with_video_id(df_mapping, video_id)
@@ -93,15 +93,15 @@ class Algorithms():
         # Iterate through each object ID
         for id in ids:
             # Find the minimum and maximum x-coordinates for the object's movement
-            x_min = dataframe[dataframe["Unique Id"] == id]["X-center"].min()
-            x_max = dataframe[dataframe["Unique Id"] == id]["X-center"].max()
+            x_min = dataframe[dataframe["unique-id"] == id]["x-center"].min()
+            x_max = dataframe[dataframe["unique-id"] == id]["x-center"].max()
 
             # Get a sorted group of entries for the current object ID
-            sorted_grp = dataframe[dataframe["Unique Id"] == id]
+            sorted_grp = dataframe[dataframe["unique-id"] == id]
 
             # Get the corresponding frame counts instead of index
-            x_min_frame = sorted_grp[sorted_grp['X-center'] == x_min]['Frame Count'].iloc[0]
-            x_max_frame = sorted_grp[sorted_grp['X-center'] == x_max]['Frame Count'].iloc[0]
+            x_min_frame = sorted_grp[sorted_grp['x-center'] == x_min]['frame-count'].iloc[0]
+            x_max_frame = sorted_grp[sorted_grp['x-center'] == x_max]['frame-count'].iloc[0]
 
             time_taken = abs(x_max_frame - x_min_frame) / fps
             var[id] = time_taken
@@ -136,7 +136,7 @@ class Algorithms():
         city_country_map_ = {}
 
         # Group YOLO data by unique person ID
-        grouped = df.groupby('Unique Id')
+        grouped = df.groupby('unique-id')
 
         # Iterate through all video IDs and their corresponding crossing data
         for key, id_time in data.items():
@@ -172,11 +172,11 @@ class Algorithms():
                     grouped_with_id = grouped.get_group(id)
 
                     # Calculate mean height of bounding box for this person
-                    mean_height = grouped_with_id['Height'].mean()
+                    mean_height = grouped_with_id['height'].mean()
 
-                    # Find minimum and maximum X-center positions to estimate path length
-                    min_x_center = grouped_with_id['X-center'].min()
-                    max_x_center = grouped_with_id['X-center'].max()
+                    # Find minimum and maximum x-center positions to estimate path length
+                    min_x_center = grouped_with_id['x-center'].min()
+                    max_x_center = grouped_with_id['x-center'].max()
 
                     # Estimate "pixels per centi-meter" using average height and actual avg_height
                     ppm = mean_height / avg_height
@@ -295,7 +295,7 @@ class Algorithms():
         time_id_complete = {}
 
         # Group YOLO data by unique person ID
-        crossed_ids_grouped = df.groupby('Unique Id')
+        crossed_ids_grouped = df.groupby('unique-id')
 
         # Extract relevant information using the find_values function
         result = values_class.find_values_with_video_id(df_mapping, next(iter(data)))
@@ -313,9 +313,9 @@ class Algorithms():
 
             for unique_id, time in inner_dict.items():
                 group_data = crossed_ids_grouped.get_group(unique_id)
-                x_values = group_data["X-center"].values
+                x_values = group_data["x-center"].values
                 initial_x = x_values[0]  # Initial x-value
-                mean_height = group_data['Height'].mean()
+                mean_height = group_data['height'].mean()
                 flag = 0
                 margin = 0.1 * mean_height  # Margin for considering crossing event
                 consecutive_frame = 0
@@ -458,7 +458,7 @@ class Algorithms():
     def is_rider_id(self, df, id, avg_height, min_shared_frames=5,
                     dist_thresh=80, similarity_thresh=0.8, overlap_ratio=0.7):
         """
-        Determines if a person identified by the given Unique Id is riding a bicycle or motorcycle
+        Determines if a person identified by the given unique-id is riding a bicycle or motorcycle
         during their trajectory in the YOLO detection DataFrame.
 
         The function checks, for the duration in which the person is present, whether a bicycle or
@@ -468,9 +468,9 @@ class Algorithms():
 
         Args:
             df (pd.DataFrame): YOLO detections DataFrame containing columns:
-                'YOLO_id' (class, 0=person, 1=bicycle, 3=motorcycle), 'Unique Id',
-                'Frame Count', 'X-center', 'Y-center', 'Width', 'Height'.
-            id (int or str): The Unique Id of the person to analyse.
+                'yolo-id' (class, 0=person, 1=bicycle, 3=motorcycle), 'unique-id',
+                'frame-count', 'x-center', 'y-center', 'width', 'height'.
+            id (int or str): The unique-id of the person to analyse.
             avg_height (float): The average real-world height of the person (cm).
             min_shared_frames (int, optional): Minimum number of frames with both the person and vehicle
                 present for comparison. Defaults to 5.
@@ -493,11 +493,11 @@ class Algorithms():
 
         """
         # Extract all rows corresponding to the person id
-        person_track = df[df['Unique Id'] == id]
+        person_track = df[df['unique-id'] == id]
         if person_track.empty:
             return False  # No data for this id
 
-        frames = person_track['Frame Count'].values
+        frames = person_track['frame-count'].values
         if len(frames) < min_shared_frames:
             return False  # Not enough frames to perform check
 
@@ -505,36 +505,36 @@ class Algorithms():
 
         # Filter DataFrame to get all bicycle/motorcycle detections in relevant frames
         mask = (
-            (df['Frame Count'] >= first_frame)
-            & (df['Frame Count'] <= last_frame)
-            & (df['YOLO_id'].isin([1, 3]))
+            (df['frame-count'] >= first_frame)
+            & (df['frame-count'] <= last_frame)
+            & (df['yolo-id'].isin([1, 3]))
         )
         vehicles_in_frames = df[mask]
 
-        for vehicle_id in vehicles_in_frames['Unique Id'].unique():
+        for vehicle_id in vehicles_in_frames['unique-id'].unique():
             # Get trajectory for this vehicle
-            vehicle_track = vehicles_in_frames[vehicles_in_frames['Unique Id'] == vehicle_id]
+            vehicle_track = vehicles_in_frames[vehicles_in_frames['unique-id'] == vehicle_id]
 
             # Find shared frames between person and vehicle
-            shared_frames = np.intersect1d(person_track['Frame Count'], vehicle_track['Frame Count'])
+            shared_frames = np.intersect1d(person_track['frame-count'], vehicle_track['frame-count'])
 
             if len(shared_frames) < min_shared_frames:
                 continue  # Not enough overlapping frames to check movement together
 
             # Align positions for person and vehicle on shared frames, sorted by Frame Count
             person_pos = (
-                person_track[person_track['Frame Count'].isin(shared_frames)]
-                .sort_values('Frame Count')[['X-center', 'Y-center']].values
+                person_track[person_track['frame-count'].isin(shared_frames)]
+                .sort_values('frame-count')[['x-center', 'y-center']].values
             )
             vehicle_pos = (
-                vehicle_track[vehicle_track['Frame Count'].isin(shared_frames)]
-                .sort_values('Frame Count')[['X-center', 'Y-center']].values
+                vehicle_track[vehicle_track['frame-count'].isin(shared_frames)]
+                .sort_values('frame-count')[['x-center', 'y-center']].values
             )
 
             # Calculate person's bounding box heights in pixels for shared frames
             person_heights = (
-                person_track[person_track['Frame Count'].isin(shared_frames)]
-                .sort_values('Frame Count')['Height'].values
+                person_track[person_track['frame-count'].isin(shared_frames)]
+                .sort_values('frame-count')['height'].values
             )  # This is in pixels per frame
 
             # Compute pixels-per-cm for each frame using the average real-world height
@@ -580,7 +580,7 @@ class Algorithms():
 
         Args:
             df (pd.DataFrame): DataFrame containing YOLO detections with columns:
-                'YOLO_id', 'X-center', 'Y-center', 'Width', 'Height', 'Unique Id', 'Frame Count'.
+                'yolo-id', 'x-center', 'y-center', 'width', 'height', 'unique-id', 'frame-count'.
                 All coordinates are normalized between 0 and 1.
             person_id (int or str): Unique Id of the person (pedestrian) to be analyzed.
             key: Placeholder for additional parameters (not used in this function).
@@ -594,20 +594,20 @@ class Algorithms():
         """
 
         # Extract all detections for the specified person
-        person_track = df[df['Unique Id'] == person_id]
+        person_track = df[df['unique-id'] == person_id]
         if person_track.empty:
             # No detection for this person
             return False
 
         # Determine the first and last frames in which the person appears
-        frames = person_track['Frame Count'].values
+        frames = person_track['frame-count'].values
         first_frame, last_frame = frames.min(), frames.max()
 
         # Filter for static objects (traffic light or stop sign) in those frames
         static_objs = df[
-            (df['Frame Count'] >= first_frame) &
-            (df['Frame Count'] <= last_frame) &
-            (df['YOLO_id'].isin([9, 11]))
+            (df['frame-count'] >= first_frame) &
+            (df['frame-count'] <= last_frame) &
+            (df['yolo-id'].isin([9, 11]))
         ]
 
         if static_objs.empty:
@@ -615,13 +615,13 @@ class Algorithms():
             return True
 
         # Calculate the y-movement (vertical movement) of the person
-        person_y_movement = person_track['Y-center'].max() - person_track['Y-center'].min()
+        person_y_movement = person_track['y-center'].max() - person_track['y-center'].min()
 
         # Calculate the maximum y-movement among all static objects in the same frame range
         max_static_y_movement = 0
-        for obj_id in static_objs['Unique Id'].unique():
-            obj_track = static_objs[static_objs['Unique Id'] == obj_id]
-            y_movement = obj_track['Y-center'].max() - obj_track['Y-center'].min()
+        for obj_id in static_objs['unique-id'].unique():
+            obj_track = static_objs[static_objs['unique-id'] == obj_id]
+            y_movement = obj_track['y-center'].max() - obj_track['y-center'].min()
             if y_movement > max_static_y_movement:
                 max_static_y_movement = y_movement
 

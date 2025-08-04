@@ -397,7 +397,7 @@ class Analysis():
         Note:
             - The CSV files must follow a naming pattern <video_id>_<start_time>.csv and reside in data folders
                 as configured via `common.get_configs('data')`.
-            - Each CSV must contain at least the columns "YOLO_id" and "Unique Id".
+            - Each CSV must contain at least the columns "yolo-id" and "unique-id".
             - Progress is tracked using tqdm.
         """
 
@@ -455,50 +455,50 @@ class Analysis():
                     dataframe = pd.read_csv(file_path)
 
                     # ---- CELL PHONES: Count per person, normalised ----
-                    mobile_ids = len(dataframe[dataframe["YOLO_id"] == 67]["Unique Id"].unique())
-                    num_person = len(dataframe[dataframe["YOLO_id"] == 0]["Unique Id"].unique())
+                    mobile_ids = len(dataframe[dataframe["yolo-id"] == 67]["unique-id"].unique())
+                    num_person = len(dataframe[dataframe["yolo-id"] == 0]["unique-id"].unique())
                     if num_person > 0 and mobile_ids > 0:
                         avg_cellphone = ((mobile_ids * 60) / duration / num_person) * 1000
                         cellphone_info[video_key] = avg_cellphone
 
                     # ---- TRAFFIC SIGNS (YOLO 9, 11) ----
-                    traffic_sign_ids = dataframe[dataframe["YOLO_id"].isin([9, 11])]["Unique Id"].unique()
+                    traffic_sign_ids = dataframe[dataframe["yolo-id"].isin([9, 11])]["unique-id"].unique()
                     count = (len(traffic_sign_ids) / duration) * 60 if duration > 0 else 0
                     traffic_signs_layer[video_key] = count
 
                     # ---- VEHICLES (YOLO 2,3,5,7) ----
-                    vehicles_mask = dataframe["YOLO_id"].isin([2, 3, 5, 7])
-                    vehicle_ids = dataframe[vehicles_mask]["Unique Id"].unique()
+                    vehicles_mask = dataframe["yolo-id"].isin([2, 3, 5, 7])
+                    vehicle_ids = dataframe[vehicles_mask]["unique-id"].unique()
                     count = (len(vehicle_ids) / duration) * 60 if duration > 0 else 0
                     vehicle_layer[video_key] = count
 
                     # ---- BICYCLES (YOLO 1) ----
-                    bicycle_ids = dataframe[dataframe["YOLO_id"] == 1]["Unique Id"].unique()
+                    bicycle_ids = dataframe[dataframe["yolo-id"] == 1]["unique-id"].unique()
                     count = (len(bicycle_ids) / duration) * 60 if duration > 0 else 0
                     bicycle_layer[video_key] = count
 
                     # ---- CARS (YOLO 2) ----
-                    car_ids = dataframe[dataframe["YOLO_id"] == 2]["Unique Id"].unique()
+                    car_ids = dataframe[dataframe["yolo-id"] == 2]["unique-id"].unique()
                     count = (len(car_ids) / duration) * 60 if duration > 0 else 0
                     car_layer[video_key] = count
 
                     # ---- MOTORCYCLES (YOLO 3) ----
-                    motorcycle_ids = dataframe[dataframe["YOLO_id"] == 3]["Unique Id"].unique()
+                    motorcycle_ids = dataframe[dataframe["yolo-id"] == 3]["unique-id"].unique()
                     count = (len(motorcycle_ids) / duration) * 60 if duration > 0 else 0
                     motorcycle_layer[video_key] = count
 
                     # ---- BUSES (YOLO 5) ----
-                    bus_ids = dataframe[dataframe["YOLO_id"] == 5]["Unique Id"].unique()
+                    bus_ids = dataframe[dataframe["yolo-id"] == 5]["unique-id"].unique()
                     count = (len(bus_ids) / duration) * 60 if duration > 0 else 0
                     bus_layer[video_key] = count
 
                     # ---- TRUCKS (YOLO 7) ----
-                    truck_ids = dataframe[dataframe["YOLO_id"] == 7]["Unique Id"].unique()
+                    truck_ids = dataframe[dataframe["yolo-id"] == 7]["unique-id"].unique()
                     count = (len(truck_ids) / duration) * 60 if duration > 0 else 0
                     truck_layer[video_key] = count
 
                     # ---- PERSONS (YOLO 0) ----
-                    person_ids = dataframe[dataframe["YOLO_id"] == 0]["Unique Id"].unique()
+                    person_ids = dataframe[dataframe["yolo-id"] == 0]["unique-id"].unique()
                     count = (len(person_ids) / duration) * 60 if duration > 0 else 0
                     person_layer[video_key] = count
 
@@ -596,7 +596,7 @@ class Analysis():
     @staticmethod
     def crossing_event_with_traffic_equipment(df_mapping, data):
         """
-        Analyse pedestrian crossing events in relation to the presence of traffic equipment (YOLO_id 9 or 11).
+        Analyse pedestrian crossing events in relation to the presence of traffic equipment (yolo-id 9 or 11).
 
         For each video and crossing, counts are computed for crossings where
         relevant traffic equipment was present or absent during the crossing.
@@ -666,14 +666,14 @@ class Analysis():
 
                 # Analyse crossings for presence of traffic equipment
                 for unique_id, _ in crossings.items():
-                    unique_id_indices = value.index[value['Unique Id'] == unique_id]
+                    unique_id_indices = value.index[value['unique-id'] == unique_id]
                     if unique_id_indices.empty:
                         continue  # Skip if no occurrences
 
                     first_occurrence = unique_id_indices[0]
                     last_occurrence = unique_id_indices[-1]
 
-                    yolo_ids = value.loc[first_occurrence:last_occurrence, 'YOLO_id']
+                    yolo_ids = value.loc[first_occurrence:last_occurrence, 'yolo-id']
 
                     has_equipment = yolo_ids.isin([9, 11]).any()
                     lacks_equipment = not yolo_ids.isin([9, 11]).any()
@@ -749,15 +749,15 @@ class Analysis():
                             value = pd.read_csv(file_path)
 
                 for id, time in df.items():
-                    unique_id_indices = value.index[value['Unique Id'] == id]
+                    unique_id_indices = value.index[value['unique-id'] == id]
                     first_occurrence = unique_id_indices[0]
                     last_occurrence = unique_id_indices[-1]
 
-                    # Check if YOLO_id = 9 exists within the specified index range
+                    # Check if yolo-id = 9 exists within the specified index range
                     yolo_id_9_exists = any(
-                        value.loc[first_occurrence:last_occurrence, 'YOLO_id'] == 9)
+                        value.loc[first_occurrence:last_occurrence, 'yolo-id'] == 9)
                     yolo_id_9_not_exists = not any(
-                        value.loc[first_occurrence:last_occurrence, 'YOLO_id'] == 9)
+                        value.loc[first_occurrence:last_occurrence, 'yolo-id'] == 9)
 
                     if yolo_id_9_exists:
                         counter_exists += 1
@@ -2603,14 +2603,14 @@ class Analysis():
                                             # Load the CSV
                                             df = pd.read_csv(file_path)
                                             break
-                                filtered_df = df[df['Unique Id'] == unique_id]
+                                filtered_df = df[df['unique-id'] == unique_id]
 
                                 if filtered_df.empty:
                                     return None, None  # No data found for this unique_id
 
                                 # Determine frame-based start and end times
-                                first_frame = filtered_df['Frame Count'].min()
-                                last_frame = filtered_df['Frame Count'].max()
+                                first_frame = filtered_df['frame-count'].min()
+                                last_frame = filtered_df['frame-count'].max()
 
                                 # Look up the frame rate (fps) using the video_start_time
                                 result = values_class.find_values_with_video_id(df_mapping, video_start_time)
@@ -3212,9 +3212,9 @@ if __name__ == "__main__":
                         df_mapping[class_name] = pd.to_numeric(df_mapping[class_name],
                                                                errors='coerce').fillna(0).astype(int)
 
-                    # --- Count unique objects per YOLO_id ---
+                    # --- Count unique objects per yolo-id ---
                     object_counts = (
-                        df.drop_duplicates(['YOLO_id', 'Unique Id'])['YOLO_id']
+                        df.drop_duplicates(['yolo-id', 'unique-id'])['yolo-id']
                         .value_counts().sort_index()
                     )
                     counters = {class_name: int(object_counts.get(i, 0)) for i, class_name in enumerate(coco_classes)}

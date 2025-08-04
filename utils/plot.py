@@ -69,8 +69,8 @@ class Plots():
         Args:
             fig (plotly.graph_objs.Figure): Plotly figure object.
             filename (str): Name of the file (without extension) to save.
-            width (int, optional): Width of the PNG and EPS images in pixels. Defaults to 1600.
-            height (int, optional): Height of the PNG and EPS images in pixels. Defaults to 900.
+            width (int, optional): width of the PNG and EPS images in pixels. Defaults to 1600.
+            height (int, optional): height of the PNG and EPS images in pixels. Defaults to 900.
             scale (int, optional): Scaling factor for the PNG image. Defaults to 3.
             save_final (bool, optional): whether to save the "good" final figure.
         """

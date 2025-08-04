@@ -26,7 +26,7 @@ def safe_parse(val):
     if val.startswith('[') and val.endswith(']'):
         inner = val[1:-1]
         return [item.strip().strip("'\"") for item in inner.split(',') if item.strip()]
-    
+
     return []
 
 
@@ -34,7 +34,7 @@ def get_upload_date(video_id):
     try:
         yt = YouTube(f"https://www.youtube.com/watch?v={video_id}")
         yt_date = yt.publish_date
-        logger.info(f"Received date for https://www.youtube.com/watch?v={video_id} as {yt_date.strftime('%d%m%Y')}")
+        logger.info(f"Received date for https://www.youtube.com/watch?v={video_id} as {yt_date.strftime('%d%m%Y')}")  # type: ignore # noqa:E501
         return yt_date.strftime('%d%m%Y') if yt_date else None
     except Exception as e:
         logger.error(f"Error fetching date for {video_id}: {e}")

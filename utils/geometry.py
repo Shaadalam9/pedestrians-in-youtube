@@ -27,13 +27,13 @@ class Geometry():
         where objects may switch tracking IDs after crossing or overtaking each other.
         The algorithm matches detections across frames based on spatial proximity along
         the X-axis, recent movement trajectory, and maintains consistent movement patterns
-        to reduce erroneous ID swaps. Each detection is assigned a new 'Unique Id'
+        to reduce erroneous ID swaps. Each detection is assigned a new 'unique-id'
         that reflects the real-world object more consistently over time.
 
         Main Features
         -------------
         - Processes all detections, but applies the fix only to specified YOLO classes (`yolo_ids`).
-        - Tracks are matched by X-center position, movement direction, and short-term X history.
+        - Tracks are matched by x-center position, movement direction, and short-term X history.
         - Overtaking (objects moving in the same direction but swapping positions/IDs) is handled
             using multi-frame X trajectory matching.
         - All other (non-target) classes are preserved unchanged, and their IDs are never altered.
@@ -42,10 +42,10 @@ class Geometry():
         ----------
         df : pandas.DataFrame
             Must include columns:
-                - 'YOLO_id'    : YOLO class ID for each detection.
-                - 'X-center'   : Normalized X center of bounding box (0 to 1).
-                - 'Unique Id'  : YOLO's original object/tracking ID for each detection.
-                - 'Frame Count': Frame number (sortable in time order).
+                - 'yolo-id'    : YOLO class ID for each detection.
+                - 'x-center'   : Normalized X center of bounding box (0 to 1).
+                - 'unique-id'  : YOLO's original object/tracking ID for each detection.
+                - 'frame-count': Frame number (sortable in time order).
             All other columns are preserved.
 
         distance_threshold : float, optional
@@ -63,22 +63,22 @@ class Geometry():
         -------
         pandas.DataFrame
             Copy of the input DataFrame with:
-                - 'Unique Id'      : The **corrected** identity for each detection (stable over time).
-                - 'old_unique_id'  : The original YOLO 'Unique Id' for reference.
+                - 'unique-id'      : The **corrected** identity for each detection (stable over time).
+                - 'old_unique_id'  : The original YOLO 'unique-id' for reference.
             All other columns are preserved.
 
         Limitations & Notes
         -------------------
         - This method assumes objects mostly move along the X-axis and their movement is smooth.
-        - For non-target YOLO classes, no corrections are applied; their 'Unique Id' remains unchanged.
-        - The corrected 'Unique Id' for each object remains constant across frames, even if YOLO swaps IDs
+        - For non-target YOLO classes, no corrections are applied; their 'unique-id' remains unchanged.
+        - The corrected 'unique-id' for each object remains constant across frames, even if YOLO swaps IDs
             during crossing or overtaking.
 
         Example Usage
         -------------
         >>> df = ...  # Your YOLO tracking output as a DataFrame
         >>> result = reassign_ids_directional_cross_fix(df, distance_threshold=0.04, yolo_ids=[0])
-        >>> print(result[['Frame Count', 'YOLO_id', 'X-center', 'Unique Id', 'old_unique_id']])
+        >>> print(result[['frame-count', 'yolo-id', 'x-center', 'unique-id', 'old_unique_id']])
         """
 
         # --- STEP 1: INITIALISE OUTPUT AND PROCESSING MASK ---
@@ -87,34 +87,34 @@ class Geometry():
         df = df.copy()
 
         # Initialise new column 'New Id' as the original YOLO Unique Id; will be replaced for fixed classes
-        df['New Id'] = df['Unique Id']
+        df['New Id'] = df['unique-id']
 
         # Build a boolean mask: True for rows to fix (in yolo_ids), False for rows to leave untouched
         if yolo_ids is not None:
-            mask = df['YOLO_id'].isin(yolo_ids)
+            mask = df['yolo-id'].isin(yolo_ids)
         else:
             mask = pd.Series(True, index=df.index)  # If None, fix all classes
 
         # Select and sort only the relevant subset (target classes), ordered by frame
-        df_fix = df[mask].sort_values(by='Frame Count').copy()
+        df_fix = df[mask].sort_values(by='frame-count').copy()
 
         # Set placeholder value for the new IDs in these rows
         df_fix['New Id'] = -1
 
         # --- STEP 2: PRECOMPUTE DETECTION X-HISTORY DICTIONARY ---
 
-        # This dictionary allows instant O(1) lookup of a detection's X-center by (Unique Id, Frame Count)
-        # Example: det_hist_dict[(42, 100)] returns the X-center for Unique Id 42 in frame 100
+        # This dictionary allows instant O(1) lookup of a detection's x-center by (unique-id, frame-count)
+        # Example: det_hist_dict[(42, 100)] returns the x-center for Unique Id 42 in frame 100
         det_hist_dict = {
-            (row['Unique Id'], row['Frame Count']): row['X-center']
+            (row['unique-id'], row['frame-count']): row['x-center']
             for idx, row in df_fix.iterrows()
         }
 
         # --- STEP 3: TRACK MANAGEMENT SETUP ---
 
         # List of all active tracks. Each track is a dict:
-        #  - 'unique_id':  the original Unique Id (which is stable and used as the corrected ID)
-        #  - 'xs':         list of recent X-center positions for trajectory comparison
+        #  - 'unique_id':  the original unique-id (which is stable and used as the corrected ID)
+        #  - 'xs':         list of recent x-center positions for trajectory comparison
         #  - 'frames':     list of corresponding frame numbers for those Xs
         tracks = []
 
@@ -124,14 +124,14 @@ class Geometry():
         # --- STEP 4: MAIN FRAMEWISE ASSOCIATION LOOP ---
 
         # Go through frames in chronological order for correct temporal association
-        frame_numbers = sorted(df_fix['Frame Count'].unique())
+        frame_numbers = sorted(df_fix['frame-count'].unique())
 
         for frame in frame_numbers:
             # --- 4A: GET DETECTIONS IN THIS FRAME ---
-            detections = df_fix[df_fix['Frame Count'] == frame]
+            detections = df_fix[df_fix['frame-count'] == frame]
             det_indices = detections.index.values        # Row indices in df_fix for current frame
-            det_xs = detections['X-center'].values       # X-center for each detection in this frame
-            det_unique_ids = detections['Unique Id'].values  # Original YOLO Unique Id for each detection
+            det_xs = detections['x-center'].values       # x-center for each detection in this frame
+            det_unique_ids = detections['unique-id'].values  # Original YOLO Unique Id for each detection
             n_dets = len(det_xs)
 
             # Sets to keep track of which tracks/detections have already been matched in this frame
@@ -141,7 +141,7 @@ class Geometry():
             # --- 4B: MATCH EXISTING TRACKS TO DETECTIONS (TRAJECTORY ASSOCIATION) ---
             if tracks:  # Only run if we have existing tracks to match to
 
-                # Array of each track's last X-center (to compute proximity quickly)
+                # Array of each track's last x-center (to compute proximity quickly)
                 last_xs = np.array([track['xs'][-1] for track in tracks])
 
                 # Compute absolute X difference for all track/detection pairs
@@ -161,7 +161,7 @@ class Geometry():
                     for back in range(history_frames-1, -1, -1):
                         key = (this_uid, frame - back)
                         if key in det_hist_dict:
-                            # Append that frame's X-center if present
+                            # Append that frame's x-center if present
                             det_hist.append(det_hist_dict[key])
                     # det_hist: [x(t-n), ..., x(t-1), x(t)]
 
@@ -170,7 +170,7 @@ class Geometry():
                         if t_idx in assigned_tracks:
                             continue  # Skip if this track has already been matched this frame
 
-                        # Only consider tracks close in X-center for this frame
+                        # Only consider tracks close in x-center for this frame
                         if dists[t_idx, det_idx] >= distance_threshold:
                             continue
 
@@ -231,13 +231,13 @@ class Geometry():
 
         # 1. Safety: Any unmatched detection gets its original 'Unique Id'
         missing_newid_mask = df_fix['New Id'].isnull() | (df_fix['New Id'] == -1)
-        df_fix.loc[missing_newid_mask, 'New Id'] = df_fix.loc[missing_newid_mask, 'Unique Id']
+        df_fix.loc[missing_newid_mask, 'New Id'] = df_fix.loc[missing_newid_mask, 'unique-id']
 
         # 2. Copy corrected IDs back to main DataFrame for processed rows
         df.loc[df_fix.index, 'New Id'] = df_fix['New Id']
 
-        # Rename the original YOLO 'Unique Id' to 'old_unique_id' (for reference),
-        # and the fixed, stable IDs to 'Unique Id'
-        df = df.rename(columns={'Unique Id': 'old_unique_id', 'New Id': 'Unique Id'})
+        # Rename the original YOLO 'unique-id' to 'old_unique_id' (for reference),
+        # and the fixed, stable IDs to 'unique-id'
+        df = df.rename(columns={'unique-id': 'old_unique_id', 'New Id': 'unique-id'})
 
         return df

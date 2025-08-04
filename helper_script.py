@@ -428,10 +428,10 @@ class Youtube_Helper:
 
         Args:
             df (pd.DataFrame): DataFrame containing at least the following columns:
-                - 'Frame Count': Original frame indices in the source video.
+                - 'frame-count': Original frame indices in the source video.
                 - 'X-center', 'Y-center': Normalised center coordinates (0 to 1).
-                - 'Width', 'Height': Normalised width and height (0 to 1).
-                - 'Unique Id': Identifier to display in the label.
+                - 'width', 'Height': Normalised width and height (0 to 1).
+                - 'unique-id': Identifier to display in the label.
             fps (float): Frames per second for the output video.
             video_path (str): Path to the input video file.
             output_path (str): Path to save the annotated output video.
@@ -446,8 +446,8 @@ class Youtube_Helper:
             os.makedirs(output_dir, exist_ok=True)
 
         # Normalise frame indices to start from 0
-        min_frame = df["Frame Count"].min()
-        df["Frame Index"] = df["Frame Count"] - min_frame
+        min_frame = df["frame-count"].min()
+        df["Frame Index"] = df["frame-count"] - min_frame
 
         # Attempt to open the input video
         cap = cv2.VideoCapture(video_path)
@@ -478,10 +478,10 @@ class Youtube_Helper:
 
             for _, row in frame_data.iterrows():
                 # Convert normalised coordinates to absolute pixel values
-                x_center = row["X-center"] * width
-                y_center = row["Y-center"] * height
-                w = row["Width"] * width
-                h = row["Height"] * height
+                x_center = row["x-center"] * width
+                y_center = row["y-center"] * height
+                w = row["width"] * width
+                h = row["height"] * height
 
                 # Calculate top-left and bottom-right corners of the box
                 x1 = int(x_center - w / 2)
@@ -491,7 +491,7 @@ class Youtube_Helper:
 
                 # Draw rectangle and label with unique ID
                 cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                label = f"ID: {int(row['Unique Id'])}"
+                label = f"ID: {int(row['unique-id'])}"
                 cv2.putText(frame, label, (x1, max(y1 - 10, 0)),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
@@ -687,8 +687,8 @@ class Youtube_Helper:
 
         # Read the newly created text file into a DataFrame
         df = pd.read_csv(new_txt_file_name, delimiter=" ", header=None,
-                         names=["YOLO_id", "X-center", "Y-center", "Width", "Height", "Unique Id", "Confidence"])
-        df['Frame Count'] = frame_count
+                         names=["yolo-id", "x-center", "y-center", "width", "height", "unique-id", "confidence"])
+        df['frame-count'] = frame_count
 
         # Append the DataFrame to the CSV file
         if not os.path.exists(output_csv):
@@ -726,7 +726,7 @@ class Youtube_Helper:
         if not rows:
             return
 
-        df = pd.DataFrame(rows, columns=["YOLO_id", "Mask_Polygon", "Unique_Id", "Confidence", "Frame_Count"])
+        df = pd.DataFrame(rows, columns=["yolo-id", "mask-polygon", "unique-id", "confidence", "frame-count"])
 
         # Append the DataFrame to the CSV file
         if not os.path.exists(output_csv):
