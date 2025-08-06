@@ -1,6 +1,7 @@
 # by Shadab Alam <md_shadab_alam@outlook.com> and Pavlo Bazilinskyy <pavlo.bazilinskyy@gmail.com>
 import shutil
 import os
+import math
 from datetime import datetime
 from helper_script import Youtube_Helper
 import pandas as pd
@@ -38,7 +39,6 @@ if __name__ == "__main__":
             update_continent=common.get_configs("update_continent"),
             update_mortality_rate=common.get_configs("update_mortality_rate"),
             update_gini_value=common.get_configs("update_gini_value"),
-            update_fps_list=common.get_configs("update_fps_list"),
             update_upload_date=common.get_configs("update_upload_date"),
             segmentation_mode=common.get_configs("segmentation_mode"),
             tracking_mode=common.get_configs("tracking_mode"),
@@ -111,9 +111,6 @@ if __name__ == "__main__":
             if config.update_gini_value:
                 helper.fill_gini_data(mapping)
 
-            if config.update_fps_list:
-                helper.update_csv_with_fps(mapping)
-
             if config.update_upload_date:
                 # Process the 'videos' column
                 def extract_upload_dates(video_column):
@@ -163,11 +160,6 @@ if __name__ == "__main__":
                 country = str(row["country"])
                 logger.info(f"Processing videos for city={city}, state={state}, country={country}.")
 
-                if pd.isna(row["fps_list"]) or row["fps_list"] == '[]':
-                    fps_values = [0 for _ in range(len(video_ids))]
-                else:
-                    fps_values = ast.literal_eval(row["fps_list"])
-
                 for vid_index, (vid, start_times_list, end_times_list, time_of_day_list) in enumerate(zip(
                         video_ids, start_times, end_times, time_of_day)):
 
@@ -184,18 +176,15 @@ if __name__ == "__main__":
                         result = helper.download_video_with_resolution(vid=vid, output_path=output_path)
                         if result:
                             video_file_path, video_title, resolution, video_fps = result
+                            if video_fps is None or video_fps == 0 or (isinstance(video_fps,
+                                                                                  float) and math.isnan(video_fps)):
+                                # Invalid fps: None, 0, or NaN
+                                logger.warning("Invalid video_fps!")
+                                continue
+
+                            print("video fps: ", video_fps)
                             # Set the base video path to the downloaded video
                             base_video_path = video_file_path
-
-                            if config.update_fps_list:
-                                # Update the FPS information for the current video
-                                if len(fps_values) <= vid_index:
-                                    fps_values.extend([60] * (vid_index - len(fps_values) + 1))
-                                fps_values[vid_index] = video_fps  # type: ignore
-
-                                # Update the DataFrame mapping and write to CSV
-                                mapping.at[index, 'fps_list'] = str(fps_values)
-                                mapping.to_csv(config.mapping, index=False)
 
                             logger.info(f"{vid}: downloaded to {video_file_path}.")
                             helper.set_video_title(video_title)
@@ -223,9 +212,22 @@ if __name__ == "__main__":
                         helper.set_video_title(video_title)
                         video_fps = helper.get_video_fps(base_video_path)  # try to get FPS value of existing file
 
+                        if video_fps is None or video_fps == 0 or (isinstance(video_fps,
+                                                                              float) and math.isnan(video_fps)):
+                            # Invalid fps: None, 0, or NaN
+                            logger.warning("Invalid video_fps!")
+                            continue
+                        print("video fps2:", video_fps)
+
                     for start_time, end_time, time_of_day_value in zip(start_times_list, end_times_list, time_of_day_list):  # noqa: E501
                         bbox_folders, seg_folders, bbox_paths, seg_paths = [], [], [], []
-                        filename = f"{vid}_{start_time}.csv"
+
+                        if video_fps is not None:
+                            video_fps = int(video_fps)
+
+                        print("video fps3:", video_fps)
+                        filename = f"{vid}_{start_time}_{video_fps}.csv"
+                        print("filename:", filename)
 
                         for folder in data_folders:
                             bbox_path = os.path.join(folder, "bbox", filename)
@@ -280,7 +282,7 @@ if __name__ == "__main__":
 
                         # If the YOLO output file already exists, skip processing for this segment
                         if not bbox_mode and not seg_mode:  # noqa: E501
-                            logger.info(f"{vid}: YOLO file {vid}_{start_time}.csv exists. Skipping segment.")
+                            logger.info(f"{vid}: YOLO file {vid}_{start_time}_{video_fps}.csv exists. Skipping segment.")  # noqa:E501
                             continue
 
                         # Define a temporary path for the trimmed video segment
@@ -312,24 +314,13 @@ if __name__ == "__main__":
                                                      flag=config.save_annotated_video)
                                 counter_processed += 1  # record that one more segment was processed
 
-                            elif fps_values[vid_index] > 0:
-                                logger.info(f"{vid}: YOLO analysis in progress for segment {start_time}-{end_time}s with FPS from mapping {fps_values[vid_index]}.")  # noqa: E501
-                                helper.tracking_mode(trimmed_video_path,
-                                                     output_path,
-                                                     video_title=f"{video_title}_mod.mp4",
-                                                     video_fps=fps_values[vid_index],
-                                                     seg_mode=seg_mode,
-                                                     bbox_mode=bbox_mode,
-                                                     flag=config.save_annotated_video)
-                                counter_processed += 1  # record that one more segment was processed
-
                             else:
                                 logger.warning(f"{vid}: FPS value is {video_fps}. Skipping tracking mode.")
 
                             if bbox_mode:
                                 # Move and rename the generated CSV file from tracking mode
                                 old_file_path = os.path.join("runs", "detect", f"{vid}.csv")
-                                new_file_path = os.path.join("runs", "detect", f"{vid}_{start_time}.csv")
+                                new_file_path = os.path.join("runs", "detect", f"{vid}_{start_time}_{video_fps}.csv")
 
                                 if os.path.exists(old_file_path):
                                     os.rename(old_file_path, new_file_path)
@@ -345,7 +336,7 @@ if __name__ == "__main__":
                             if seg_mode:
                                 # Move and rename the generated CSV file from tracking mode
                                 old_file_path = os.path.join("runs", "segment", f"{vid}.csv")
-                                new_file_path = os.path.join("runs", "segment", f"{vid}_{start_time}.csv")
+                                new_file_path = os.path.join("runs", "segment", f"{vid}_{start_time}_{video_fps}.csv")
                                 if os.path.exists(old_file_path):
                                     os.rename(old_file_path, new_file_path)
                                 else:

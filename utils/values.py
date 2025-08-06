@@ -45,7 +45,7 @@ class Values():
                 - Fps of the video
                 - Type of vehicle
         """
-        id, start_ = key.rsplit("_", 1)  # Splitting the key into video ID and start time
+        id, start_, fps = key.rsplit("_", 2)  # Splitting the key into video ID and start time
 
         # Iterate through each row in the DataFrame
         for index, row in df.iterrows():
@@ -68,13 +68,9 @@ class Values():
             avg_height = row["avg_height"]
             iso3 = row["iso3"]
             vehicle_type = ast.literal_eval(row["vehicle_type"])
-            fps_list = ast.literal_eval(row["fps_list"])
 
             # Iterate through each video, start time, end time, and time of day
-            for video, start, end, time_of_day_, vehicle_type, fps in zip(video_ids, start_times, end_times, time_of_day, vehicle_type, fps_list):  # noqa: E501
-                # Assume FPS=30 for None
-                if not fps:
-                    fps = 30
+            for video, start, end, time_of_day_, vehicle_type, in zip(video_ids, start_times, end_times, time_of_day, vehicle_type):  # noqa: E501
                 # Check if the current video matches the specified ID
                 if video == id:
                     logger.debug(f"Finding values for {video} start={start}, end={end}")
@@ -84,8 +80,8 @@ class Values():
                         # Check if the start time matches the specified start time
                         if int(start_) == s:
                             # Calculate gpd per capita to avoid division by zero
-                            if population > 0:
-                                gpd_capita = gdp/population
+                            if int(population) > 0:
+                                gpd_capita = int(gdp)/int(population)
                             else:
                                 gpd_capita = 0
                             # Return relevant information once found
@@ -106,7 +102,7 @@ class Values():
                                     literacy_rate,              # 14
                                     avg_height,                 # 15
                                     iso3,                       # 16
-                                    fps,                        # 17
+                                    int(fps),                   # 17
                                     vehicle_type)               # 18
                         counter += 1
 

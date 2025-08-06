@@ -2080,144 +2080,145 @@ class Plots():
             legend_y (float, optional): y position of legend.
             label_distance_factor (float, optional): multiplier for the threshold to control density of text labels.
         """
-        logger.info('Creating scatter plot for x={} and y={}.', x, y)
+        if len(df) > 0:
+            logger.info('Creating scatter plot for x={} and y={}.', x, y)
 
-        # using size and marker_size is not supported
-        if marker_size and size:
-            logger.error('Arguments marker_size and size cannot be used together.')
-            return -1
+            # using size and marker_size is not supported
+            if marker_size and size:
+                logger.error('Arguments marker_size and size cannot be used together.')
+                return -1
 
-        # using marker_size with histogram marginal(s) is not supported
-        if (marker_size and (marginal_x == 'histogram' or marginal_y == 'histogram')):
-            logger.error('Argument marker_size cannot be used together with histogram marginal(s).')
-            return -1
+            # using marker_size with histogram marginal(s) is not supported
+            if (marker_size and (marginal_x == 'histogram' or marginal_y == 'histogram')):
+                logger.error('Argument marker_size cannot be used together with histogram marginal(s).')
+                return -1
 
-        # prettify text
-        if pretty_text:
-            if isinstance(df.iloc[0][x], str):  # check if string
-                # replace underscores with spaces
-                df[x] = df[x].str.replace('_', ' ')
-                # capitalise
-                df[x] = df[x].str.capitalize()
-            if isinstance(df.iloc[0][y], str):  # check if string
-                # replace underscores with spaces
-                df[y] = df[y].str.replace('_', ' ')
-                # capitalise
-                df[y] = df[y].str.capitalize()
-            if color and isinstance(df.iloc[0][color], str):  # check if string
-                # replace underscores with spaces
-                df[color] = df[color].str.replace('_', ' ')
-                # capitalise
-                df[color] = df[color].str.capitalize()
-            if size and isinstance(df.iloc[0][size], str):  # check if string
-                # replace underscores with spaces
-                df[size] = df[size].str.replace('_', ' ')
-                # capitalise
-                df[size] = df[size].str.capitalize()
-            try:
-                # check if string
-                if text and isinstance(df.iloc[0][text], str):
+            # prettify text
+            if pretty_text:
+                if isinstance(df.iloc[0][x], str):  # check if string
                     # replace underscores with spaces
-                    df[text] = df[text].str.replace('_', ' ')
+                    df[x] = df[x].str.replace('_', ' ')
                     # capitalise
-                    df[text] = df[text].str.capitalize()
-            except ValueError as e:
-                logger.debug('Tried to prettify {} with exception {}.', text, e)
+                    df[x] = df[x].str.capitalize()
+                if isinstance(df.iloc[0][y], str):  # check if string
+                    # replace underscores with spaces
+                    df[y] = df[y].str.replace('_', ' ')
+                    # capitalise
+                    df[y] = df[y].str.capitalize()
+                if color and isinstance(df.iloc[0][color], str):  # check if string
+                    # replace underscores with spaces
+                    df[color] = df[color].str.replace('_', ' ')
+                    # capitalise
+                    df[color] = df[color].str.capitalize()
+                if size and isinstance(df.iloc[0][size], str):  # check if string
+                    # replace underscores with spaces
+                    df[size] = df[size].str.replace('_', ' ')
+                    # capitalise
+                    df[size] = df[size].str.capitalize()
+                try:
+                    # check if string
+                    if text and isinstance(df.iloc[0][text], str):
+                        # replace underscores with spaces
+                        df[text] = df[text].str.replace('_', ' ')
+                        # capitalise
+                        df[text] = df[text].str.capitalize()
+                except ValueError as e:
+                    logger.debug('Tried to prettify {} with exception {}.', text, e)
 
-        # check and clean the data
-        df = df[np.isfinite(df[[x, y]]).all(axis=1)].copy()  # Remove NaNs and Infs
+            # check and clean the data
+            df = df[np.isfinite(df[[x, y]]).all(axis=1)].copy()  # Remove NaNs and Infs
 
-        if text:
-            if text in df.columns:
-                # use KDTree to check point density
-                tree = KDTree(df[[x, y]].values)  # Ensure finite values
-                distances, _ = tree.query(df[[x, y]].values, k=2)  # Find nearest neighbor distance
+            if text:
+                if text in df.columns:
+                    # use KDTree to check point density
+                    tree = KDTree(df[[x, y]].values)  # Ensure finite values
+                    distances, _ = tree.query(df[[x, y]].values, k=2)  # Find nearest neighbor distance
 
-                # define a distance threshold for labeling
-                threshold = np.mean(distances[:, 1]) * label_distance_factor
+                    # define a distance threshold for labeling
+                    threshold = np.mean(distances[:, 1]) * label_distance_factor
 
-                # only label points that are not too close to others
-                df["display_label"] = np.where(distances[:, 1] > threshold, df[text], "")
+                    # only label points that are not too close to others
+                    df["display_label"] = np.where(distances[:, 1] > threshold, df[text], "")
 
-                text = "display_label"
-            else:
-                logger.warning("Column 'country' not found, skipping display_label logic.")
-
-        # scatter plot with histograms
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore', category=RuntimeWarning)
-            fig = px.scatter(df,
-                             x=x,
-                             y=y,
-                             color=color,
-                             symbol=symbol,
-                             size=size,
-                             text=text,
-                             trendline=trendline,
-                             hover_data=hover_data,
-                             hover_name=hover_name,
-                             marginal_x=marginal_x,
-                             marginal_y=marginal_y)
-
-        # font size of text labels
-        for trace in fig.data:
-            if trace.type == "scatter" and "text" in trace:  # type: ignore
-                trace.textfont = dict(size=common.get_configs('font_size'))  # type: ignore
-
-        # location of labels
-        if not marginal_x and not marginal_y:
-            fig.update_traces(textposition=Plots.improve_text_position(df[x]))
-
-        # update layout
-        fig.update_layout(template=common.get_configs('plotly_template'),
-                          xaxis_title=xaxis_title,
-                          yaxis_title=yaxis_title,
-                          xaxis_range=xaxis_range,
-                          yaxis_range=yaxis_range)
-
-        # change marker size
-        if marker_size:
-            fig.update_traces(marker=dict(size=marker_size))
-
-        # update legend title
-        if legend_title is not None:
-            fig.update_layout(legend_title_text=legend_title)
-
-        # update font family
-        if font_family:
-            # use given value
-            fig.update_layout(font=dict(family=font_family))
-        else:
-            # use value from config file
-            fig.update_layout(font=dict(family=common.get_configs('font_family')))
-
-        # update font size
-        if font_size:
-            # use given value
-            fig.update_layout(font=dict(size=font_size))
-        else:
-            # use value from config file
-            fig.update_layout(font=dict(size=common.get_configs('font_size')))
-
-        # legend
-        if legend_x and legend_y:
-            fig.update_layout(legend=dict(x=legend_x, y=legend_y, bgcolor='rgba(0,0,0,0)'))
-
-        # save file to local output folder
-        if save_file:
-            # build filename
-            if not name_file:
-                if extension is not None:
-                    name_file = 'scatter_' + x + '-' + y + '-' + extension
+                    text = "display_label"
                 else:
-                    name_file = 'scatter_' + x + '-' + y
+                    logger.warning("Column 'country' not found, skipping display_label logic.")
 
-            # Final adjustments and display
-            fig.update_layout(margin=dict(l=10, r=10, t=10, b=10))
-            self.save_plotly_figure(fig, name_file, save_final=True)
-        # open it in localhost instead
-        else:
-            fig.show()
+            # scatter plot with histograms
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore', category=RuntimeWarning)
+                fig = px.scatter(df,
+                                 x=x,
+                                 y=y,
+                                 color=color,
+                                 symbol=symbol,
+                                 size=size,
+                                 text=text,
+                                 trendline=trendline,
+                                 hover_data=hover_data,
+                                 hover_name=hover_name,
+                                 marginal_x=marginal_x,
+                                 marginal_y=marginal_y)
+
+            # font size of text labels
+            for trace in fig.data:
+                if trace.type == "scatter" and "text" in trace:  # type: ignore
+                    trace.textfont = dict(size=common.get_configs('font_size'))  # type: ignore
+
+            # location of labels
+            if not marginal_x and not marginal_y:
+                fig.update_traces(textposition=Plots.improve_text_position(df[x]))
+
+            # update layout
+            fig.update_layout(template=common.get_configs('plotly_template'),
+                              xaxis_title=xaxis_title,
+                              yaxis_title=yaxis_title,
+                              xaxis_range=xaxis_range,
+                              yaxis_range=yaxis_range)
+
+            # change marker size
+            if marker_size:
+                fig.update_traces(marker=dict(size=marker_size))
+
+            # update legend title
+            if legend_title is not None:
+                fig.update_layout(legend_title_text=legend_title)
+
+            # update font family
+            if font_family:
+                # use given value
+                fig.update_layout(font=dict(family=font_family))
+            else:
+                # use value from config file
+                fig.update_layout(font=dict(family=common.get_configs('font_family')))
+
+            # update font size
+            if font_size:
+                # use given value
+                fig.update_layout(font=dict(size=font_size))
+            else:
+                # use value from config file
+                fig.update_layout(font=dict(size=common.get_configs('font_size')))
+
+            # legend
+            if legend_x and legend_y:
+                fig.update_layout(legend=dict(x=legend_x, y=legend_y, bgcolor='rgba(0,0,0,0)'))
+
+            # save file to local output folder
+            if save_file:
+                # build filename
+                if not name_file:
+                    if extension is not None:
+                        name_file = 'scatter_' + x + '-' + y + '-' + extension
+                    else:
+                        name_file = 'scatter_' + x + '-' + y
+
+                # Final adjustments and display
+                fig.update_layout(margin=dict(l=10, r=10, t=10, b=10))
+                self.save_plotly_figure(fig, name_file, save_final=True)
+            # open it in localhost instead
+            else:
+                fig.show()
 
     @staticmethod
     def improve_text_position(x):
