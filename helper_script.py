@@ -71,6 +71,8 @@ class Youtube_Helper:
         """
         self.tracking_model = common.get_configs("tracking_model")
         self.segment_model = common.get_configs("segment_model")
+        self.bbox_tracker = common.get_configs("bbox_tracker")
+        self.seg_tracker = common.get_configs("seg_tracker")
         self.resolution = None
         self.video_title = video_title
         self.mapping = pd.read_csv(common.get_configs("mapping"))
@@ -85,8 +87,6 @@ class Youtube_Helper:
         self.update_package = common.get_configs("update_package")
         self.need_authentication = common.get_configs("need_authentication")
         self.client = common.get_configs("client")
-        self.bbox_tracker = common.get_configs("bbox_tracker")
-        self.seg_tracker = common.get_configs("seg_tracker")
 
     def set_video_title(self, title):
         """
@@ -877,54 +877,6 @@ class Youtube_Helper:
         except KeyError:
             return "Unknown"
 
-    def update_csv_with_fps(self, df):
-        """
-        Updates the existing CSV file by adding/updating the 'fps_list' column
-        with the FPS values for each video's IDs from local files.
-        If the file does not exist, the previous FPS value is kept.
-        """
-
-        def process_videos(video_ids_str, existing_fps_list_str):
-            # Parse video IDs (e.g., '["videos_1", "videos_2"]')
-            try:
-                video_ids = ast.literal_eval(video_ids_str)
-            except Exception:
-                # fallback if not a valid list string
-                video_ids = [v.strip() for v in video_ids_str.strip("[]").replace("'", "").replace(
-                    '"', '').split(",") if v.strip()]
-
-            # Parse existing fps_list if present
-            try:
-                existing_fps_list = ast.literal_eval(existing_fps_list_str) if pd.notnull(
-                    existing_fps_list_str) else [None]*len(video_ids)
-            except Exception:
-                existing_fps_list = [None]*len(video_ids)
-
-            # Ensure matching lengths
-            if len(existing_fps_list) < len(video_ids):
-                existing_fps_list += [None] * (len(video_ids) - len(existing_fps_list))
-
-            updated_fps_list = []
-            for i, video_id in enumerate(video_ids):
-                fps = self.get_video_fps(video_id)
-                if fps is not None:
-                    updated_fps_list.append(fps)
-                else:
-                    # Keep previous FPS if file not present
-                    updated_fps_list.append(existing_fps_list[i] if i < len(existing_fps_list) else None)
-            return str(updated_fps_list)
-
-        # Add the 'fps_list' column if not present
-        if 'fps_list' not in df.columns:
-            df['fps_list'] = None
-
-        for index, row in df.iterrows():
-            df.at[index, 'fps_list'] = process_videos(row['videos'], row.get('fps_list', None))
-
-        # Save the updated DataFrame back to the same file
-        df.to_csv(self.mapping, index=False)
-        logger.info("Mapping file updated successfully with FPS data.")
-
     def get_upload_date(self, video_id):
         """
         Retrieves the upload date of a YouTube video given its video ID.
@@ -1390,7 +1342,7 @@ class Youtube_Helper:
         progress_bar.close()
 
         if flag:
-            if self.seg_mode:
+            if seg_mode:
                 self.create_video_from_images(
                     image_folder=seg_tracked_frame_output_path,
                     output_path=output_video_path,
@@ -1398,7 +1350,7 @@ class Youtube_Helper:
                     seg_mode=seg_mode,
                     frame_rate=video_fps,
                 )
-            if self.bbox_mode:
+            if bbox_mode:
                 self.create_video_from_images(
                     image_folder=bbox_tracked_frame_output_path,
                     output_path=output_video_path,
