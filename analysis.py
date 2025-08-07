@@ -431,13 +431,13 @@ class Analysis():
             # Loop through all video_id + start_time pairs
             for vid, start_times_list, time_of_day_list in zip(video_ids, start_times, time_of_day):
                 for start_time, time_of_day_value in zip(start_times_list, time_of_day_list):
-                    filename = f"{vid}_{start_time}.csv"
+                    filename = f"{vid}_{start_time}_{fps}.csv"
                     if filename not in csv_files:
                         continue  # No detection CSV for this video segment
                     file_path = csv_files[filename]
 
                     # Find video meta details (start, end, city, location, etc.)
-                    result = values_class.find_values_with_video_id(df_mapping, f"{vid}_{start_time}")
+                    result = values_class.find_values_with_video_id(df_mapping, f"{vid}_{start_time}_{fps}")
                     if result is None:
                         continue
 
@@ -2996,6 +2996,7 @@ if __name__ == "__main__":
              ) = pickle.load(file)
 
         logger.info("Loaded analysis results from pickle file.")
+        print(truck_city)
     else:
         # Store the mapping file
         df_mapping = pd.read_csv(common.get_configs("mapping"))
@@ -3154,16 +3155,20 @@ if __name__ == "__main__":
                 logger.warning(f"Folder does not exist: {folder_path}.")
                 continue
 
+            found_any = False  # Flag to check if at least one subfolder exists
+
             for subfolder in ["bbox", "seg"]:
                 subfolder_path = os.path.join(folder_path, subfolder)
                 if not os.path.exists(subfolder_path):
-                    logger.warning(f"Subfolder does not exist: {subfolder_path}.")
-                    continue
+                    continue  # Don't log anything here yet
 
-                for file_name in tqdm(os.listdir(subfolder_path), desc=f"Processing files in {folder_path}"):
+                found_any = True  # At least one subfolder exists
+
+                for file_name in tqdm(os.listdir(subfolder_path), desc=f"Processing files in {subfolder_path}"):
                     file = analysis_class.filter_csv_files(file=file_name, df_mapping=df_mapping)
                     if file is None:
                         continue
+                    # Further processing here
 
                     # list of misc and trash files
                     misc_files = ["DS_Store", "seg", "bbox"]
