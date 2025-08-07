@@ -15,15 +15,15 @@ MAPPING_PATH = common.get_configs("mapping")
 
 
 def parse_flat_string_list(s):
-    """Parse string representing a flat list without quotes into a Python list.
+    """Parse a string representing a flat list without quotes into a Python list.
 
-    Supports strings like '[a,b,c]', '[abc]', or '[]'. If already a list, returns as is.
+    Supports '[a,b,c]', '[abc]', or '[]'. Returns as-is if already a list.
 
     Args:
-        s: The input, which may be a string or a list.
+        s: Input string or list.
 
     Returns:
-        List containing the parsed items.
+        list: Parsed Python list.
     """
     if isinstance(s, list):
         return s
@@ -44,10 +44,10 @@ def parse_list(s):
     """Parse a string representing a (possibly nested) Python list.
 
     Args:
-        s: String containing a valid Python literal list, or a list.
+        s: Input string or list.
 
     Returns:
-        The evaluated list, or [] if not valid.
+        list: Python-evaluated list, or [] if parsing fails.
     """
     if isinstance(s, list):
         return s
@@ -63,60 +63,60 @@ def parse_list(s):
 
 
 def format_flat_list(lst):
-    """Format a flat list as '[a,b,c]' (no quotes).
+    """Format a flat list as a string like '[a,b,c]' (no quotes).
 
     Args:
-        lst: List of elements to stringify.
+        lst: List to stringify.
 
     Returns:
-        String representation without quotes.
+        str: String representation.
     """
     return '[' + ','.join(str(x) for x in lst) + ']'
 
 
 def format_nested_list(lst):
-    """Format a nested list as '[[a,b],[c]]' (no quotes).
+    """Format a nested list as a string like '[[a,b],[c]]' (no quotes).
 
     Args:
-        lst: List of lists to stringify.
+        lst: List of lists.
 
     Returns:
-        String representation without quotes.
+        str: String representation.
     """
     return '[' + ','.join('[' + ','.join(str(x) for x in inner) + ']' for inner in lst) + ']'
 
 
-def find_files_to_delete(data_folder):
-    """Determine which (video_id, start_time) pairs correspond to CSV files to delete.
+def gather_present_pairs(data_folder):
+    """Gather all present (video_id, start_time) pairs from CSV filenames in the folder.
 
     Args:
-        data_folder: Directory containing CSV files.
+        data_folder: Directory containing .csv files.
 
     Returns:
-        Set of tuples (video_id, start_time) to be deleted.
+        set: Set of (video_id, start_time) tuples.
     """
     files = [f for f in os.listdir(data_folder) if f.endswith('.csv')]
-    to_delete = set()
+    present = set()
     for file in files:
         key = file.replace('.csv', '')
         try:
             video_id, start_time, fps = key.rsplit("_", 2)
-            to_delete.add((video_id, int(start_time)))
+            present.add((video_id, int(start_time)))
         except Exception as e:
-            logger.warning(f"Skipping file {file}: {e}")
-    logger.debug("These video_id, start_time pairs will be removed: %s", to_delete)
-    return to_delete
+            logger.info(f"Skipping file {file}: {e}")
+    logger.debug("Only these video_id, start_time pairs will be KEPT:", present)
+    return present
 
 
-def remove_entry(row, to_delete):
-    """Remove video/start_time entries from a row if they're in the to_delete set.
+def keep_present_entry(row, present):
+    """Filter out entries in a mapping row that are not in the 'present' set.
 
     Args:
         row: DataFrame row.
-        to_delete: Set of (video_id, start_time) tuples to remove.
+        present: Set of (video_id, start_time) pairs to keep.
 
     Returns:
-        The updated row with unwanted entries removed.
+        The updated row with only present entries.
     """
     # Parse fields from row (strings/lists)
     videos = parse_flat_string_list(row['videos'])
@@ -127,23 +127,22 @@ def remove_entry(row, to_delete):
     upload_date = parse_flat_string_list(row['upload_date'])
     channel = parse_flat_string_list(row['channel'])
 
-    # Check consistency for multi-item fields
+    # Sanity checks
     if not (len(videos) == len(start_times) == len(end_times) == len(time_of_day)):
-        logger.debug("Warning: mismatch in multi fields in row %s", row.get('id', 'unknown'))
-        logger.debug("videos: %s", videos)
-        logger.debug("start_times: %s", start_times)
-        logger.debug("end_times: %s", end_times)
-        logger.debug("time_of_day: %s", time_of_day)
+        logger.error(f"Warning: mismatch in multi fields in row {row.get('id', 'unknown')}")
+        logger.error(f"videos: {videos}")
+        logger.error(f"start_times: {start_times}")
+        logger.error(f"end_times: {end_times}")
+        logger.error(f"time_of_day: {time_of_day}")
         return row
     if not (len(videos) == len(vehicle_type) == len(upload_date) == len(channel)):
-        logger.debug("Warning: mismatch in single fields in row %s", row.get('id', 'unknown'))
-        logger.debug("videos: %s", videos)
-        logger.debug("vehicle_type: %s", vehicle_type)
-        logger.debug("upload_date: %s", upload_date)
-        logger.debug("channel: %s", channel)
+        logger.error(f"Warning: mismatch in single fields in row {row.get('id', 'unknown')}")
+        logger.error(f"videos: {videos}")
+        logger.error(f"vehicle_type: {vehicle_type}")
+        logger.error(f"upload_date: {upload_date}")
+        logger.error(f"channel: {channel}")
         return row
 
-    # Build new lists for each field, skipping videos/start_times to be deleted
     keep_video_indices = []
     new_time_of_day, new_start_times, new_end_times = [], [], []
     new_vehicle_type, new_upload_date, new_channel = [], [], []
@@ -155,7 +154,7 @@ def remove_entry(row, to_delete):
         kept_starts, kept_timeofday, kept_end = [], [], []
 
         for j, st in enumerate(these_start_times):
-            if (vid, int(st)) not in to_delete:
+            if (vid, int(st)) in present:
                 kept_starts.append(these_start_times[j])
                 kept_timeofday.append(these_time_of_day[j])
                 kept_end.append(these_end_times[j])
@@ -166,16 +165,15 @@ def remove_entry(row, to_delete):
             new_start_times.append(kept_starts)
             new_end_times.append(kept_end)
 
-    # Filter the single-list fields to match remaining videos
+    # Filter single-list fields
     for i in keep_video_indices:
         new_vehicle_type.append(vehicle_type[i])
         new_upload_date.append(upload_date[i])
         new_channel.append(channel[i])
 
-    # Filter videos as well
     new_videos = [videos[i] for i in keep_video_indices]
 
-    # Update row with reformatted lists (as strings for CSV compatibility)
+    # Update row with filtered lists
     row['videos'] = format_flat_list(new_videos)
     row['time_of_day'] = format_nested_list(new_time_of_day)
     row['start_time'] = format_nested_list(new_start_times)
@@ -187,34 +185,29 @@ def remove_entry(row, to_delete):
 
 
 def has_any_video(row):
-    """Check if the row has any videos left after filtering.
+    """Check if the row has any videos after filtering.
 
     Args:
         row: DataFrame row.
 
     Returns:
-        True if videos list is non-empty, else False.
+        bool: True if any videos remain, else False.
     """
     videos = parse_flat_string_list(row['videos'])
     return len(videos) > 0
 
 
 def main():
-    """Main pipeline: Remove specified video/start_times from mapping.csv and save result."""
-    # Find which (video_id, start_time) pairs to remove based on CSV files present
-    to_delete = find_files_to_delete(DATA_FOLDER)
-
-    # Load mapping.csv as DataFrame
+    """Main function: Filters mapping.csv to keep only present (video_id, start_time) pairs."""
+    present = gather_present_pairs(DATA_FOLDER)
     df = pd.read_csv(MAPPING_PATH)
 
-    # Apply row-wise filtering to remove deleted video/start_times
-    df = df.apply(lambda row: remove_entry(row, to_delete), axis=1)
-
-    # Remove rows with no videos remaining
+    # Filter entries in DataFrame
+    df = df.apply(lambda row: keep_present_entry(row, present), axis=1)
+    # Remove rows with no videos left
     df = df[df.apply(has_any_video, axis=1)]
 
-    # Save filtered mapping
-    filtered_path = "mapping_missing.csv"
+    filtered_path = "mapping_exist.csv"
     df.to_csv(filtered_path, index=False)
     logger.info(f"Filtered mapping saved to {filtered_path}")
 
