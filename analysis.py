@@ -405,11 +405,15 @@ class Analysis():
         data_folders = common.get_configs('data')
         csv_files = {}
 
-        # Index all CSV files from all configured folders for quick lookup
+        # Index all CSV files from bbox and seg subfolders for quick lookup
         for folder_path in data_folders:
-            for file in os.listdir(folder_path):
-                if file.endswith('.csv'):
-                    csv_files[file] = os.path.join(folder_path, file)
+            for subfolder in ["bbox", "seg"]:
+                subfolder_path = os.path.join(folder_path, subfolder)
+                if not os.path.exists(subfolder_path):
+                    continue
+                for file in os.listdir(subfolder_path):
+                    if file.endswith('.csv'):
+                        csv_files[file] = os.path.join(subfolder_path, file)
 
         # Prepare result containers for each metric type
         cellphone_info = {}
@@ -431,9 +435,29 @@ class Analysis():
             # Loop through all video_id + start_time pairs
             for vid, start_times_list, time_of_day_list in zip(video_ids, start_times, time_of_day):
                 for start_time, time_of_day_value in zip(start_times_list, time_of_day_list):
+                    prefix = f"{vid}_{start_time}_"
+                    # Find the file whose name starts with this prefix
+                    matching_files = [fname for fname in csv_files if fname.startswith(prefix) and fname.endswith('.csv')]  # noqa: E501
+                    if not matching_files:
+                        logger.warning(f"[WARNING] File not found for prefix: {prefix}")
+                        continue
+
+                    elif len(matching_files) > 1:
+                        logger.warning(f"[WARNING] Multiple files found for prefix: {prefix}, using the first one: {matching_files[0]}")  # noqa: E501
+                    filename = matching_files[0]
+
+                    # Extract fps using regex
+                    match = re.match(rf"{vid}_{start_time}_(\d+)\.csv", filename)
+                    if match:
+                        fps = int(match.group(1))
+                    else:
+                        logger.error(f"[ERROR] Could not extract fps from filename: {filename}")
+                        continue
+
                     filename = f"{vid}_{start_time}_{fps}.csv"
                     if filename not in csv_files:
                         continue  # No detection CSV for this video segment
+
                     file_path = csv_files[filename]
 
                     # Find video meta details (start, end, city, location, etc.)
@@ -654,13 +678,20 @@ class Analysis():
                 # Find the CSV file for this video
                 value = None
                 for folder_path in common.get_configs('data'):
-                    for file in os.listdir(folder_path):
-                        if os.path.splitext(file)[0] == video_key:
-                            file_path = os.path.join(folder_path, file)
-                            value = pd.read_csv(file_path)
-                            break
+                    for subfolder in ["bbox", "seg"]:
+                        subfolder_path = os.path.join(folder_path, subfolder)
+                        if not os.path.exists(subfolder_path):
+                            continue  # Skip if subfolder doesn't exist
+
+                        for file in os.listdir(subfolder_path):
+                            if os.path.splitext(file)[0] == video_key:
+                                file_path = os.path.join(subfolder_path, file)
+                                value = pd.read_csv(file_path)
+                                break
+                        if value is not None:
+                            break  # Break out of subfolder loop
                     if value is not None:
-                        break
+                        break  # Break out of folder_path loop
 
                 if value is None:
                     continue  # Skip if file not found
@@ -2609,14 +2640,26 @@ class Analysis():
 
                                 base_video_path = os.path.join(existing_folder, f"{video_name}.mp4")
 
-                                # Load tracking DataFrame for the current video segment
+                                df = None  # Initialize before the loops
+
                                 for folder_path in common.get_configs('data'):
-                                    for file in os.listdir(folder_path):
-                                        if video_start_time in file and file.endswith('.csv'):
-                                            file_path = os.path.join(folder_path, file)
-                                            # Load the CSV
-                                            df = pd.read_csv(file_path)
-                                            break
+                                    for subfolder in ["bbox", "seg"]:
+                                        subfolder_path = os.path.join(folder_path, subfolder)
+                                        if not os.path.exists(subfolder_path):
+                                            continue
+                                        for file in os.listdir(subfolder_path):
+                                            if video_start_time in file and file.endswith('.csv'):
+                                                file_path = os.path.join(subfolder_path, file)
+                                                df = pd.read_csv(file_path)
+                                                break  # Found the file, break from subfolder loop
+                                        if df is not None:
+                                            break  # Break from folder_path loop if found
+                                    if df is not None:
+                                        break
+
+                                if df is None:
+                                    return None, None  # Could not find any matching CSV
+
                                 filtered_df = df[df['unique-id'] == unique_id]
 
                                 if filtered_df.empty:
@@ -3189,9 +3232,9 @@ if __name__ == "__main__":
                         video_id, start_index, fps = filename_no_ext.rsplit("_", 2)  # split to extract id and index
 
                         video_city_id = Analysis.find_city_id(df_mapping, video_id, int(start_index))
-                        video_city = df_mapping.loc[df_mapping["id"] == video_city_id, "city"].values[0]
-                        video_state = df_mapping.loc[df_mapping["id"] == video_city_id, "state"].values[0]
-                        video_country = df_mapping.loc[df_mapping["id"] == video_city_id, "country"].values[0]
+                        video_city = df_mapping.loc[df_mapping["id"] == video_city_id, "city"].values[0]  # type: ignore # noqa: E501
+                        video_state = df_mapping.loc[df_mapping["id"] == video_city_id, "state"].values[0]  # type: ignore # noqa: E501
+                        video_country = df_mapping.loc[df_mapping["id"] == video_city_id, "country"].values[0]  # type: ignore # noqa: E501
 
                         logger.debug(f"{file}: found values {video_city}, {video_state}, {video_country}.")
 
