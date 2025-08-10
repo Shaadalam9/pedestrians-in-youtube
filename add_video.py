@@ -50,7 +50,7 @@ def city_matches(row, city_input):
     aka_list = []
     if aka_raw.startswith("[") and aka_raw.endswith("]"):
         aka_list = [item.strip().lower() for item in aka_raw[1:-1].split(',') if item.strip()]
-    
+
     return city_input == main or city_input in aka_list
 
 
@@ -353,7 +353,7 @@ def form():
                             upload_date_list.append(int(upload_date_video))
                         else:
                             upload_date_list.append(None)
-                        channel_list.append(channel_video)                 
+                        channel_list.append(channel_video)
                         fps_list.append(int(fps_video))                    # Append fps list as integer
                         vehicle_type_list.append(int(vehicle_type_video))  # Append vehicle type as integer
                     else:
@@ -733,7 +733,7 @@ def get_traffic_index_lat_lon(lat, lon, api="tomtom"):
                     try:  # free_flow_speed can be 0
                         traffic_index = round((1 - current_speed / free_flow_speed) * 100, 2)
                     except ZeroDivisionError:
-                        traffic_index = 0.0 
+                        traffic_index = 0.0
                     return traffic_index
                 else:
                     return 0.0

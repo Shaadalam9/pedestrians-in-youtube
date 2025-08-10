@@ -40,7 +40,7 @@ shutil.copyfile(base_file, backup_file)
 print(f"Backed up {base_file} -> {backup_file}")
 
 # list-type columns
-list_columns = ['videos', 'time_of_day', 'start_time', 'end_time', 'vehicle_type', 'upload_date', 'fps_list',
+list_columns = ['videos', 'time_of_day', 'start_time', 'end_time', 'vehicle_type', 'upload_date',
                 'channel']
 nested_list_columns = ['time_of_day', 'start_time', 'end_time']
 

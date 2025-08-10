@@ -4448,10 +4448,11 @@ if __name__ == "__main__":
         df_countries_raw["log_total_time"] = np.log1p(df_countries_raw["total_time"])
 
         # todo: remove dropping of columns from df_mapping_raw and remove this bit
-        df_mapping_cites = pd.read_csv("national_csv.csv")
+        mapping_cites = common.get_configs("mapping")
+        df_mapping_cities = pd.read_csv(mapping_cites)
 
         # Produce map with all data
-        df = df_mapping_cites.copy()  # copy df to manipulate for output
+        df = df_mapping_cities.copy()  # copy df to manipulate for output
         df['state'] = df['state'].fillna('NA')  # Set state to NA
 
         # Sort by continent and city, both in ascending order
