@@ -13,7 +13,6 @@ import ast
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut, GeocoderUnavailable
 from datetime import datetime
-import yt_dlp
 
 app = Flask(__name__)
 
@@ -32,8 +31,7 @@ def load_csv(file_path):
         return pd.DataFrame(columns=['city', 'city_aka', 'state', 'country', 'iso3', 'videos', 'time_of_day',
                                      'vehicle_type', 'start_time', 'end_time', 'gmp', 'population_city',
                                      'population_country', 'traffic_mortality', 'continent', 'literacy_rate',
-                                     'avg_height', 'med_age', 'upload_date', 'channel', 'fps_list', 'gini',
-                                     'traffic_index'])
+                                     'avg_height', 'med_age', 'upload_date', 'channel', 'gini', 'traffic_index'])
 
 
 def save_csv(df, file_path):
@@ -79,13 +77,11 @@ def form():
     med_age = ''
     upload_date_list = ''
     channel_list = ''
-    fps_list = ''
     vehicle_type_list = ''
     gini = ''
     traffic_index = ''
     upload_date_video = ''
     channel_video = ''
-    fps_video = '30'
     yt_title = ''
     yt_upload_date = ''
     yt_channel = ''
@@ -145,7 +141,7 @@ def form():
                 return render_template(
                     "add_video.html", message=f"Invalid YouTube URL: {e}", df=df, city=city, country=country,
                     state=state, video_url=video_url, video_id=video_id, existing_data=existing_data_row,
-                    fps_video=fps_video, upload_date_video=upload_date_video, channel_video=channel_video,
+                    upload_date_video=upload_date_video, channel_video=channel_video,
                     yt_title=yt_title, yt_description=yt_description, yt_upload_date=yt_upload_date
                 )
 
@@ -166,8 +162,6 @@ def form():
                 # Get the list of videos for the city (state) and country
                 videos_list = existing_data_row.get('videos', '').split(',')
                 videos_list = [video.strip('[]') for video in videos_list]
-                fps_list = existing_data_row.get('fps_list', '').split(',')
-                fps_list = [fps.strip('[]') for fps in fps_list]
                 upload_date_list = existing_data_row.get('upload_date', '').split(',')
                 upload_date_list = [upload_date.strip('[]') for upload_date in upload_date_list]
                 channel_list = existing_data_row.get('channel', '').split(',')
@@ -178,7 +172,6 @@ def form():
                 city_aka_list = [city_aka.strip('[]') for city_aka in city_aka_list]
                 if video_id in videos_list:
                     position = videos_list.index(video_id)
-                    fps_video = fps_list[position].strip()
                     upload_date_video = upload_date_list[position].strip()
                     channel_video = channel_list[position].strip()
                     start_time_list = ast.literal_eval(existing_data_row.get('start_time', ''))
@@ -218,7 +211,6 @@ def form():
                                      'med_age': get_country_median_age(iso2_code),
                                      'upload_date': [],
                                      'channel': [],
-                                     'fps_list': [],
                                      'vehicle_type': [],
                                      'gini': get_country_gini(country_data),
                                      'traffic_index': get_traffic_index_lat_lon(lat, lon)}  # alternative is paid Nombeo API  # noqa: E501
@@ -260,8 +252,6 @@ def form():
             med_age = request.form.get('med_age')
             upload_date_video = request.form.get('upload_date_video')
             channel_video = request.form.get('channel_video')
-            # fps_video = request.form.get('fps_video')
-            fps_video = get_fps_from_url(video_url)
             vehicle_type_video = request.form.get('vehicle_type')
             time_of_day_video = request.form.get('time_of_day')
             gini = request.form.get('gini')
@@ -294,7 +284,7 @@ def form():
                 return render_template(
                     "add_video.html", message=f"Invalid YouTube URL: {e}", df=df, city=city, country=country,
                     state=state, video_url=video_url, video_id=video_id, existing_data=existing_data_row,
-                    fps_video=fps_video, upload_date_video=upload_date_video, channel_video=channel_video,
+                    upload_date_video=upload_date_video, channel_video=channel_video,
                     yt_title=yt_title, yt_description=yt_description, yt_upload_date=yt_upload_date,
                     yt_channel=yt_channel
                 )
@@ -331,8 +321,6 @@ def form():
                     time_of_day_list = eval(df.at[idx, 'time_of_day']) if pd.notna(df.at[idx, 'time_of_day']) else []
                     start_time_list = eval(df.at[idx, 'start_time']) if pd.notna(df.at[idx, 'start_time']) else []
                     end_time_list = eval(df.at[idx, 'end_time']) if pd.notna(df.at[idx, 'end_time']) else []
-                    fps_list = df.at[idx, 'fps_list'].split(',') if pd.notna(df.at[idx, 'fps_list']) else []
-                    fps_list = [fps.strip('[]') for fps in fps_list]
                     upload_date_list = df.at[idx, 'upload_date'].split(',') if pd.notna(df.at[idx, 'upload_date']) else []  # noqa: E501
                     upload_date_list = [upload_date.strip('[]') for upload_date in upload_date_list]
                     channel_list = df.at[idx, 'channel'].split(',') if pd.notna(df.at[idx, 'channel']) else []  # noqa: E501
@@ -354,7 +342,6 @@ def form():
                         else:
                             upload_date_list.append(None)
                         channel_list.append(channel_video)
-                        fps_list.append(int(fps_video))                    # Append fps list as integer
                         vehicle_type_list.append(int(vehicle_type_video))  # Append vehicle type as integer
                     else:
                         # If the video already exists, update the corresponding lists with the new data
@@ -367,7 +354,6 @@ def form():
                         else:
                             upload_date_list[video_index] = None
                         channel_list[video_index] = channel_video
-                        fps_list[video_index] = int(fps_video)
                         vehicle_type_list[video_index] = int(vehicle_type_video)
                     start_time_video = start_time_list[video_index]
                     end_time_video = end_time_list[video_index]
@@ -431,11 +417,6 @@ def form():
                     channel_list = channel_list.replace('\'', '')
                     channel_list = channel_list.replace(' ', '')
                     df.at[idx, 'channel'] = channel_list
-                    fps_list = [30 if str(x).strip().lower() == 'none' else int(x) for x in fps_list]
-                    fps_list = str(fps_list)
-                    fps_list = fps_list.replace('\'', '')
-                    fps_list = fps_list.replace(' ', '')
-                    df.at[idx, 'fps_list'] = fps_list
                     vehicle_type_list = [int(x) for x in vehicle_type_list]
                     vehicle_type_list = str(vehicle_type_list)
                     vehicle_type_list = vehicle_type_list.replace('\'', '')
@@ -475,7 +456,6 @@ def form():
                         'med_age': med_age,
                         'upload_date': '[' + upload_date_video.strip() + ']',
                         'channel': '[' + channel_video.strip() + ']',
-                        'fps_list': '[' + str(fps_video).strip() + ']',
                         'vehicle_type': '[' + vehicle_type_video.strip() + ']',
                         'gini': gini,
                         'traffic_index': traffic_index,
@@ -514,7 +494,7 @@ def form():
 
     return render_template(
         "add_video.html", message=message, df=df, city=city, country=country, state=state, video_url=video_url,
-        video_id=video_id, existing_data=existing_data_row, fps_video=fps_video, upload_date_video=upload_date_video,
+        video_id=video_id, existing_data=existing_data_row, upload_date_video=upload_date_video,
         channel_video=channel_video, timestamp=end_time_input, yt_title=yt_title, yt_description=yt_description,
         yt_upload_date=yt_upload_date, yt_channel=yt_channel, start_time_video=start_time_video,
         end_time_video=end_time_video, vehicle_type_video=vehicle_type_video, time_of_day_video=time_of_day_video
@@ -819,27 +799,6 @@ def get_coordinates(city, state, country):
     except GeocoderUnavailable:
         print(f"Geocoding server could not be reached for {location_query}.")
         return None, None  # Return None if city is not found
-
-
-def get_fps_from_url(video_url):
-    """Get FPS value of the video"""
-    ydl_opts = {
-        'quiet': True,
-        'skip_download': True,
-        'format': 'bestvideo[height=720]',
-    }
-
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        try:
-            info = ydl.extract_info(video_url, download=False)
-            formats = info.get('formats', [])
-            for fmt in formats:
-                if fmt.get('height') == 720 and 'fps' in fmt:
-                    return int(fmt['fps'])
-        except Exception as e:
-            print(f"Error while try to fetch FPS of video: {e}")
-            return 0
-    return 0
 
 
 if __name__ == "__main__":
