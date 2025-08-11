@@ -41,7 +41,6 @@ df_filtered = df_filtered[['id',
                            'end_time',
                            'vehicle_type',
                            'upload_date',
-                           'fps_list',
                            'time_of_day']].rename(columns={'filtered_videos': 'videos'})
 # save the filtered subset with correct list format
 df_filtered['videos'] = df_filtered['videos'].apply(lambda x: f"[{','.join(x)}]" if isinstance(x, list) else "[]")
