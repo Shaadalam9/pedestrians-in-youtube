@@ -24,3 +24,19 @@ class Tools():
             channel_list = channel_str.strip('[]').split(',')
             channel_list = [ch.strip() for ch in channel_list]
             return len(set(channel_list))
+
+    def compute_avg_variable_city(self, variable_city):
+        """
+        Compute the average value for each city-condition key in a nested dictionary.
+        """
+        avg_dict = {}
+
+        for key, inner_dict in variable_city.items():
+            # Compute average
+            values = list(inner_dict.values())
+            avg_value = sum(values) / len(values) if values else 0
+
+            # Assign average directly to the same key
+            avg_dict[key] = avg_value
+
+        return avg_dict
