@@ -25,7 +25,8 @@ import warnings
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut, GeocoderUnavailable
 from datetime import datetime
-from typing import ClassVar, Dict, Any
+from typing import ClassVar, Dict, Any, Optional
+
 
 # Suppress the specific FutureWarning
 warnings.filterwarnings("ignore", category=FutureWarning, module="plotly")
@@ -58,6 +59,7 @@ BASE_HEIGHT_PER_ROW = 20  # Adjust as needed
 SCALE = 1  # scale=3 hangs often
 
 video_paths = common.get_configs("videos")
+misc_files: set[str] = {"DS_Store", "seg", "bbox"}  # define once
 
 
 class Analysis():
@@ -2192,133 +2194,126 @@ if __name__ == "__main__":
         pedestrian_crossing_count, data = {}, {}
         pedestrian_crossing_count_all = {}
 
-        for folder_path in common.get_configs('data'):
+        for folder_path in common.get_configs("data"):  # Iterable[str]
             if not os.path.exists(folder_path):
                 logger.warning(f"Folder does not exist: {folder_path}.")
                 continue
 
-            found_any = False  # Flag to check if at least one subfolder exists
+            found_any = False
 
-            for subfolder in ["bbox", "seg"]:
+            for subfolder in ("bbox", "seg"):
                 subfolder_path = os.path.join(folder_path, subfolder)
                 if not os.path.exists(subfolder_path):
-                    continue  # Don't log anything here yet
+                    continue
 
-                found_any = True  # At least one subfolder exists
+                found_any = True
 
                 for file_name in tqdm(os.listdir(subfolder_path), desc=f"Processing files in {subfolder_path}"):
-                    file = analysis_class.filter_csv_files(file=file_name, df_mapping=df_mapping)
-                    if file is None:
+                    filtered: Optional[str] = analysis_class.filter_csv_files(
+                        file=file_name, df_mapping=df_mapping
+                    )
+                    if filtered is None:
                         continue
-                    # Further processing here
 
-                    # list of misc and trash files
-                    misc_files = ["DS_Store", "seg", "bbox"]
-                    if file is None or file in misc_files:  # exclude not useful files
+                    # Ensure "file" is always a string
+                    file_str: str = os.fspath(filtered)  # converts PathLike to str safely
+
+                    if file_str in misc_files:
                         continue
-                    else:
-                        filename_no_ext = os.path.splitext(file)[0]
-                        logger.debug(f"{filename_no_ext}: fetching values.")
 
-                        file_path = os.path.join(subfolder_path, file)
-                        df = pd.read_csv(file_path)
+                    filename_no_ext = os.path.splitext(file_str)[0]
+                    logger.debug(f"{filename_no_ext}: fetching values.")
 
-                        # After reading the file, clean up the filename
-                        base_name = tools_class.clean_csv_filename(file)
+                    file_path = os.path.join(subfolder_path, file_str)
+                    df = pd.read_csv(file_path)
 
-                        filename_no_ext = os.path.splitext(base_name)[0]  # Remove extension
+                    # After reading the file, clean up the filename
+                    base_name = tools_class.clean_csv_filename(file_str)
+                    filename_no_ext = os.path.splitext(base_name)[0]  # Remove extension
 
+                    try:
                         video_id, start_index, fps = filename_no_ext.rsplit("_", 2)  # split to extract id and index
+                    except ValueError:
+                        logger.warning(f"Unexpected filename format: {filename_no_ext}")
+                        continue
 
-                        video_city_id = Analysis.find_city_id(df_mapping, video_id, int(start_index))
-                        video_city = df_mapping.loc[df_mapping["id"] == video_city_id, "city"].values[0]  # type: ignore # noqa: E501
-                        video_state = df_mapping.loc[df_mapping["id"] == video_city_id, "state"].values[0]  # type: ignore # noqa: E501
-                        video_country = df_mapping.loc[df_mapping["id"] == video_city_id, "country"].values[0]  # type: ignore # noqa: E501
+                    video_city_id = Analysis.find_city_id(df_mapping, video_id, int(start_index))
+                    video_city = df_mapping.loc[df_mapping["id"] == video_city_id, "city"].values[0]  # type: ignore # noqa: E501
+                    video_state = df_mapping.loc[df_mapping["id"] == video_city_id, "state"].values[0]  # type: ignore # noqa: E501
+                    video_country = df_mapping.loc[df_mapping["id"] == video_city_id, "country"].values[0]  # type: ignore # noqa: E501
+                    logger.debug(f"{file_str}: found values {video_city}, {video_state}, {video_country}.")
 
-                        logger.debug(f"{file}: found values {video_city}, {video_state}, {video_country}.")
-
-                        # Get the number of number and unique id of the object crossing the road
-                        # ids give the unique of the person who cross the road after applying the filter, while
-                        # all_ids gives every unique_id of the person who crosses the road
-                        ids, all_ids = algorithms_class.pedestrian_crossing(df,
-                                                                            filename_no_ext,
-                                                                            df_mapping,
-                                                                            common.get_configs("boundary_left"),
-                                                                            common.get_configs("boundary_right"),
-                                                                            person_id=0)
-
-                        # Saving it in a dictionary in: {video-id_time: count, ids}
-                        pedestrian_crossing_count[filename_no_ext] = {"ids": ids}
-                        pedestrian_crossing_count_all[filename_no_ext] = {"ids": all_ids}
-
-                        # Saves the time to cross in form {name_time: {id(s): time(s)}}
-                        temp_data = algorithms_class.time_to_cross(df,
-                                                                   pedestrian_crossing_count[filename_no_ext]["ids"],
-                                                                   filename_no_ext,
-                                                                   df_mapping)
-                        data[filename_no_ext] = temp_data
-
-                        # List of all 80 class names in COCO order
-                        coco_classes = ['person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck',
-                                        'boat', 'traffic_light', 'fire_hydrant', 'stop_sign', 'parking_meter', 'bench',
-                                        'bird', 'cat', 'dog', 'horse', 'sheep', 'cow', 'elephant', 'bear', 'zebra',
-                                        'giraffe', 'backpack', 'umbrella', 'handbag', 'tie', 'suitcase', 'frisbee',
-                                        'skis', 'snowboard', 'sports_ball', 'kite', 'baseball_bat', 'baseball_glove',
-                                        'skateboard', 'surfboard', 'tennis_racket', 'bottle', 'wine_glass', 'cup',
-                                        'fork', 'knife', 'spoon', 'bowl', 'banana', 'apple', 'sandwich', 'orange',
-                                        'broccoli', 'carrot', 'hot_dog', 'pizza', 'donut', 'cake', 'chair', 'couch',
-                                        'potted_plant', 'bed', 'dining_table', 'toilet', 'tv', 'laptop', 'mouse',
-                                        'remote', 'keyboard', 'cellphone', 'microwave', 'oven', 'toaster', 'sink',
-                                        'refrigerator', 'book', 'clock', 'vase', 'scissors', 'teddy_bear',
-                                        'hair_drier', 'toothbrush']
-
-                        # --- Ensure all needed columns exist and are integer type ---
-                        for class_name in coco_classes:
-                            if class_name not in df_mapping.columns:
-                                df_mapping[class_name] = 0
-                            df_mapping[class_name] = pd.to_numeric(df_mapping[class_name],
-                                                                   errors='coerce').fillna(0).astype(int)
-
-                        # --- Count unique objects per yolo-id ---
-                        object_counts = (
-                            df.drop_duplicates(['yolo-id', 'unique-id'])['yolo-id']
-                            .value_counts().sort_index()
-                        )
-                        counters = {class_name: int(object_counts.get(i, 0)) for i,
-                                    class_name in enumerate(coco_classes)}
-
-                        # --- Update df_mapping for the given video_city_id ---
-                        for class_name in coco_classes:
-                            df_mapping.loc[df_mapping["id"] == video_city_id, class_name] += counters[class_name]  # type: ignore  # noqa: E501
-
-                        # Add duration of segment
-                        time_video = analysis_class.get_duration(df_mapping, video_id, int(start_index))
-                        df_mapping.loc[df_mapping["id"] == video_city_id, "total_time"] += time_video  # type: ignore
-
-                        # Add total crossing detected
-                        df_mapping.loc[df_mapping["id"] == video_city_id, "total_crossing_detect"] += len(ids)  # type: ignore  # noqa: E501
-
-                        # Aggregated values
-                        speed_value = algorithms_class.calculate_speed_of_crossing(df_mapping,
-                                                                                   df,
-                                                                                   {filename_no_ext: temp_data})
-
-                        if speed_value is not None:
-                            for outer_key, inner_dict in speed_value.items():
-                                if outer_key not in all_speed:
-                                    all_speed[outer_key] = inner_dict
-                                else:
-                                    all_speed[outer_key].update(inner_dict)
-
-                        time_value = algorithms_class.time_to_start_cross(df_mapping,
-                                                                          df,
-                                                                          {filename_no_ext: temp_data})
-                        if time_value is not None:
-                            for outer_key, inner_dict in time_value.items():
-                                if outer_key not in all_time:
-                                    all_time[outer_key] = inner_dict
-                                else:
-                                    all_time[outer_key].update(inner_dict)
+                    # Get the number of number and unique id of the object crossing the road
+                    # ids give the unique of the person who cross the road after applying the filter, while
+                    # all_ids gives every unique_id of the person who crosses the road
+                    ids, all_ids = algorithms_class.pedestrian_crossing(df,
+                                                                        filename_no_ext,
+                                                                        df_mapping,
+                                                                        common.get_configs("boundary_left"),
+                                                                        common.get_configs("boundary_right"),
+                                                                        person_id=0)
+                    # Saving it in a dictionary in: {video-id_time: count, ids}
+                    pedestrian_crossing_count[filename_no_ext] = {"ids": ids}
+                    pedestrian_crossing_count_all[filename_no_ext] = {"ids": all_ids}
+                    # Saves the time to cross in form {name_time: {id(s): time(s)}}
+                    temp_data = algorithms_class.time_to_cross(df,
+                                                               pedestrian_crossing_count[filename_no_ext]["ids"],
+                                                               filename_no_ext,
+                                                               df_mapping)
+                    data[filename_no_ext] = temp_data
+                    # List of all 80 class names in COCO order
+                    coco_classes = ['person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck',
+                                    'boat', 'traffic_light', 'fire_hydrant', 'stop_sign', 'parking_meter', 'bench',
+                                    'bird', 'cat', 'dog', 'horse', 'sheep', 'cow', 'elephant', 'bear', 'zebra',
+                                    'giraffe', 'backpack', 'umbrella', 'handbag', 'tie', 'suitcase', 'frisbee',
+                                    'skis', 'snowboard', 'sports_ball', 'kite', 'baseball_bat', 'baseball_glove',
+                                    'skateboard', 'surfboard', 'tennis_racket', 'bottle', 'wine_glass', 'cup',
+                                    'fork', 'knife', 'spoon', 'bowl', 'banana', 'apple', 'sandwich', 'orange',
+                                    'broccoli', 'carrot', 'hot_dog', 'pizza', 'donut', 'cake', 'chair', 'couch',
+                                    'potted_plant', 'bed', 'dining_table', 'toilet', 'tv', 'laptop', 'mouse',
+                                    'remote', 'keyboard', 'cellphone', 'microwave', 'oven', 'toaster', 'sink',
+                                    'refrigerator', 'book', 'clock', 'vase', 'scissors', 'teddy_bear',
+                                    'hair_drier', 'toothbrush']
+                    # --- Ensure all needed columns exist and are integer type ---
+                    for class_name in coco_classes:
+                        if class_name not in df_mapping.columns:
+                            df_mapping[class_name] = 0
+                        df_mapping[class_name] = pd.to_numeric(df_mapping[class_name],
+                                                               errors='coerce').fillna(0).astype(int)
+                    # --- Count unique objects per yolo-id ---
+                    object_counts = (
+                        df.drop_duplicates(['yolo-id', 'unique-id'])['yolo-id']
+                        .value_counts().sort_index()
+                    )
+                    counters = {class_name: int(object_counts.get(i, 0)) for i,
+                                class_name in enumerate(coco_classes)}
+                    # --- Update df_mapping for the given video_city_id ---
+                    for class_name in coco_classes:
+                        df_mapping.loc[df_mapping["id"] == video_city_id, class_name] += counters[class_name]  # type: ignore  # noqa: E501
+                    # Add duration of segment
+                    time_video = analysis_class.get_duration(df_mapping, video_id, int(start_index))
+                    df_mapping.loc[df_mapping["id"] == video_city_id, "total_time"] += time_video  # type: ignore
+                    # Add total crossing detected
+                    df_mapping.loc[df_mapping["id"] == video_city_id, "total_crossing_detect"] += len(ids)  # type: ignore  # noqa: E501
+                    # Aggregated values
+                    speed_value = algorithms_class.calculate_speed_of_crossing(df_mapping,
+                                                                               df,
+                                                                               {filename_no_ext: temp_data})
+                    if speed_value is not None:
+                        for outer_key, inner_dict in speed_value.items():
+                            if outer_key not in all_speed:
+                                all_speed[outer_key] = inner_dict
+                            else:
+                                all_speed[outer_key].update(inner_dict)
+                    time_value = algorithms_class.time_to_start_cross(df_mapping,
+                                                                      df,
+                                                                      {filename_no_ext: temp_data})
+                    if time_value is not None:
+                        for outer_key, inner_dict in time_value.items():
+                            if outer_key not in all_time:
+                                all_time[outer_key] = inner_dict
+                            else:
+                                all_time[outer_key].update(inner_dict)
 
         person_counter = df_mapping['person'].sum()
         bicycle_counter = df_mapping['bicycle'].sum()
