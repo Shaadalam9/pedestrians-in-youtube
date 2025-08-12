@@ -182,7 +182,6 @@ if __name__ == "__main__":
                                 logger.warning("Invalid video_fps!")
                                 continue
 
-                            print("video fps: ", video_fps)
                             # Set the base video path to the downloaded video
                             base_video_path = video_file_path
 
@@ -217,7 +216,6 @@ if __name__ == "__main__":
                             # Invalid fps: None, 0, or NaN
                             logger.warning("Invalid video_fps!")
                             continue
-                        print("video fps2:", video_fps)
 
                     for start_time, end_time, time_of_day_value in zip(start_times_list, end_times_list, time_of_day_list):  # noqa: E501
                         bbox_folders, seg_folders, bbox_paths, seg_paths = [], [], [], []
@@ -225,9 +223,7 @@ if __name__ == "__main__":
                         if video_fps is not None:
                             video_fps = int(video_fps)
 
-                        print("video fps3:", video_fps)
                         filename = f"{vid}_{start_time}_{video_fps}.csv"
-                        print("filename:", filename)
 
                         for folder in data_folders:
                             bbox_path = os.path.join(folder, "bbox", filename)
