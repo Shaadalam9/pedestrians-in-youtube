@@ -4,9 +4,9 @@ from custom_logger import CustomLogger
 from logmod import logs
 import warnings
 import os
-from .values import Values
-from .wrappers import Wrappers
-from .tools import Tools
+from utils.values import Values
+from utils.wrappers import Wrappers
+from utils.tools import Tools
 import shutil
 import plotly as py
 import plotly.graph_objects as go
