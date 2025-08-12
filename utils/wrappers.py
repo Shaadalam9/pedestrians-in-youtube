@@ -138,61 +138,159 @@ class Wrappers():
             raise TypeError("city_lat_lon must be a string or a list of strings.")
 
     def country_averages_from_nested(self, var_dict, df_mapping):
-        # Collect values by country_condition
+        """Aggregates nested city-level values into country-level averages by condition.
+
+        This method processes a dictionary where keys are formatted as
+        `"{city}_{lat}_{long}_{condition}"` and values are dictionaries of measurements.
+        It groups all measurements by `country_condition` (e.g., `"USA_0"`, `"USA_1"`)
+        and computes the average for each group.
+
+        Args:
+            var_dict (dict): Dictionary of city-condition data, where:
+                - Keys (str): "{city}_{lat}_{long}_{condition}".
+                - Values (dict): Inner dictionary of measurements for that city-condition.
+            df_mapping (pd.DataFrame): Mapping DataFrame containing city-to-country info.
+
+        Returns:
+            dict: A dictionary mapping "country_condition" → average value (float).
+
+        Example:
+            >>> var_dict = {
+            ...     "Paris_48.85_2.35_0": {"a": 10, "b": 20},
+            ...     "Paris_48.85_2.35_1": {"a": 30, "b": 50}
+            ... }
+            >>> df_mapping
+               city     lat  country
+            0  Paris  48.85  France
+            >>> country_averages_from_nested(var_dict, df_mapping)
+            {'France_0': 15.0, 'France_1': 40.0}
+        """
+        # Store all values grouped by country and condition (e.g., "France_0")
         country_condition_values = defaultdict(list)
 
+        # Iterate over each city-condition entry
         for k, inner_dict in var_dict.items():
+            # Split key into components: city, latitude, longitude, condition
             city, lat, long, condition = k.rsplit('_', 3)
             lat = float(lat)
             condition = int(condition)
-            # Assuming values_class.get_value works as before
+
+            # Map city+lat to country using df_mapping
             country = values_class.get_value(df_mapping, "city", city, "lat", lat, "country")
             if country:
-                key = f'{country}_{condition}'
-                # ADD: iterate over inner dictionary values!
+                key = f"{country}_{condition}"
+                # Append all measurement values from the inner dictionary
                 country_condition_values[key].extend(inner_dict.values())
 
-        # Calculate averages
+        # Compute average for each country-condition if values exist
         country_condition_averages = {
             key: sum(vals) / len(vals) for key, vals in country_condition_values.items() if vals
         }
+
         return country_condition_averages
 
     def country_averages_from_flat(self, var_dict, df_mapping):
-        # Collect values by country_condition
+        """Aggregates flat city-level values into country-level averages by condition.
+
+        This method processes a dictionary where keys are formatted as
+        `"{city}_{lat}_{long}_{condition}"` and values are numeric measurements.
+        It groups all measurements by `country_condition` (e.g., `"USA_0"`, `"USA_1"`)
+        and computes the average for each group.
+
+        Args:
+            var_dict (dict): Dictionary of city-condition values, where:
+                - Keys (str): "{city}_{lat}_{long}_{condition}".
+                - Values (float or int): Numeric measurement for that city-condition.
+            df_mapping (pd.DataFrame): Mapping DataFrame containing city-to-country info.
+
+        Returns:
+            dict: A dictionary mapping "country_condition" → average value (float).
+
+        Example:
+            >>> var_dict = {
+            ...     "Paris_48.85_2.35_0": 10,
+            ...     "Paris_48.85_2.35_1": 30
+            ... }
+            >>> df_mapping
+               city     lat  country
+            0  Paris  48.85  France
+            >>> country_averages_from_flat(var_dict, df_mapping)
+            {'France_0': 10.0, 'France_1': 30.0}
+        """
+        # Store all values grouped by country and condition (e.g., "France_0")
         country_condition_values = defaultdict(list)
 
+        # Iterate over each city-condition entry
         for k, v in var_dict.items():
+            # Split key into components: city, latitude, longitude, condition
             city, lat, long, condition = k.rsplit('_', 3)
             lat = float(lat)
             condition = int(condition)
+
+            # Map city+lat to country using df_mapping
             country = values_class.get_value(df_mapping, "city", city, "lat", lat, "country")
             if country:
-                key = f'{country}_{condition}'
+                key = f"{country}_{condition}"
+                # Append the numeric measurement
                 country_condition_values[key].append(v)
 
-        # Calculate averages
+        # Compute average for each country-condition
         country_condition_averages = {
-            key: sum(vals)/len(vals) for key, vals in country_condition_values.items()
+            key: sum(vals) / len(vals) for key, vals in country_condition_values.items()
         }
+
         return country_condition_averages
 
     def country_sum_from_cities(self, var_dict, df_mapping):
+        """Aggregates city-level numeric values into country-level sums by condition.
+
+        This method processes a dictionary where keys are formatted as
+        `"{city}_{lat}_{long}_{condition}"` and values are numeric measurements.
+        It groups all measurements by `country_condition` (e.g., `"USA_0"`, `"USA_1"`)
+        and computes the sum for each group.
+
+        Args:
+            var_dict (dict): Dictionary of city-condition values, where:
+                - Keys (str): "{city}_{lat}_{long}_{condition}".
+                - Values (float or int): Numeric measurement for that city-condition.
+            df_mapping (pd.DataFrame): Mapping DataFrame containing city-to-country info.
+
+        Returns:
+            dict: A dictionary mapping "country_condition" → summed value (float or int).
+
+        Example:
+            >>> var_dict = {
+            ...     "Paris_48.85_2.35_0": 5,
+            ...     "Paris_48.85_2.35_1": 7
+            ... }
+            >>> df_mapping
+               city     lat  country
+            0  Paris  48.85  France
+            >>> country_sum_from_cities(var_dict, df_mapping)
+            {'France_0': 5, 'France_1': 7}
+        """
+        # Store all values grouped by country and condition (e.g., "France_0")
         country_condition_values = defaultdict(list)
 
+        # Iterate over each city-condition entry
         for k, v in var_dict.items():
+            # Split key into components: city, latitude, longitude, condition
             city, lat, long, condition = k.rsplit('_', 3)
             lat = float(lat)
             condition = int(condition)
+
+            # Map city+lat to country using df_mapping
             country = values_class.get_value(df_mapping, "city", city, "lat", lat, "country")
             if country:
-                key = f'{country}_{condition}'
+                key = f"{country}_{condition}"
+                # Append the numeric measurement
                 country_condition_values[key].append(v)
 
-        # Calculate sums (not averages)
+        # Compute sum for each country-condition
         country_condition_sums = {
             key: sum(vals) for key, vals in country_condition_values.items()
         }
+
         return country_condition_sums
 
     def format_city_state(self, city_state):

@@ -53,14 +53,38 @@ class Plots():
         pass
 
     def add_vertical_legend_annotations(self, fig, legend_items, x_position, y_start, spacing=0.03, font_size=50):
+        """Adds vertical legend annotations to a Plotly figure.
+
+        This method creates a vertical list of legend items in a Plotly figure,
+        positioning them at a specified location and spacing. Each legend item
+        consists of a colored square followed by its name.
+
+        Args:
+            fig (plotly.graph_objs.Figure): The Plotly figure to which annotations will be added.
+            legend_items (list[dict]): A list of dictionaries where each dictionary
+                contains:
+                    - "color" (str): The hex or named color of the legend symbol.
+                    - "name" (str): The display name for the legend item.
+            x_position (float): The horizontal position of the legend in paper coordinates (0 to 1).
+            y_start (float): The vertical starting position of the first legend item in paper coordinates.
+            spacing (float, optional): The vertical space between legend items. Defaults to 0.03.
+            font_size (int, optional): The font size for legend text. Defaults to 50.
+
+        Returns:
+            None: The figure is modified in-place.
+        """
+        # Loop through each legend item and add an annotation
         for i, item in enumerate(legend_items):
             fig.add_annotation(
-                x=x_position,  # Use the x_position provided by the user
-                y=y_start - i * spacing,  # Adjust vertical position based on index and spacing
-                xref='paper', yref='paper', showarrow=False,
-                text=f'<span style="color:{item["color"]};">&#9632;</span> {item["name"]}',  # noqa:E501
-                font=dict(size=font_size),
-                xanchor='left', align='left'  # Ensure the text is left-aligned
+                x=x_position,  # X position of the annotation (relative to paper coordinates)
+                y=y_start - i * spacing,  # Adjust Y position for each item using spacing
+                xref='paper',  # X coordinate is relative to the entire figure (paper)
+                yref='paper',  # Y coordinate is relative to the entire figure (paper)
+                showarrow=False,  # No arrow for the annotation
+                text=f'<span style="color:{item["color"]};">&#9632;</span> {item["name"]}',  # Colored square + name
+                font=dict(size=font_size),  # Font size for the annotation text
+                xanchor='left',  # Align text starting from the left
+                align='left'  # Text alignment within the annotation
             )
 
     def save_plotly_figure(self, fig, filename, width=1600, height=900, scale=SCALE, save_final=True, save_png=True,
@@ -1339,61 +1363,77 @@ class Plots():
 
     def mapbox_map(self, df, density_col=None, density_radius=30, hover_data=None, file_name="mapbox_map",
                    save_final=True):
-        """Generate world map with cities using mapbox.
+        """Generates a world map of cities using Mapbox, with optional density visualization.
+
+        This method can create either:
+            1. A simple scatter map showing city locations colored by continent.
+            2. A density map showing intensity values based on a specified column.
 
         Args:
-            df (dataframe): dataframe with mapping info.
-            hover_data (list, optional): list of params to show on hover.
-            file_name (str, optional): name of file
+            df (pandas.DataFrame): DataFrame containing mapping information.
+                Required columns: "lat", "lon", "city", "continent".
+            density_col (str, optional): Column name for density values.
+                If provided, a density map is generated. Defaults to None.
+            density_radius (int, optional): The pixel radius for density spread. Defaults to 30.
+            hover_data (list, optional): List of additional DataFrame columns to display when hovering.
+                Defaults to None.
+            file_name (str, optional): Name of the saved file (without extension). Defaults to "mapbox_map".
+            save_final (bool, optional): If True, saves the figure. Defaults to True.
+
+        Returns:
+            None: The Plotly figure is created, displayed, and optionally saved.
         """
-        # Draw map without density layer
+        # Draw scatter map if no density column is provided
         if not density_col:
-            fig = px.scatter_map(df,
-                                 lat="lat",
-                                 lon="lon",
-                                 hover_data=hover_data,
-                                 hover_name="city",
-                                 color=df["continent"],
-                                 zoom=1.3)  # type: ignore
-        # Draw map with density layer
+            fig = px.scatter_map(
+                df,
+                lat="lat",
+                lon="lon",
+                hover_data=hover_data,
+                hover_name="city",
+                color=df["continent"],  # Color points by continent
+                zoom=1.3  # Initial zoom level # pyright: ignore[reportArgumentType]
+            )
+        # Draw density map if density column is provided
         else:
             fig = px.density_mapbox(
                 df,
                 lat="lat",
                 lon="lon",
-                z=density_col,
-                radius=density_radius,  # tune for spread
-                zoom=2.5,  # type: ignore
-                center=dict(lat=df["lat"].mean(), lon=df["lon"].mean()),
-                mapbox_style="carto-positron",
+                z=density_col,  # Use density column for intensity
+                radius=density_radius,  # Control the spread of density
+                zoom=2.5,  # Initial zoom level for density view # pyright: ignore[reportArgumentType]
+                center=dict(
+                    lat=df["lat"].mean(),
+                    lon=df["lon"].mean()
+                ),  # Center map on mean coordinates
+                mapbox_style="carto-positron",  # Light and clean map style
                 hover_name="city",
                 hover_data=hover_data,
             )
 
-            # fig.update_layout(
-            #     height=700
-            # )
-
-        # Update layout
+        # Update map layout to improve appearance
         fig.update_layout(
-            margin=dict(l=0, r=0, t=0, b=0),
+            margin=dict(l=0, r=0, t=0, b=0),  # Remove extra margins
             mapbox=dict(zoom=1.3),
-            font=dict(family=common.get_configs('font_family'),
-                      size=common.get_configs('font_size')),
+            font=dict(
+                family=common.get_configs('font_family'),
+                size=common.get_configs('font_size')
+            ),
             legend=dict(
                 x=1,
                 y=1,
                 xanchor='right',
                 yanchor='top',
-                bgcolor='rgba(255,255,255,0.6)',  # transparent white
-                bordercolor='rgba(0,0,0,0.1)',
+                bgcolor='rgba(255,255,255,0.6)',  # Semi-transparent white background
+                bordercolor='rgba(0,0,0,0.1)',   # Light border
                 borderwidth=1
             ),
-            legend_title_text=""  # remove legend title
+            legend_title_text=""  # Remove legend title
         )
 
-        # Save and display the figure
-        self.save_plotly_figure(fig, file_name, save_final=True)
+        # Save the figure if requested
+        self.save_plotly_figure(fig, file_name, save_final=save_final)
 
     def world_map(self, df_mapping):
         """
@@ -1639,408 +1679,271 @@ class Plots():
                     pretty_text=False, xaxis_title=None, yaxis_title=None,
                     name_file=None, save_file=False, save_final=False, fig_save_width=1320,
                     fig_save_height=680, font_family=None, font_size=None, vlines=None, xrange=None):
+        """Generates a violin plot grouped by country from nested results data.
 
+        This method loads results from a pickle file, extracts values per country,
+        and creates violin plots for visualizing distributions.
+        It groups the data by country (based on a city-lat mapping) and displays
+        box-and-mean lines within each violin.
+
+        Args:
+            data_index (int): Index of the dataset within the loaded pickle's tuple.
+            name (str): Name associated with the dataset or plot.
+            min_threshold (float): Minimum value filter for data (currently unused).
+            max_threshold (float): Maximum value filter for data (currently unused).
+            df_mapping (pandas.DataFrame): DataFrame for mapping city/lat to country.
+            color (str, optional): Color for violin plots. Defaults to None.
+            pretty_text (bool, optional): If True, formats axis labels nicely. Defaults to False.
+            xaxis_title (str, optional): Custom title for the x-axis. Defaults to "Country".
+            yaxis_title (str, optional): Custom title for the y-axis. Defaults to "Values".
+            name_file (str, optional): Name for saving the figure file. Defaults to None.
+            save_file (bool, optional): If True, saves the plot as an intermediate file. Defaults to False.
+            save_final (bool, optional): If True, saves the final plot. Defaults to False.
+            fig_save_width (int, optional): Width of the saved figure in pixels. Defaults to 1320.
+            fig_save_height (int, optional): Height of the saved figure in pixels. Defaults to 680.
+            font_family (str, optional): Font family for text in the figure. Defaults to None.
+            font_size (int, optional): Font size for text in the figure. Defaults to None.
+            vlines (list, optional): List of vertical lines to add to the plot. Defaults to None.
+            xrange (tuple, optional): X-axis range (min, max). Defaults to None.
+
+        Returns:
+            None: The Plotly figure is displayed (and optionally saved).
+        """
         # Load data from pickle file
         with open(file_results, 'rb') as file:
             data_tuple = pickle.load(file)
+
+        # Extract the nested dictionary at the given index
         nested_dict = data_tuple[data_index]
 
         values = {}
 
+        # Loop through each (city, lat, ...) key and collect values grouped by country
         for city_lat_long_cond, inner_dict in nested_dict.items():
             city, lat, _, _ = city_lat_long_cond.split("_")
+            # Get country from mapping DataFrame
             country = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "country")
             if country not in values:
-                values[country] = []  # Use a list to keep duplicates
+                values[country] = []  # Initialize a list for each country
+            # Collect all values from the nested structure
             for video_id, inner_values in inner_dict.items():
                 values[country].extend(inner_values.values())
 
+        # Create the figure
         fig = go.Figure()
 
-        # Add one violin plot per city
+        # Add one violin plot per country
         for country, country_values in values.items():
             fig.add_trace(go.Violin(
                 y=country_values,
-                x=[country] * len(country_values),  # Repeating city name for each value
+                x=[country] * len(country_values),  # Repeat country name for each value
                 name=country,
-                box_visible=True,
-                meanline_visible=True,
-                # points='all'  # Optional: show individual points
+                box_visible=True,         # Show inner box plot
+                meanline_visible=True,    # Show mean line
+                # points='all'            # Optional: show individual points
             ))
 
-        # Update layout to improve visualisation
+        # Update layout for better visualization
         fig.update_layout(
-            xaxis_title="Country",
-            yaxis_title="Values",
-            violinmode='group'
+            xaxis_title=xaxis_title or "Country",
+            yaxis_title=yaxis_title or "Values",
+            violinmode='group'  # Group violins side-by-side if multiple categories
         )
 
+        # Display the plot
         fig.show()
 
-    # todo: add docstring to all methods where missing.
-    # todo: consider merging map and map_political, as they are somewhat duplicate
-    def map(self, df, color, title, title_colorbar=None, save_file=False,
-            show_colorbar=False, colorbar_title=None, projection="natural earth"):
-        """Map of countries of participation with colour based on column in dataframe.
+    def map_world(self, df, *, color, title=None, projection="natural earth", hover_name="country", hover_data=None,
+                  show_colorbar=False, colorbar_title=None, colorbar_kwargs=None, color_scale="YlOrRd",
+                  show_cities=False, df_cities=None, city_marker_size=3, show_images=False, image_items=None,
+                  denmark_greenland=False, save_file=False, save_final=False, file_basename="map",
+                  filter_zero_nan=True, country_name_map=None):
+        """
+        Unified world choropleth with optional cities and annotations.
 
         Args:
-            df (dataframe): dataframe with keypress data.
+            df (pd.DataFrame): Must include 'country' and the column referenced by `color`.
+            color (str): Column in df for choropleth coloring.
+            title (str|None): Optional figure title.
+            projection (str): Plotly geo projection (e.g., 'natural earth').
+            hover_name (str): Column used for hover name (defaults to 'country').
+            hover_data (list|dict|None): Extra hover fields.
             show_colorbar (bool): Whether to show a color bar.
-            colorbar_title (str): Optional custom title for the color bar.
+            colorbar_title (str|None): Title for color bar (defaults to `color`).
+            colorbar_kwargs (dict|None): Extra layout props for the color bar (merged with sensible defaults).
+            color_scale (str|list): Plotly color scale.
+            show_cities (bool): Add city markers from `df_cities`.
+            df_cities (pd.DataFrame|None): Needs columns 'lat' and 'lon'; optional 'city','country'.
+            city_marker_size (int|float): Marker size for cities.
+            show_images (bool): Add overlay images/arrows/labels from `image_items`.
+            image_items (list[dict]|None): Same schema you used before.
+            denmark_greenland (bool): If True, duplicate Denmark’s value for Greenland.
+            save_file (bool): If True, save HTML (and optionally final image) via your helper.
+            save_final (bool): Passed to your `save_plotly_figure`.
+            file_basename (str): Base filename without extension.
+            filter_zero_nan (bool): Filter rows where `color` is 0 or NaN (your old map() behavior).
+            country_name_map (dict|None): Extra name normalization; default includes {'Türkiye': 'Turkey'}.
         """
-        logger.info('Creating visualisation of heatmap of participants by country with colour defined by {}.', color)
 
-        # Filter out rows where the color value is 0 or NaN
-        df_filtered = df[df[color].fillna(0) != 0].copy()
+        # --- prep ---
+        df = df.copy()
+        if country_name_map is None:
+            country_name_map = {"Türkiye": "Turkey"}
+        df["country"] = df["country"].replace(country_name_map)
 
-        # # Get Denmark's value for the specified column
-        # denmark_value = df_filtered.loc[df_filtered['country'] == 'Denmark', color].values
-        # if len(denmark_value) > 0:
-        #     greenland_row = {
-        #         'country': 'Greenland',
-        #         color: denmark_value[0]
-        #     }
-        #     # Add any other required columns with default or NaN
-        #     for col in df_filtered.columns:
-        #         if col not in greenland_row:
-        #             greenland_row[col] = None
+        # Optional Greenland-from-Denmark duplication
+        if denmark_greenland and "country" in df and color in df:
+            denmark_vals = df.loc[df["country"] == "Denmark", color].values
+            if len(denmark_vals) > 0:
+                # build row with same columns
+                greenland_row = {col: (None if col not in ("country", color) else
+                                       ("Greenland" if col == "country" else denmark_vals[0]))
+                                 for col in df.columns}
+                df = pd.concat([df, pd.DataFrame([greenland_row])], ignore_index=True)
 
-        #     df_filtered = pd.concat([df_filtered, pd.DataFrame([greenland_row])], ignore_index=True)
+        # Optional filter like old map()
+        if filter_zero_nan:
+            df = df[df[color].fillna(0) != 0].copy()
 
-        # ---- HANDLE COUNTRY NAME MISMATCHES ----
-        country_name_map = {
-            'Türkiye': 'Turkey'
-        }
-        df_filtered['country'] = df_filtered['country'].replace(country_name_map)
-        # ----------------------------------------
-
-        # create map
-        fig = px.choropleth(df_filtered,
-                            locations='country',
-                            locationmode='country names',
-                            color=color,
-                            hover_name='country',
-                            projection=projection,
-                            color_continuous_scale="YlOrRd")
-        fig.update_layout(
-            font=dict(
-                family=common.get_configs('font_family'),
-                size=common.get_configs('font_size')
-            ),
-            coloraxis_colorbar=dict(
-                x=0,              # far left
-                xanchor='left',
-                y=0.45,            # vertically centered
-                len=0.7,         # adjust the length of the color bar
-                thickness=20,     # make it thinner if needed
-                title=title_colorbar     # optional: title for clarity
-            )
-        )
-
-        # Use column name as default colorbar title if not provided
+        # Default colorbar title
         if colorbar_title is None:
             colorbar_title = color
 
-        # Show or hide color bar
-        fig.update_coloraxes(
-            showscale=show_colorbar,
-            colorbar=dict(
-                title=colorbar_title,
-                orientation="h",
-                x=0.5,
-                y=0.06,
-                xanchor="center",
-                yanchor="bottom",
-                len=0.5,
-                thickness=10,
-                bgcolor='rgba(255,255,255,0.7)',
-                tickfont=dict(size=common.get_configs('font_size')-5),
-            ) if show_colorbar else {}
+        # --- figure ---
+        fig = px.choropleth(
+            df,
+            locations="country",
+            locationmode="country names",
+            color=color,
+            hover_name=hover_name,
+            hover_data=hover_data,
+            projection=projection,
+            color_continuous_scale=color_scale,
+            title=title,
         )
 
-        # save file to local output folder
-        if save_file:
-            # Final adjustments and display
-            fig.update_layout(margin=dict(l=1, r=1, t=1, b=1))
-            self.save_plotly_figure(fig, f"map_{color}", save_final=True)
-        # open it in localhost instead
-        else:
-            fig.show()
+        # Fonts from your config
+        fig.update_layout(
+            font=dict(
+                family=common.get_configs('font_family'),
+                size=common.get_configs('font_size'),
+            )
+        )
 
-    def map_political(self, df, df_mapping, show_images=False, show_cities=True, hover_data=None, color="continent",
-                      save_file=False, save_final=False, name_file="map", show_colorbar=False, colorbar_title=None):
-        """Generate world map with countries colored by continent using choropleth.
-
-        Args:
-            df (dataframe): dataframe with 'country' and 'continent' columns.
-            df_mapping (TYPE): mapping dataframe.
-            show_images (bool, optional): show screenshots on top of the map.
-            show_cities (bool, optional): show cities as markers
-            hover_data (list, optional): list of params to show on hover.
-            color (str, optional): parameter to colour countries.
-            save_file (bool, optional): flag for saving an html file with plot.
-            save_final (bool, optional): flag for saving an a final figure to /figures.
-            name_file (str, optional): name of file.
-            show_colorbar (bool): Whether to show a color bar.
-            colorbar_title (str): Optional custom title for the color bar.
-        """
-        # if 'Denmark' in df['country'].values:
-        #     denmark_value = df.loc[df['country'] == 'Denmark', 'continent'].values[0]
-        #     df = pd.concat([df, pd.DataFrame([{'country': 'Greenland', 'continent': denmark_value}])],
-        #                    ignore_index=True)
-        df = df.copy()  # Make a copy so you don't modify the original
-        country_name_map = {
-            "Türkiye": "Turkey"
-        }
-
-        # Replace the names in your DataFrame
-        df['country'] = df['country'].replace(country_name_map)
-
-        # Plot country-level choropleth
-        fig = px.choropleth(df,
-                            locations="country",
-                            locationmode="country names",
-                            color=color,
-                            hover_name="country",
-                            hover_data=hover_data,
-                            projection="natural earth",
-                            color_continuous_scale="YlOrRd")
-
-        # add markers of cities
-        if show_cities:
-            # add city markers as scattergeo
+        # --- optional cities ---
+        if show_cities and df_cities is not None and {"lat", "lon"}.issubset(df_cities.columns):
             fig.add_trace(go.Scattergeo(
-                lon=df_mapping['lon'],
-                lat=df_mapping['lat'],
-                text=df_mapping.get('city', None),
-                mode='markers',
-                hoverinfo='skip',
-                marker=dict(
-                    size=3,
-                    color='black',
-                    opacity=0.7,
-                    symbol='circle'
-                ),
-                name='cities'
+                lon=df_cities["lon"],
+                lat=df_cities["lat"],
+                text=df_cities.get("city", None),
+                mode="markers",
+                hoverinfo="skip",
+                marker=dict(size=city_marker_size, color="black", opacity=0.7, symbol="circle"),
+                name="cities",
             ))
 
-        # add screenshots of videos
-        if show_images:
-            # define city images with positions
-            city_images = [
-                {
-                    "city": "Tokyo",
-                    "country": "Japan",
-                    "file": "tokyo.png",
-                    "x": 0.933, "y": 0.58,
-                    "approx_lon": 165.2, "approx_lat": 7.2,
-                    "label": "Tokyo, Japan",
-                    "x_label": 0.982, "y_label": 0.641,
-                    "video": "oDejyTLYUTE",
-                    "x_video": 0.933-0.0025, "y_video": 0.58-0.059
-                },
-                {
-                    "city": "Nairobi",
-                    "country": "Kenya",
-                    "file": "nairobi.png",
-                    "x": 0.72, "y": 0.38,
-                    "approx_lon": 70.2, "approx_lat": -20.0,
-                    "label": "Nairobi, Kenya",
-                    "x_label": 0.7695, "y_label": 0.38+0.062,
-                    "video": "VNLqnwoJqmM",
-                    "x_video": 0.72+0.00129, "y_video": 0.38-0.069,
-                },
-                {
-                    "city": "Los Angeles",
-                    "country": "United States",
-                    "file": "los_angeles.png",
-                    "x": 0.12, "y": 0.5,
-                    "approx_lon": -121.7, "approx_lat": 0.0,
-                    "label": "Los Angeles, CA, USA",
-                    "x_label": 0.0705, "y_label": 0.5+0.062,
-                    "video": "4uhMg5na888",
-                    "x_video": 0.12+0.006, "y_video": 0.5-0.06,
-                },
-                {
-                    "city": "Paris",
-                    "country": "France",
-                    "file": "paris.png",
-                    "x": 0.3915, "y": 0.68,
-                    "approx_lon": -30.6, "approx_lat": 30.4,
-                    "label": "Paris, France",
-                    "x_label": 0.366, "y_label": 0.68+0.072,
-                    "video": "ZTmjk8mSCq8",
-                    "x_video": 0.3915+0.0256, "y_video": 0.68-0.06,
-                },
-                {
-                    "city": "Rio de Janeiro",
-                    "country": "Brazil",
-                    "file": "rio_de_janeiro.png",
-                    "x": 0.47, "y": 0.2,
-                    "approx_lon": -1.8, "approx_lat": -60.2,
-                    "label": "Rio de Janeiro, Brazil",
-                    "x_label": 0.4815, "y_label": 0.2+0.05,
-                    "video": "q83bl_GcsCo",
-                    "x_video": 0.47-0.029, "y_video": 0.2-0.069,
-                },
-                {
-                    "city": "Melbourne",
-                    "country": "Australia",
-                    "file": "melbourne.png",
-                    "x": 0.74, "y": 0.22,
-                    "approx_lon": 90.0, "approx_lat": -52.0,
-                    "label": "Melbourne, Australia",
-                    "x_label": 0.7893, "y_label": 0.22+0.05,
-                    "video": "gQ-9mmnfJjE",
-                    "x_video": 0.733, "y_video": 0.22-0.069,
-                }
-            ]
+        # --- optional image overlays/arrows/labels (your schema preserved) ---
+        if show_images and image_items:
+            # base path reused from your code
+            path_screenshots = os.path.join(common.root_dir, "readme")
 
-            path_screenshots = os.path.join(common.root_dir, 'readme')
-            # add each image
-            for item in city_images:
-                fig.add_layout_image(
-                    dict(
-                        source=os.path.join(path_screenshots, item['file']),
+            # images and labels
+            for item in image_items:
+                if "file" in item:
+                    fig.add_layout_image(dict(
+                        source=os.path.join(path_screenshots, item["file"]),
                         xref="paper", yref="paper",
-                        x=item["x"], y=item["y"],
-                        sizex=0.1, sizey=0.1,
-                        xanchor="center", yanchor="middle",
-                        layer="above"
-                    )
-                )
-                # text label on top
+                        x=item.get("x", 0.5), y=item.get("y", 0.5),
+                        sizex=item.get("sizex", 0.1), sizey=item.get("sizey", 0.1),
+                        xanchor=item.get("xanchor", "center"),
+                        yanchor=item.get("yanchor", "middle"),
+                        layer=item.get("layer", "above"),
+                    ))
                 if "label" in item:
                     fig.add_annotation(
                         text=item["label"],
-                        x=item["x_label"],
-                        y=item["y_label"],
-                        xref="paper",
-                        yref="paper",
+                        x=item.get("x_label", item.get("x", 0.5)),
+                        y=item.get("y_label", item.get("y", 0.5) + 0.1),
+                        xref="paper", yref="paper",
                         showarrow=False,
                         font=dict(size=12, color="black"),
                         bgcolor="rgba(255,255,255,0.7)",
                         bordercolor="black",
-                        borderwidth=1
+                        borderwidth=1,
                     )
 
-            # draw arrows from image to city location
-            for item in city_images:
-                row = df_mapping[
-                    (df_mapping['city'].str.lower() == item['city'].lower()) &
-                    (df_mapping['country'].str.lower() == item['country'].lower())
-                    ]
-                if not row.empty:
-                    fig.add_trace(go.Scattergeo(
-                        lon=[item['approx_lon'], row['lon'].values[0]],
-                        lat=[item['approx_lat'], row['lat'].values[0]],
-                        mode='lines',
-                        line=dict(width=2, color='black'),
-                        showlegend=False,
-                        geo='geo',
-                        hoverinfo='skip'
-                    ))
-                    # label with video on the bottom
-                    fig.add_annotation(
-                        dict(
-                            text=item['video'],
-                            x=item["x_video"], y=item["y_video"],
+            # lines to actual city coords (if df_cities available)
+            if df_cities is not None and {"lat", "lon", "city", "country"}.issubset(df_cities.columns):
+                for item in image_items:
+                    if "city" in item and "country" in item and \
+                       "approx_lon" in item and "approx_lat" in item:
+                        row = df_cities[
+                            (df_cities["city"].str.lower() == item["city"].lower()) &
+                            (df_cities["country"].str.lower() == item["country"].lower())
+                        ]
+                        if not row.empty:
+                            fig.add_trace(go.Scattergeo(
+                                lon=[item["approx_lon"], row["lon"].values[0]],
+                                lat=[item["approx_lat"], row["lat"].values[0]],
+                                mode="lines",
+                                line=dict(width=2, color="black"),
+                                showlegend=False,
+                                geo="geo",
+                                hoverinfo="skip"
+                            ))
+                    # optional small “video code” tag
+                    if "video" in item:
+                        fig.add_annotation(dict(
+                            text=item["video"],
+                            x=item.get("x_video", item.get("x", 0.5)),
+                            y=item.get("y_video", item.get("y", 0.5) - 0.1),
                             xref="paper", yref="paper",
                             showarrow=False,
                             font=dict(size=10, color="black"),
                             align="center",
                             bgcolor="rgba(255,255,255,0.7)",
                             bordercolor="black",
-                            borderwidth=1
-                        )
-                    )
+                            borderwidth=1,
+                        ))
 
-            # add YOLO image
-            fig.add_layout_image(
-                dict(
-                    source=os.path.join(path_screenshots, 'new_york_yolo.png'),  # or use PIL.Image.open if needed
-                    xref="paper", yref="paper",
-                    x=0.2, y=0.25,
-                    sizex=0.2, sizey=0.2,
-                    xanchor="center", yanchor="middle",
-                    layer="above"
-                )
-            )
-            # label on top
-            fig.add_annotation(
-                dict(
-                    text="Example of YOLO output (New York, NY, USA)",
-                    x=0.101, y=0.25+0.111,
-                    xref="paper", yref="paper",
-                    showarrow=False,
-                    font=dict(size=12, color="black"),
-                    align="center",
-                    bgcolor="rgba(255,255,255,0.7)",
-                    bordercolor="black",
-                    borderwidth=1
-                )
-            )
-            # label with video on the bottom
-            # text label on top
-            fig.add_annotation(
-                dict(
-                    text="Wyg213IZDI",
-                    x=0.258, y=0.25-0.119,
-                    xref="paper", yref="paper",
-                    showarrow=False,
-                    font=dict(size=10, color="black"),
-                    align="center",
-                    bgcolor="rgba(255,255,255,0.7)",
-                    bordercolor="black",
-                    borderwidth=1
-                )
-            )
+        # --- colorbar handling (merged defaults + overrides) ---
+        base_colorbar = dict(
+            title=colorbar_title,
+            orientation="h",
+            x=0.5,
+            y=0.06,
+            xanchor="center",
+            yanchor="bottom",
+            len=0.5,
+            thickness=10,
+            bgcolor="rgba(255,255,255,0.7)",
+            tickfont=dict(size=max(common.get_configs('font_size') - 5, 8)),
+        )
+        if colorbar_kwargs:
+            # shallow merge, keys in colorbar_kwargs win
+            base_colorbar.update(colorbar_kwargs)
 
-        # Use column name as default colorbar title if not provided
-        if colorbar_title is None:
-            colorbar_title = color
-
-        # Show or hide color bar
         fig.update_coloraxes(
             showscale=show_colorbar,
-            colorbar=dict(
-                title=colorbar_title,
-                title_side="right",
-                orientation="h",
-                x=0.5,
-                y=0.035,
-                xanchor="center",
-                yanchor="bottom",
-                len=0.55,
-                thickness=10,
-                bgcolor='rgba(255,255,255,0.9)',
-                tickfont=dict(size=common.get_configs('font_size')-5),
-                # pad=dict(t=10, b=0, l=4, r=4)  # add left/right padding
-            ) if show_colorbar else {}
+            colorbar=(base_colorbar if show_colorbar else {})
         )
 
-        # Update layout
+        # --- layout ---
         fig.update_layout(
             margin=dict(l=0, r=0, t=0, b=0),
             showlegend=False,
-            font=dict(
-                family=common.get_configs('font_family'),
-                size=common.get_configs('font_size')
-            )
         )
 
-        # save file to local output folder
+        # --- save/show ---
         if save_file:
+            # tiny padding for saved version
             fig.update_layout(margin=dict(l=10, r=10, t=10, b=10))
-            # with screenshots
-            if show_images:
-                self.save_plotly_figure(fig, name_file, save_final=save_final)
-            # without screenshots
-            else:
-                self.save_plotly_figure(fig, name_file, save_final=save_final)
-        # open it in localhost instead
+            # save via your utility
+            self.save_plotly_figure(fig, file_basename, save_final=save_final)
         else:
             fig.show()
+
+        return fig
 
     def scatter(self, df, x, y, extension=None, color=None, symbol=None, size=None, text=None, trendline=None,
                 hover_data=None, marker_size=None, pretty_text=False, marginal_x='violin', marginal_y='violin',
@@ -3824,11 +3727,51 @@ class Plots():
                                    motorcycle_city, bus_city, truck_city, cross_evnt_city, vehicle_city,
                                    cellphone_city, trf_sign_city, avg_speed_country, avg_time_country,
                                    cross_no_equip_country, save_file=True):
+
+        """Generates and saves correlation matrices of traffic and demographic data by country.
+
+        This method:
+            1. Aggregates raw detection data from city level to country level.
+            2. Combines average speeds, times, and various detection counts.
+            3. Produces correlation matrices for:
+                - Daytime only
+                - Nighttime only
+                - Averaged across both conditions
+                - Per continent
+
+        Correlations are computed using Spearman's rank method and visualized as Plotly heatmaps.
+
+        Args:
+            df_mapping (pd.DataFrame): Mapping of cities to countries, ISO codes, continents, etc.
+            df_countries (pd.DataFrame): Country-level dataset containing aggregate measures.
+            ped_cross_city (dict): Counts of pedestrian crossings by city.
+            person_city (dict): Counts of detected persons by city.
+            bicycle_city (dict): Counts of detected bicycles by city.
+            car_city (dict): Counts of detected cars by city.
+            motorcycle_city (dict): Counts of detected motorcycles by city.
+            bus_city (dict): Counts of detected buses by city.
+            truck_city (dict): Counts of detected trucks by city.
+            cross_evnt_city (dict): Counts of crossing events without traffic lights by city.
+            vehicle_city (dict): Counts of all motor vehicles by city.
+            cellphone_city (dict): Counts of detected cellphones by city.
+            trf_sign_city (dict): Counts of detected traffic signs by city.
+            avg_speed_country (dict): Average crossing speeds per country-condition key.
+            avg_time_country (dict): Average crossing initiation times per country-condition key.
+            cross_no_equip_country (dict): Counts of crossings without equipment by country.
+            save_file (bool, optional): If True, saves output figures; if False, shows them interactively.
+
+        Raises:
+            ValueError: If `avg_speed_country` or `avg_time_country` is None.
+
+        Returns:
+            None: Figures are displayed or saved; no explicit return value.
+        """
+
         logger.info("Plotting correlation matrices.")
         final_dict = {}
 
+        # Aggregate city-level counts to country level
         ped_cross_city = wrapper_class.country_sum_from_cities(ped_cross_city, df_mapping)
-
         person_city = wrapper_class.country_averages_from_nested(person_city, df_mapping)
         bicycle_city = wrapper_class.country_averages_from_nested(bicycle_city, df_mapping)
         car_city = wrapper_class.country_averages_from_nested(car_city, df_mapping)
@@ -3838,26 +3781,25 @@ class Plots():
         vehicle_city = wrapper_class.country_averages_from_nested(vehicle_city, df_mapping)
         cellphone_city = wrapper_class.country_averages_from_nested(cellphone_city, df_mapping)
         trf_sign_city = wrapper_class.country_averages_from_nested(trf_sign_city, df_mapping)
-
         cross_evnt_city = wrapper_class.country_averages_from_flat(cross_evnt_city, df_mapping)
 
-        # Check if both 'speed' and 'time' are valid dictionaries
+        # Validate required inputs
         if avg_speed_country is None or avg_time_country is None:
             raise ValueError("Either 'speed' or 'time' returned None, please check the input data or calculations.")
 
-        # Remove the ones where there is data missing for a specific country and condition
+        # Keep only countries with both speed and time data
         common_keys = avg_speed_country.keys() & avg_time_country.keys()
 
         # Retain only the key-value pairs where the key is present in both dictionaries
         avg_speed_country = {key: avg_speed_country[key] for key in common_keys}
         avg_time_country = {key: avg_time_country[key] for key in common_keys}
 
-        # Now populate the final_dict with city-wise data
+        # Step 4: Populate `final_dict` with aggregated metrics per country-condition
         for country_condition, speed in avg_speed_country.items():
             country, condition = country_condition.split('_')
 
-            # Get the country from the previously stored city_country_map
-            # todo: this comment is hard to understand and it does not relate to what is below the line
+            # Key format is "<country>_<condition>". Extract both parts, then fetch
+            # country-level metadata from df_mapping/df_countries for enrichment
             iso_code = values_class.get_value(df_mapping, "country", country, None, None, "iso3")
             continent = values_class.get_value(df_mapping, "country", country, None, None, "continent")
             traffic_mortality = values_class.get_value(df_mapping, "country", country, None, None, "traffic_mortality")
@@ -3991,23 +3933,39 @@ class Plots():
 
         # Rename the variables in the correlation matrix
         rename_dict_1 = {
-            'avg_speed_0': 'Crossing speed', 'avg_speed_1': 'Crossing speed',
-            'avg_time_0': 'Crossing initiation time', 'avg_time_1': 'Crossing initiation time',
-            'ped_cross_city_0': 'Detected crossings', 'ped_cross_city_1': 'Detected crossings',
-            'person_city_0': 'Detected persons', 'person_city_1': 'Detected persons',
-            'bicycle_city_0': 'Detected bicycles', 'bicycle_city_1': 'Detected bicycles',
-            'car_city_0': 'Detected cars', 'car_city_1': 'Detected cars',
-            'motorcycle_city_0': 'Detected motorcycles', 'motorcycle_city_1': 'Detected motorcycles',
-            'bus_city_0': 'Detected buses', 'bus_city_1': 'Detected buses',
-            'truck_city_0': 'Detected trucks', 'truck_city_1': 'Detected trucks',
-            'vehicle_city_0': 'Detected all motor vehicles', 'vehicle_city_1': 'Detected all motor vehicles',
-            'cellphone_city_0': 'Detected cellphones', 'cellphone_city_1': 'Detected cellphones',
-            'trf_sign_city_0': 'Detected traffic signs', 'trf_sign_city_1': 'Detected traffic signs',
+            'avg_speed_0': 'Crossing speed',
+            'avg_speed_1': 'Crossing speed',
+            'avg_time_0': 'Crossing initiation time',
+            'avg_time_1': 'Crossing initiation time',
+            'ped_cross_city_0': 'Detected crossings',
+            'ped_cross_city_1': 'Detected crossings',
+            'person_city_0': 'Detected persons',
+            'person_city_1': 'Detected persons',
+            'bicycle_city_0': 'Detected bicycles',
+            'bicycle_city_1': 'Detected bicycles',
+            'car_city_0': 'Detected cars',
+            'car_city_1': 'Detected cars',
+            'motorcycle_city_0': 'Detected motorcycles',
+            'motorcycle_city_1': 'Detected motorcycles',
+            'bus_city_0': 'Detected buses',
+            'bus_city_1': 'Detected buses',
+            'truck_city_0': 'Detected trucks',
+            'truck_city_1': 'Detected trucks',
+            'vehicle_city_0': 'Detected all motor vehicles',
+            'vehicle_city_1': 'Detected all motor vehicles',
+            'cellphone_city_0': 'Detected cellphones',
+            'cellphone_city_1': 'Detected cellphones',
+            'trf_sign_city_0': 'Detected traffic signs',
+            'trf_sign_city_1': 'Detected traffic signs',
             'cross_evnt_city_0': 'Crossings without traffic lights',
             'cross_evnt_city_1': 'Crossings without traffic lights',
-            'traffic_mortality_0': 'Traffic mortality', 'traffic_mortality_1': 'Traffic mortality',
-            'literacy_rate_0': 'Literacy rate', 'literacy_rate_1': 'Literacy rate',
-            'gini_0': 'Gini coefficient', 'gini_1': 'Gini coefficient', 'med_age_0': 'Median age',
+            'traffic_mortality_0': 'Traffic mortality',
+            'traffic_mortality_1': 'Traffic mortality',
+            'literacy_rate_0': 'Literacy rate',
+            'literacy_rate_1': 'Literacy rate',
+            'gini_0': 'Gini coefficient',
+            'gini_1': 'Gini coefficient',
+            'med_age_0': 'Median age',
             'med_age_1': 'Median age',
             }
 
@@ -4152,20 +4110,25 @@ class Plots():
         # Compute the correlation matrix on the aggregated DataFrame
         corr_matrix_avg = agg_df.corr(method='spearman')
 
-        # todo: does not seem optimal to hardcode everything for each corr matrix separately.
-        # see the corr() example from older projects. t
         # Rename the variables in the correlation matrix (example: renaming keys)
         rename_dict_2 = {
-            'avg_day_night_speed': 'Crossing speed', 'avg_day_night_time': 'Crossing initiation time',
-            'ped_cross_city': 'Detected crossings', 'person_city': 'Detected persons',
-            'bicycle_city': 'Detected bicycles', 'car_city': 'Detected cars',
-            'motorcycle_city': 'Detected motorcycles', 'bus_city': 'Detected buses',
+            'avg_day_night_speed': 'Crossing speed',
+            'avg_day_night_time': 'Crossing initiation time',
+            'ped_cross_city': 'Detected crossings',
+            'person_city': 'Detected persons',
+            'bicycle_city': 'Detected bicycles',
+            'car_city': 'Detected cars',
+            'motorcycle_city': 'Detected motorcycles',
+            'bus_city': 'Detected buses',
             'truck_city': 'Detected trucks',
-            'vehicle_city': 'Detected all motor vehicles', 'cellphone_city': 'Detected cellphones',
+            'vehicle_city': 'Detected all motor vehicles',
+            'cellphone_city': 'Detected cellphones',
             'trf_sign_city': 'Detected traffic signs',
             'cross_evnt_city': 'Crossings without traffic light',
-            'traffic_mortality': 'Traffic mortality', 'literacy_rate': 'Literacy rate',
-            'gini': 'Gini coefficient', 'med_age': 'Median age'
+            'traffic_mortality': 'Traffic mortality',
+            'literacy_rate': 'Literacy rate',
+            'gini': 'Gini coefficient',
+            'med_age': 'Median age'
             }
 
         corr_matrix_avg = corr_matrix_avg.rename(columns=rename_dict_2, index=rename_dict_2)
@@ -4284,15 +4247,22 @@ class Plots():
 
             # Rename the variables in the correlation matrix (example: renaming keys)
             rename_dict_3 = {
-                'avg_day_night_speed': 'Crossing speed', "avg_day_night_time": 'Crossing initiation time',
-                'ped_cross_city': 'Detected crossings', 'person_city': 'Detected persons',
-                'bicycle_city': 'Detected bicycles', 'car_city': 'Detected cars',
-                'motorcycle_city': 'Detected motorcycles', 'bus_city': 'Detected buses',
+                'avg_day_night_speed': 'Crossing speed',
+                "avg_day_night_time": 'Crossing initiation time',
+                'ped_cross_city': 'Detected crossings',
+                'person_city': 'Detected persons',
+                'bicycle_city': 'Detected bicycles',
+                'car_city': 'Detected cars',
+                'motorcycle_city': 'Detected motorcycles',
+                'bus_city': 'Detected buses',
                 'truck_city': 'Detected trucks',
-                'vehicle_city': 'Detected all motor vehicles', 'cellphone_city': 'Detected cellphones',
-                'trf_sign_city': 'Detected traffic signs', 'cross_evnt_city': 'Crossings without traffic light',
+                'vehicle_city': 'Detected all motor vehicles',
+                'cellphone_city': 'Detected cellphones',
+                'trf_sign_city': 'Detected traffic signs',
+                'cross_evnt_city': 'Crossings without traffic light',
                 'traffic_mortality': 'Traffic mortality',
-                'literacy_rate': 'Literacy rate', 'gini': 'Gini coefficient', 'med_age': 'Median age'
+                'literacy_rate': 'Literacy rate',
+                'gini': 'Gini coefficient', 'med_age': 'Median age'
                 }
 
             corr_matrix_avg = corr_matrix_avg.rename(columns=rename_dict_3, index=rename_dict_3)
@@ -4336,3 +4306,636 @@ class Plots():
             # open it in localhost instead
             else:
                 fig.show()
+
+    def plot_crossing_without_traffic_light(self, df_mapping, font_size_captions=40, x_axis_title_height=150,
+                                            legend_x=0.92, legend_y=0.015, legend_spacing=0.02):
+        final_dict = {}
+        with open(file_results, 'rb') as file:
+            data_tuple = pickle.load(file)
+
+        without_trf_light = data_tuple[28]
+        # Now populate the final_dict with city-wise speed data
+        for city_condition, count in without_trf_light.items():
+            city, lat, long, condition = city_condition.split('_')
+
+            # Get the country from the previously stored city_country_map
+            country = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "country")
+            iso_code = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "iso3")
+            if country or iso_code is not None:
+                # Initialise the city's dictionary if not already present
+                if f"{city}_{lat}_{long}" not in final_dict:
+                    final_dict[f"{city}_{lat}_{long}"] = {"without_trf_light_0": None, "without_trf_light_1": None,
+                                                          "country": country, "iso": iso_code}
+
+                # normalise by total time and total number of detected persons
+                total_time = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "total_time")
+                person = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "person")
+                count = count / total_time / person
+
+                # Populate the corresponding speed based on the condition
+                final_dict[f"{city}_{lat}_{long}"][f"without_trf_light_{condition}"] = count
+
+        # Multiply each of the numeric speed values by 10^6
+        for city_key, data in final_dict.items():
+            for key, value in data.items():
+                # Only modify keys that represent speed values
+                if key.startswith("without_trf_light") and value is not None:
+                    data[key] = round(value * 10**6, 2)
+
+        cities_ordered = sorted(
+            final_dict.keys(),
+            key=lambda city: values_class.safe_average([
+                final_dict[city]["without_trf_light_0"],
+                final_dict[city]["without_trf_light_1"]
+            ]),
+            reverse=True
+        )
+
+        # Extract unique cities
+        cities = list(set([key.split('_')[0] for key in final_dict.keys()]))
+
+        # Prepare data for day and night stacking
+        day_crossing = [final_dict[city]['without_trf_light_0'] for city in cities_ordered]
+        night_crossing = [final_dict[city]['without_trf_light_1'] for city in cities_ordered]
+
+        # Determine how many cities will be in each column
+        num_cities_per_col = len(cities_ordered) // 2 + len(cities_ordered) % 2  # Split cities into two groups
+        # Define a base height per row and calculate total figure height
+        TALL_FIG_HEIGHT = num_cities_per_col * BASE_HEIGHT_PER_ROW
+
+        fig = make_subplots(
+            rows=num_cities_per_col, cols=2,  # Two columns
+            vertical_spacing=0.0005,  # Reduce the vertical spacing
+            horizontal_spacing=0.01,  # Reduce horizontal spacing between columns
+            row_heights=[1.0] * (num_cities_per_col),
+        )
+
+        # Plot left column (first half of cities)
+        for i, city in enumerate(cities_ordered[:num_cities_per_col]):
+            city_new, lat, long = city.split('_')
+            iso_code = values_class.get_value(df_mapping, "city", city_new, "lat", float(lat), "iso3")
+            city = wrapper_class.process_city_string(city, df_mapping)
+
+            city = wrapper_class.iso2_to_flag(wrapper_class.iso3_to_iso2(iso_code)) + " " + city   # type: ignore
+
+            row = i + 1
+            if day_crossing[i] is not None and night_crossing[i] is not None:
+                value = round((day_crossing[i] + night_crossing[i])/2, 2)
+                fig.add_trace(go.Bar(
+                    x=[day_crossing[i]], y=[f'{city} {value}'], orientation='h',
+                    name=f"{city} crossing without traffic light in day",
+                    marker=dict(color=bar_colour_1), text=[''],
+                    textposition='inside', insidetextanchor='start', showlegend=False,
+                    textfont=dict(size=14, color='white')), row=row, col=1)
+                fig.add_trace(go.Bar(
+                    x=[night_crossing[i]], y=[f'{city} {value}'], orientation='h',
+                    name=f"{city} crossing without traffic light in night",
+                    marker=dict(color=bar_colour_2),
+                    text=[''], textposition='inside', showlegend=False), row=row, col=1)
+
+            elif day_crossing[i] is not None:  # Only day data available
+                value = (day_crossing[i])
+                fig.add_trace(go.Bar(
+                    x=[day_crossing[i]], y=[f'{city} {value}'], orientation='h',
+                    name=f"{city} crossing without traffic light in day",
+                    marker=dict(color=bar_colour_1), text=[''],
+                    textposition='inside', insidetextanchor='start', showlegend=False,
+                    textfont=dict(size=14, color='white')), row=row, col=1)
+
+            elif night_crossing[i] is not None:  # Only night data available
+                value = (night_crossing[i])
+                fig.add_trace(go.Bar(
+                    x=[night_crossing[i]], y=[f'{city} {value}'], orientation='h',
+                    name=f"{city} crossing without traffic light in night",
+                    marker=dict(color=bar_colour_2),
+                    textposition='inside', insidetextanchor='start', showlegend=False,
+                    text=[''], textfont=dict(size=14, color='white')), row=row, col=1)
+
+        for i, city in enumerate(cities_ordered[num_cities_per_col:]):
+            city_new, lat, long = city.split('_')
+            iso_code = values_class.get_value(df_mapping, "city", city_new, "lat", float(lat), "iso3")
+            city = wrapper_class.process_city_string(city, df_mapping)
+
+            city = wrapper_class.iso2_to_flag(wrapper_class.iso3_to_iso2(iso_code)) + " " + city   # type: ignore
+
+            row = i + 1
+            idx = num_cities_per_col + i
+            if day_crossing[idx] is not None and night_crossing[idx] is not None:
+                value = round((day_crossing[idx] + night_crossing[idx])/2, 2)
+                fig.add_trace(go.Bar(
+                    x=[day_crossing[idx]], y=[f'{city} {value}'], orientation='h',
+                    name=f"{city} crossing without traffic light in day",
+                    marker=dict(color=bar_colour_1), text=[''],
+                    textposition='inside', insidetextanchor='start', showlegend=False,
+                    textfont=dict(size=14, color='white')), row=row, col=2)
+                fig.add_trace(go.Bar(
+                    x=[night_crossing[idx]], y=[f'{city} {value}'], orientation='h',
+                    name=f"{city} crossing without traffic light in night",
+                    marker=dict(color=bar_colour_2),
+                    text=[''], textposition='inside', showlegend=False), row=row, col=2)
+
+            elif day_crossing[idx] is not None:
+                value = (day_crossing[idx])
+                fig.add_trace(go.Bar(
+                    x=[day_crossing[idx]], y=[f'{city} {value}'], orientation='h',
+                    name=f"{city} crossing without traffic light in day",
+                    marker=dict(color=bar_colour_1), text=[''],
+                    textposition='inside', insidetextanchor='start', showlegend=False,
+                    textfont=dict(size=14, color='white')), row=row, col=2)
+
+            elif night_crossing[idx] is not None:
+                value = (night_crossing[idx])
+                fig.add_trace(go.Bar(
+                    x=[night_crossing[idx]], y=[f'{city} {value}'], orientation='h',
+                    name=f"{city} crossing without traffic light in night",
+                    marker=dict(color=bar_colour_2),
+                    textposition='inside', insidetextanchor='start', showlegend=False,
+                    text=[''], textfont=dict(size=14, color='white')), row=row, col=2)
+
+        # Calculate the maximum value across all data to use as x-axis range
+        max_value_speed = max([
+            (day_crossing[i] if day_crossing[i] is not None else 0) +
+            (night_crossing[i] if night_crossing[i] is not None else 0)
+            for i in range(len(cities))
+        ]) if cities else 0
+
+        # Identify the last row for each column where the last city is plotted
+        last_row_left_column = num_cities_per_col * 2  # The last row in the left column
+        last_row_right_column = (len(cities) - num_cities_per_col) * 2  # The last row in the right column
+        first_row_left_column = 1  # The first row in the left column
+        first_row_right_column = 1  # The first row in the right column
+
+        # Update the loop for updating x-axes based on max values for speed and time
+        for i in range(1, num_cities_per_col * 2 + 1):  # Loop through all rows in both columns
+            # Update x-axis for the left column (top for speed, bottom for time)
+            if i % 2 == 1:  # Odd rows (representing speed)
+                fig.update_xaxes(
+                    range=[0, max_value_speed], row=i, col=1,
+                    showticklabels=(i == first_row_left_column),
+                    side='top', showgrid=True
+                )
+            else:  # Even rows (representing time)
+                fig.update_xaxes(
+                    range=[0, max_value_speed], row=i, col=1,
+                    showticklabels=(i == last_row_left_column),
+                    side='bottom', showgrid=True
+                )
+
+            # Update x-axis for the right column (top for speed, bottom for time)
+            if i % 2 == 1:  # Odd rows (representing speed)
+                fig.update_xaxes(
+                    range=[0, max_value_speed], row=i, col=2,  # Use speed max value for top axis
+                    showticklabels=(i == first_row_right_column),
+                    side='top', showgrid=True
+                )
+            else:  # Even rows (representing time)
+                fig.update_xaxes(
+                    range=[0, max_value_speed], row=i, col=2,  # Use time max value for bottom axis
+                    showticklabels=(i == last_row_right_column),
+                    side='bottom', showgrid=True
+                )
+
+        # Set the x-axis labels (title_text) only for the last row and the first row
+        fig.update_xaxes(title=dict(text="Road crossings without traffic signals (normalised)",
+                         font=dict(size=font_size_captions)), tickfont=dict(size=font_size_captions), ticks='outside',
+                         ticklen=10, tickwidth=2, tickcolor='black', row=1, col=1)
+
+        fig.update_xaxes(title=dict(text="Road crossings without traffic signals (normalised)",
+                         font=dict(size=font_size_captions)), tickfont=dict(size=font_size_captions), ticks='outside',
+                         ticklen=10, tickwidth=2, tickcolor='black', row=1, col=2)
+
+        # Update both y-axes (for left and right columns) to hide the tick labels
+        fig.update_yaxes(showticklabels=False)
+
+        # Ensure no gridlines are shown on x-axes and y-axes
+        fig.update_xaxes(showgrid=True)
+        fig.update_yaxes(showgrid=False)
+
+        # Update layout to hide the main legend and adjust margins
+        fig.update_layout(
+            plot_bgcolor='white', paper_bgcolor='white', barmode='stack',
+            height=TALL_FIG_HEIGHT, width=2480, showlegend=False,  # Hide the default legend
+            margin=dict(t=150, b=150), bargap=0, bargroupgap=0
+        )
+
+        # Manually add gridlines using `shapes`
+        x_grid_values = [200, 400, 600, 800, 1000, 1200, 1400, 1600]  # Define the gridline positions on the x-axis
+
+        for x in x_grid_values:
+            fig.add_shape(
+                type="line",
+                x0=x, y0=0, x1=x, y1=1,  # Set the position of the gridlines
+                xref='x', yref='paper',  # Ensure gridlines span the whole chart (yref='paper' spans full height)
+                line=dict(color="darkgray", width=1),  # Customize the appearance of the gridlines
+                layer="above"  # Draw the gridlines above the bars
+            )
+
+        # Manually add gridlines using `shapes` for the right column (x-axis 'x2')
+        for x in x_grid_values:
+            fig.add_shape(
+                type="line",
+                x0=x, y0=0, x1=x, y1=1,  # Set the position of the gridlines
+                xref='x2', yref='paper',  # Apply to right column (x-axis 'x2')
+                line=dict(color="darkgray", width=1),  # Customize the appearance of the gridlines
+                layer="above"  # Draw the gridlines above the bars
+            )
+
+        # Define the legend items
+        legend_items = [
+            {"name": "Day", "color": bar_colour_1},
+            {"name": "Night", "color": bar_colour_2},
+        ]
+
+        # Add the vertical legends at the top and bottom
+        self.add_vertical_legend_annotations(fig, legend_items, x_position=legend_x, y_start=legend_y,
+                                             spacing=legend_spacing, font_size=font_size_captions)
+
+        # Add a box around the first column (left side)
+        fig.add_shape(
+            type="rect", xref="paper", yref="paper",
+            x0=0, y0=1, x1=0.495, y1=0.0,
+            line=dict(color="black", width=2)  # Black border for the box
+        )
+
+        # Add a box around the second column (right side)
+        fig.add_shape(
+            type="rect", xref="paper", yref="paper",
+            x0=0.505, y0=1, x1=1, y1=0.0,
+            line=dict(color="black", width=2)  # Black border for the box
+        )
+
+        # Create an ordered list of unique countries based on the cities in final_dict
+        country_city_map = {}
+        for city, info in final_dict.items():
+            country = info['iso']
+            if country not in country_city_map:
+                country_city_map[country] = []
+            country_city_map[country].append(city)
+
+        # Split cities into left and right columns
+        left_column_cities = cities_ordered[:num_cities_per_col]
+        right_column_cities = cities_ordered[num_cities_per_col:]
+
+        # Initialise variables for dynamic y positioning for both columns
+        current_row_left = 1  # Start from the first row for the left column
+        current_row_right = 1  # Start from the first row for the right column
+        y_position_map_left = {}  # Store y positions for each country (left column)
+        y_position_map_right = {}  # Store y positions for each country (right column)
+
+        # Calculate the y positions dynamically for the left column
+        for city in left_column_cities:
+            country = final_dict[city]['iso']
+
+            if country not in y_position_map_left:  # Add the country label once per country
+                y_position_map_left[country] = 1 - (current_row_left - 1) / (len(left_column_cities) * 2)
+
+            current_row_left += 2  # Increment the row for each city (speed and time take two rows)
+
+        # Calculate the y positions dynamically for the right column
+        for city in right_column_cities:
+            country = final_dict[city]['iso']
+
+            if country not in y_position_map_right:  # Add the country label once per country
+                y_position_map_right[country] = 1 - (current_row_right - 1) / (len(right_column_cities) * 2)
+
+            current_row_right += 2  # Increment the row for each city (speed and time take two rows)
+
+        fig.update_yaxes(
+            tickfont=dict(size=12, color="black"),
+            showticklabels=True,  # Ensure city names are visible
+            ticklabelposition='inside',  # Move the tick labels inside the bars
+        )
+        fig.update_xaxes(
+            tickangle=0,  # No rotation or small rotation for the x-axis
+        )
+
+        # update font family
+        fig.update_layout(font=dict(family=common.get_configs('font_family')))
+
+        # Final adjustments and display
+        fig.update_layout(margin=dict(l=80, r=100, t=x_axis_title_height, b=180))
+        self.save_plotly_figure(fig,
+                                "crossings_without_traffic_equipment_avg",
+                                width=2480,
+                                height=TALL_FIG_HEIGHT,
+                                scale=SCALE,
+                                save_eps=False,
+                                save_final=True)
+
+    def plot_crossing_with_traffic_light(self, df_mapping, font_size_captions=40, x_axis_title_height=150,
+                                         legend_x=0.92, legend_y=0.015, legend_spacing=0.02):
+        final_dict = {}
+        with open(file_results, 'rb') as file:
+            data_tuple = pickle.load(file)
+
+        with_trf_light = data_tuple[27]
+        # Now populate the final_dict with city-wise speed data
+        for city_condition, count in with_trf_light.items():
+            city, lat, long, condition = city_condition.split('_')
+
+            # Get the country from the previously stored city_country_map
+            country = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "country")
+            iso_code = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "iso3")
+            if country or iso_code is not None:
+                # Initialise the city's dictionary if not already present
+                if f"{city}_{lat}_{long}" not in final_dict:
+                    final_dict[f"{city}_{lat}_{long}"] = {"with_trf_light_0": None, "with_trf_light_1": None,
+                                                          "country": country, "iso": iso_code}
+
+                # normalise by total time and total number of detected persons
+                total_time = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "total_time")
+                person = values_class.get_value(df_mapping, "city", city, "lat", float(lat), "person")
+                count = count / total_time / person
+
+                # Populate the corresponding speed based on the condition
+                final_dict[f"{city}_{lat}_{long}"][f"with_trf_light_{condition}"] = count
+
+        # Multiply each of the numeric speed values by 10^6
+        for city_key, data in final_dict.items():
+            for key, value in data.items():
+                # Only modify keys that represent speed values
+                if key.startswith("with_trf_light") and value is not None:
+                    data[key] = round(value * 10**6, 2)
+
+        cities_ordered = sorted(
+            final_dict.keys(),
+            key=lambda city: values_class.safe_average([
+                final_dict[city]["with_trf_light_0"],
+                final_dict[city]["with_trf_light_1"]
+            ]),
+            reverse=True
+        )
+
+        # Extract unique cities
+        cities = list(set([key.split('_')[0] for key in final_dict.keys()]))
+
+        # Prepare data for day and night stacking
+        day_crossing = [final_dict[city]['with_trf_light_0'] for city in cities_ordered]
+        night_crossing = [final_dict[city]['with_trf_light_1'] for city in cities_ordered]
+
+        # # Ensure that plotting uses cities_ordered
+        # assert len(cities_ordered) == len(day_crossing) == len(night_crossing), "Lengths of lists don't match!"
+
+        # Determine how many cities will be in each column
+        num_cities_per_col = len(cities_ordered) // 2 + len(cities_ordered) % 2  # Split cities into two groups
+        # Define a base height per row and calculate total figure height
+        TALL_FIG_HEIGHT = num_cities_per_col * BASE_HEIGHT_PER_ROW
+
+        fig = make_subplots(
+            rows=num_cities_per_col, cols=2,  # Two columns
+            vertical_spacing=0.0005,  # Reduce the vertical spacing
+            horizontal_spacing=0.01,  # Reduce horizontal spacing between columns
+            row_heights=[1.0] * (num_cities_per_col),
+        )
+
+        # Plot left column (first half of cities)
+        for i, city in enumerate(cities_ordered[:num_cities_per_col]):
+            city_new, lat, long = city.split('_')
+            iso_code = values_class.get_value(df_mapping, "city", city_new, "lat", float(lat), "iso3")
+            city = wrapper_class.process_city_string(city, df_mapping)
+
+            city = wrapper_class.iso2_to_flag(wrapper_class.iso3_to_iso2(iso_code)) + " " + city   # type: ignore
+
+            row = i + 1
+            if day_crossing[i] is not None and night_crossing[i] is not None:
+                value = round((day_crossing[i] + night_crossing[i])/2, 2)
+                fig.add_trace(go.Bar(
+                    x=[day_crossing[i]], y=[f'{city} {value}'], orientation='h',
+                    name=f"{city} crossing with traffic light in day",
+                    marker=dict(color=bar_colour_1), text=[''],
+                    textposition='auto', insidetextanchor='start', showlegend=False,
+                    textfont=dict(size=14, color='white')), row=row, col=1)
+                fig.add_trace(go.Bar(
+                    x=[night_crossing[i]], y=[f'{city} {value}'], orientation='h',
+                    name=f"{city} crossing with traffic light in night",
+                    marker=dict(color=bar_colour_2),
+                    text=[''], textposition='auto', showlegend=False), row=row, col=1)
+
+            elif day_crossing[i] is not None:  # Only day data available
+                value = (day_crossing[i])
+                fig.add_trace(go.Bar(
+                    x=[day_crossing[i]], y=[f'{city} {value}'], orientation='h',
+                    name=f"{city} crossing with traffic light in day",
+                    marker=dict(color=bar_colour_1), text=[''],
+                    textposition='auto', insidetextanchor='start', showlegend=False,
+                    textfont=dict(size=14, color='white')), row=row, col=1)
+
+            elif night_crossing[i] is not None:  # Only night data available
+                value = (night_crossing[i])
+                fig.add_trace(go.Bar(
+                    x=[night_crossing[i]], y=[f'{city} {value}'], orientation='h',
+                    name=f"{city} crossing with traffic light in night",
+                    marker=dict(color=bar_colour_2),
+                    textposition='auto', insidetextanchor='start', showlegend=False,
+                    text=[''], textfont=dict(size=14, color='white')), row=row, col=1)
+
+        for i, city in enumerate(cities_ordered[num_cities_per_col:]):
+            city_new, lat, long = city.split('_')
+            iso_code = values_class.get_value(df_mapping, "city", city_new, "lat", float(lat), "iso3")
+            city = wrapper_class.process_city_string(city, df_mapping)
+
+            city = wrapper_class.iso2_to_flag(wrapper_class.iso3_to_iso2(iso_code)) + " " + city   # type: ignore
+
+            row = i + 1
+            idx = num_cities_per_col + i
+            if day_crossing[idx] is not None and night_crossing[idx] is not None:
+                value = round((day_crossing[idx] + night_crossing[idx])/2, 2)
+                fig.add_trace(go.Bar(
+                    x=[day_crossing[idx]], y=[f'{city} {value}'], orientation='h',
+                    name=f"{city} crossing with traffic light in day",
+                    marker=dict(color=bar_colour_1), text=[''],
+                    textposition='inside', insidetextanchor='start', showlegend=False,
+                    textfont=dict(size=14, color='white')), row=row, col=2)
+                fig.add_trace(go.Bar(
+                    x=[night_crossing[idx]], y=[f'{city} {value}'], orientation='h',
+                    name=f"{city} crossing with traffic light in night",
+                    marker=dict(color=bar_colour_2),
+                    text=[''], textposition='inside', showlegend=False), row=row, col=2)
+
+            elif day_crossing[idx] is not None:
+                value = (day_crossing[idx])
+                fig.add_trace(go.Bar(
+                    x=[day_crossing[idx]], y=[f'{city} {value}'], orientation='h',
+                    name=f"{city} crossing with traffic light in day",
+                    marker=dict(color=bar_colour_1), text=[''],
+                    textposition='inside', insidetextanchor='start', showlegend=False,
+                    textfont=dict(size=14, color='white')), row=row, col=2)
+
+            elif night_crossing[idx] is not None:
+                value = (night_crossing[idx])
+                fig.add_trace(go.Bar(
+                    x=[night_crossing[idx]], y=[f'{city} {value}'], orientation='h',
+                    name=f"{city} crossing with traffic light in night",
+                    marker=dict(color=bar_colour_2),
+                    textposition='inside', insidetextanchor='start', showlegend=False,
+                    text=[''], textfont=dict(size=14, color='white')), row=row, col=2)
+
+        # Calculate the maximum value across all data to use as x-axis range
+        max_value_speed = max([
+            (day_crossing[i] if day_crossing[i] is not None else 0) +
+            (night_crossing[i] if night_crossing[i] is not None else 0)
+            for i in range(len(cities))
+        ]) if cities else 0
+
+        # Identify the last row for each column where the last city is plotted
+        last_row_left_column = num_cities_per_col * 2  # The last row in the left column
+        last_row_right_column = (len(cities) - num_cities_per_col) * 2  # The last row in the right column
+        first_row_left_column = 1  # The first row in the left column
+        first_row_right_column = 1  # The first row in the right column
+
+        # Update the loop for updating x-axes based on max values for speed and time
+        for i in range(1, num_cities_per_col * 2 + 1):  # Loop through all rows in both columns
+            # Update x-axis for the left column (top for speed, bottom for time)
+            if i % 2 == 1:  # Odd rows (representing speed)
+                fig.update_xaxes(
+                    range=[0, max_value_speed], row=i, col=1,
+                    showticklabels=(i == first_row_left_column),
+                    side='top', showgrid=True
+                )
+            else:  # Even rows (representing time)
+                fig.update_xaxes(
+                    range=[0, max_value_speed], row=i, col=1,
+                    showticklabels=(i == last_row_left_column),
+                    side='bottom', showgrid=True
+                )
+
+            # Update x-axis for the right column (top for speed, bottom for time)
+            if i % 2 == 1:  # Odd rows (representing speed)
+                fig.update_xaxes(
+                    range=[0, max_value_speed], row=i, col=2,  # Use speed max value for top axis
+                    showticklabels=(i == first_row_right_column),
+                    side='top', showgrid=True
+                )
+            else:  # Even rows (representing time)
+                fig.update_xaxes(
+                    range=[0, max_value_speed], row=i, col=2,  # Use time max value for bottom axis
+                    showticklabels=(i == last_row_right_column),
+                    side='bottom', showgrid=True
+                )
+
+        # Set the x-axis labels (title_text) only for the last row and the first row
+        fig.update_xaxes(title=dict(text="Road crossings with traffic signals (normalised)",
+                         font=dict(size=font_size_captions)), tickfont=dict(size=font_size_captions), ticks='outside',
+                         ticklen=10, tickwidth=2, tickcolor='black', row=1, col=1)
+
+        fig.update_xaxes(title=dict(text="Road crossings with traffic signals (normalised)",
+                         font=dict(size=font_size_captions)), tickfont=dict(size=font_size_captions), ticks='outside',
+                         ticklen=10, tickwidth=2, tickcolor='black', row=1, col=2)
+
+        # Update both y-axes (for left and right columns) to hide the tick labels
+        fig.update_yaxes(showticklabels=False)
+
+        # Ensure no gridlines are shown on x-axes and y-axes
+        fig.update_xaxes(showgrid=True)
+        fig.update_yaxes(showgrid=False)
+
+        # Update layout to hide the main legend and adjust margins
+        fig.update_layout(
+            plot_bgcolor='white', paper_bgcolor='white', barmode='stack',
+            height=TALL_FIG_HEIGHT, width=2480, showlegend=False,  # Hide the default legend
+            margin=dict(t=150, b=150), bargap=0, bargroupgap=0
+        )
+
+        # Manually add gridlines using `shapes`
+        x_grid_values = [50, 100, 150, 200, 250]  # Define the gridline positions on the x-axis
+
+        for x in x_grid_values:
+            fig.add_shape(
+                type="line",
+                x0=x, y0=0, x1=x, y1=1,  # Set the position of the gridlines
+                xref='x', yref='paper',  # Ensure gridlines span the whole chart (yref='paper' spans full height)
+                line=dict(color="darkgray", width=1),  # Customize the appearance of the gridlines
+                layer="above"  # Draw the gridlines above the bars
+            )
+
+        # Manually add gridlines using `shapes` for the right column (x-axis 'x2')
+        for x in x_grid_values:
+            fig.add_shape(
+                type="line",
+                x0=x, y0=0, x1=x, y1=1,  # Set the position of the gridlines
+                xref='x2', yref='paper',  # Apply to right column (x-axis 'x2')
+                line=dict(color="darkgray", width=1),  # Customize the appearance of the gridlines
+                layer="above"  # Draw the gridlines above the bars
+            )
+
+        # Define the legend items
+        legend_items = [
+            {"name": "Day", "color": bar_colour_1},
+            {"name": "Night", "color": bar_colour_2},
+        ]
+
+        # Add the vertical legends at the top and bottom
+        self.add_vertical_legend_annotations(fig, legend_items, x_position=legend_x, y_start=legend_y,
+                                             spacing=legend_spacing, font_size=font_size_captions)
+
+        # Add a box around the first column (left side)
+        fig.add_shape(
+            type="rect", xref="paper", yref="paper",
+            x0=0, y0=1, x1=0.495, y1=0.0,
+            line=dict(color="black", width=2)  # Black border for the box
+        )
+
+        # Add a box around the second column (right side)
+        fig.add_shape(
+            type="rect", xref="paper", yref="paper",
+            x0=0.505, y0=1, x1=1, y1=0.0,
+            line=dict(color="black", width=2)  # Black border for the box
+        )
+
+        # Create an ordered list of unique countries based on the cities in final_dict
+        country_city_map = {}
+        for city, info in final_dict.items():
+            country = info['iso']
+            if country not in country_city_map:
+                country_city_map[country] = []
+            country_city_map[country].append(city)
+
+        # Split cities into left and right columns
+        left_column_cities = cities_ordered[:num_cities_per_col]
+        right_column_cities = cities_ordered[num_cities_per_col:]
+
+        # Initialise variables for dynamic y positioning for both columns
+        current_row_left = 1  # Start from the first row for the left column
+        current_row_right = 1  # Start from the first row for the right column
+        y_position_map_left = {}  # Store y positions for each country (left column)
+        y_position_map_right = {}  # Store y positions for each country (right column)
+
+        # Calculate the y positions dynamically for the left column
+        for city in left_column_cities:
+            country = final_dict[city]['iso']
+
+            if country not in y_position_map_left:  # Add the country label once per country
+                y_position_map_left[country] = 1 - (current_row_left - 1) / (len(left_column_cities) * 2)
+
+            current_row_left += 2  # Increment the row for each city (speed and time take two rows)
+
+        # Calculate the y positions dynamically for the right column
+        for city in right_column_cities:
+            country = final_dict[city]['iso']
+
+            if country not in y_position_map_right:  # Add the country label once per country
+                y_position_map_right[country] = 1 - (current_row_right - 1) / (len(right_column_cities) * 2)
+
+            current_row_right += 2  # Increment the row for each city (speed and time take two rows)
+
+        fig.update_yaxes(
+            tickfont=dict(size=12, color="black"),
+            showticklabels=True,  # Ensure city names are visible
+            ticklabelposition='inside',  # Move the tick labels inside the bars
+        )
+        fig.update_xaxes(
+            tickangle=0,  # No rotation or small rotation for the x-axis
+        )
+
+        # update font family
+        fig.update_layout(font=dict(family=common.get_configs('font_family')))
+
+        # Final adjustments and display
+        fig.update_layout(margin=dict(l=80, r=100, t=x_axis_title_height, b=180))
+        self.save_plotly_figure(fig,
+                                "crossings_with_traffic_equipment_avg",
+                                width=2480,
+                                height=TALL_FIG_HEIGHT,
+                                scale=SCALE,
+                                save_eps=False,
+                                save_final=True)
