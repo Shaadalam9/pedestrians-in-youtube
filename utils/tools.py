@@ -40,3 +40,21 @@ class Tools():
             avg_dict[key] = avg_value
 
         return avg_dict
+
+    def clean_csv_filename(self, file):
+        """
+        If the filename ends with '.csv', returns it as-is.
+        Otherwise:
+        - Removes leading dot
+        - Truncates at first '.csv' if present
+        - Else returns cleaned filename
+        """
+        if file.endswith('.csv'):
+            return file
+        file_clean = file.lstrip('.')  # Remove leading dot if present
+        csv_pos = file_clean.find('.csv')
+        if csv_pos != -1:
+            base_name = file_clean[:csv_pos + 4]  # includes ".csv"
+        else:
+            base_name = file_clean  # fallback if '.csv' not found
+        return base_name

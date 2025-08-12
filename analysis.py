@@ -5,7 +5,6 @@ import numpy as np
 import os
 from collections import defaultdict
 import heapq
-import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from helper_script import Youtube_Helper
@@ -55,8 +54,6 @@ bar_colour_4 = 'rgb(222, 203, 228)'
 
 # Consts
 BASE_HEIGHT_PER_ROW = 20  # Adjust as needed
-FLAG_SIZE = 12
-TEXT_SIZE = 12
 SCALE = 1  # scale=3 hangs often
 
 video_paths = common.get_configs("videos")
@@ -92,7 +89,7 @@ class Analysis():
                 - `folder_path`: Path to search for CSV files.
         """
         # Only process files ending with ".csv"
-        file = self.clean_csv_filename(file)
+        file = tools_class.clean_csv_filename(file)
         if file.endswith(".csv"):
             filename = os.path.splitext(file)[0]
 
@@ -197,7 +194,7 @@ class Analysis():
         """
 
         # Clean filename if necessary and extract video_id and target_time (last underscore split)
-        filename = self.clean_csv_filename(filename)
+        filename = tools_class.clean_csv_filename(filename)
         filename_no_ext = os.path.splitext(filename)[0]
         video_id, target_time = filename_no_ext.rsplit('_', 1)
         target_time = int(target_time)
@@ -1903,24 +1900,6 @@ class Analysis():
             logger.error(f"Geocoding server could not be reached for {location_query}.")
             return None, None  # Return None if city is not found
 
-    def clean_csv_filename(self, file):
-        """
-        If the filename ends with '.csv', returns it as-is.
-        Otherwise:
-        - Removes leading dot
-        - Truncates at first '.csv' if present
-        - Else returns cleaned filename
-        """
-        if file.endswith('.csv'):
-            return file
-        file_clean = file.lstrip('.')  # Remove leading dot if present
-        csv_pos = file_clean.find('.csv')
-        if csv_pos != -1:
-            base_name = file_clean[:csv_pos + 4]  # includes ".csv"
-        else:
-            base_name = file_clean  # fallback if '.csv' not found
-        return base_name
-
     def add_speed_and_time_to_mapping(self, df_mapping, avg_speed_city, avg_time_city, avg_speed_country,
                                       avg_time_country, pedestrian_cross_city, pedestrian_cross_country,
                                       threshold=common.get_configs("min_crossing_detect")):
@@ -2077,7 +2056,6 @@ if __name__ == "__main__":
              ) = pickle.load(file)
 
         logger.info("Loaded analysis results from pickle file.")
-        print(truck_city)
     else:
         # Store the mapping file
         df_mapping = pd.read_csv(common.get_configs("mapping"))
@@ -2088,6 +2066,7 @@ if __name__ == "__main__":
 
         # Sort by continent and city, both in ascending order
         df = df.sort_values(by=["continent", "city"], ascending=[True, True])
+
         # Count of videos
         df['video_count'] = df['videos'].apply(lambda x: len(x.strip('[]').split(',')) if pd.notna(x) else 0)
 
@@ -2112,22 +2091,22 @@ if __name__ == "__main__":
         hover_data = list(set(df.columns) - set(columns_remove))
 
         # maps with all data
-        plots_class.mapbox_map(df=df, hover_data=hover_data, file_name='mapbox_map_all')
-        plots_class.mapbox_map(df=df,
-                               hover_data=hover_data,
-                               density_col='population_city',
-                               density_radius=10,
-                               file_name='mapbox_map_all_pop')
-        plots_class.mapbox_map(df=df,
-                               hover_data=hover_data,
-                               density_col='video_count',
-                               density_radius=10,
-                               file_name='mapbox_map_all_videos')
-        plots_class.mapbox_map(df=df,
-                               hover_data=hover_data,
-                               density_col='total_time',
-                               density_radius=10,
-                               file_name='mapbox_map_all_time')
+        # plots_class.mapbox_map(df=df, hover_data=hover_data, file_name='mapbox_map_all')
+        # plots_class.mapbox_map(df=df,
+        #                        hover_data=hover_data,
+        #                        density_col='population_city',
+        #                        density_radius=10,
+        #                        file_name='mapbox_map_all_pop')
+        # plots_class.mapbox_map(df=df,
+        #                        hover_data=hover_data,
+        #                        density_col='video_count',
+        #                        density_radius=10,
+        #                        file_name='mapbox_map_all_videos')
+        # plots_class.mapbox_map(df=df,
+        #                        hover_data=hover_data,
+        #                        density_col='total_time',
+        #                        density_radius=10,
+        #                        file_name='mapbox_map_all_time')
 
         total_duration = Analysis.calculate_total_seconds(df_mapping)
 
@@ -2146,22 +2125,6 @@ if __name__ == "__main__":
         countries_include = common.get_configs("countries_analyse")
         if countries_include:
             df_mapping = df_mapping[df_mapping["iso3"].isin(common.get_configs("countries_analyse"))]
-
-        # todo: this is hard to maintain, dictionary of any kind is suggested
-        (person_counter, bicycle_counter, car_counter, motorcycle_counter, airplane_counter, bus_counter,
-         train_counter, truck_counter, boat_counter, traffic_light_counter, fire_hydrant_counter, stop_sign_counter,
-         parking_meter_counter, bench_counter, bird_counter, cat_counter, dog_counter, horse_counter, sheep_counter,
-         cow_counter, elephant_counter, bear_counter, zebra_counter, giraffe_counter, backpack_counter,
-         umbrella_counter, handbag_counter, tie_counter, suitcase_counter, frisbee_counter, skis_counter,
-         snowboard_counter, sports_ball_counter, kite_counter, baseball_bat_counter, baseball_glove_counter,
-         skateboard_counter, surfboard_counter, tennis_racket_counter, bottle_counter, wine_glass_counter,
-         cup_counter, fork_counter, knife_counter, spoon_counter, bowl_counter, banana_counter, apple_counter,
-         sandwich_counter, orange_counter, broccoli_counter, carrot_counter, hot_dog_counter, pizza_counter,
-         donut_counter, cake_counter, chair_counter, couch_counter, potted_plant_counter, bed_counter,
-         dining_table_counter, toilet_counter, tv_counter, laptop_counter, mouse_counter, remote_counter,
-         keyboard_counter, cellphone_counter, microwave_counter, oven_counter, toaster_counter, sink_counter,
-         refrigerator_counter, book_counter, clock_counter, vase_counter, scissors_counter, teddy_bear_counter,
-         hair_drier_counter, toothbrush_counter) = [0] * 80
 
         # Make a dict for all columns
         city_country_cols = {
@@ -2263,7 +2226,7 @@ if __name__ == "__main__":
                         df = pd.read_csv(file_path)
 
                         # After reading the file, clean up the filename
-                        base_name = analysis_class.clean_csv_filename(file)
+                        base_name = tools_class.clean_csv_filename(file)
 
                         filename_no_ext = os.path.splitext(base_name)[0]  # Remove extension
 
@@ -2358,6 +2321,16 @@ if __name__ == "__main__":
                                     all_time[outer_key] = inner_dict
                                 else:
                                     all_time[outer_key].update(inner_dict)
+
+        person_counter = df_mapping['person'].sum()
+        bicycle_counter = df_mapping['bicycle'].sum()
+        car_counter = df_mapping['car'].sum()
+        motorcycle_counter = df_mapping['motorcycle'].sum()
+        bus_counter = df_mapping['bus'].sum()
+        truck_counter = df_mapping['truck'].sum()
+        cellphone_counter = df_mapping['cellphone'].sum()
+        traffic_light_counter = df_mapping['traffic_light'].sum()
+        stop_sign_counter = df_mapping['stop_sign'].sum()
 
         # Record the average speed and time of crossing on country basis
         avg_speed_country, all_speed_country = algorithms_class.avg_speed_of_crossing_country(df_mapping, all_speed)
@@ -2584,7 +2557,7 @@ if __name__ == "__main__":
         # Save the raw file for further investigation
         df_mapping_raw = df_mapping.copy()
 
-        df_mapping_raw.drop(['lat', 'lon', 'gmp', 'population_city', 'population_country', 'traffic_mortality',
+        df_mapping_raw.drop(['gmp', 'population_city', 'population_country', 'traffic_mortality',
                              'literacy_rate', 'avg_height', 'med_age', 'gini', 'traffic_index', 'videos',
                              'time_of_day', 'start_time', 'end_time', 'vehicle_type', 'upload_date',
                              ], axis=1, inplace=True)
@@ -2812,7 +2785,6 @@ if __name__ == "__main__":
     os.makedirs(common.output_dir, exist_ok=True)  # check if folder
     df_mapping.to_csv(os.path.join(common.output_dir, "mapping_updated.csv"))
 
-    # todo: this output is broken with pkl file
     logger.info("Detected:")
     logger.info(f"person: {person_counter}; bicycle: {bicycle_counter}; car: {car_counter}")
     logger.info(f"motorcycle: {motorcycle_counter}; bus: {bus_counter}; truck: {truck_counter}")
@@ -3488,12 +3460,8 @@ if __name__ == "__main__":
         # log(1 + x) to avoid -inf for zero
         df_countries_raw["log_total_time"] = np.log1p(df_countries_raw["total_time"])
 
-        # todo: remove dropping of columns from df_mapping_raw and remove this bit
-        mapping_cites = common.get_configs("mapping")
-        df_mapping_cities = pd.read_csv(mapping_cites)
-
         # Produce map with all data
-        df = df_mapping_cities.copy()  # copy df to manipulate for output
+        df = df_mapping_raw.copy()  # copy df to manipulate for output
         df['state'] = df['state'].fillna('NA')  # Set state to NA
 
         # Sort by continent and city, both in ascending order
