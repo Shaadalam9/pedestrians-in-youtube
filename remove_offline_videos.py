@@ -77,16 +77,16 @@ def remove_video_data(input_file, output_file, video_ids_to_remove):
                         # might not be correctly quoted if they contained strings.
                         # However, for the provided data, `[[0],[1]]` is valid for ast.literal_eval.
                         # The `SyntaxError` was mainly due to `[XzwI2rGmf04, ...]`
-                        
+
                         # Let's revert to a more robust approach for time_of_day, start_time, etc.
                         # If the primary ast.literal_eval fails for these, it implies they are
                         # truly malformed or structured unexpectedly.
                         # The regex approach for single strings works for videos.
                         # For structured data like [[0],[1]], ast.literal_eval is the correct tool.
                         # The previous try-except with stripping was for *simple* lists of unquoted numbers.
-                        
+
                         return ast.literal_eval(s)  # Re-attempt literal_eval with the original string if the first parse_list_string call implies this path.  # noqa: E501
-                    
+
             # Applying parsing with the understanding that only 'videos', 'upload_date', 'channel'
             # might have unquoted string elements needing `re.findall` or custom string parsing.
             # Other columns (time_of_day, start_time, etc.) as per your example are valid Python lists for ast.literal_eval.  # noqa: E501

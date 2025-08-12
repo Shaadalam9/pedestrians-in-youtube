@@ -10,7 +10,7 @@ logs(show_level=common.get_configs("logger_level"), show_color=True)
 logger = CustomLogger(__name__)
 
 # Directory containing per-frame CSV data files
-DATA_FOLDER = "/Users/salam/Library/CloudStorage/OneDrive-TUEindhoven/TUe Youtube national/Supplementary material/data/bbox"
+DATA_FOLDER = common.get_configs("data")
 MAPPING_PATH = common.get_configs("mapping")
 
 

@@ -25,6 +25,7 @@ import warnings
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut, GeocoderUnavailable
 from datetime import datetime
+from typing import ClassVar, Dict, Any
 
 # Suppress the specific FutureWarning
 warnings.filterwarnings("ignore", category=FutureWarning, module="plotly")
@@ -359,10 +360,10 @@ class Analysis():
         return unique_values, len(unique_values)
 
     # class-level cache to store metrics for all video files, avoids redundant computation
-    _all_metrics_cache = None  # class-level cache for all metrics
+    _all_metrics_cache: ClassVar[Dict[str, Any]] = {}
 
     @classmethod
-    def _compute_all_metrics(cls, df_mapping):
+    def _compute_all_metrics(cls, df_mapping: pd.DataFrame) -> None:
         """
         Computes and caches all traffic and object detection metrics for the given video mapping DataFrame.
 
@@ -385,22 +386,16 @@ class Analysis():
             - "traffic_signs": count of detected traffic signs (YOLO ids 9, 11)
             - "vehicles": count of all vehicles (YOLO ids 2, 3, 5, 7)
             - "bicycles": count of bicycles (YOLO id 1)
-            - "cars": count of cars (YOLO id 3)
-            - "motorcycles": count of motorcycles (YOLO id 2)
+            - "cars": count of cars (YOLO id 2)
+            - "motorcycles": count of motorcycles (YOLO id 3)
             - "buses": count of buses (YOLO id 5)
             - "trucks": count of trucks (YOLO id 7)
             - "persons": count of people (YOLO id 0)
-
-        Note:
-            - The CSV files must follow a naming pattern <video_id>_<start_time>.csv and reside in data folders
-                as configured via `common.get_configs('data')`.
-            - Each CSV must contain at least the columns "yolo-id" and "unique-id".
-            - Progress is tracked using tqdm.
         """
 
         # List of data folders containing detection CSVs
         data_folders = common.get_configs('data')
-        csv_files = {}
+        csv_files: Dict[str, str] = {}
 
         # Index all CSV files from bbox and seg subfolders for quick lookup
         for folder_path in data_folders:
@@ -413,15 +408,15 @@ class Analysis():
                         csv_files[file] = os.path.join(subfolder_path, file)
 
         # Prepare result containers for each metric type
-        cellphone_info = {}
-        traffic_signs_layer = {}
-        vehicle_layer = {}
-        bicycle_layer = {}
-        car_layer = {}
-        motorcycle_layer = {}
-        bus_layer = {}
-        truck_layer = {}
-        person_layer = {}
+        cellphone_info: Dict[str, float] = {}
+        traffic_signs_layer: Dict[str, float] = {}
+        vehicle_layer: Dict[str, float] = {}
+        bicycle_layer: Dict[str, float] = {}
+        car_layer: Dict[str, float] = {}
+        motorcycle_layer: Dict[str, float] = {}
+        bus_layer: Dict[str, float] = {}
+        truck_layer: Dict[str, float] = {}
+        person_layer: Dict[str, float] = {}
 
         # Process each mapping row (one or more videos per row)
         for _, row in tqdm(df_mapping.iterrows(), total=df_mapping.shape[0], desc="Analysing the csv files:"):
@@ -434,13 +429,12 @@ class Analysis():
                 for start_time, time_of_day_value in zip(start_times_list, time_of_day_list):
                     prefix = f"{vid}_{start_time}_"
                     # Find the file whose name starts with this prefix
-                    matching_files = [fname for fname in csv_files if fname.startswith(prefix) and fname.endswith('.csv')]  # noqa: E501
+                    matching_files = [fname for fname in csv_files if fname.startswith(prefix) and fname.endswith('.csv')]  # noqa:E501
                     if not matching_files:
                         logger.warning(f"[WARNING] File not found for prefix: {prefix}")
                         continue
-
                     elif len(matching_files) > 1:
-                        logger.warning(f"[WARNING] Multiple files found for prefix: {prefix}, using the first one: {matching_files[0]}")  # noqa: E501
+                        logger.warning(f"[WARNING] Multiple files found for prefix: {prefix}, using the first one: {matching_files[0]}")  # noqa:E501
                     filename = matching_files[0]
 
                     # Extract fps using regex
@@ -470,7 +464,8 @@ class Analysis():
                     long = result[7]
                     fps = result[17]
                     duration = end - start  # Duration in seconds
-                    city_id_format = f'{city}_{lat}_{long}_{condition}'  # noqa:F841
+                    # city_id_format is not used later, so we keep it for clarity / potential future use
+                    city_id_format = f'{city}_{lat}_{long}_{condition}'  # noqa: F841
                     video_key = f"{vid}_{start_time}_{fps}"
 
                     # Load detection data for this video segment
@@ -479,50 +474,50 @@ class Analysis():
                     # ---- CELL PHONES: Count per person, normalised ----
                     mobile_ids = len(dataframe[dataframe["yolo-id"] == 67]["unique-id"].unique())
                     num_person = len(dataframe[dataframe["yolo-id"] == 0]["unique-id"].unique())
-                    if num_person > 0 and mobile_ids > 0:
+                    if num_person > 0 and mobile_ids > 0 and duration > 0:
                         avg_cellphone = ((mobile_ids * 60) / duration / num_person) * 1000
-                        cellphone_info[video_key] = avg_cellphone
+                        cellphone_info[video_key] = float(avg_cellphone)
 
                     # ---- TRAFFIC SIGNS (YOLO 9, 11) ----
                     traffic_sign_ids = dataframe[dataframe["yolo-id"].isin([9, 11])]["unique-id"].unique()
-                    count = (len(traffic_sign_ids) / duration) * 60 if duration > 0 else 0
-                    traffic_signs_layer[video_key] = count
+                    count = (len(traffic_sign_ids) / duration) * 60 if duration > 0 else 0.0
+                    traffic_signs_layer[video_key] = float(count)
 
                     # ---- VEHICLES (YOLO 2,3,5,7) ----
                     vehicles_mask = dataframe["yolo-id"].isin([2, 3, 5, 7])
                     vehicle_ids = dataframe[vehicles_mask]["unique-id"].unique()
-                    count = (len(vehicle_ids) / duration) * 60 if duration > 0 else 0
-                    vehicle_layer[video_key] = count
+                    count = (len(vehicle_ids) / duration) * 60 if duration > 0 else 0.0
+                    vehicle_layer[video_key] = float(count)
 
                     # ---- BICYCLES (YOLO 1) ----
                     bicycle_ids = dataframe[dataframe["yolo-id"] == 1]["unique-id"].unique()
-                    count = (len(bicycle_ids) / duration) * 60 if duration > 0 else 0
-                    bicycle_layer[video_key] = count
+                    count = (len(bicycle_ids) / duration) * 60 if duration > 0 else 0.0
+                    bicycle_layer[video_key] = float(count)
 
                     # ---- CARS (YOLO 2) ----
                     car_ids = dataframe[dataframe["yolo-id"] == 2]["unique-id"].unique()
-                    count = (len(car_ids) / duration) * 60 if duration > 0 else 0
-                    car_layer[video_key] = count
+                    count = (len(car_ids) / duration) * 60 if duration > 0 else 0.0
+                    car_layer[video_key] = float(count)
 
                     # ---- MOTORCYCLES (YOLO 3) ----
                     motorcycle_ids = dataframe[dataframe["yolo-id"] == 3]["unique-id"].unique()
-                    count = (len(motorcycle_ids) / duration) * 60 if duration > 0 else 0
-                    motorcycle_layer[video_key] = count
+                    count = (len(motorcycle_ids) / duration) * 60 if duration > 0 else 0.0
+                    motorcycle_layer[video_key] = float(count)
 
                     # ---- BUSES (YOLO 5) ----
                     bus_ids = dataframe[dataframe["yolo-id"] == 5]["unique-id"].unique()
-                    count = (len(bus_ids) / duration) * 60 if duration > 0 else 0
-                    bus_layer[video_key] = count
+                    count = (len(bus_ids) / duration) * 60 if duration > 0 else 0.0
+                    bus_layer[video_key] = float(count)
 
                     # ---- TRUCKS (YOLO 7) ----
                     truck_ids = dataframe[dataframe["yolo-id"] == 7]["unique-id"].unique()
-                    count = (len(truck_ids) / duration) * 60 if duration > 0 else 0
-                    truck_layer[video_key] = count
+                    count = (len(truck_ids) / duration) * 60 if duration > 0 else 0.0
+                    truck_layer[video_key] = float(count)
 
                     # ---- PERSONS (YOLO 0) ----
                     person_ids = dataframe[dataframe["yolo-id"] == 0]["unique-id"].unique()
-                    count = (len(person_ids) / duration) * 60 if duration > 0 else 0
-                    person_layer[video_key] = count
+                    count = (len(person_ids) / duration) * 60 if duration > 0 else 0.0
+                    person_layer[video_key] = float(count)
 
         # --- WRAPPING AS CITY_LONGITUDE_LATITUDE_CONDITION ---
         metric_dicts = [
@@ -537,6 +532,7 @@ class Analysis():
             ("persons", person_layer),
         ]
 
+        # Reinitialize cache on recompute
         cls._all_metrics_cache = {}
 
         for i, (metric_name, metric_layer) in enumerate(metric_dicts, 1):
@@ -544,45 +540,46 @@ class Analysis():
             wrapped = wrapper_class.city_country_wrapper(
                 input_dict=metric_layer,
                 mapping=df_mapping,
-                show_progress=True  # or False
+                show_progress=True
             )
             cls._all_metrics_cache[metric_name] = wrapped
 
     @classmethod
-    def _ensure_cache(cls, df_mapping):
+    def _ensure_cache(cls, df_mapping: pd.DataFrame) -> None:
         """
         Ensure that the class-level metrics cache is populated.
         If the cache is empty, computes all metrics for the provided mapping DataFrame.
         """
-        if cls._all_metrics_cache is None:
+        if not cls._all_metrics_cache:
             cls._compute_all_metrics(df_mapping)
 
     @classmethod
-    def calculate_cellphones(cls, df_mapping):
+    def calculate_cellphones(cls, df_mapping: pd.DataFrame):
         """
         Return the cached cell phone metric, computing all metrics if needed.
-        Raises:
-            RuntimeError: If cache population fails.
         """
         cls._ensure_cache(df_mapping)
-        if cls._all_metrics_cache is None:
-            raise RuntimeError("Metric cache not populated.")
         return cls._all_metrics_cache["cellphones"]
 
     @classmethod
-    def calculate_traffic_signs(cls, df_mapping):
+    def calculate_traffic_signs(cls, df_mapping: pd.DataFrame):
         """
         Return the cached traffic sign metric, computing all metrics if needed.
-        Raises:
-            RuntimeError: If cache population fails.
         """
         cls._ensure_cache(df_mapping)
-        if cls._all_metrics_cache is None:
-            raise RuntimeError("Metric cache not populated after ensure_cache!")
         return cls._all_metrics_cache["traffic_signs"]
 
     @classmethod
-    def calculate_traffic(cls, df_mapping, person=0, bicycle=0, motorcycle=0, car=0, bus=0, truck=0):
+    def calculate_traffic(
+        cls,
+        df_mapping: pd.DataFrame,
+        person: int = 0,
+        bicycle: int = 0,
+        motorcycle: int = 0,
+        car: int = 0,
+        bus: int = 0,
+        truck: int = 0,
+    ):
         """
         Return the requested vehicle/person/bicycle metric from the cache, computing if needed.
         Arguments specify which traffic metric to return. If multiple flags are set, precedence is given as:
@@ -591,13 +588,9 @@ class Analysis():
         - if all of motorcycle, car, bus, truck are set: returns 'vehicles'
         - otherwise, returns individual type if its flag is set
         - fallback is 'vehicles'
-        Raises:
-            RuntimeError: If cache population fails.
         """
         cls._ensure_cache(df_mapping)
-        if cls._all_metrics_cache is None:
-            raise RuntimeError("Metric cache not populated after ensure_cache!")
-        # Return the right metric by flags
+
         if person:
             return cls._all_metrics_cache["persons"]
         if bicycle:
@@ -614,6 +607,11 @@ class Analysis():
             return cls._all_metrics_cache["trucks"]
         # Fallback to all vehicles
         return cls._all_metrics_cache["vehicles"]
+
+    # Optional helper to force a rebuild, e.g. after data changes
+    @classmethod
+    def clear_cache(cls) -> None:
+        cls._all_metrics_cache.clear()
 
     @staticmethod
     def crossing_event_with_traffic_equipment(df_mapping, data):
