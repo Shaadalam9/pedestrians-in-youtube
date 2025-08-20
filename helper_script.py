@@ -74,7 +74,6 @@ class Youtube_Helper:
         self.bbox_tracker = common.get_configs("bbox_tracker")
         self.seg_tracker = common.get_configs("seg_tracker")
         self.resolution = None
-        self.video_title = video_title
         self.mapping = pd.read_csv(common.get_configs("mapping"))
         self.confidence = common.get_configs("confidence")
         self.display_frame_tracking = common.get_configs("display_frame_tracking")
@@ -769,7 +768,7 @@ class Youtube_Helper:
             for vid_index, (vid, start_times_list) in enumerate(zip(video_ids, start_times)):
                 for start_time in start_times_list:
                     file_name = f'{vid}_{start_time}.csv'
-                    file_path = os.path.join(self.data, file_name)
+                    file_path = os.path.join(self.data, file_name)  # type: ignore
                     # Check if the file exists
                     if os.path.isfile(file_path):
                         pass
@@ -963,8 +962,13 @@ class Youtube_Helper:
             # Drop the temporary column
             updated_df = updated_df.drop(columns=['traffic_mortality_new'])
 
-            # Save the updated DataFrame back to the same CSV file
-            updated_df.to_csv(self.mapping, index=False)
+            # Update in-memory mapping
+            self.mapping = updated_df
+
+            # Persist to the original CSV path
+            mapping_path = common.get_configs("mapping")  # <- get the path again
+            updated_df.to_csv(mapping_path, index=False)
+
             logger.info("Mapping file updated successfully with traffic mortality rate.")
 
         except Exception as e:
@@ -1024,8 +1028,12 @@ class Youtube_Helper:
             # Drop the temporary column
             updated_df = updated_df.drop(columns=['gini_new'])
 
-            # Save the updated DataFrame back to the same CSV file
-            updated_df.to_csv(self.mapping, index=False)
+            # Update in-memory mapping
+            self.mapping = updated_df
+
+            # Persist to the original CSV path
+            mapping_path = common.get_configs("mapping")  # path to the mapping CSV
+            updated_df.to_csv(mapping_path, index=False)
             logger.info("Mapping file updated successfully with GINI value.")
 
         except Exception as e:
