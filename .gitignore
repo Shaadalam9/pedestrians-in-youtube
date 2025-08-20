@@ -22,6 +22,7 @@ yolo11x-seg.pt
 __pycache__/
 *.pyc
 *.egg-info/
+.venv
 
 # macOS specific files
 **/.DS_Store
