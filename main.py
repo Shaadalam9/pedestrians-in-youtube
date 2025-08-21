@@ -73,6 +73,10 @@ if __name__ == "__main__":
 
             if config.external_ssd:
                 internal_ssd = config.videos[-1]
+
+                # make sure it exists
+                os.makedirs(internal_ssd, exist_ok=True)
+
                 output_path = config.videos[-2]
             else:
                 output_path = config.videos[-1]  # use the last folder with videos to download
@@ -296,7 +300,7 @@ if __name__ == "__main__":
                             continue
 
                         # Define a temporary path for the trimmed video segment
-                        if config.extenal_ssd:
+                        if config.external_ssd:
                             trimmed_video_path = os.path.join(internal_ssd, f"{video_title}_mod.mp4")
                         else:
                             trimmed_video_path = os.path.join(output_path, f"{video_title}_mod.mp4")
