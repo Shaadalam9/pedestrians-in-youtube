@@ -755,6 +755,30 @@ class Youtube_Helper:
             logger.info(f"Folder '{folder_path}' does not exist.")
             return False
 
+    def delete_youtube_mod_videos(self, folders):
+        """
+        Deletes files of the form {youtube_id}_mod.mp4
+        from the given list of folders.
+
+        Args:
+            folders (list): List of folder paths to scan.
+        """
+        pattern = re.compile(r"^[A-Za-z0-9_-]{11}_mod\.mp4$")
+
+        for folder in folders:
+            if not os.path.exists(folder):
+                print(f"Skipping missing folder: {folder}")
+                continue
+
+            for filename in os.listdir(folder):
+                if pattern.match(filename):
+                    file_path = os.path.join(folder, filename)
+                    try:
+                        os.remove(file_path)
+                        print(f"Deleted: {file_path}")
+                    except Exception as e:
+                        print(f"Failed to delete {file_path}: {e}")
+
     def check_missing_mapping(self, mapping):
         """
         Checks the mapping DataFrame for missing CSV label files based on video ID and start time.

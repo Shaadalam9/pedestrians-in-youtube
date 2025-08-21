@@ -6,10 +6,12 @@ readme = "README.md"
 requires-python = "==3.10.18"
 dependencies = [
     "ffmpeg-python>=0.2.0",
+    "filterpy>=1.4.5",
     "flake8==7.1.1",
     "flask==3.0.3",
     "geopy==2.4.1",
     "kaleido==0.2.1",
+    "lap>=0.5.12",
     "moviepy==1.0.3",
     "pandas==2.1.4",
     "plotly==5.24.1",
