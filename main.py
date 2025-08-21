@@ -381,6 +381,7 @@ if __name__ == "__main__":
 
             # Pause the file for sleep_sec seconds before doing analysis again
             if config.sleep_sec:
+                helper.delete_youtube_mod_videos(video_paths)
                 logger.info(f"Sleeping for {config.sleep_sec} s before attempting to go over mapping again.")
                 time.sleep(config.sleep_sec)
 
