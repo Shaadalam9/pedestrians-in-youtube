@@ -49,7 +49,8 @@ if __name__ == "__main__":
             email_send=common.get_configs("email_send"),
             email_sender=common.get_configs("email_sender"),
             email_recipients=common.get_configs("email_recipients"),
-            compress_youtube_video=common.get_configs("compress_youtube_video")
+            compress_youtube_video=common.get_configs("compress_youtube_video"),
+            external_ssd=common.get_configs("external_ssd")
         )
 
         # Cache static secret values once before the loop
@@ -69,7 +70,13 @@ if __name__ == "__main__":
                 helper.check_missing_mapping(mapping)
 
             video_paths = config.videos  # folders with videos
-            output_path = config.videos[-1]  # use the last folder with videos to download
+
+            if config.external_ssd:
+                internal_ssd = config.videos[-1]
+                output_path = config.videos[-2]
+            else:
+                output_path = config.videos[-1]  # use the last folder with videos to download
+
             delete_runs_files = config.delete_runs_files
             delete_youtube_video = config.delete_youtube_video
             data_folders = config.data  # use the last folder in the list to store data
@@ -169,8 +176,6 @@ if __name__ == "__main__":
                     # Define a base video file path for the downloaded original video
                     base_video_path = os.path.join(output_path, f"{vid}.mp4")
 
-                    video_fps = 0.0  # store detected FPS value
-
                     # If the base video does not exist, attempt to download it
                     if not any(os.path.exists(os.path.join(path, f"{vid}.mp4")) for path in video_paths):
                         result = helper.download_video_with_resolution(vid=vid, output_path=output_path)
@@ -202,10 +207,13 @@ if __name__ == "__main__":
                                 continue
                     else:
                         logger.info(f"{vid}: using already downloaded video.")
+
                         # find the first folder where the file exists
                         existing_folder = next((path for path in video_paths if os.path.exists(os.path.join(path, f"{vid}.mp4"))), None)  # noqa: E501
+
                         # if the file exists, use that folder; otherwise, default to the last folder
                         existing_path = existing_folder if existing_folder else video_paths[-1]
+
                         base_video_path = os.path.join(existing_path, f"{vid}.mp4")
                         video_title = vid  # or any fallback title
                         helper.set_video_title(video_title)
@@ -216,6 +224,10 @@ if __name__ == "__main__":
                             # Invalid fps: None, 0, or NaN
                             logger.warning("Invalid video_fps!")
                             continue
+
+                    if config.external_ssd:
+                        shutil.copy2(base_video_path, os.path.join(internal_ssd, f"{vid}.mp4"))
+                        base_video_path = os.path.join(internal_ssd, f"{vid}.mp4")
 
                     for start_time, end_time, time_of_day_value in zip(start_times_list, end_times_list, time_of_day_list):  # noqa: E501
                         bbox_folders, seg_folders, bbox_paths, seg_paths = [], [], [], []
@@ -249,6 +261,7 @@ if __name__ == "__main__":
                             else:
                                 bbox_mode = True
                                 found_path = None
+
                         elif config.segmentation_mode and not config.tracking_mode:
                             # Only check seg_paths
                             if seg_paths:
@@ -257,6 +270,7 @@ if __name__ == "__main__":
                             else:
                                 seg_mode = True
                                 found_path = None
+
                         elif config.tracking_mode and config.segmentation_mode:
                             # If both, check both
                             if bbox_paths and seg_paths:
@@ -282,7 +296,10 @@ if __name__ == "__main__":
                             continue
 
                         # Define a temporary path for the trimmed video segment
-                        trimmed_video_path = os.path.join(output_path, f"{video_title}_mod.mp4")
+                        if config.extenal_ssd:
+                            trimmed_video_path = os.path.join(internal_ssd, f"{video_title}_mod.mp4")
+                        else:
+                            trimmed_video_path = os.path.join(output_path, f"{video_title}_mod.mp4")
 
                         if start_time is None and end_time is None:
                             logger.info(f"{vid}: no trimming required for this video.")
@@ -367,8 +384,10 @@ if __name__ == "__main__":
                             os.remove(trimmed_video_path)
 
                     # Optionally delete the original video after processing if needed
-                    if delete_youtube_video:
+                    if config.external_ssd:
                         os.remove(base_video_path)
+                    if delete_youtube_video:
+                        os.remove(os.path.join(output_path, f"{vid}.mp4"))
 
             # Send email that given mapping has been processed
             if config.email_send and counter_processed:
