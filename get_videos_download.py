@@ -9,6 +9,7 @@ for folder in common.get_configs('videos'):
     print(folder)
     if os.path.exists(folder):
         downloaded_videos.update(f.split('.')[0] for f in os.listdir(folder) if f.endswith('.mp4'))
+print(downloaded_videos)
 
 # load mapping
 df = pd.read_csv(common.get_configs('mapping'))
