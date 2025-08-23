@@ -6,6 +6,7 @@ import common
 # get a list of already downloaded video files (assuming mp4 format)
 downloaded_videos = set()
 for folder in common.get_configs('videos'):
+    print(folder)
     if os.path.exists(folder):
         downloaded_videos.update(f.split('.')[0] for f in os.listdir(folder) if f.endswith('.mp4'))
 
@@ -33,6 +34,7 @@ df_filtered = df[df['filtered_videos'].map(len) > 0]
 
 df_filtered = df_filtered[['id',
                            'city',
+                           'city_aka',
                            'state',
                            'country',
                            'iso3',
@@ -41,6 +43,7 @@ df_filtered = df_filtered[['id',
                            'end_time',
                            'vehicle_type',
                            'upload_date',
+                           'channel',
                            'time_of_day']].rename(columns={'filtered_videos': 'videos'})
 # save the filtered subset with correct list format
 df_filtered['videos'] = df_filtered['videos'].apply(lambda x: f"[{','.join(x)}]" if isinstance(x, list) else "[]")
