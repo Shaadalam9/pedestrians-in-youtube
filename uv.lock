@@ -854,7 +854,7 @@ requires-dist = [
     { name = "plotly", specifier = "==5.24.1" },
     { name = "pycountry", specifier = "==24.6.1" },
     { name = "pycountry-convert", specifier = "==0.7.2" },
-    { name = "pytubefix", specifier = ">=9.4.1" },
+    { name = "pytubefix", specifier = ">=9.3.0" },
     { name = "scipy", specifier = "==1.11.4" },
     { name = "torch", specifier = "==2.8.0" },
     { name = "torchaudio", specifier = "==2.8.0" },
@@ -1104,14 +1104,14 @@ wheels = [
 
 [[package]]
 name = "pytubefix"
-version = "9.4.1"
+version = "9.5.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/89/9f/389cff9de23298bef0b12d922d8ae40cf7c35ab8ca5f1436a6b7d5f538d1/pytubefix-9.4.1.tar.gz", hash = "sha256:a3466cbbe2659f866c2dd91bf8ebdc8256e7494c9c3733292813b313daafcaad", size = 757979, upload-time = "2025-07-23T01:44:47.613Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/07/fe/b002c780d0ad5b22cfcfafd4edab35675e6d6deedbd715568622204c06c4/pytubefix-9.5.0.tar.gz", hash = "sha256:77842994c67a41d70210ed28aa0916d3cc76f35387a4ddce1aacfd46b4e2e039", size = 758396, upload-time = "2025-08-25T11:13:36.323Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/02/39/00a23743e47e62ac254f29ec30c8f6d340847c3b69e5f22f8f28493ecf37/pytubefix-9.4.1-py3-none-any.whl", hash = "sha256:e8625c1f1041b1cf91578843b32a3575b81e3eb49a0ad757b3fc7b9772d85680", size = 768648, upload-time = "2025-07-23T01:44:45.075Z" },
+    { url = "https://files.pythonhosted.org/packages/44/2b/5e58bb0ebaee6981e7df67fd027a0713190053357eda5c0afed24cdf68ac/pytubefix-9.5.0-py3-none-any.whl", hash = "sha256:a5e6a1ca205c1324cb714a18223917193ee019aad486098159cc50a564b5f6d8", size = 768919, upload-time = "2025-08-25T11:13:32.238Z" },
 ]
 
 [[package]]
@@ -1473,9 +1473,9 @@ wheels = [
 
 [[package]]
 name = "yt-dlp"
-version = "2025.8.20"
+version = "2025.8.22"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/c8/af/d3c81af35ae2aef148d0ff78f001650ce5a7ca73fbd3b271eb9aab4c56ee/yt_dlp-2025.8.20.tar.gz", hash = "sha256:da873bcf424177ab5c3b701fa94ea4cdac17bf3aec5ef37b91f530c90def7bcf", size = 3037484, upload-time = "2025-08-20T02:58:49.443Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/40/98/b077bebdc5c759a3f7af3ed3a2a5345ad1145c61963b476469b840ac84ce/yt_dlp-2025.8.22.tar.gz", hash = "sha256:d1846bbb7edbcd2a0d4a2d76c7a2124868de9ea3b3959a8cb8219e3f7cb5c335", size = 3037631, upload-time = "2025-08-23T00:07:02.939Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/33/e8/ebd888100684c10799897296e3061c19ba5559b641f8da218bf48229a815/yt_dlp-2025.8.20-py3-none-any.whl", hash = "sha256:073c97e2a3f9cd0fa6a76142c4ef46ca62b2575c37eaf80d8c3718fd6f3277eb", size = 3266841, upload-time = "2025-08-20T02:58:47.142Z" },
+    { url = "https://files.pythonhosted.org/packages/f4/06/e9e5e85969bd85142b004577915f33356ee0d5e20b79af8dd40b8bbfc96f/yt_dlp-2025.8.22-py3-none-any.whl", hash = "sha256:b8c71fe4516170dea60c6e5c54e2d45654693b8dc273cad060f22199476ec979", size = 3266783, upload-time = "2025-08-23T00:07:00.176Z" },
 ]
