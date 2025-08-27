@@ -428,9 +428,9 @@ class Plots():
             idx = num_cities_per_col + i
             if day_values[idx] is not None and night_values[idx] is not None:
                 if data_view == "combined":
-                    value = (day_values[i] + night_values[i])/2
+                    value = (day_values[idx] + night_values[idx])/2
                 else:
-                    value = (day_values[i] + night_values[i])
+                    value = (day_values[idx] + night_values[idx])
 
                 fig.add_trace(go.Bar(
                     x=[day_values[idx]],

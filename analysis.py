@@ -363,7 +363,7 @@ class Analysis():
 
         # Index all CSV files from bbox and seg subfolders for quick lookup
         for folder_path in data_folders:
-            for subfolder in ["bbox", "seg"]:
+            for subfolder in common.get_configs("sub_domain"):
                 subfolder_path = os.path.join(folder_path, subfolder)
                 if not os.path.exists(subfolder_path):
                     continue
@@ -637,7 +637,7 @@ class Analysis():
                 # Find the CSV file for this video
                 value = None
                 for folder_path in common.get_configs('data'):
-                    for subfolder in ["bbox", "seg"]:
+                    for subfolder in common.get_configs("sub_domain"):
                         subfolder_path = os.path.join(folder_path, subfolder)
                         if not os.path.exists(subfolder_path):
                             continue  # Skip if subfolder doesn't exist
@@ -733,7 +733,7 @@ class Analysis():
 
                 for folder_path in common.get_configs('data'):
                     existing_subfolders = []
-                    for subfolder in ["bbox", "seg"]:
+                    for subfolder in common.get_configs("sub_domain"):
                         subfolder_path = os.path.join(folder_path, subfolder)
                         if os.path.exists(subfolder_path):
                             existing_subfolders.append(subfolder)
@@ -962,7 +962,7 @@ class Analysis():
                                 df = None  # Initialize before the loops
 
                                 for folder_path in common.get_configs('data'):
-                                    for subfolder in ["bbox", "seg"]:
+                                    for subfolder in common.get_configs("sub_domain"):
                                         subfolder_path = os.path.join(folder_path, subfolder)
                                         if not os.path.exists(subfolder_path):
                                             continue
@@ -1485,7 +1485,7 @@ if __name__ == "__main__":
 
             found_any = False
 
-            for subfolder in ("bbox", "seg"):
+            for subfolder in common.get_configs("sub_domain"):
                 subfolder_path = os.path.join(folder_path, subfolder)
                 if not os.path.exists(subfolder_path):
                     continue
@@ -2169,18 +2169,6 @@ if __name__ == "__main__":
                                                   legend_x=0.9,
                                                   legend_y=0.01,
                                                   legend_spacing=0.0026)
-
-        plots_class.stack_plot(df,
-                               order_by="average",
-                               metric="num_of_crossing",
-                               data_view="day",
-                               title_text="Crossing in the country",
-                               filename="crossing_country",
-                               font_size_captions=common.get_configs("font_size") + 8,
-                               legend_x=0.87,
-                               legend_y=0.04,
-                               legend_spacing=0.02
-                               )
 
         plots_class.stack_plot(df,
                                order_by="alphabetical",

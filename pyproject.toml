@@ -17,7 +17,7 @@ dependencies = [
     "plotly==5.24.1",
     "pycountry==24.6.1",
     "pycountry-convert==0.7.2",
-    "pytubefix>=9.4.1",
+    "pytubefix>=9.5.0",
     "scipy==1.11.4",
     "torch==2.8.0",
     "torchaudio==2.8.0",
