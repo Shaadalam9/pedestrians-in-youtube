@@ -2892,3 +2892,5 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 2891,Sai Kung,[],,Hong Kong,HKG,Asia,22.3822489,114.2728277,0.0,412900,7500700,0.0,0.0,168.0,46.8,0.0,0.0,[tnB7Wem6UYc],[[0]],[[0]],[[540]],[0],[03102020],[UCLjpvRmj82g_jw-eKqxa0Zg]
 2892,London,[],,Japan,JPN,Asia,34.5293874,135.9550491,0.0,0,125836021,3.6,0.0,165.0,49.5,32.9,0.0,[h269Bf53rw0],[[0]],[[0]],[[1201]],[0],[30112023],[UC9q-xm5o_9otkJsxpOnOQpw]
 2893,Toya,[],Hokkaidō,Japan,JPN,Asia,42.5508898,140.7634991,0.0,2221,125836021,3.6,0.0,165.0,49.5,32.9,0.0,[csX5cphXBnU],[[0]],[[0]],[[122]],[0],[27112023],[UC9q-xm5o_9otkJsxpOnOQpw]
+2894,Yuchi Township,[Yuchih Township],,Taiwan,TWN,Asia,23.88007591465055,120.9196295668257,0.0,14578,23503349,0.0,0.0,167.0,42.5,0.0,0.0,[WpmvDCZ1IwY],[[0]],[[0]],[[30]],[0],[16112023],[UC9q-xm5o_9otkJsxpOnOQpw]
+2895,Checheng,[],,Taiwan,TWN,Asia,23.832963055532158,120.86604351672074,0.0,8000,23503349,0.0,0.0,167,42.5,0.0,0.0,[WpmvDCZ1IwY],[[0]],[[1835]],[[2472]],[0],[16112023],[UC9q-xm5o_9otkJsxpOnOQpw]
