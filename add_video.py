@@ -596,7 +596,11 @@ def get_city_data(city, country_code):
     :return: City data
     """
     url = f"http://api.geonames.org/searchJSON?q={city}&country={country_code}&username={common.get_secrets('geonames_username')}"  # noqa: E501
-    response = requests.get(url)
+    try:
+        response = requests.get(url)
+    except requests.exceptions.ConnectionError as e:
+        print(f"Connection error while getting city data for {city}, {country_code}: {e}.")
+        return None
 
     if response.status_code == 200:
         return response.json()
