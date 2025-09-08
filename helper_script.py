@@ -1069,7 +1069,7 @@ class Youtube_Helper:
             config = yaml.safe_load(f)
 
         # Update the track_buffer value
-        config['track_buffer'] = 2 * video_fps
+        config['track_buffer'] = common.get_configs("track_buffer_sec") * video_fps
 
         # Write it back to the YAML file (overwrite)
         with open(yaml_path, 'w') as f:
