@@ -189,8 +189,8 @@ class Youtube_Helper:
             logging.error(f"Failed to upgrade {package_name}: {e}")
             self.mark_as_upgraded(package_name)  # still log it to avoid retrying
 
-    def download_videos_from_ftp(self, filename: str, base_url: str = "https://files.mobility-squad.com/",
-                                 out_dir: str = ".", username: str = "mobility", password: str = "S0meStrongPass",
+    def download_videos_from_ftp(self, filename: str, base_url=None,
+                                 out_dir: str = ".", username=None, password=None,
                                  token: str | None = None, timeout: int = 20,):  # type: ignore
         """Search for a video file in tue1/tue2/tue3 directories and download it.
 
@@ -202,13 +202,10 @@ class Youtube_Helper:
         Args:
             filename (str): Name of the file to search (without extension or with `.mp4`).
             base_url (str, optional): Root URL of the file server (must end with a slash).
-                Defaults to "https://files.mobility-squad.com/".
             out_dir (str, optional): Local directory where the video should be saved.
                 Defaults to the current directory `"."`.
             username (str, optional): Username for basic authentication.
-                Defaults to "mobility".
             password (str, optional): Password for basic authentication.
-                Defaults to "S0meStrongPass".
             token (str | None, optional): API token to include as a query parameter
                 in every request. Defaults to None.
             timeout (int, optional): Request timeout in seconds. Defaults to 20.
@@ -224,6 +221,8 @@ class Youtube_Helper:
         Raises:
             requests.HTTPError: If an HTTP request fails with a status code error.
         """
+        if base_url == "" or username == "" or password == "":
+            return None
 
         # Ensure the filename ends with .mp4
         if not filename.lower().endswith(".mp4"):
@@ -232,8 +231,8 @@ class Youtube_Helper:
             filename_with_ext = filename
 
         # Ensure base_url has a trailing slash
-        if not base_url.endswith("/"):
-            base_url += "/"
+        if not base_url.endswith("/"):  # pyright: ignore[reportOptionalMemberAccess]
+            base_url += "/"  # pyright: ignore[reportOperatorIssue]
 
         # Setup HTTP session with authentication and headers
         session = requests.Session()
@@ -289,7 +288,7 @@ class Youtube_Helper:
                     href = a.get("href")
                     if not href:
                         continue
-                    full = urljoin(base_url, href)
+                    full = urljoin(base_url, href)  # type: ignore
 
                     # Case 1: File link
                     if is_file_link(a):
@@ -312,7 +311,7 @@ class Youtube_Helper:
 
         # Attempt to find and download the file from each alias
         for alias in aliases:
-            start = urljoin(base_url, f"v/{alias}/browse")
+            start = urljoin(base_url, f"v/{alias}/browse")  # pyright: ignore[reportArgumentType]
             found_url = crawl(start)
             if found_url:
                 os.makedirs(out_dir, exist_ok=True)
