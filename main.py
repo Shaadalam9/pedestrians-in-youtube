@@ -229,10 +229,6 @@ if __name__ == "__main__":
                             logger.warning("Invalid video_fps!")
                             continue
 
-                    if config.external_ssd:
-                        shutil.copy2(base_video_path, os.path.join(internal_ssd, f"{vid}.mp4"))
-                        base_video_path = os.path.join(internal_ssd, f"{vid}.mp4")
-
                     for start_time, end_time, time_of_day_value in zip(start_times_list, end_times_list, time_of_day_list):  # noqa: E501
                         bbox_folders, seg_folders, bbox_paths, seg_paths = [], [], [], []
 
@@ -298,6 +294,10 @@ if __name__ == "__main__":
                         if not bbox_mode and not seg_mode:  # noqa: E501
                             logger.info(f"{vid}: YOLO file {vid}_{start_time}_{video_fps}.csv exists. Skipping segment.")  # noqa:E501
                             continue
+
+                        if config.external_ssd:
+                            shutil.copy2(base_video_path, os.path.join(internal_ssd, f"{vid}.mp4"))
+                            base_video_path = os.path.join(internal_ssd, f"{vid}.mp4")
 
                         # Define a temporary path for the trimmed video segment
                         if config.external_ssd:
