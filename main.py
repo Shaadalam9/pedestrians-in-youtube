@@ -50,14 +50,18 @@ if __name__ == "__main__":
             email_sender=common.get_configs("email_sender"),
             email_recipients=common.get_configs("email_recipients"),
             compress_youtube_video=common.get_configs("compress_youtube_video"),
-            external_ssd=common.get_configs("external_ssd")
+            external_ssd=common.get_configs("external_ssd"),
+            ftp_server=common.get_configs("ftp_server")
+
         )
 
         # Cache static secret values once before the loop
         secret = SimpleNamespace(
             email_smtp=common.get_secrets("email_smtp"),
             email_account=common.get_secrets("email_account"),
-            email_password=common.get_secrets("email_password")
+            email_password=common.get_secrets("email_password"),
+            ftp_username=common.get_secrets("ftp_username"),
+            ftp_password=common.get_secrets("ftp_password")
         )
 
         # Run this script loop forever
@@ -182,9 +186,19 @@ if __name__ == "__main__":
 
                     # If the base video does not exist, attempt to download it
                     if not any(os.path.exists(os.path.join(path, f"{vid}.mp4")) for path in video_paths):
-                        result = helper.download_video_with_resolution(vid=vid, output_path=output_path)
+                        result = helper.download_videos_from_ftp(filename=vid,
+                                                                 base_url=config.ftp_server,
+                                                                 out_dir=output_path,
+                                                                 username=secret.ftp_username,
+                                                                 password=secret.ftp_password,
+                                                                 # token=None  # only if you switch to token auth
+                                                                 )
+                        if result is None:
+                            result = helper.download_video_with_resolution(vid=vid, output_path=output_path)
+
                         if result:
                             video_file_path, video_title, resolution, video_fps = result
+
                             if video_fps is None or video_fps == 0 or (isinstance(video_fps,
                                                                                   float) and math.isnan(video_fps)):
                                 # Invalid fps: None, 0, or NaN

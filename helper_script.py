@@ -25,6 +25,10 @@ from tqdm import tqdm
 import datetime
 import json
 import yaml
+import pathlib
+import requests
+from urllib.parse import urljoin, urlparse
+from bs4 import BeautifulSoup
 
 
 logger = CustomLogger(__name__)  # use custom logger
@@ -184,6 +188,159 @@ class Youtube_Helper:
         except subprocess.CalledProcessError as e:
             logging.error(f"Failed to upgrade {package_name}: {e}")
             self.mark_as_upgraded(package_name)  # still log it to avoid retrying
+
+    def download_videos_from_ftp(self, filename: str, base_url: str = "https://files.mobility-squad.com/",
+                                 out_dir: str = ".", username: str = "mobility", password: str = "S0meStrongPass",
+                                 token: str | None = None, timeout: int = 20,):  # type: ignore
+        """Search for a video file in tue1/tue2/tue3 directories and download it.
+
+        This method crawls through the `/v/{alias}/browse` directories of the
+        provided `base_url` (with aliases "tue1", "tue2", "tue3") to locate
+        and download the specified video file. It returns the local path along
+        with metadata if the file is found and downloaded, otherwise returns None.
+
+        Args:
+            filename (str): Name of the file to search (without extension or with `.mp4`).
+            base_url (str, optional): Root URL of the file server (must end with a slash).
+                Defaults to "https://files.mobility-squad.com/".
+            out_dir (str, optional): Local directory where the video should be saved.
+                Defaults to the current directory `"."`.
+            username (str, optional): Username for basic authentication.
+                Defaults to "mobility".
+            password (str, optional): Password for basic authentication.
+                Defaults to "S0meStrongPass".
+            token (str | None, optional): API token to include as a query parameter
+                in every request. Defaults to None.
+            timeout (int, optional): Request timeout in seconds. Defaults to 20.
+
+        Returns:
+            tuple[str, str, str, float] | None:
+                - Local file path (str)
+                - Original filename (str)
+                - Resolution label (str, e.g., "1080p")
+                - Frames per second (float)
+                Returns None if the file is not found.
+
+        Raises:
+            requests.HTTPError: If an HTTP request fails with a status code error.
+        """
+
+        # Ensure the filename ends with .mp4
+        if not filename.lower().endswith(".mp4"):
+            filename_with_ext = filename + ".mp4"
+        else:
+            filename_with_ext = filename
+
+        # Ensure base_url has a trailing slash
+        if not base_url.endswith("/"):
+            base_url += "/"
+
+        # Setup HTTP session with authentication and headers
+        session = requests.Session()
+        session.auth = (username, password) if username and password else None
+        session.headers.update({"User-Agent": "multi-fileserver-downloader/1.0"})
+        if token:
+            # Add token to query parameters if provided
+            session.params.update({"token": token})  # type: ignore
+
+        aliases = ["tue1", "tue2", "tue3"]
+        visited = set()
+
+        def fetch(url: str) -> requests.Response:
+            """Perform GET request and raise error if status != 200."""
+            r = session.get(url, timeout=timeout)
+            r.raise_for_status()
+            return r
+
+        def is_dir_link(a) -> bool:
+            """Check if anchor tag is a directory link (usually ends with '/')."""
+            href = a.get("href") or ""
+            return "/browse" in href and href.endswith("/")
+
+        def is_file_link(a) -> bool:
+            """Check if anchor tag is a file link (points to `/files/`)."""
+            href = a.get("href") or ""
+            return "/files/" in href
+
+        def crawl(start_url: str) -> str | None:  # pyright: ignore[reportGeneralTypeIssues]
+            """Perform DFS crawl starting from `start_url`.
+
+            Args:
+                start_url (str): URL to begin crawling from.
+
+            Returns:
+                str | None: Download URL if file is found, else None.
+            """
+            stack = [start_url]
+            while stack:
+                url = stack.pop()
+                if url in visited:
+                    continue
+                visited.add(url)
+
+                try:
+                    html = fetch(url).text
+                except requests.HTTPError as e:
+                    logger.error(e)
+                    continue
+
+                soup = BeautifulSoup(html, "html.parser")
+                for a in soup.find_all("a"):
+                    href = a.get("href")
+                    if not href:
+                        continue
+                    full = urljoin(base_url, href)
+
+                    # Case 1: File link
+                    if is_file_link(a):
+                        # Match by anchor text
+                        anchor_text = (a.text or "").strip()
+                        if anchor_text == filename_with_ext:
+                            return full
+
+                        # Match by URL tail for safety
+                        parsed = urlparse(full)
+                        tail = pathlib.PurePosixPath(parsed.path).name
+                        if tail == filename_with_ext and filename_with_ext.lower().endswith(".mp4"):
+                            return full
+
+                    # Case 2: Directory link → continue crawling
+                    if is_dir_link(a):
+                        stack.append(full)
+
+            return None
+
+        # Attempt to find and download the file from each alias
+        for alias in aliases:
+            start = urljoin(base_url, f"v/{alias}/browse")
+            found_url = crawl(start)
+            if found_url:
+                os.makedirs(out_dir, exist_ok=True)
+                local_path = os.path.join(out_dir, filename_with_ext)
+
+                # Stream download with progress bar
+                with session.get(found_url, stream=True, timeout=timeout) as r:
+                    r.raise_for_status()
+                    total = int(r.headers.get("content-length", 0))
+                    with open(local_path, "wb") as f, tqdm(
+                        total=total,
+                        unit="B",
+                        unit_scale=True,
+                        unit_divisor=1024,
+                        desc=f"Downloading via ftp: {filename_with_ext}",
+                    ) as bar:
+                        for chunk in r.iter_content(chunk_size=1024 * 1024):
+                            if chunk:
+                                f.write(chunk)
+                                bar.update(len(chunk))
+
+                # Extract metadata: fps and resolution
+                fps = self.get_video_fps(local_path)
+                resolution = Youtube_Helper.get_video_resolution_label(local_path)
+
+                return local_path, filename, resolution, fps
+
+        return None
 
     def download_video_with_resolution(self, vid, resolutions=["720p", "480p", "360p", "144p"], output_path="."):
         """
@@ -383,6 +540,53 @@ class Youtube_Helper:
             # Log an error message if FPS retrieval fails
             logger.error(f"Failed to retrieve FPS: {e}")
             return None
+
+    @staticmethod
+    def get_video_resolution_label(video_path: str) -> str:
+        """Return the resolution label (e.g., '720p', '1080p') for a given video file.
+
+        This method inspects the video file to determine its frame height and then
+        maps it to a common resolution label. If the resolution does not match a
+        well-known standard, it falls back to returning `<height>p`.
+
+        Args:
+            video_path (str): Path to the video file.
+
+        Returns:
+            str: Resolution label (e.g., "720p", "1080p", "2160p").
+                 Falls back to "<height>p" if no predefined label exists.
+
+        Raises:
+            FileNotFoundError: If the provided video path does not exist.
+            RuntimeError: If the video file cannot be opened with OpenCV.
+        """
+        # Ensure the video file exists
+        if not os.path.exists(video_path):
+            raise FileNotFoundError(f"Video not found: {video_path}")
+
+        # Open video using OpenCV
+        cap = cv2.VideoCapture(video_path)
+        if not cap.isOpened():
+            raise RuntimeError(f"Could not open video: {video_path}")
+
+        # Extract video frame height (resolution height in pixels)
+        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        cap.release()
+
+        # Map common video resolutions to human-readable labels
+        labels = {
+            144: "144p",
+            240: "240p",
+            360: "360p",
+            480: "480p",
+            720: "720p",
+            1080: "1080p",
+            1440: "1440p",
+            2160: "2160p",  # 4K UHD
+        }
+
+        # Return label if known, otherwise fallback to "<height>p"
+        return labels.get(height, f"{height}p")
 
     def trim_video(self, input_path, output_path, start_time, end_time):
         """

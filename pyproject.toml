@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = "==3.10.18"
 dependencies = [
+    "bs4>=0.0.2",
     "ffmpeg-python>=0.2.0",
     "filterpy>=1.4.5",
     "flake8==7.1.1",
