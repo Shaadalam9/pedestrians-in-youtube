@@ -7,7 +7,7 @@ from moviepy.video.io.VideoFileClip import VideoFileClip
 import cv2
 from ultralytics import YOLO
 from collections import defaultdict
-from typing import Optional, Set, List, cast
+from typing import Optional, Set, List
 import shutil
 import numpy as np
 import pandas as pd
@@ -223,13 +223,12 @@ class Youtube_Helper:
             requests.HTTPError: If an HTTP request fails with a status code error.
         """
 
-        if base_url == "" or base_url is None or username == "" or password == "":
+        if base_url is None or base_url == "" or username == "" or password == "":
             return None
 
-        # Narrow Optional[str] → str for the rest of the function
-        base_url_str: str = cast(str, base_url)
+        base_url_str = base_url
 
-        # Ensure the filename ends with .mp4
+        # Ensure filename ends with .mp4
         filename_with_ext = filename if filename.lower().endswith(".mp4") else f"{filename}.mp4"
 
         # Ensure trailing slash
@@ -239,16 +238,17 @@ class Youtube_Helper:
         aliases: List[str] = ["tue1", "tue2", "tue3"]
         visited: Set[str] = set()
 
+        # Build per-request params (avoid touching session.params)
+        req_params: Optional[dict] = {"token": token} if token else None
+
         try:
             with requests.Session() as session:
                 session.auth = (username, password) if (username and password) else None
                 session.headers.update({"User-Agent": "multi-fileserver-downloader/1.0"})
-                if token:
-                    session.params.update({"token": token})  # type: ignore[assignment]
 
                 def fetch(url: str) -> Optional[requests.Response]:
                     try:
-                        r = session.get(url, timeout=timeout)
+                        r = session.get(url, timeout=timeout, params=req_params)
                         r.raise_for_status()
                         return r
                     except requests.RequestException:
@@ -272,7 +272,6 @@ class Youtube_Helper:
 
                         resp = fetch(url)
                         if resp is None:
-                            # treat any error as a miss
                             return None
 
                         try:
@@ -284,29 +283,23 @@ class Youtube_Helper:
                             href = a.get("href")
                             if not href:
                                 continue
+                            full = urljoin(base_url_str, href)
 
-                            # href is a str; base_url_str is a str → urljoin returns str (not bytes)
-                            full: str = urljoin(base_url_str, href)
-
-                            # Case 1: File link
                             if is_file_link(a):
                                 anchor_text = (a.text or "").strip()
                                 if anchor_text == filename_with_ext:
                                     return full
 
                                 parsed = urlparse(full)
-                                # Ensure str for PurePosixPath (avoid Union[str, bytes])
                                 tail = pathlib.PurePosixPath(str(parsed.path)).name
                                 if tail == filename_with_ext and filename_with_ext.lower().endswith(".mp4"):
                                     return full
 
-                            # Case 2: Directory link → continue crawling
                             if is_dir_link(a):
-                                stack.append(full)  # full is str (not Optional), so OK for mypy
+                                stack.append(full)
 
                     return None
 
-                # Try each alias
                 for alias in aliases:
                     start = urljoin(base_url_str, f"v/{alias}/browse")
                     found_url = crawl(start)
@@ -317,7 +310,7 @@ class Youtube_Helper:
                         os.makedirs(out_dir, exist_ok=True)
                         local_path = os.path.join(out_dir, filename_with_ext)
 
-                        with session.get(found_url, stream=True, timeout=timeout) as r:
+                        with session.get(found_url, stream=True, timeout=timeout, params=req_params) as r:
                             r.raise_for_status()
                             total = int(r.headers.get("content-length", 0))
                             with open(local_path, "wb") as f, tqdm(
@@ -976,7 +969,7 @@ class Youtube_Helper:
 
         for folder in folders:
             if not os.path.exists(folder):
-                print(f"Skipping missing folder: {folder}")
+                logger.info(f"Skipping missing folder: {folder}")
                 continue
 
             for filename in os.listdir(folder):
@@ -984,9 +977,9 @@ class Youtube_Helper:
                     file_path = os.path.join(folder, filename)
                     try:
                         os.remove(file_path)
-                        print(f"Deleted: {file_path}")
+                        logger.info(f"Deleted: {file_path}")
                     except Exception as e:
-                        print(f"Failed to delete {file_path}: {e}")
+                        logger.info(f"Failed to delete {file_path}: {e}")
 
     def get_iso_alpha_3(self, country_name, existing_iso):
         """
