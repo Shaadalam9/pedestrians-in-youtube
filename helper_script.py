@@ -7,7 +7,7 @@ from moviepy.video.io.VideoFileClip import VideoFileClip
 import cv2
 from ultralytics import YOLO
 from collections import defaultdict
-from typing import Optional
+from typing import Optional, Set, List, cast
 import shutil
 import numpy as np
 import pandas as pd
@@ -17,7 +17,6 @@ import pycountry
 from pycountry_convert import country_name_to_country_alpha2, country_alpha2_to_continent_code
 from custom_logger import CustomLogger
 import common
-import ast
 import torch
 import subprocess
 import sys
@@ -193,6 +192,7 @@ class Youtube_Helper:
     def download_videos_from_ftp(self, filename: str, base_url: Optional[str] = None, out_dir: str = ".",
                                  username: Optional[str] = None, password: Optional[str] = None,
                                  token: Optional[str] = None, timeout: int = 20):
+
         """Search for a video file in tue1/tue2/tue3 directories and download it.
 
         This method crawls through the `/v/{alias}/browse` directories of the
@@ -222,29 +222,31 @@ class Youtube_Helper:
         Raises:
             requests.HTTPError: If an HTTP request fails with a status code error.
         """
-        if not base_url or base_url == "" or username == "" or password == "":
+
+        if base_url == "" or base_url is None or username == "" or password == "":
             return None
+
+        # Narrow Optional[str] → str for the rest of the function
+        base_url_str: str = cast(str, base_url)
 
         # Ensure the filename ends with .mp4
         filename_with_ext = filename if filename.lower().endswith(".mp4") else f"{filename}.mp4"
 
-        # Ensure base_url has a trailing slash
-        if not base_url.endswith("/"):  # pyright: ignore[reportOptionalMemberAccess]
-            base_url += "/"  # pyright: ignore[reportOperatorIssue]
+        # Ensure trailing slash
+        if not base_url_str.endswith("/"):
+            base_url_str += "/"
 
-        aliases = ["tue1", "tue2", "tue3"]
-        visited: set[str] = set()
+        aliases: List[str] = ["tue1", "tue2", "tue3"]
+        visited: Set[str] = set()
 
         try:
             with requests.Session() as session:
-                # Setup HTTP session with authentication and headers
-                session.auth = (username, password) if username and password else None
+                session.auth = (username, password) if (username and password) else None
                 session.headers.update({"User-Agent": "multi-fileserver-downloader/1.0"})
                 if token:
-                    session.params.update({"token": token})  # type: ignore
+                    session.params.update({"token": token})  # type: ignore[assignment]
 
-                def fetch(url: str):
-                    """GET request; return Response or None on any error."""
+                def fetch(url: str) -> Optional[requests.Response]:
                     try:
                         r = session.get(url, timeout=timeout)
                         r.raise_for_status()
@@ -260,9 +262,8 @@ class Youtube_Helper:
                     href = a.get("href") or ""
                     return "/files/" in href
 
-                def crawl(start_url: str) -> str | None:  # pyright: ignore[reportGeneralTypeIssues]
-                    """DFS crawl; returns download URL or None. Any error -> None."""
-                    stack = [start_url]
+                def crawl(start_url: str) -> Optional[str]:
+                    stack: List[str] = [start_url]
                     while stack:
                         url = stack.pop()
                         if url in visited:
@@ -271,48 +272,51 @@ class Youtube_Helper:
 
                         resp = fetch(url)
                         if resp is None:
-                            return None  # Any fetch error => overall None
+                            # treat any error as a miss
+                            return None
 
                         try:
                             soup = BeautifulSoup(resp.text, "html.parser")
                         except Exception:
-                            return None  # HTML parse error
+                            return None
 
                         for a in soup.find_all("a"):
                             href = a.get("href")
                             if not href:
                                 continue
-                            full = urljoin(base_url, href)  # type: ignore
+
+                            # href is a str; base_url_str is a str → urljoin returns str (not bytes)
+                            full: str = urljoin(base_url_str, href)
 
                             # Case 1: File link
                             if is_file_link(a):
                                 anchor_text = (a.text or "").strip()
                                 if anchor_text == filename_with_ext:
                                     return full
+
                                 parsed = urlparse(full)
-                                tail = pathlib.PurePosixPath(parsed.path).name
+                                # Ensure str for PurePosixPath (avoid Union[str, bytes])
+                                tail = pathlib.PurePosixPath(str(parsed.path)).name
                                 if tail == filename_with_ext and filename_with_ext.lower().endswith(".mp4"):
                                     return full
 
                             # Case 2: Directory link → continue crawling
                             if is_dir_link(a):
-                                stack.append(full)
+                                stack.append(full)  # full is str (not Optional), so OK for mypy
 
                     return None
 
-                # Attempt to find and download the file from each alias
+                # Try each alias
                 for alias in aliases:
-                    start = urljoin(base_url, f"v/{alias}/browse")  # pyright: ignore[reportArgumentType]
+                    start = urljoin(base_url_str, f"v/{alias}/browse")
                     found_url = crawl(start)
-                    if found_url is None:
-                        # If crawl failed due to an error OR didn't find anything, move to next alias
+                    if not found_url:
                         continue
 
                     try:
                         os.makedirs(out_dir, exist_ok=True)
                         local_path = os.path.join(out_dir, filename_with_ext)
 
-                        # Stream download
                         with session.get(found_url, stream=True, timeout=timeout) as r:
                             r.raise_for_status()
                             total = int(r.headers.get("content-length", 0))
@@ -328,21 +332,19 @@ class Youtube_Helper:
                                         f.write(chunk)
                                         bar.update(len(chunk))
                     except (requests.RequestException, OSError):
-                        return None  # Any download/I/O error
+                        return None
 
-                    # Extract metadata: fps and resolution
                     try:
                         fps = self.get_video_fps(local_path)
                         resolution = Youtube_Helper.get_video_resolution_label(local_path)
                     except Exception:
-                        return None  # Any metadata error
+                        return None
 
                     return local_path, filename, resolution, fps
 
                 return None
 
         except Exception:
-            # Any unexpected error path -> None
             return None
 
     def download_video_with_resolution(self, vid, resolutions=["720p", "480p", "360p", "144p"], output_path="."):
@@ -985,26 +987,6 @@ class Youtube_Helper:
                         print(f"Deleted: {file_path}")
                     except Exception as e:
                         print(f"Failed to delete {file_path}: {e}")
-
-    def check_missing_mapping(self, mapping):
-        """
-        Checks the mapping DataFrame for missing CSV label files based on video ID and start time.
-
-        Parameters:
-            mapping (pd.DataFrame): DataFrame containing video IDs and start times.
-        """
-        for index, row in mapping.iterrows():
-            video_ids = [id.strip() for id in row["videos"].strip("[]").split(',')]
-            start_times = ast.literal_eval(row["start_time"])
-            for vid_index, (vid, start_times_list) in enumerate(zip(video_ids, start_times)):
-                for start_time in start_times_list:
-                    file_name = f'{vid}_{start_time}.csv'
-                    file_path = os.path.join(self.data, file_name)  # type: ignore
-                    # Check if the file exists
-                    if os.path.isfile(file_path):
-                        pass
-                    else:
-                        logger.info(f"The file '{file_name}' does not exist.")
 
     def get_iso_alpha_3(self, country_name, existing_iso):
         """

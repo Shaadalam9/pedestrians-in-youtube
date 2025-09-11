@@ -69,10 +69,6 @@ if __name__ == "__main__":
             # Load the config file
             mapping = pd.read_csv(config.mapping)
 
-            # Check for missing mapping file
-            if config.check_missing_mapping:
-                helper.check_missing_mapping(mapping)
-
             video_paths = config.videos  # folders with videos
 
             if config.external_ssd:
