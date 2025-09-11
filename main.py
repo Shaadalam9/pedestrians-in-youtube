@@ -33,7 +33,6 @@ if __name__ == "__main__":
             delete_youtube_video=common.get_configs("delete_youtube_video"),
             data=common.get_configs("data"),
             countries_analyse=common.get_configs("countries_analyse"),
-            check_missing_mapping=common.get_configs("check_missing_mapping"),
             update_ISO_code=common.get_configs("update_ISO_code"),
             update_pop_country=common.get_configs("update_pop_country"),
             update_continent=common.get_configs("update_continent"),
