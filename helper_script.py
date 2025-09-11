@@ -7,6 +7,7 @@ from moviepy.video.io.VideoFileClip import VideoFileClip
 import cv2
 from ultralytics import YOLO
 from collections import defaultdict
+from typing import Optional
 import shutil
 import numpy as np
 import pandas as pd
@@ -189,8 +190,9 @@ class Youtube_Helper:
             logging.error(f"Failed to upgrade {package_name}: {e}")
             self.mark_as_upgraded(package_name)  # still log it to avoid retrying
 
-    def download_videos_from_ftp(self, filename: str, base_url=None, out_dir: str = ".", username=None,
-                                 password=None, token: str | None = None, timeout: int = 20):  # type: ignore
+    def download_videos_from_ftp(self, filename: str, base_url: Optional[str] = None, out_dir: str = ".",
+                                 username: Optional[str] = None, password: Optional[str] = None,
+                                 token: Optional[str] = None, timeout: int = 20):
         """Search for a video file in tue1/tue2/tue3 directories and download it.
 
         This method crawls through the `/v/{alias}/browse` directories of the
