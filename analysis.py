@@ -1374,29 +1374,32 @@ if __name__ == "__main__":
         columns_remove = ['videos', 'time_of_day', 'start_time', 'end_time', 'upload_date', 'vehicle_type', 'channel']
         hover_data = list(set(df.columns) - set(columns_remove))
 
+        # Sort by continent and city, both in ascending order
+        df = df.sort_values(by=["country", "city"], ascending=[True, True])
+
         # maps with all data
-        plots_class.mapbox_map(df=df, hover_data=hover_data, file_name='mapbox_map_all')
-        plots_class.mapbox_map(df=df,
-                               hover_data=hover_data,
-                               density_col='population_city',
-                               density_radius=10,
-                               file_name='mapbox_map_all_pop')
-        plots_class.mapbox_map(df=df,
-                               hover_data=hover_data,
-                               density_col='video_count',
-                               density_radius=10,
-                               file_name='mapbox_map_all_videos')
-        plots_class.mapbox_map(df=df,
-                               hover_data=hover_data,
-                               density_col='total_time',
-                               density_radius=10,
-                               file_name='mapbox_map_all_time')
+        # plots_class.mapbox_map(df=df, hover_data=hover_data, file_name='mapbox_map_all')
+        # plots_class.mapbox_map(df=df,
+        #                        hover_data=hover_data,
+        #                        density_col='population_city',
+        #                        density_radius=10,
+        #                        file_name='mapbox_map_all_pop')
+        # plots_class.mapbox_map(df=df,
+        #                        hover_data=hover_data,
+        #                        density_col='video_count',
+        #                        density_radius=10,
+        #                        file_name='mapbox_map_all_videos')
+        # plots_class.mapbox_map(df=df,
+        #                        hover_data=hover_data,
+        #                        density_col='total_time',
+        #                        density_radius=10,
+        #                        file_name='mapbox_map_all_time')
 
         # number of videos over total time
         plots_class.scatter(df=df,
                             x="total_time",
                             y="video_count",
-                            color="continent",
+                            color="country",
                             # text="city",
                             xaxis_title='Total time of footage (s)',
                             yaxis_title='Number of videos',

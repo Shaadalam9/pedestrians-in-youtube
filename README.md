@@ -224,7 +224,7 @@ Locations of cities with footage in dataset with a density overlay of the number
 Locations of cities with footage in dataset with a density overlay of the total number of seconds of footage in the dataset. *Note:* continents are based on geography, i.e., the cities in Russia east from Ural mountains are shown as Asia.
 
 [![Number of videos over the total number of seconds of footage in the dataset](figures/scatter_all_total_time-video_count.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/scatter_all_total_time-video_count.html)
-Total time of footage over the number of videos in the dataset *Note:* continents are based on geography, i.e., the cities in Russia east from Ural mountains are shown as Asia.
+Total time of footage over the number of videos in the dataset. *Note:* continents are based on geography, i.e., the cities in Russia east from Ural mountains are shown as Asia.
 
 <!-- [![Crossing decision time and crossing speed (sorted by countries)](figures/consolidated.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/consolidated.html)
 Crossing decision time and crossing speed (sorted by countries). -->
