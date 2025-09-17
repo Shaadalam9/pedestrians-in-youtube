@@ -1392,6 +1392,27 @@ if __name__ == "__main__":
                                density_radius=10,
                                file_name='mapbox_map_all_time')
 
+        # number of videos over total time
+        plots_class.scatter(df=df,
+                            x="total_time",
+                            y="video_count",
+                            color="continent",
+                            # text="city",
+                            xaxis_title='Total time of footage (s)',
+                            yaxis_title='Number of videos',
+                            pretty_text=False,
+                            marker_size=10,
+                            save_file=True,
+                            hover_data=hover_data,
+                            hover_name="city",
+                            legend_title="",
+                            # legend_x=0.01,
+                            # legend_y=1.0,
+                            label_distance_factor=5.0,
+                            marginal_x=None,  # type: ignore
+                            marginal_y=None,  # type: ignore
+                            file_name='scatter_all_total_time-video_count')  # type: ignore
+
         total_duration = values_class.calculate_total_seconds(df_mapping)
 
         # Displays values before applying filters
@@ -2714,8 +2735,7 @@ if __name__ == "__main__":
                               hover_data=hover_data_raw,
                               save_file=True,
                               save_final=False,
-                              file_basename="raw_map"
-                              )
+                              file_name="raw_map")
 
         # Map with screenshots and countries colours by continent
         plots_class.map_world(df=df_countries,
@@ -2726,11 +2746,10 @@ if __name__ == "__main__":
                               hover_data=hover_data,
                               save_file=False,
                               save_final=False,
-                              file_basename="map_screenshots",
+                              file_name="map_screenshots",
                               show_colorbar=True,
                               colorbar_title="Continent",
-                              colorbar_kwargs=dict(y=0.035, len=0.55, bgcolor="rgba(255,255,255,0.9)")
-                              )
+                              colorbar_kwargs=dict(y=0.035, len=0.55, bgcolor="rgba(255,255,255,0.9)"))
 
         # Map with screenshots and countries colours by amount of footage
         hover_data = list(set(df_countries_raw.columns) - set(columns_remove))
@@ -2755,8 +2774,7 @@ if __name__ == "__main__":
                               colorbar_title="Footage (log)",
                               save_file=True,
                               save_final=False,
-                              file_basename="map_screenshots_total_time"
-                              )
+                              file_name="map_screenshots_total_time")
 
         df_countries_raw.drop(['speed_crossing_day_country', 'speed_crossing_night_country',
                                'speed_crossing_day_night_country_avg',
@@ -3359,7 +3377,7 @@ if __name__ == "__main__":
                               colorbar_title="",                 # keep your empty title behavior
                               filter_zero_nan=True,              # preserves old map() filtering
                               save_file=True,
-                              file_basename="map_speed_crossing"
+                              file_name="map_speed_crossing"
                               )
 
         # Crossing initiation time (used to be plots_class.map)
@@ -3370,7 +3388,7 @@ if __name__ == "__main__":
                               colorbar_title="",
                               filter_zero_nan=True,
                               save_file=True,
-                              file_basename="map_crossing_time"
+                              file_name="map_crossing_time"
                               )
 
         # Crossing with and without traffic lights

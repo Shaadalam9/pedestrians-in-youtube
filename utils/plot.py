@@ -1557,7 +1557,7 @@ class Plots():
 
     def hist(self, data_index, name, min_threshold, max_threshold, nbins=None, raw=True, color=None,
              pretty_text=False, marginal='rug', xaxis_title=None, yaxis_title=None,
-             name_file=None, df_mapping=None, save_file=False, save_final=False, fig_save_width=1320,
+             file_name=None, df_mapping=None, save_file=False, save_final=False, fig_save_width=1320,
              fig_save_height=680, font_family=None, font_size=None, vlines=None, xrange=None):
         """
         Output histogram of selected data from pickle file.
@@ -1570,7 +1570,7 @@ class Plots():
             marginal (str, optional): marginal type: 'histogram', 'rug', 'box', or 'violin'.
             xaxis_title (str, optional): title for x axis.
             yaxis_title (str, optional): title for y axis.
-            name_file (str, optional): name of file to save.
+            file_name (str, optional): name of file to save.
             save_file (bool, optional): whether to save HTML file of the plot.
             save_final (bool, optional): whether to save final figure to /figures.
             fig_save_width (int, optional): width of saved figure.
@@ -1668,16 +1668,16 @@ class Plots():
                 )
 
         if save_file:
-            if not name_file:
-                name_file = f"hist_{name}"
+            if not file_name:
+                file_name = f"hist_{name}"
             fig.update_layout(margin=dict(l=0, r=0, t=0, b=0))
-            self.save_plotly_figure(fig, name_file, save_final=True, width=fig_save_width, height=fig_save_height)
+            self.save_plotly_figure(fig, file_name, save_final=True, width=fig_save_width, height=fig_save_height)
         else:
             fig.show()
 
     def violin_plot(self, data_index, name, min_threshold, max_threshold, df_mapping, color=None,
                     pretty_text=False, xaxis_title=None, yaxis_title=None,
-                    name_file=None, save_file=False, save_final=False, fig_save_width=1320,
+                    file_name=None, save_file=False, save_final=False, fig_save_width=1320,
                     fig_save_height=680, font_family=None, font_size=None, vlines=None, xrange=None):
         """Generates a violin plot grouped by country from nested results data.
 
@@ -1696,7 +1696,7 @@ class Plots():
             pretty_text (bool, optional): If True, formats axis labels nicely. Defaults to False.
             xaxis_title (str, optional): Custom title for the x-axis. Defaults to "Country".
             yaxis_title (str, optional): Custom title for the y-axis. Defaults to "Values".
-            name_file (str, optional): Name for saving the figure file. Defaults to None.
+            file_name (str, optional): Name for saving the figure file. Defaults to None.
             save_file (bool, optional): If True, saves the plot as an intermediate file. Defaults to False.
             save_final (bool, optional): If True, saves the final plot. Defaults to False.
             fig_save_width (int, optional): Width of the saved figure in pixels. Defaults to 1320.
@@ -1756,7 +1756,7 @@ class Plots():
     def map_world(self, df, *, color, title=None, projection="natural earth", hover_name="country", hover_data=None,
                   show_colorbar=False, colorbar_title=None, colorbar_kwargs=None, color_scale="YlOrRd",
                   show_cities=False, df_cities=None, city_marker_size=3, show_images=False, image_items=None,
-                  denmark_greenland=False, save_file=False, save_final=False, file_basename="map",
+                  denmark_greenland=False, save_file=False, save_final=False, file_name="map",
                   filter_zero_nan=True, country_name_map=None):
         """
         Unified world choropleth with optional cities and annotations.
@@ -1780,7 +1780,7 @@ class Plots():
             denmark_greenland (bool): If True, duplicate Denmark’s value for Greenland.
             save_file (bool): If True, save HTML (and optionally final image) via your helper.
             save_final (bool): Passed to your `save_plotly_figure`.
-            file_basename (str): Base filename without extension.
+            file_name (str): Base filename without extension.
             filter_zero_nan (bool): Filter rows where `color` is 0 or NaN (your old map() behavior).
             country_name_map (dict|None): Extra name normalization; default includes {'Türkiye': 'Turkey'}.
         """
@@ -1939,7 +1939,7 @@ class Plots():
             # tiny padding for saved version
             fig.update_layout(margin=dict(l=10, r=10, t=10, b=10))
             # save via your utility
-            self.save_plotly_figure(fig, file_basename, save_final=save_final)
+            self.save_plotly_figure(fig, file_name, save_final=save_final)
         else:
             fig.show()
 
@@ -1947,7 +1947,7 @@ class Plots():
 
     def scatter(self, df, x, y, extension=None, color=None, symbol=None, size=None, text=None, trendline=None,
                 hover_data=None, marker_size=None, pretty_text=False, marginal_x='violin', marginal_y='violin',
-                xaxis_title=None, yaxis_title=None, xaxis_range=None, yaxis_range=None, name_file=None,
+                xaxis_title=None, yaxis_title=None, xaxis_range=None, yaxis_range=None, file_name=None,
                 save_file=False, save_final=False, fig_save_width=1320, fig_save_height=680, font_family=None,
                 font_size=None, hover_name=None, legend_title=None, legend_x=None, legend_y=None,
                 label_distance_factor=1.0):
@@ -1972,7 +1972,7 @@ class Plots():
             yaxis_title (str, optional): title for y axis.
             xaxis_range (list, optional): range of x axis in format [min, max].
             yaxis_range (list, optional): range of y axis in format [min, max].
-            name_file (str, optional): name of file to save.
+            file_name (str, optional): name of file to save.
             save_file (bool, optional): flag for saving an html file with plot.
             save_final (bool, optional): flag for saving an a final figure to /figures.
             fig_save_width (int, optional): width of figures to be saved.
@@ -2047,7 +2047,7 @@ class Plots():
 
                     text = "display_label"
                 else:
-                    logger.warning("Column 'country' not found, skipping display_label logic.")
+                    logger.warning("Column to be used as text not found, skipping display_label logic.")
 
             # scatter plot with histograms
             with warnings.catch_warnings():
@@ -2112,15 +2112,15 @@ class Plots():
             # save file to local output folder
             if save_file:
                 # build filename
-                if not name_file:
+                if not file_name:
                     if extension is not None:
-                        name_file = 'scatter_' + x + '-' + y + '-' + extension
+                        file_name = 'scatter_' + x + '-' + y + '-' + extension
                     else:
-                        name_file = 'scatter_' + x + '-' + y
+                        file_name = 'scatter_' + x + '-' + y
 
                 # Final adjustments and display
                 fig.update_layout(margin=dict(l=10, r=10, t=10, b=10))
-                self.save_plotly_figure(fig, name_file, save_final=True)
+                self.save_plotly_figure(fig, file_name, save_final=True)
             # open it in localhost instead
             else:
                 fig.show()
