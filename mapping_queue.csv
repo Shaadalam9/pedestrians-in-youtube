@@ -86,15 +86,7 @@ id,city,city_aka,state,country,iso3,videos,start_time,end_time,vehicle_type,uplo
 2981,Chixi,[Chixi Town],Guangdong,China,CHN,[xBZB26LKmww],[[17]],[[2875]],[0],[01042024],[UCoForh6-e0oqsVHi69JQiAQ],[[0]]
 2982,Zhongshan,[],Guangdong,China,CHN,"[klbTHeryZi8,KjJFXsYY0eQ,HQM8HE_kpgA,GV7iqNnuGno]","[[60],[0,437],[0],[0]]","[[4381],[415,992],[1797],[1560]]","[0,0,0,0]","[30032024,20032024,20032024,20032024]","[UCoForh6-e0oqsVHi69JQiAQ,UCoForh6-e0oqsVHi69JQiAQ,UCoForh6-e0oqsVHi69JQiAQ,UCoForh6-e0oqsVHi69JQiAQ]","[[0],[0,0],[0],[0]]"
 2983,Jiangmen,[Jiangmen City],Guangdong,China,CHN,[KUKYjWxgWS8],[[24]],[[4971]],[0],[28032024],[UCoForh6-e0oqsVHi69JQiAQ],[[0]]
-2986,Nanjing,[],Jiangsu,China,CHN,"[epZkAVKRShg,mQyOxWtFN2Y]","[[0],[0],[0],[0]]","[[583],[1563],[586],[1052]]","[0,0,0,0]","[7102020,4062022,22082022,5062022]","[UCYqGjnh_PYzrNg2wKDI_xYg,UCMxRehLTjTFGLmCKl7Xd3Cw,UCMxRehLTjTFGLmCKl7Xd3Cw,UCMxRehLTjTFGLmCKl7Xd3Cw]","[[0],[0],[0],[0]]"
-2987,Faisalabad,[],Punjab,Pakistan,PAK,[kibzXmqJewQ],[[107]],[[1598]],[0],[02062022],[UCY6FptxAGPcPHZhCzwC8MXw],[[0]]
-2991,Jinan,[],Shandong,China,CHN,[j9_h7KR9FvQ],"[[5],[18,19],[10],[0],[0],[0]]","[[3345],[1543,1543],[2748],[2451],[1465],[2040]]","[0,0,0,0,0,0]","[21072024,22032025,14062024,13062024,12062024,9062024]","[UClyLOM2Sfxu7rN5MetSE26Q,UClyLOM2Sfxu7rN5MetSE26Q,UClyLOM2Sfxu7rN5MetSE26Q,UClyLOM2Sfxu7rN5MetSE26Q,UClyLOM2Sfxu7rN5MetSE26Q,UClyLOM2Sfxu7rN5MetSE26Q]","[[0],[0,0],[0],[0],[0],[0]]"
-3002,Ipswich,[],,United Kingdom,GBR,[zxB1QyNJPXM],[[5]],[[515]],[0],[05092021],[UC7iCdyanDiKeZUtY5HdCeow],[[0]]
-3003,Felixstowe,[],,United Kingdom,GBR,[zxB1QyNJPXM],[[1430]],[[1760]],[0],[05092021],[UC7iCdyanDiKeZUtY5HdCeow],[[0]]
-3006,Leshan,[],Sichuan,China,CHN,[rMwA7h8AgMk],"[[1900], [30]]","[[2522], [3545]]","[0,0]","[8032021,14082025]","[UCRXURb5p1oNSVuRD-4p5oEw,UCsJL5cjERcGVdqJ5Dr9quog]","[[0], [0]]"
-3007,Wenjiang,[],Sichuan,China,CHN,[j9mKYor-kyE],[[30]],[[410]],[0],[04092025],[UCsJL5cjERcGVdqJ5Dr9quog],[[0]]
-3008,Dujiangyan,"[Dujiangyan City,]",Sichuan,China,CHN,[j9mKYor-kyE],[[2940]],[[4423]],[0],[04092025],[UCsJL5cjERcGVdqJ5Dr9quog],[[0]]
-3012,Huangshan,[Huangshan City],Anhui,China,CHN,"[w2qUXs48TLU,qfpr5ZL7Rnk]","[[0, 311], [2425, 3760]]","[[308, 372], [3750, 3990]]","[0,0]","[28032019,19032019]","[UCbn3IVjnCAxzqJdIZ1td8zg,UCbn3IVjnCAxzqJdIZ1td8zg]","[[0, 0], [0, 0]]"
+2986,Nanjing,[],Jiangsu,China,CHN,[epZkAVKRShg],"[[0],[0],[0],[0]]","[[583],[1563],[586],[1052]]","[0,0,0,0]","[7102020,4062022,22082022,5062022]","[UCYqGjnh_PYzrNg2wKDI_xYg,UCMxRehLTjTFGLmCKl7Xd3Cw,UCMxRehLTjTFGLmCKl7Xd3Cw,UCMxRehLTjTFGLmCKl7Xd3Cw]","[[0],[0],[0],[0]]"
 3014,Psatha,[],,Greece,GRC,[oqWXi63pBnQ],[[0]],[[309]],[0],[09082025],[UCasxUHsjyABKD11rDR3t2qw],[[0]]
 3015,Thun,[],BE,Switzerland,CHE,[kXRitXAvtns],[[810]],[[1784]],[0],[11052025],[UCasxUHsjyABKD11rDR3t2qw],[[0]]
 3016,Kandersteg,[],BE,Switzerland,CHE,[ToWlbDy5oq0],[[0]],[[535]],[0],[19042025],[UCasxUHsjyABKD11rDR3t2qw],[[0]]
