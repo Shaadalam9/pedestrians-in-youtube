@@ -688,7 +688,7 @@
             {% if video_id %}
                 <!-- Embed the YouTube video only if a valid video ID is available -->
                 <iframe id="embeddedVideo" src="https://www.youtube.com/embed/{{ video_id }}?start={{ timestamp }}&enablejsapi=1&autoplay=1&mute=1" frameborder="0" allowfullscreen allow="autoplay"></iframe>
-                <p class="short_row"><strong>Current time:</strong> <span id="currentTime">0</span> s. <strong>Last second:</strong> <span id="lastSecond" style="cursor:pointer; text-decoration:underline;" title="Click to copy">0</span> s.<strong>ID:</strong> <span id="videoTitle">{{ video_id }}</span>. <strong>Upload date:</strong> <span id="videoUploadDate">{{ yt_upload_date }}</span>.</p>
+                <p class="short_row"><strong>Current time:</strong> <span id="currentTime">0</span> s. <strong>Last second:</strong> <span id="lastSecond" style="cursor:pointer; text-decoration:underline;" title="Click to copy">0</span> s. <strong>ID:</strong> <span id="videoTitle">{{ video_id }}</span>. <strong>Upload date:</strong> <span id="videoUploadDate">{{ yt_upload_date }}</span>.</p>
                 <p class="short_row"><strong>Start time</strong>: {{ start_time_video }}</p>
                 <p class="short_row"><strong>End time</strong>: {{ end_time_video }}</p>
                 <p class="short_row"><strong>Description:</strong> <span id="videoDescription">{{ yt_description }}</span></p>
