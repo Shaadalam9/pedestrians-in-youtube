@@ -434,6 +434,8 @@ class Analysis():
 
                     # Load detection data for this video segment
                     dataframe = pd.read_csv(file_path)
+                    # Keep only rows with confidence > min_conf
+                    dataframe = dataframe[dataframe["confidence"] >= common.get_configs("confidence")]
 
                     # ---- CELL PHONES: Count per person, normalised ----
                     mobile_ids = len(dataframe[dataframe["yolo-id"] == 67]["unique-id"].unique())
@@ -646,6 +648,10 @@ class Analysis():
                             if os.path.splitext(file)[0] == video_key:
                                 file_path = os.path.join(subfolder_path, file)
                                 value = pd.read_csv(file_path)
+
+                                # Keep only rows with confidence > min_conf
+                                value = value[value["confidence"] >= common.get_configs("confidence")]
+
                                 break
                         if value is not None:
                             break  # Break out of subfolder loop
@@ -751,6 +757,9 @@ class Analysis():
                                 file_path = os.path.join(subfolder_path, file)
                                 # Load the CSV
                                 value = pd.read_csv(file_path)
+
+                                # Keep only rows with confidence > min_conf
+                                value = value[value["confidence"] >= common.get_configs("confidence")]
 
                 for id, time in df.items():
                     unique_id_indices = value.index[value['unique-id'] == id]
@@ -970,6 +979,9 @@ class Analysis():
                                             if video_start_time in file and file.endswith('.csv'):
                                                 file_path = os.path.join(subfolder_path, file)
                                                 df = pd.read_csv(file_path)
+
+                                                # Keep only rows with confidence > min_conf
+                                                df = df[df["confidence"] >= common.get_configs("confidence")]
                                                 break  # Found the file, break from subfolder loop
                                         if df is not None:
                                             break  # Break from folder_path loop if found
@@ -1537,6 +1549,9 @@ if __name__ == "__main__":
 
                     file_path = os.path.join(subfolder_path, file_str)
                     df = pd.read_csv(file_path)
+
+                    # Keep only rows with confidence > min_conf
+                    df = df[df["confidence"] >= common.get_configs("confidence")]
 
                     # After reading the file, clean up the filename
                     base_name = tools_class.clean_csv_filename(file_str)
