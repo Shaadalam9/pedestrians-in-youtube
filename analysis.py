@@ -435,7 +435,7 @@ class Analysis():
                     # Load detection data for this video segment
                     dataframe = pd.read_csv(file_path)
                     # Keep only rows with confidence > min_conf
-                    dataframe = dataframe[dataframe["confidence"] >= common.get_configs("confidence")]
+                    dataframe = dataframe[dataframe["confidence"] >= common.get_configs("min_confidence")]
 
                     # ---- CELL PHONES: Count per person, normalised ----
                     mobile_ids = len(dataframe[dataframe["yolo-id"] == 67]["unique-id"].unique())
@@ -650,7 +650,7 @@ class Analysis():
                                 value = pd.read_csv(file_path)
 
                                 # Keep only rows with confidence > min_conf
-                                value = value[value["confidence"] >= common.get_configs("confidence")]
+                                value = value[value["confidence"] >= common.get_configs("min_confidence")]
 
                                 break
                         if value is not None:
@@ -759,7 +759,7 @@ class Analysis():
                                 value = pd.read_csv(file_path)
 
                                 # Keep only rows with confidence > min_conf
-                                value = value[value["confidence"] >= common.get_configs("confidence")]
+                                value = value[value["confidence"] >= common.get_configs("min_confidence")]
 
                 for id, time in df.items():
                     unique_id_indices = value.index[value['unique-id'] == id]
@@ -981,7 +981,7 @@ class Analysis():
                                                 df = pd.read_csv(file_path)
 
                                                 # Keep only rows with confidence > min_conf
-                                                df = df[df["confidence"] >= common.get_configs("confidence")]
+                                                df = df[df["confidence"] >= common.get_configs("min_confidence")]
                                                 break  # Found the file, break from subfolder loop
                                         if df is not None:
                                             break  # Break from folder_path loop if found
@@ -1551,7 +1551,7 @@ if __name__ == "__main__":
                     df = pd.read_csv(file_path)
 
                     # Keep only rows with confidence > min_conf
-                    df = df[df["confidence"] >= common.get_configs("confidence")]
+                    df = df[df["confidence"] >= common.get_configs("min_confidence")]
 
                     # After reading the file, clean up the filename
                     base_name = tools_class.clean_csv_filename(file_str)

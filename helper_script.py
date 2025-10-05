@@ -7,7 +7,7 @@ from moviepy.video.io.VideoFileClip import VideoFileClip
 import cv2
 from ultralytics import YOLO
 from collections import defaultdict
-from typing import Optional, Set, List
+from typing import Optional, Set, List, Any
 import shutil
 import numpy as np
 import pandas as pd
@@ -79,7 +79,7 @@ class Youtube_Helper:
         self.seg_tracker = common.get_configs("seg_tracker")
         self.resolution = None
         self.mapping = pd.read_csv(common.get_configs("mapping"))
-        self.confidence = common.get_configs("confidence")
+        self.confidence = 0.0
         self.display_frame_tracking = common.get_configs("display_frame_tracking")
         self.display_frame_segmentation = common.get_configs("display_frame_segmentation")
         self.output_path = common.get_configs("videos")
@@ -427,10 +427,10 @@ class Youtube_Helper:
                 'skip_download': True,
                 'quiet': True,
             }
-            with yt_dlp.YoutubeDL(extract_opts) as ydl:
+            with yt_dlp.YoutubeDL(extract_opts) as ydl:  # pyright: ignore[reportArgumentType]
                 info_dict = ydl.extract_info(youtube_url, download=False)
 
-            available_formats = info_dict.get("formats", [])  # type: ignore
+            available_formats: list[dict[str, Any]] = info_dict.get("formats") or []
             selected_format_str = None
             selected_resolution = None
 
@@ -468,6 +468,7 @@ class Youtube_Helper:
                 # Raise an exception to trigger the fallback method.
                 raise Exception(f"{vid}: no stream available via yt_dlp")
             po_token = common.get_secrets("po_token")
+
             # Set download options.
             download_opts = {
                 'format': selected_format_str,
@@ -490,7 +491,7 @@ class Youtube_Helper:
             }
 
             logger.info(f"{vid}: download in {selected_resolution} started with yt_dlp.")
-            with yt_dlp.YoutubeDL(download_opts) as ydl:
+            with yt_dlp.YoutubeDL(download_opts) as ydl:  # type: ignore
                 ydl.download([youtube_url])
 
             # Final output file path (assuming the postprocessor outputs an MP4 file).
