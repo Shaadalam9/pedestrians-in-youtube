@@ -1870,8 +1870,8 @@ if __name__ == "__main__":
                 lat, lon = Analysis.get_coordinates(row["city"],
                                                     row["state"],
                                                     common.correct_country(row["country"]))  # type: ignore
-                df_mapping.at[index, 'lat'] = lat
-                df_mapping.at[index, 'lon'] = lon
+                df_mapping.at[index, 'lat'] = lat  # type: ignore
+                df_mapping.at[index, 'lon'] = lon  # type: ignore
 
         # Save the raw file for further investigation
         df_mapping_raw = df_mapping.copy()

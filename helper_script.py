@@ -399,7 +399,7 @@ class Youtube_Helper:
 
             # Construct the file path for the downloaded video.
             video_file_path = os.path.join(output_path, f"{vid}.mp4")
-            logger.info(f"{vid}: download in {selected_resolution} started with pytube.")
+            logger.info(f"{vid}: download in {selected_resolution} started with pytubefix.")
 
             # Download the video.
             selected_stream.download(output_path, filename=f"{vid}.mp4")
