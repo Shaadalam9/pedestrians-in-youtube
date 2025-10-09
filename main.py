@@ -35,7 +35,6 @@ if __name__ == "__main__":
             countries_analyse=common.get_configs("countries_analyse"),
             update_ISO_code=common.get_configs("update_ISO_code"),
             update_pop_country=common.get_configs("update_pop_country"),
-            update_continent=common.get_configs("update_continent"),
             update_mortality_rate=common.get_configs("update_mortality_rate"),
             update_gini_value=common.get_configs("update_gini_value"),
             update_upload_date=common.get_configs("update_upload_date"),
@@ -97,7 +96,7 @@ if __name__ == "__main__":
                     mapping["iso3"] = None  # Initialise the column if it doesn't exist
 
                 for index, row in mapping.iterrows():
-                    mapping.at[index, "iso3"] = helper.get_iso_alpha_3(row["country"], row["iso3"])
+                    mapping.at[index, "iso3"] = helper.get_iso_alpha_3(row["country"], row["iso3"])  # type: ignore
 
                 # Save the updated DataFrame back to the same CSV
                 mapping.to_csv(config.mapping, index=False)
@@ -106,14 +105,6 @@ if __name__ == "__main__":
 
             if config.update_pop_country:
                 helper.update_population_in_csv(mapping)
-
-            if config.update_continent:
-                # Update the continent column based on the country
-                mapping['continent'] = mapping['country'].apply(helper.get_continent_from_country)
-
-                # Save the updated CSV file
-                mapping.to_csv(config.mapping, index=False)
-                logger.info("Mapping file updated successfully with continents.")
 
             if config.update_mortality_rate:
                 helper.fill_traffic_mortality(mapping)
@@ -305,7 +296,23 @@ if __name__ == "__main__":
                             continue
 
                         if config.external_ssd:
-                            shutil.copy2(base_video_path, os.path.join(internal_ssd, f"{vid}.mp4"))
+                            try:
+                                out = helper.copy_video_safe(base_video_path, internal_ssd, vid)
+                                logger.info(f"Copied to {out}")
+                            except Exception as exc:
+                                src_exists = os.path.isfile(base_video_path)
+                                dest_file = os.path.join(internal_ssd, f"{vid}.mp4")
+                                dest_parent_exists = os.path.isdir(internal_ssd)
+
+                                logger.error(
+                                    "[copy error] "
+                                    f"src={base_video_path!r} "
+                                    f"src_exists={src_exists} "
+                                    f"dest={dest_file!r} "
+                                    f"dest_parent_exists={dest_parent_exists} "
+                                    f"err={exc!r}"
+                                )
+                                raise
                             base_video_path = os.path.join(internal_ssd, f"{vid}.mp4")
 
                         # Define a temporary path for the trimmed video segment

@@ -1,6 +1,7 @@
 # by Shadab Alam <md_shadab_alam@outlook.com> and Pavlo Bazilinskyy <pavlo.bazilinskyy@gmail.com>
 import os
 import re
+import time
 from pytubefix import YouTube
 from pytubefix.cli import on_progress
 from moviepy.video.io.VideoFileClip import VideoFileClip
@@ -188,6 +189,104 @@ class Youtube_Helper:
         except subprocess.CalledProcessError as e:
             logging.error(f"Failed to upgrade {package_name}: {e}")
             self.mark_as_upgraded(package_name)  # still log it to avoid retrying
+
+    @staticmethod
+    def _wait_for_stable_file(src, checks=2, interval=0.5, timeout=30):
+        """
+        Wait until `src` exists and its size is unchanged for `checks` consecutive checks.
+        Returns True if stable within timeout, else False.
+        """
+        deadline = time.time() + timeout
+        last = -1
+        stable = 0
+        while time.time() < deadline:
+            if os.path.isfile(src):
+                try:
+                    size = os.stat(src).st_size
+                except OSError:
+                    size = -1
+                if size == last:
+                    stable += 1
+                    if stable >= checks:
+                        return True
+                else:
+                    stable = 0
+                last = size
+            time.sleep(interval)
+        return False
+
+    def copy_video_safe(self, base_video_path, internal_ssd, vid, max_attempts=5, backoff=0.6):
+        """
+        Copies base_video_path -> os.path.join(internal_ssd, f"{vid}.mp4")
+        - Ensures dest dir exists
+        - Waits for source file to be stable
+        - Copies to temp, then atomic replace
+        - Verifies size
+        - Retries on transient OS errors
+        """
+        if not vid or str(vid).strip() == "":
+            raise ValueError("vid must be a non-empty string")
+
+        dest_dir = internal_ssd
+        dest = os.path.join(dest_dir, f"{vid}.mp4")
+        tmp = dest + ".tmp"
+
+        # Ensure destination directory
+        os.makedirs(dest_dir, exist_ok=True)
+
+        # Avoid copying onto itself (only works if both exist)
+        try:
+            if os.path.exists(dest) and os.path.exists(base_video_path) and os.path.samefile(base_video_path, dest):
+                return dest
+        except OSError:
+            # samefile can raise if either path doesn't fully exist yet; ignore
+            pass
+
+        # Wait for source to appear and stabilize
+        if not Youtube_Helper._wait_for_stable_file(base_video_path):
+            raise FileNotFoundError(f"Source never became available or stayed unstable: {base_video_path}")
+
+        # Cache expected size for verification
+        try:
+            src_size = os.stat(base_video_path).st_size
+        except OSError as e:
+            raise FileNotFoundError(f"Cannot stat source: {base_video_path}: {e!r}")
+
+        attempt = 0
+        while True:
+            attempt += 1
+            try:
+                # Copy to temp
+                shutil.copy2(base_video_path, tmp)
+
+                # Best-effort flush of temp file contents
+                try:
+                    with open(tmp, "rb") as f:
+                        os.fsync(f.fileno())
+                except (OSError, AttributeError):
+                    pass
+
+                # Atomic replace final
+                os.replace(tmp, dest)
+
+                # Verify size
+                if os.stat(dest).st_size != src_size:
+                    raise OSError(f"Size mismatch after copy: src={src_size}, dst={os.stat(dest).st_size}")
+
+                return dest
+
+            except (OSError, IOError):
+                # Clean up temp if present
+                try:
+                    if os.path.exists(tmp):
+                        os.remove(tmp)
+                except OSError:
+                    pass
+
+                if attempt >= max_attempts:
+                    raise
+
+                time.sleep(backoff * attempt)
 
     def download_videos_from_ftp(self, filename: str, base_url: Optional[str] = None, out_dir: str = ".",
                                  username: Optional[str] = None, password: Optional[str] = None,
