@@ -403,9 +403,9 @@ if __name__ == "__main__":
                         if config.tracking_mode:
                             os.remove(trimmed_video_path)
 
-                        # Optionally delete the original video after processing if needed
-                        if config.external_ssd:
-                            os.remove(base_video_path)
+                    # Optionally delete the original video after processing if needed
+                    if config.external_ssd:
+                        os.remove(base_video_path)
 
                     if delete_youtube_video:
                         os.remove(os.path.join(output_path, f"{vid}.mp4"))
