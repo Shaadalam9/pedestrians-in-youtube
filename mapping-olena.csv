@@ -3054,4 +3054,6 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 3053,Poeldijk,[],,Netherlands,NLD,Europe,52.0225167,4.218242,0.0,5800,16655799,4.0,0.0,177.0,42.2,28.1,0.0,"[RHbzZAVJPdY,wV5wfGCO7fk]","[[1], [0]]","[[1051], [936]]","[[1200], [1347]]","[0,0]","[3122024,25032025]","[UCSXSCzMyK5RZ9j1HbO9Fubg,UCSXSCzMyK5RZ9j1HbO9Fubg]"
 3054,Nieuwendijk,[],,Netherlands,NLD,Europe,51.7764266,4.9190121,0.0,3659,16655799,4.0,0.0,177.0,42.2,28.1,0.0,[Qd8xeQGuKSY],[[0]],[[1458]],[[1608]],[0],[21072023],[UCHKMX5Dj22Ga_5MgTlyMzjw]
 3055,Zaandam,[],,Netherlands,NLD,Europe,52.4424926,4.8298607,0.0,71708,16655799,4.0,0.0,177.0,42.2,28.1,41.46,[TIUxyCzxeAs],[[0]],[[18]],[[155]],[0],[28102022],[UCLeztQkAq09NP6JhyPlLJqg]
-3056,Zaandijk,[],,Netherlands,NLD,Europe,52.4744145,4.8080282,0.0,9040,16655799,4,0.0,177,42.2,28.1,0.0,[TIUxyCzxeAs],[[0]],[[322]],[[679]],[0],[28102022],[UCLeztQkAq09NP6JhyPlLJqg]
+3056,Zaandijk,[],,Netherlands,NLD,Europe,52.4744145,4.8080282,0.0,9040,16655799,4.0,0.0,177.0,42.2,28.1,0.0,[TIUxyCzxeAs],[[0]],[[322]],[[679]],[0],[28102022],[UCLeztQkAq09NP6JhyPlLJqg]
+3057,Wormerveer,[],,Netherlands,NLD,Europe,52.4952218,4.7876566,0.0,0,16655799,4.0,0.0,177.0,42.2,28.1,29.73,[TIUxyCzxeAs],[[0]],[[721]],[[960]],[0],[28102022],[UCLeztQkAq09NP6JhyPlLJqg]
+3058,Wormer,[],,Netherlands,NLD,Europe,52.4983267,4.8123847,0.0,12890,16655799,4,0.0,177,42.2,28.1,0.0,[TIUxyCzxeAs],[[0]],[[961]],[[1035]],[0],[28102022],[UCLeztQkAq09NP6JhyPlLJqg]
