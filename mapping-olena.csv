@@ -3062,4 +3062,5 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 3061,Veenendaal,[],,Netherlands,NLD,Europe,52.0259814,5.5539239,0.0,61271,16655799,4.0,0.0,177.0,42.2,28.1,0.0,[RecHce_lmbk],[[0]],[[2107]],[[2430]],[0],[03032023],[UCUi-Liy74EDwSsb_VvYnwzQ]
 3062,Heerlen,[],,Netherlands,NLD,Europe,50.888741,5.976223,0.0,93084,16655799,4.0,0.0,177.0,42.2,28.1,0.0,[9KGA1C0H-vg],[[0]],[[984]],[[1180]],[0],[03042025],[UCp8fT5J0kfcfunmdH8_UfTg]
 3063,Valkenburg,[],,Netherlands,NLD,Europe,50.8647531,5.8312518,0.0,0,16655799,4.0,0.0,177.0,42.2,28.1,36.67,[9KGA1C0H-vg],[[0]],[[259]],[[377]],[0],[03042025],[UCp8fT5J0kfcfunmdH8_UfTg]
-3064,Liège,[],,Belgium,BEL,Europe,50.6450944,5.5736112,0.0,195278,11555997,5.8,0.0,171,41.9,27.2,27.59,[5KJO8OiF3nw],[[0]],[[5461]],[[6320]],[0],[09082023],[UCUUPDaFc0ENkfBIJhCfGmdg]
+3064,Liège,[],,Belgium,BEL,Europe,50.6450944,5.5736112,0.0,195278,11555997,5.8,0.0,171.0,41.9,27.2,27.59,[5KJO8OiF3nw],[[0]],[[5461]],[[6320]],[0],[09082023],[UCUUPDaFc0ENkfBIJhCfGmdg]
+3065,Aywaille,[],,Belgium,BEL,Europe,50.4758998,5.6763249,0.0,10636,11555997,5.8,0.0,171,41.9,27.2,0.0,[5KJO8OiF3nw],[[0]],[[7148]],[[7390]],[0],[09082023],[UCUUPDaFc0ENkfBIJhCfGmdg]
