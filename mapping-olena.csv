@@ -3058,4 +3058,5 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 3057,Wormerveer,[],,Netherlands,NLD,Europe,52.4952218,4.7876566,0.0,0,16655799,4.0,0.0,177.0,42.2,28.1,29.73,[TIUxyCzxeAs],"[[0, 0]]","[[721, 1036]]","[[960, 1586]]",[0],[28102022],[UCLeztQkAq09NP6JhyPlLJqg]
 3058,Wormer,[],,Netherlands,NLD,Europe,52.4983267,4.8123847,0.0,12890,16655799,4.0,0.0,177.0,42.2,28.1,0.0,[TIUxyCzxeAs],[[0]],[[961]],[[1035]],[0],[28102022],[UCLeztQkAq09NP6JhyPlLJqg]
 3059,Gemert,[],,Netherlands,NLD,Europe,51.5589833,5.6864592,0.0,15995,16655799,4.0,0.0,177.0,42.2,28.1,0.0,[tq7iu2s7Tok],[[0]],[[1335]],[[1522]],[0],[16032019],[UCLeztQkAq09NP6JhyPlLJqg]
-3060,Geldrop,[],,Netherlands,NLD,Europe,51.4226684,5.5607546,0.0,27900,16655799,4,0.0,177,42.2,28.1,22.22,[RecHce_lmbk],[[0]],[[10]],[[161]],[0],[03032023],[UCUi-Liy74EDwSsb_VvYnwzQ]
+3060,Geldrop,[],,Netherlands,NLD,Europe,51.4226684,5.5607546,0.0,27900,16655799,4.0,0.0,177.0,42.2,28.1,22.22,[RecHce_lmbk],[[0]],[[10]],[[161]],[0],[03032023],[UCUi-Liy74EDwSsb_VvYnwzQ]
+3061,Veenendaal,[],,Netherlands,NLD,Europe,52.0259814,5.5539239,0.0,61271,16655799,4,0.0,177,42.2,28.1,0.0,[RecHce_lmbk],[[0]],[[2107]],[[2430]],[0],[03032023],[UCUi-Liy74EDwSsb_VvYnwzQ]
