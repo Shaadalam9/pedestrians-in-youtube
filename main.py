@@ -50,7 +50,6 @@ if __name__ == "__main__":
             compress_youtube_video=common.get_configs("compress_youtube_video"),
             external_ssd=common.get_configs("external_ssd"),
             ftp_server=common.get_configs("ftp_server")
-
         )
 
         # Cache static secret values once before the loop
