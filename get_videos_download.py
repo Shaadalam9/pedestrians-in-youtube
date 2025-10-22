@@ -5,7 +5,7 @@ import common
 
 # get a list of already downloaded video files (assuming mp4 format)
 downloaded_videos = set()
-for folder in common.get_configs('videos'):
+for folder in common.get_configs('ssd'):
     if os.path.exists(folder):
         downloaded_videos.update(f.split('.')[0] for f in os.listdir(folder) if f.endswith('.mp4'))
 

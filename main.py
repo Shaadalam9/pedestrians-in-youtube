@@ -184,7 +184,8 @@ if __name__ == "__main__":
                         ftp_download = True
 
                         if result is None:
-                            result = helper.download_video_with_resolution(vid=vid, output_path=output_path)
+                            result = helper.download_video_with_resolution(vid=vid,
+                                                                           output_path=output_path)
 
                         if result:
                             video_file_path, video_title, resolution, video_fps = result
