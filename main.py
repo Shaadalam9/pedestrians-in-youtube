@@ -169,6 +169,7 @@ if __name__ == "__main__":
 
                     # Define a base video file path for the downloaded original video
                     base_video_path = os.path.join(output_path, f"{vid}.mp4")
+                    processed_flag = False
 
                     # If the base video does not exist, attempt to download it
                     if not any(os.path.exists(os.path.join(path, f"{vid}.mp4")) for path in video_paths):
@@ -293,12 +294,13 @@ if __name__ == "__main__":
                         # If the YOLO output file already exists, skip processing for this segment
                         if not bbox_mode and not seg_mode:  # noqa: E501
                             logger.info(f"{vid}: YOLO file {vid}_{start_time}_{video_fps}.csv exists. Skipping segment.")  # noqa:E501
+                            processed_flag = True
                             continue
 
                         if config.external_ssd:
                             try:
                                 out = helper.copy_video_safe(base_video_path, internal_ssd, vid)
-                                logger.info(f"Copied to {out}")
+                                logger.debug(f"Copied to {out}.")
                             except Exception as exc:
                                 src_exists = os.path.isfile(base_video_path)
                                 dest_file = os.path.join(internal_ssd, f"{vid}.mp4")
@@ -346,6 +348,7 @@ if __name__ == "__main__":
                                                      bbox_mode=bbox_mode,
                                                      flag=config.save_annotated_video)
                                 counter_processed += 1  # record that one more segment was processed
+                                processed_flag = True
 
                             else:
                                 logger.warning(f"{vid}: FPS value is {video_fps}. Skipping tracking mode.")
@@ -404,7 +407,7 @@ if __name__ == "__main__":
                             os.remove(trimmed_video_path)
 
                     # Optionally delete the original video after processing if needed
-                    if config.external_ssd:
+                    if config.external_ssd and processed_flag:
                         os.remove(base_video_path)
 
                     if delete_youtube_video:
