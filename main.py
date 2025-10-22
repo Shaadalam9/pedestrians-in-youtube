@@ -170,6 +170,7 @@ if __name__ == "__main__":
                     # Define a base video file path for the downloaded original video
                     base_video_path = os.path.join(output_path, f"{vid}.mp4")
                     processed_flag = False
+                    ftp_download = False
 
                     # If the base video does not exist, attempt to download it
                     if not any(os.path.exists(os.path.join(path, f"{vid}.mp4")) for path in video_paths):
@@ -180,6 +181,8 @@ if __name__ == "__main__":
                                                                  password=secret.ftp_password,
                                                                  # token=None  # only if you switch to token auth
                                                                  )
+                        ftp_download = True
+
                         if result is None:
                             result = helper.download_video_with_resolution(vid=vid, output_path=output_path)
 
@@ -408,6 +411,9 @@ if __name__ == "__main__":
 
                     # Optionally delete the original video after processing if needed
                     if config.external_ssd and processed_flag:
+                        os.remove(base_video_path)
+
+                    if ftp_download:
                         os.remove(base_video_path)
 
                     if delete_youtube_video:
