@@ -180,7 +180,8 @@ if __name__ == "__main__":
                                                                  password=secret.ftp_password,
                                                                  # token=None  # only if you switch to token auth
                                                                  )
-                        ftp_download = True
+                        if result:
+                            ftp_download = True
 
                         if result is None:
                             result = helper.download_video_with_resolution(vid=vid,
