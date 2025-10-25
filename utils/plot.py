@@ -2055,6 +2055,7 @@ class Plots():
                 fig = px.scatter(df,
                                  x=x,
                                  y=y,
+                                 render_mode="svg",
                                  color=color,
                                  symbol=symbol,
                                  size=size,
