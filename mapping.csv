@@ -3846,3 +3846,6 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 3845,Kempsey,[],,United Kingdom,GBR,Europe,52.1403051,-2.2179724,0.0,4300,67215293,3.2,0.0,171.0,40.6,35.1,0.0,[QqIu7keh1sA],[[0]],[[0]],[[540]],[0],[01012023],[UCLClBQE2_nF2JZTy2rpPLGw]
 3846,Central Coast,[],NSW,Australia,AUS,Oceania,-33.35462,151.443896,0.0,297956,25687041,4.9,0.0,172.0,38.9,34.4,0.0,"[ik0fHsgbe-Y,OMKUgE2EhCk]","[[0], [0]]","[[0], [0]]","[[388], [987]]","[0,0]","[21042015,21112019]","[UCHGIkeT7024WZJoa5_PcMAg,UCYOBjajZiltwJ5f6g9LQwJA]"
 3847,Woy Woy,[],NSW,Australia,AUS,Oceania,-33.4880548,151.3274925,0.0,10668,25687041,4.9,0.0,172.0,38.9,34.4,0.0,[JJ9iovqWLIg],[[0]],[[0]],[[1191]],[0],[25032024],[UCTX8SP2UB-EJ6u7HHFHN_Jg]
+3848,Whyalla,[],SA,Australia,AUS,Oceania,-33.0382085,137.5843572,0.0,22000,25687041,4.9,0.0,172.0,38.9,34.4,0.0,[NAbLKdZ_asw],[[0]],[[0]],[[330]],[0],[10112022],[UCGqKaBNETUvBNZfjM0V37-Q]
+3849,Quorn,[],SA,Australia,AUS,Oceania,-32.3469384,138.0421184,0.0,1190,25687041,4.9,0.0,172.0,38.9,34.4,0.0,[jIKqx0i_z_A],[[0]],[[9360]],[[9474]],[0],[09072022],[UCO5rkJDWrJ0kJ0bHDvoHwEg]
+3850,Port Pirie,[],SA,Australia,AUS,Oceania,-33.1791249,138.0058614,0.0,17300,25687041,4.9,0.0,172.0,38.9,34.4,0.0,[29qvGbDKYbw],"[[0, 0]]","[[8, 1135]]","[[1080, 2543]]",[0],[28092018],[UC_c0lWzWlGmG5yOvjostr0w]
