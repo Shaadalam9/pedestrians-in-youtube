@@ -1629,48 +1629,57 @@ if __name__ == "__main__":
         df = df.sort_values(by=["continent", "country"], ascending=[True, True])
 
         # map with all cities
-        plots_class.mapbox_map(df=df, hover_data=hover_data, file_name='mapbox_map_all')
-        # create flag_city column
-        df['flag_city'] = df.apply(lambda row: f"{analysis_class.iso3_to_flag.get(row['iso3'], '🏳️')} {row['city']}",
-                                   axis=1)
-        # scatter plot with number of videos over total time
-        plots_class.scatter(df=df,
-                            x="total_time",
-                            y="video_count",
-                            color="country",
-                            text="flag_city",
-                            xaxis_title='Total time of footage (s)',
-                            yaxis_title='Number of videos',
-                            pretty_text=False,
-                            marker_size=10,
-                            save_file=True,
-                            hover_data=hover_data,
-                            hover_name="city",
-                            legend_title="",
-                            # legend_x=0.01,
-                            # legend_y=1.0,
-                            label_distance_factor=5.0,
-                            marginal_x=None,  # type: ignore
-                            marginal_y=None,  # type: ignore
-                            file_name='scatter_all_total_time-video_count')  # type: ignore
-        # maps with all cities and population heatmap
-        plots_class.mapbox_map(df=df,
-                               hover_data=hover_data,
-                               density_col='population_city',
-                               density_radius=10,
-                               file_name='mapbox_map_all_pop')
-        # maps with all cities and video count heatmap
-        plots_class.mapbox_map(df=df,
-                               hover_data=hover_data,
-                               density_col='video_count',
-                               density_radius=10,
-                               file_name='mapbox_map_all_videos')
-        # maps with all cities and total time heatmap
-        plots_class.mapbox_map(df=df,
-                               hover_data=hover_data,
-                               density_col='total_time',
-                               density_radius=10,
-                               file_name='mapbox_map_all_time')
+        # plots_class.mapbox_map(df=df, hover_data=hover_data, file_name='mapbox_map_all')
+        # # create flag_city column
+        # df['flag_city'] = df.apply(lambda row: f"{analysis_class.iso3_to_flag.get(row['iso3'], '🏳️')} {row['city']}",
+        #                            axis=1)
+        # # scatter plot with number of videos over total time
+        # plots_class.scatter(df=df,
+        #                     x="total_time",
+        #                     y="video_count",
+        #                     color="country",
+        #                     text="flag_city",
+        #                     xaxis_title='Total time of footage (s)',
+        #                     yaxis_title='Number of videos',
+        #                     pretty_text=False,
+        #                     marker_size=10,
+        #                     save_file=True,
+        #                     hover_data=hover_data,
+        #                     hover_name="city",
+        #                     legend_title="",
+        #                     # legend_x=0.01,
+        #                     # legend_y=1.0,
+        #                     label_distance_factor=5.0,
+        #                     marginal_x=None,  # type: ignore
+        #                     marginal_y=None,  # type: ignore
+        #                     file_name='scatter_all_total_time-video_count')  # type: ignore
+        # histogram of dates of videos
+        fig = plots_class.video_histogram_by_month(
+            df=df,
+            video_count_col='video_count',
+            upload_date_col='upload_date',
+            xaxis_title='Upload month (year-month)',
+            yaxis_title='Number of videos',
+            save_file=True,
+        )
+        # # maps with all cities and population heatmap
+        # plots_class.mapbox_map(df=df,
+        #                        hover_data=hover_data,
+        #                        density_col='population_city',
+        #                        density_radius=10,
+        #                        file_name='mapbox_map_all_pop')
+        # # maps with all cities and video count heatmap
+        # plots_class.mapbox_map(df=df,
+        #                        hover_data=hover_data,
+        #                        density_col='video_count',
+        #                        density_radius=10,
+        #                        file_name='mapbox_map_all_videos')
+        # # maps with all cities and total time heatmap
+        # plots_class.mapbox_map(df=df,
+        #                        hover_data=hover_data,
+        #                        density_col='total_time',
+        #                        density_radius=10,
+        #                        file_name='mapbox_map_all_time')
 
         # Sort by continent and city, both in ascending order
         df = df.sort_values(by=["country", "city"], ascending=[True, True])

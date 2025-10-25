@@ -1675,6 +1675,198 @@ class Plots():
         else:
             fig.show()
 
+    def video_histogram_by_month(self, df, video_count_col='video_count', upload_date_col='upload_date', 
+                                 xaxis_title='Upload Month', yaxis_title='Number of Videos', 
+                                 file_name=None, save_file=False, font_family=None, font_size=None, 
+                                 title=None):
+        """
+        Output a histogram of video counts by the month of upload_date, where upload_date is a string list of dates in
+        DDMMYYYY format, potentially including None or 7-digit dates. Each month is a separate bar, with years shown on
+        the x-axis.
+
+        Args:
+            df (pandas.DataFrame): DataFrame containing video_count and upload_date columns.
+            video_count_col (str): Column with video counts (default: 'video_count').
+            upload_date_col (str): Column with upload dates as string lists in DDMMYYYY format
+                                   (default: 'upload_date').
+            xaxis_title (str): Title for x-axis (default: 'Upload Month').
+            yaxis_title (str): Title for y-axis (default: 'Number of Videos').
+            file_name (str): Name of file to save (default: None, generates 'video_histogram_by_month').
+            save_file (bool): Flag to save the plot as HTML (default: False).
+            font_family (str): Font family for the figure (default: None, uses 'Arial').
+            font_size (int): Font size for the figure (default: None, uses 12).
+            title (str): Title of the histogram (default: 'Video Count by Upload Month').
+
+        Returns:
+            plotly.graph_objects.Figure: The generated histogram figure, or -1 if an error occurs.
+        """
+        if len(df) == 0:
+            logger.error('DataFrame is empty.')
+            return -1
+
+        # Verify required columns
+        required_cols = [video_count_col, upload_date_col]
+        missing_cols = [col for col in required_cols if col not in df.columns]
+        if missing_cols:
+            logger.error(f'Missing columns: {missing_cols}')
+            return -1
+
+        # Copy DataFrame to avoid modifying original
+        df = df.copy()
+
+        # Log data summary
+        logger.info(f'Creating histogram for {video_count_col} by month of {upload_date_col}. Rows: {len(df)}')
+
+        # Clean data: Remove rows with invalid video_count or upload_date
+        df = df[df[video_count_col].notna() & (df[video_count_col] >= 0)]
+        df = df[df[upload_date_col].notna() & (df[upload_date_col] != '')]
+        if len(df) == 0:
+            logger.error('No valid data after cleaning.')
+            return -1
+
+        # Parse and clean upload_date lists
+        def parse_date_list(date_str):
+            try:
+                # Convert string representation of list to actual list, handling string input
+                if isinstance(date_str, str):
+                    # Remove square brackets and split by comma
+                    dates = [d.strip() for d in date_str.strip('[]').split(',') if d.strip()]
+                else:
+                    dates = date_str
+                valid_dates = []
+                invalid_dates = []
+                for d in dates:
+                    if d is None or d == 'None':
+                        invalid_dates.append('None')
+                        continue
+                    d_str = str(d).strip("'").strip('"')  # Remove any quotes
+                    # Fix 7-digit dates by adding leading zero
+                    if len(d_str) == 7 and d_str.isdigit():
+                        d_str = '0' + d_str
+                    # Validate: 8 digits, numeric, and valid DDMMYYYY
+                    if len(d_str) == 8 and d_str.isdigit():
+                        try:
+                            day, month, year = int(d_str[:2]), int(d_str[2:4]), int(d_str[4:])
+                            if 1 <= month <= 12 and 1 <= day <= 31 and 1900 <= year <= 2025:
+                                valid_dates.append(d_str)
+                            else:
+                                invalid_dates.append(d_str)
+                        except ValueError:
+                            invalid_dates.append(d_str)
+                    else:
+                        invalid_dates.append(d_str)
+                return valid_dates, invalid_dates
+            except Exception as e:
+                logger.error(f'Error parsing date list {date_str}: {str(e)}')
+                return [], [str(date_str)]
+
+        # Apply parsing and collect invalid dates
+        df['parsed_dates'], df['invalid_dates'] = zip(*df[upload_date_col].apply(parse_date_list))
+        
+        # Log invalid dates
+        invalid_rows = df[df['invalid_dates'].apply(len) > 0]
+        if not invalid_rows.empty:
+            logger.warning(f'Invalid dates found in {len(invalid_rows)} rows. Sample invalid dates:')
+            for idx, row in invalid_rows.head().iterrows():
+                logger.warning(f'Row {idx}, city {row.get("city", "unknown")}: Invalid dates {row["invalid_dates"]}')
+
+        # Verify video_count matches length of parsed_dates
+        df['date_count'] = df['parsed_dates'].apply(len)
+        mismatches = df[df['video_count'] != df['date_count']]
+        if not mismatches.empty:
+            logger.warning(f'Mismatch between video_count and parsed_dates length in {len(mismatches)} rows.')
+
+        # Filter rows with at least one valid date
+        df = df[df['parsed_dates'].apply(len) > 0]
+        if len(df) == 0:
+            logger.error('No rows with valid dates.')
+            return -1
+
+        # Explode parsed_dates to create one row per date
+        df_exploded = df.explode('parsed_dates')
+        df_exploded = df_exploded[df_exploded['parsed_dates'].notna() & (df_exploded['parsed_dates'] != '')]
+        
+        if len(df_exploded) == 0:
+            logger.error('No valid dates after exploding.')
+            return -1
+
+        # Parse DDMMYYYY dates to year-month
+        df_exploded['datetime'] = pd.to_datetime(df_exploded['parsed_dates'], format='%d%m%Y', errors='coerce')
+        df_exploded['year_month'] = df_exploded['datetime'].dt.to_period('M').astype(str)
+        df_exploded['year'] = df_exploded['datetime'].dt.year
+        # Check for invalid year values
+        invalid_years = df_exploded['year'].isna() | (df_exploded['year_month'] == 'NaT')
+        if invalid_years.any():
+            logger.warning(f'Invalid years or dates after parsing in {invalid_years.sum()} rows: ' +
+                           f'{str(df_exploded[invalid_years][["parsed_dates", "year_month", "year"]].head().to_dict("records"))}')  # noqa: E501
+            df_exploded = df_exploded[~invalid_years]
+
+        if len(df_exploded) == 0:
+            logger.error('No valid dates after parsing.')
+            return -1
+
+        if 'year' not in df_exploded.columns or df_exploded['year'].isna().all():
+            logger.error('Year column is missing or contains only NaN values.')
+            return -1
+        video_counts = df_exploded.groupby(['year', 'year_month']).size().reset_index(name='video_count')
+        video_counts['year_month'] = video_counts['year_month'].astype(str)
+
+        # Create histogram
+        try:
+            fig = px.histogram(
+                video_counts,
+                x='year_month',
+                y='video_count',
+                title=title,
+                labels={'year_month': xaxis_title, 'video_count': yaxis_title},
+                nbins=len(video_counts['year_month'].unique())
+            )
+        except Exception as e:
+            logger.error(f'Plotly histogram failed: {str(e)}')
+            return -1
+
+        # Generate year ticks for x-axis
+        unique_years = sorted(df_exploded['year'].dropna().unique())
+        # Set x-axis ticks to show only years
+        year_positions = []
+        year_labels = []
+        for year in unique_years:
+            # Find the first year-month for each year
+            first_ym = video_counts[video_counts['year'] == year]['year_month'].min()
+            if first_ym:
+                year_positions.append(first_ym)
+                year_labels.append(str(int(year)))
+
+        # Update layout
+        fig.update_layout(
+            template='plotly',
+            xaxis_title=xaxis_title,
+            yaxis_title=yaxis_title,
+            font=dict(family=font_family or 'Arial', size=font_size or 12),
+            margin=dict(l=10, r=10, t=50, b=10),
+            showlegend=False,
+            bargap=0.1,
+            xaxis=dict(
+                tickmode='array',
+                tickvals=year_positions,
+                ticktext=year_labels,
+                tickangle=45
+            )
+        )
+
+        # Save or show
+        if save_file:
+            if not file_name:
+                file_name = 'hist_months'
+            try:
+                self.save_plotly_figure(fig, file_name)
+            except Exception as e:
+                logger.error(f'Failed to save plot: {str(e)}')
+        else:
+            fig.show()
+
+        return fig
+
     def violin_plot(self, data_index, name, min_threshold, max_threshold, df_mapping, color=None,
                     pretty_text=False, xaxis_title=None, yaxis_title=None,
                     file_name=None, save_file=False, save_final=False, fig_save_width=1320,
