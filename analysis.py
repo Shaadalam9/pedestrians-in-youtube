@@ -1622,12 +1622,11 @@ if __name__ == "__main__":
         df['total_time'] = df.apply(compute_total_time, axis=1)
 
         # Data to avoid showing on hover in scatter plots
-        columns_remove = ['videos', 'time_of_day', 'start_time', 'end_time', 'upload_date', 'vehicle_type', 'channel']
+        columns_remove = ['videos', 'time_of_day', 'start_time', 'end_time', 'upload_date', 'vehicle_type', 'channel',
+                          'display_label']
         hover_data = list(set(df.columns) - set(columns_remove))
-
         # Sort by continent and city, both in ascending order
         df = df.sort_values(by=["continent", "country"], ascending=[True, True])
-
         # map with all cities
         plots_class.mapbox_map(df=df, hover_data=hover_data, file_name='mapbox_map_all')
         # Sort by continent and city, both in ascending order
