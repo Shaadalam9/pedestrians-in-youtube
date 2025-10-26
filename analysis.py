@@ -1630,6 +1630,8 @@ if __name__ == "__main__":
 
         # map with all cities
         plots_class.mapbox_map(df=df, hover_data=hover_data, file_name='mapbox_map_all')
+        # Sort by continent and city, both in ascending order
+        df = df.sort_values(by=["country", "city"], ascending=[True, True])
         # create flag_city column
         df['flag_city'] = df.apply(lambda row: f"{analysis_class.iso3_to_flag.get(row['iso3'], '🏳️')} {row['city']}",
                                    axis=1)
@@ -1680,9 +1682,6 @@ if __name__ == "__main__":
                                density_col='total_time',
                                density_radius=10,
                                file_name='mapbox_map_all_time')
-
-        # Sort by continent and city, both in ascending order
-        df = df.sort_values(by=["country", "city"], ascending=[True, True])
 
         total_duration = values_class.calculate_total_seconds(df_mapping)
 
