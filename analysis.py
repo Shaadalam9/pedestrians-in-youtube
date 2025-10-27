@@ -62,6 +62,245 @@ misc_files: set[str] = {"DS_Store", "seg", "bbox"}  # define once
 
 class Analysis():
 
+    # Emoji flag mapping for ISO3 codes
+    iso3_to_flag = {
+        'ABW': '🇦🇼',  # Aruba
+        'AFG': '🇦🇫',  # Afghanistan
+        'AGO': '🇦🇴',  # Angola
+        'AIA': '🇦🇮',  # Anguilla
+        'ALA': '🇦🇽',  # Åland Islands
+        'ALB': '🇦🇱',  # Albania
+        'AND': '🇦🇩',  # Andorra
+        'ARE': '🇦🇪',  # United Arab Emirates
+        'ARG': '🇦🇷',  # Argentina
+        'ARM': '🇦🇲',  # Armenia
+        'ASM': '🇦🇸',  # American Samoa
+        'ATG': '🇦🇬',  # Antigua and Barbuda
+        'AUS': '🇦🇺',  # Australia
+        'AUT': '🇦🇹',  # Austria
+        'AZE': '🇦🇿',  # Azerbaijan
+        'BDI': '🇧🇮',  # Burundi
+        'BEL': '🇧🇪',  # Belgium
+        'BEN': '🇧🇯',  # Benin
+        'BES': '🇧🇶',  # Bonaire, Sint Eustatius and Saba
+        'BFA': '🇧🇫',  # Burkina Faso
+        'BGD': '🇧🇩',  # Bangladesh
+        'BGR': '🇧🇬',  # Bulgaria
+        'BHR': '🇧🇭',  # Bahrain
+        'BHS': '🇧🇸',  # Bahamas
+        'BIH': '🇧🇦',  # Bosnia and Herzegovina
+        'BLM': '🇧🇱',  # Saint Barthélemy
+        'BLR': '🇧🇾',  # Belarus
+        'BLZ': '🇧🇿',  # Belize
+        'BMU': '🇧🇲',  # Bermuda
+        'BOL': '🇧🇴',  # Bolivia
+        'BRA': '🇧🇷',  # Brazil
+        'BRB': '🇧🇧',  # Barbados
+        'BRN': '🇧🇳',  # Brunei
+        'BTN': '🇧🇹',  # Bhutan
+        'BWA': '🇧🇼',  # Botswana
+        'CAF': '🇨🇫',  # Central African Republic
+        'CAN': '🇨🇦',  # Canada
+        'CHE': '🇨🇭',  # Switzerland
+        'CHL': '🇨🇱',  # Chile
+        'CHN': '🇨🇳',  # China
+        'CIV': '🇨🇮',  # Côte d'Ivoire
+        'CMR': '🇨🇲',  # Cameroon
+        'COD': '🇨🇩',  # DR Congo
+        'COG': '🇨🇬',  # Congo
+        'COK': '🇨🇰',  # Cook Islands
+        'COL': '🇨🇴',  # Colombia
+        'COM': '🇰🇲',  # Comoros
+        'CPV': '🇨🇻',  # Cape Verde
+        'CRI': '🇨🇷',  # Costa Rica
+        'CUB': '🇨🇺',  # Cuba
+        'CUW': '🇨🇼',  # Curaçao
+        'CYM': '🇰🇾',  # Cayman Islands
+        'CYP': '🇨🇾',  # Cyprus
+        'CZE': '🇨🇿',  # Czechia
+        'DEU': '🇩🇪',  # Germany
+        'DJI': '🇩🇯',  # Djibouti
+        'DMA': '🇩🇲',  # Dominica
+        'DNK': '🇩🇰',  # Denmark
+        'DOM': '🇩🇴',  # Dominican Republic
+        'DZA': '🇩🇿',  # Algeria
+        'ECU': '🇪🇨',  # Ecuador
+        'EGY': '🇪🇬',  # Egypt
+        'ERI': '🇪🇷',  # Eritrea
+        'ESH': '🇪🇭',  # Western Sahara
+        'ESP': '🇪🇸',  # Spain
+        'EST': '🇪🇪',  # Estonia
+        'ETH': '🇪🇹',  # Ethiopia
+        'FIN': '🇫🇮',  # Finland
+        'FJI': '🇫🇯',  # Fiji
+        'FLK': '🇫🇰',  # Falkland Islands
+        'FRA': '🇫🇷',  # France
+        'FRO': '🇫🇴',  # Faroe Islands
+        'FSM': '🇫🇲',  # Micronesia
+        'GAB': '🇬🇦',  # Gabon
+        'GBR': '🇬🇧',  # United Kingdom
+        'GEO': '🇬🇪',  # Georgia
+        'GGY': '🇬🇬',  # Guernsey
+        'GHA': '🇬🇭',  # Ghana
+        'GIB': '🇬🇮',  # Gibraltar
+        'GIN': '🇬🇳',  # Guinea
+        'GLP': '🇬🇵',  # Guadeloupe
+        'GMB': '🇬🇲',  # Gambia
+        'GNB': '🇬🇼',  # Guinea-Bissau
+        'GNQ': '🇬🇶',  # Equatorial Guinea
+        'GRC': '🇬🇷',  # Greece
+        'GRD': '🇬🇩',  # Grenada
+        'GRL': '🇬🇱',  # Greenland
+        'GTM': '🇬🇹',  # Guatemala
+        'GUF': '🇬🇫',  # French Guiana
+        'GUM': '🇬🇺',  # Guam
+        'GUY': '🇬🇾',  # Guyana
+        'HKG': '🇭🇰',  # Hong Kong
+        'HND': '🇭🇳',  # Honduras
+        'HRV': '🇭🇷',  # Croatia
+        'HTI': '🇭🇹',  # Haiti
+        'HUN': '🇭🇺',  # Hungary
+        'IDN': '🇮🇩',  # Indonesia
+        'IMN': '🇮🇲',  # Isle of Man
+        'IND': '🇮🇳',  # India
+        'IRL': '🇮🇪',  # Ireland
+        'IRN': '🇮🇷',  # Iran
+        'IRQ': '🇮🇶',  # Iraq
+        'ISL': '🇮🇸',  # Iceland
+        'ISR': '🇮🇱',  # Israel
+        'ITA': '🇮🇹',  # Italy
+        'JAM': '🇯🇲',  # Jamaica
+        'JEY': '🇯🇪',  # Jersey
+        'JOR': '🇯🇴',  # Jordan
+        'JPN': '🇯🇵',  # Japan
+        'KAZ': '🇰🇿',  # Kazakhstan
+        'KEN': '🇰🇪',  # Kenya
+        'KGZ': '🇰🇬',  # Kyrgyzstan
+        'KHM': '🇰🇭',  # Cambodia
+        'KIR': '🇰🇮',  # Kiribati
+        'KNA': '🇰🇳',  # Saint Kitts and Nevis
+        'KOR': '🇰🇷',  # South Korea
+        'KWT': '🇰🇼',  # Kuwait
+        'LAO': '🇱🇦',  # Laos
+        'LBN': '🇱🇧',  # Lebanon
+        'LBR': '🇱🇷',  # Liberia
+        'LBY': '🇱🇾',  # Libya
+        'LCA': '🇱🇨',  # Saint Lucia
+        'LIE': '🇱🇮',  # Liechtenstein
+        'LKA': '🇱🇰',  # Sri Lanka
+        'LSO': '🇱🇸',  # Lesotho
+        'LTU': '🇱🇹',  # Lithuania
+        'LUX': '🇱🇺',  # Luxembourg
+        'LVA': '🇱🇻',  # Latvia
+        'MAC': '🇲🇴',  # Macao
+        'MAF': '🇲🇫',  # Saint Martin
+        'MAR': '🇲🇦',  # Morocco
+        'MCO': '🇲🇨',  # Monaco
+        'MDA': '🇲🇩',  # Moldova
+        'MDG': '🇲🇬',  # Madagascar
+        'MDV': '🇲🇻',  # Maldives
+        'MEX': '🇲🇽',  # Mexico
+        'MHL': '🇲🇭',  # Marshall Islands
+        'MKD': '🇲🇰',  # North Macedonia
+        'MLI': '🇲🇱',  # Mali
+        'MLT': '🇲🇹',  # Malta
+        'MMR': '🇲🇲',  # Myanmar
+        'MNE': '🇲🇪',  # Montenegro
+        'MNG': '🇲🇳',  # Mongolia
+        'MNP': '🇲🇵',  # Northern Mariana Islands
+        'MOZ': '🇲🇿',  # Mozambique
+        'MRT': '🇲🇷',  # Mauritania
+        'MSR': '🇲🇸',  # Montserrat
+        'MTQ': '🇲🇶',  # Martinique
+        'MUS': '🇲🇺',  # Mauritius
+        'MWI': '🇲🇼',  # Malawi
+        'MYS': '🇲🇾',  # Malaysia
+        'MYT': '🇾🇹',  # Mayotte
+        'NAM': '🇳🇦',  # Namibia
+        'NCL': '🇳🇨',  # New Caledonia
+        'NER': '🇳🇪',  # Niger
+        'NFK': '🇳🇫',  # Norfolk Island
+        'NGA': '🇳🇬',  # Nigeria
+        'NIC': '🇳🇮',  # Nicaragua
+        'NIU': '🇳🇺',  # Niue
+        'NLD': '🇳🇱',  # Netherlands
+        'NOR': '🇳🇴',  # Norway
+        'NPL': '🇳🇵',  # Nepal
+        'NRU': '🇳🇷',  # Nauru
+        'NZL': '🇳🇿',  # New Zealand
+        'OMN': '🇴🇲',  # Oman
+        'PAK': '🇵🇰',  # Pakistan
+        'PAN': '🇵🇦',  # Panama
+        'PER': '🇵🇪',  # Peru
+        'PHL': '🇵🇭',  # Philippines
+        'PLW': '🇵🇼',  # Palau
+        'PNG': '🇵🇬',  # Papua New Guinea
+        'POL': '🇵🇱',  # Poland
+        'PRI': '🇵🇷',  # Puerto Rico
+        'PRK': '🇰🇵',  # North Korea
+        'PRT': '🇵🇹',  # Portugal
+        'PRY': '🇵🇾',  # Paraguay
+        'PSE': '🇵🇸',  # Palestine
+        'PYF': '🇵🇫',  # French Polynesia
+        'QAT': '🇶🇦',  # Qatar
+        'REU': '🇷🇪',  # Réunion
+        'ROU': '🇷🇴',  # Romania
+        'RUS': '🇷🇺',  # Russia
+        'RWA': '🇷🇼',  # Rwanda
+        'SAU': '🇸🇦',  # Saudi Arabia
+        'SDN': '🇸🇩',  # Sudan
+        'SEN': '🇸🇳',  # Senegal
+        'SGP': '🇸🇬',  # Singapore
+        'SHN': '🇸🇭',  # Saint Helena
+        'SLB': '🇸🇧',  # Solomon Islands
+        'SLE': '🇸🇱',  # Sierra Leone
+        'SLV': '🇸🇻',  # El Salvador
+        'SMR': '🇸🇲',  # San Marino
+        'SOM': '🇸🇴',  # Somalia
+        'SRB': '🇷🇸',  # Serbia
+        'SSD': '🇸🇸',  # South Sudan
+        'STP': '🇸🇹',  # São Tomé and Príncipe
+        'SUR': '🇸🇷',  # Suriname
+        'SVK': '🇸🇰',  # Slovakia
+        'SVN': '🇸🇮',  # Slovenia
+        'SWE': '🇸🇪',  # Sweden
+        'SWZ': '🇸🇿',  # Eswatini
+        'SXM': '🇸🇽',  # Sint Maarten
+        'SYC': '🇸🇨',  # Seychelles
+        'SYR': '🇸🇾',  # Syria
+        'TCA': '🇹🇨',  # Turks and Caicos Islands
+        'TCD': '🇹🇩',  # Chad
+        'TGO': '🇹🇬',  # Togo
+        'THA': '🇹🇭',  # Thailand
+        'TJK': '🇹🇯',  # Tajikistan
+        'TKM': '🇹🇲',  # Turkmenistan
+        'TLS': '🇹🇱',  # Timor-Leste
+        'TON': '🇹🇴',  # Tonga
+        'TTO': '🇹🇹',  # Trinidad and Tobago
+        'TUN': '🇹🇳',  # Tunisia
+        'TUR': '🇹🇷',  # Turkey
+        'TUV': '🇹🇻',  # Tuvalu
+        'TWN': '🇹🇼',  # Taiwan
+        'TZA': '🇹🇿',  # Tanzania
+        'UGA': '🇺🇬',  # Uganda
+        'UKR': '🇺🇦',  # Ukraine
+        'URY': '🇺🇾',  # Uruguay
+        'USA': '🇺🇸',  # United States
+        'UZB': '🇺🇿',  # Uzbekistan
+        'VCT': '🇻🇨',  # Saint Vincent and the Grenadines
+        'VEN': '🇻🇪',  # Venezuela
+        'VGB': '🇻🇬',  # British Virgin Islands
+        'VIR': '🇻🇮',  # U.S. Virgin Islands
+        'VNM': '🇻🇳',  # Vietnam
+        'VUT': '🇻🇺',  # Vanuatu
+        'WSM': '🇼🇸',  # Samoa
+        'XKX': '🇽🇰',  # Kosovo (non-standard, using XK)
+        'YEM': '🇾🇪',  # Yemen
+        'ZAF': '🇿🇦',  # South Africa
+        'ZMB': '🇿🇲',  # Zambia
+        'ZWE': '🇿🇼',  # Zimbabwe
+    }
+
     def __init__(self) -> None:
         pass
 
@@ -1383,39 +1622,24 @@ if __name__ == "__main__":
         df['total_time'] = df.apply(compute_total_time, axis=1)
 
         # Data to avoid showing on hover in scatter plots
-        columns_remove = ['videos', 'time_of_day', 'start_time', 'end_time', 'upload_date', 'vehicle_type', 'channel']
+        columns_remove = ['videos', 'time_of_day', 'start_time', 'end_time', 'upload_date', 'vehicle_type', 'channel',
+                          'display_label']
         hover_data = list(set(df.columns) - set(columns_remove))
-
         # Sort by continent and city, both in ascending order
         df = df.sort_values(by=["continent", "country"], ascending=[True, True])
-
-        # maps with all data
+        # map with all cities
         plots_class.mapbox_map(df=df, hover_data=hover_data, file_name='mapbox_map_all')
-        plots_class.mapbox_map(df=df,
-                               hover_data=hover_data,
-                               density_col='population_city',
-                               density_radius=10,
-                               file_name='mapbox_map_all_pop')
-        plots_class.mapbox_map(df=df,
-                               hover_data=hover_data,
-                               density_col='video_count',
-                               density_radius=10,
-                               file_name='mapbox_map_all_videos')
-        plots_class.mapbox_map(df=df,
-                               hover_data=hover_data,
-                               density_col='total_time',
-                               density_radius=10,
-                               file_name='mapbox_map_all_time')
-
         # Sort by continent and city, both in ascending order
         df = df.sort_values(by=["country", "city"], ascending=[True, True])
-
+        # create flag_city column
+        df['flag_city'] = df.apply(lambda row: f"{analysis_class.iso3_to_flag.get(row['iso3'], '🏳️')} {row['city']}",
+                                   axis=1)
         # scatter plot with number of videos over total time
         plots_class.scatter(df=df,
                             x="total_time",
                             y="video_count",
                             color="country",
-                            # text="city",
+                            text="flag_city",
                             xaxis_title='Total time of footage (s)',
                             yaxis_title='Number of videos',
                             pretty_text=False,
@@ -1430,6 +1654,33 @@ if __name__ == "__main__":
                             marginal_x=None,  # type: ignore
                             marginal_y=None,  # type: ignore
                             file_name='scatter_all_total_time-video_count')  # type: ignore
+        # histogram of dates of videos
+        fig = plots_class.video_histogram_by_month(
+            df=df,
+            video_count_col='video_count',
+            upload_date_col='upload_date',
+            xaxis_title='Upload month (year-month)',
+            yaxis_title='Number of videos',
+            save_file=True,
+        )
+        # maps with all cities and population heatmap
+        plots_class.mapbox_map(df=df,
+                               hover_data=hover_data,
+                               density_col='population_city',
+                               density_radius=10,
+                               file_name='mapbox_map_all_pop')
+        # maps with all cities and video count heatmap
+        plots_class.mapbox_map(df=df,
+                               hover_data=hover_data,
+                               density_col='video_count',
+                               density_radius=10,
+                               file_name='mapbox_map_all_videos')
+        # maps with all cities and total time heatmap
+        plots_class.mapbox_map(df=df,
+                               hover_data=hover_data,
+                               density_col='total_time',
+                               density_radius=10,
+                               file_name='mapbox_map_all_time')
 
         total_duration = values_class.calculate_total_seconds(df_mapping)
 
