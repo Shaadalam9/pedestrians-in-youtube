@@ -1747,7 +1747,7 @@ class Plots():
                     if len(d_str) == 8 and d_str.isdigit():
                         try:
                             day, month, year = int(d_str[:2]), int(d_str[2:4]), int(d_str[4:])
-                            if 1 <= month <= 12 and 1 <= day <= 31 and 1900 <= year <= 2025:
+                            if 1 <= month <= 12 and 1 <= day <= 31 and 1900 <= year <= 2100:
                                 valid_dates.append(d_str)
                             else:
                                 invalid_dates.append(d_str)
