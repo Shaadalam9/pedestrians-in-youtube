@@ -3917,3 +3917,6 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 3916,Oostendorp,[],,Netherlands,NLD,Europe,52.4436619,5.8550114,0.0,2985,16655799,4.0,0.0,177.0,42.2,28.1,0.0,[7QRzYn0Iykg],[[0]],[[1981]],[[2224]],[0],[01072022],[UCcwGwvM5iPB9IvtTnMTVcEg]
 3917,Elburg,[],,Netherlands,NLD,Europe,52.4156591,5.8413217,0.0,21844,16655799,4.0,0.0,177.0,42.2,28.1,0.0,[7QRzYn0Iykg],[[0]],[[2225]],[[2411]],[0],[01072022],[UCcwGwvM5iPB9IvtTnMTVcEg]
 3918,Doornspijk,[],,Netherlands,NLD,Europe,52.4194984,5.8208683,0.0,1555,16655799,4.0,0.0,177.0,42.2,28.1,0.0,[7QRzYn0Iykg],[[0]],[[2423]],[[2633]],[0],[01072022],[UCcwGwvM5iPB9IvtTnMTVcEg]
+3919,Hulshorst,[],,Netherlands,NLD,Europe,52.3607721,5.7205644,0.0,775,16655799,4.0,0.0,177.0,42.2,28.1,0.0,[7QRzYn0Iykg],[[0]],[[3055]],[[3181]],[0],[01072022],[UCcwGwvM5iPB9IvtTnMTVcEg]
+3920,Hierden,[],,Netherlands,NLD,Europe,52.355868,5.6760734,0.0,3240,16655799,4.0,0.0,177.0,42.2,28.1,0.0,[7QRzYn0Iykg],[[0]],[[3309]],[[3516]],[0],[01072022],[UCcwGwvM5iPB9IvtTnMTVcEg]
+3921,Harderwijk,[],,Netherlands,NLD,Europe,52.3490693,5.618933,0.0,40516,16655799,4,0.0,177,42.2,28.1,0.0,[7QRzYn0Iykg],[[0]],[[3520]],[[3974]],[0],[01072022],[UCcwGwvM5iPB9IvtTnMTVcEg]
