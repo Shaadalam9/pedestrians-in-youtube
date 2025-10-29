@@ -1,133 +1,123 @@
 # by Shadab Alam <md_shadab_alam@outlook.com> and Pavlo Bazilinskyy <pavlo.bazilinskyy@gmail.com>
 # -----------------------------------------------------------------------------
-# Script overview:
-# - Continuously reads a mapping CSV describing YouTube/FTP video IDs and segments.
-# - Ensures metadata columns (ISO codes, population, mortality, Gini, upload date).
-# - Retrieves videos (FTP preferred; YouTube fallback), trims segments, runs detection/segmentation,
-#   and saves CSV outputs into data folders (bbox/seg).
-# - When external_ssd=True, ALWAYS download into videos[-1] (SSD) and ignore caches.
-# - Sends a summary email after each run and a crash email on exceptions.
+# Pipeline overview:
+# - Reads a mapping CSV describing video IDs and segment intervals; runs in a loop.
+# - Optionally updates metadata (ISO3, population, mortality, Gini, upload dates).
+# - Retrieves videos (FTP first → YouTube fallback). With external_ssd=True:
+#     * downloads go to videos[-1], and
+#     * if a file already exists in videos[-1] and FTP is available, we refresh it:
+#         download to a temp folder → delete old file → replace with fresh copy.
+# - For each segment, run bbox and/or segmentation only if the corresponding CSV
+#   is missing; otherwise skip work. If both modes are False, still download mp4s.
+# - Cleans temp files and emails a summary or crash report.
 # -----------------------------------------------------------------------------
 
 import shutil
 import os
 import math
+import glob  # checks for "do we already have CSVs?" without knowing FPS
 from datetime import datetime
-from helper_script import Youtube_Helper  # Helper with downloading, trimming, tracking utils
+from helper_script import Youtube_Helper         # download/trim/track utilities
 import pandas as pd
-from custom_logger import CustomLogger      # Structured/colored logs
-from logmod import logs                     # Logging level/color configurator
-import ast                                   # Safely parse string lists (from CSV) into Python objects
-import common                                # Shared configs/secrets/email/git utilities
-from tqdm import tqdm                        # CLI progress bars for long loops
-import time                                  # Sleep between runs
-from types import SimpleNamespace            # Lightweight config container
+from custom_logger import CustomLogger           # structured logging
+from logmod import logs                          # log level/color setup
+import ast                                       # safe string->python list parsing
+import common                                    # configs, secrets, email, git utils
+from tqdm import tqdm                            # progress bar for mapping loop
+import time                                      # sleep between passes
+from types import SimpleNamespace                # lightweight config container
 
-# Initialize logging system (level & color from config)
+# Configure logging based on config file (verbosity & ANSI colors)
 logs(show_level=common.get_configs("logger_level"), show_color=True)
 logger = CustomLogger(__name__)
 helper = Youtube_Helper()
 
-# Flag used to guard against spamming crash emails (kept from original structure)
+# Guard to avoid duplicate crash emails (kept for compatibility with some runners)
 email_already_sent = False
 
 # =============================================================================
-# Main execution guard: run continuous pipeline until interrupted
+# Main entry point
 # =============================================================================
 if __name__ == "__main__":
-    # Wrap the entire loop to catch and notify on crashes
     try:
         # ---------------------------------------------------------------------
-        # Load static configuration values once (paths, switches, booleans)
+        # Load static configuration (paths, switches) once
         # ---------------------------------------------------------------------
         config = SimpleNamespace(
-            mapping=common.get_configs("mapping"),                 # Path to mapping CSV
-            videos=common.get_configs("videos"),                   # List of video directories (ordered)
-            delete_runs_files=common.get_configs("delete_runs_files"),  # Whether to delete YOLO runs/*
-            delete_youtube_video=common.get_configs("delete_youtube_video"),  # Remove original mp4 post-processing
-            data=common.get_configs("data"),                       # List of data directories (ordered)
-            countries_analyse=common.get_configs("countries_analyse"),  # Optional ISO3 filter
-            update_ISO_code=common.get_configs("update_ISO_code"),       # Maintenance flags:
+            mapping=common.get_configs("mapping"),                 # path to mapping CSV
+            videos=common.get_configs("videos"),                   # ordered list of video dirs
+            delete_runs_files=common.get_configs("delete_runs_files"),
+            delete_youtube_video=common.get_configs("delete_youtube_video"),
+            data=common.get_configs("data"),                       # ordered list of data dirs
+            countries_analyse=common.get_configs("countries_analyse"),
+            update_ISO_code=common.get_configs("update_ISO_code"),
             update_pop_country=common.get_configs("update_pop_country"),
             update_mortality_rate=common.get_configs("update_mortality_rate"),
             update_gini_value=common.get_configs("update_gini_value"),
             update_upload_date=common.get_configs("update_upload_date"),
-            segmentation_mode=common.get_configs("segmentation_mode"),    # Segmentation toggle
-            tracking_mode=common.get_configs("tracking_mode"),            # Detection (bbox) toggle
-            save_annotated_video=common.get_configs("save_annotated_video"),  # Save annotated video or not
-            sleep_sec=common.get_configs("sleep_sec"),                  # Delay between full passes
-            git_pull=common.get_configs("git_pull"),                    # Pull latest mapping from git
-            machine_name=common.get_configs("machine_name"),            # For email subjects
-            email_send=common.get_configs("email_send"),                # Email notifications toggle
-            email_sender=common.get_configs("email_sender"),            # Sender address
-            email_recipients=common.get_configs("email_recipients"),    # Recipient list
-            compress_youtube_video=common.get_configs("compress_youtube_video"),  # Optional compression
-            external_ssd=common.get_configs("external_ssd"),         # If True: force downloads to videos[-1]
-            ftp_server=common.get_configs("ftp_server"),             # FTP host/base URL
+            segmentation_mode=common.get_configs("segmentation_mode"),
+            tracking_mode=common.get_configs("tracking_mode"),
+            save_annotated_video=common.get_configs("save_annotated_video"),
+            sleep_sec=common.get_configs("sleep_sec"),
+            git_pull=common.get_configs("git_pull"),
+            machine_name=common.get_configs("machine_name"),
+            email_send=common.get_configs("email_send"),
+            email_sender=common.get_configs("email_sender"),
+            email_recipients=common.get_configs("email_recipients"),
+            compress_youtube_video=common.get_configs("compress_youtube_video"),
+            external_ssd=common.get_configs("external_ssd"),       # True => prefer SSD target
+            ftp_server=common.get_configs("ftp_server"),
         )
 
         # ---------------------------------------------------------------------
-        # Load secrets once (email + FTP)
+        # Load secrets (email + FTP credentials)
         # ---------------------------------------------------------------------
         secret = SimpleNamespace(
-            email_smtp=common.get_secrets("email_smtp"),            # SMTP host
-            email_account=common.get_secrets("email_account"),      # SMTP username
-            email_password=common.get_secrets("email_password"),    # SMTP password
-            ftp_username=common.get_secrets("ftp_username"),        # FTP username
-            ftp_password=common.get_secrets("ftp_password"),        # FTP password
+            email_smtp=common.get_secrets("email_smtp"),
+            email_account=common.get_secrets("email_account"),
+            email_password=common.get_secrets("email_password"),
+            ftp_username=common.get_secrets("ftp_username"),
+            ftp_password=common.get_secrets("ftp_password"),
         )
 
         # =========================================================================
-        # Outer loop: continuously process mapping file (intended to run forever)
+        # Endless loop: process mapping; sleep; repeat
         # =========================================================================
         while True:
-            # ---------------------------------------------------------------------
-            # Read mapping (must contain columns: videos, start_time, end_time, etc.)
-            # ---------------------------------------------------------------------
+            # Read mapping each pass to pick up edits
             mapping = pd.read_csv(config.mapping)
+            video_paths = config.videos  # convenience alias
 
-            # Ordered list of folders where videos may reside; last one is default target
-            video_paths = config.videos
-
-            # ---------------------------------------------------------------------
-            # Decide output path(s) based on external_ssd flag
-            # ---------------------------------------------------------------------
+            # Decide where to write downloads
             if config.external_ssd:
-                # With external SSD, ensure mount exists and set output to SSD folder (videos[-1])
+                # With SSD, ensure mount exists and set output to videos[-1]
                 internal_ssd = config.videos[-1]
                 os.makedirs(internal_ssd, exist_ok=True)
-                output_path = config.videos[-1]     # IMPORTANT: save downloads in videos[-1]
+                output_path = config.videos[-1]
             else:
-                # Default: also use the last configured videos folder
                 output_path = config.videos[-1]
 
-            # Convenience locals (unchanged behavior)
+            # Convenience locals; keep behavior intact
             delete_runs_files = config.delete_runs_files
             delete_youtube_video = config.delete_youtube_video
             data_folders = config.data
-            data_path = config.data[-1]             # Where CSV outputs will be placed
+            data_path = config.data[-1]  # final data root (where bbox/seg CSVs land)
             countries_analyse = config.countries_analyse
-            counter_processed = 0                   # Count of processed segments in this pass
+            counter_processed = 0        # segments processed this pass
 
-            # ---------------------------------------------------------------------
-            # Optional mapping maintenance steps (enabled via config flags)
-            # ---------------------------------------------------------------------
+            # -----------------------------------------------------------------
+            # Optional mapping maintenance (all in-place on `mapping`)
+            # -----------------------------------------------------------------
             if config.update_ISO_code:
-                # Fail early if mapping lacks country column
                 if "country" not in mapping.columns:
                     raise KeyError("The CSV file does not have a 'country' column.")
-                # Create iso3 column if missing
                 if "iso3" not in mapping.columns:
                     mapping["iso3"] = None
-
-                # Update ISO alpha-3 for each row (using helper that respects existing value when valid)
                 for index, row in mapping.iterrows():
                     mapping.at[index, "iso3"] = helper.get_iso_alpha_3(row["country"], row["iso3"])  # type: ignore
-
                 mapping.to_csv(config.mapping, index=False)
                 logger.info("Mapping file updated with ISO codes.")
 
-            # These helpers enrich mapping with population, mortality, and Gini data (in-place)
             if config.update_pop_country:
                 helper.update_population_in_csv(mapping)
             if config.update_mortality_rate:
@@ -135,18 +125,13 @@ if __name__ == "__main__":
             if config.update_gini_value:
                 helper.fill_gini_data(mapping)
 
-            # Update upload_date for each list of YouTube IDs (stringified list in CSV)
             if config.update_upload_date:
+                # Compute upload dates for entries like "[id1,id2]"
                 def extract_upload_dates(video_column):
-                    """Parse 'videos' col entries like '[id1,id2]' and fetch upload dates for each."""
                     upload_dates = []
                     for video_list in video_column:
-                        # Parse delimited list without using ast (consistent with original style)
-                        video_ids = video_list.strip('[]').split(',')
-                        video_ids = [vid.strip() for vid in video_ids]
-                        # Lookup each video's upload date (returns ISO string or None)
+                        video_ids = [vid.strip() for vid in video_list.strip('[]').split(',')]
                         dates = [helper.get_upload_date(vid) for vid in video_ids]
-                        # Persist back as a bracketed comma-joined list to match input format
                         upload_dates.append(f"[{','.join(date if date else 'None' for date in dates)}]")
                     return upload_dates
 
@@ -154,108 +139,142 @@ if __name__ == "__main__":
                 mapping.to_csv(config.mapping, index=False)
                 logger.info("Mapping file updated successfully with upload dates.")
 
-            # ---------------------------------------------------------------------
-            # Workspace prep: clean runs/* and ensure data subfolders exist
-            # ---------------------------------------------------------------------
-            helper.delete_folder(folder_path="runs")                               # idempotent cleanup
-            os.makedirs(data_path, exist_ok=True)                                  # main data path
-            os.makedirs(os.path.join(data_path, "bbox"), exist_ok=True)            # bbox CSVs
-            os.makedirs(os.path.join(data_path, "seg"), exist_ok=True)             # seg CSVs
+            # -----------------------------------------------------------------
+            # Workspace setup: clean YOLO runs/* and ensure data dirs exist
+            # -----------------------------------------------------------------
+            helper.delete_folder(folder_path="runs")  # idempotent cleanup
+            os.makedirs(data_path, exist_ok=True)
+            os.makedirs(os.path.join(data_path, "bbox"), exist_ok=True)
+            os.makedirs(os.path.join(data_path, "seg"), exist_ok=True)
 
             # =========================================================================
-            # Iterate over mapping rows (each row can include multiple video IDs & segments)
+            # Iterate mapping rows; each may define multiple videos & segment lists
             # =========================================================================
             for index, row in tqdm(mapping.iterrows(), total=mapping.shape[0]):
-                # Parse video IDs as strings from a bracketed list like "[id1,id2]"
                 video_ids = [id.strip() for id in row["videos"].strip("[]").split(',')]
+                start_times = ast.literal_eval(row["start_time"])   # list[list[int]]
+                end_times = ast.literal_eval(row["end_time"])       # list[list[int]]
+                time_of_day = ast.literal_eval(row["time_of_day"])  # list[list[str]] (not used below)
+                iso3 = str(row["iso3"])
 
-                # Parse segment lists (lists of lists) safely using ast.literal_eval
-                start_times = ast.literal_eval(row["start_time"])     # e.g., [[0, 30], [10, 40]]
-                end_times = ast.literal_eval(row["end_time"])
-                time_of_day = ast.literal_eval(row["time_of_day"])    # optional metadata (unused in logic below)
-                iso3 = str(row["iso3"])                               # country filter (if configured)
-
-                # Optional filter: process only selected countries (if countries_analyse is non-empty)
+                # Optional per-country filter (if provided)
                 if countries_analyse and iso3 not in countries_analyse:
                     continue
 
-                # Log contextual info for observability
+                # Contextual log for monitoring
                 city = str(row["city"])
                 state = str(row["state"])
                 country = str(row["country"])
                 logger.info(f"Processing videos for city={city}, state={state}, country={country}.")
 
                 # ---------------------------------------------------------------------
-                # Each row can specify multiple independent (video_id, segments) bundles
+                # Each row: multiple video IDs, each with lists of segment starts/ends
                 # ---------------------------------------------------------------------
                 for vid_index, (vid, start_times_list, end_times_list, time_of_day_list) in enumerate(
                     zip(video_ids, start_times, end_times, time_of_day)
                 ):
-                    # Mode toggles are read per-video (unchanged behavior)
-                    seg_mode = config.segmentation_mode
-                    bbox_mode = config.tracking_mode
+                    seg_mode_cfg = config.segmentation_mode
+                    bbox_mode_cfg = config.tracking_mode
 
-                    # Default assumption: if we fetch, it lands at output_path/vid.mp4
-                    base_video_path = os.path.join(output_path, f"{vid}.mp4")
-                    processed_flag = False   # Whether any segment for this vid was processed
-                    ftp_download = False     # To decide cleanup of FTP-downloaded file at the end
-                    resolution = "unknown"   # Named only for logging/renames; may be set by downloader
+                    base_video_path = os.path.join(output_path, f"{vid}.mp4")  # presumed location after download
+                    processed_flag = False
+                    ftp_download = False
+                    resolution = "unknown"  # may be set by downloader; used in archive naming
 
                     # =================================================================
-                    # VIDEO RETRIEVAL LOGIC
+                    # PRE-CHECK: Do we need this video at all?
+                    # If both modes are False → ALWAYS download (archival).
+                    # If any mode is True → skip download only if ALL required CSVs exist.
+                    # Uses wildcard on FPS: {vid}_{start}_*.csv.
+                    # =================================================================
+                    video_needs_any_work = False
+                    if seg_mode_cfg or bbox_mode_cfg:
+                        for st, et in zip(start_times_list, end_times_list):
+                            has_bbox = any(glob.glob(os.path.join(folder, "bbox", f"{vid}_{st}_*.csv"))
+                                           for folder in data_folders)
+                            has_seg = any(glob.glob(os.path.join(folder, "seg",  f"{vid}_{st}_*.csv"))
+                                          for folder in data_folders)
+                            missing_bbox = bool(bbox_mode_cfg and not has_bbox)
+                            missing_seg = bool(seg_mode_cfg and not has_seg)
+                            if missing_bbox or missing_seg:
+                                video_needs_any_work = True
+                                break
+                        if not video_needs_any_work:
+                            logger.info(f"{vid}: all required CSVs exist; skipping video (no download).")
+                            continue
+                    else:
+                        # tracking_mode=False AND segmentation_mode=False → download-only run
+                        logger.info(f"{vid}: modes disabled; downloading video for archival purposes.")
+
+                    # =================================================================
+                    # VIDEO RETRIEVAL: SSD-aware, FTP-first, refresh-if-exists logic
                     # =================================================================
                     if config.external_ssd:
-                        # ------------------------------------------------------------
-                        # FORCE download when on SSD:
-                        # - First try FTP to output_path (videos[-1])
-                        # - If FTP result is None (not error, but "not found"), fallback to YouTube
-                        # - Ignore any previously cached copies in video_paths
-                        # ------------------------------------------------------------
-                        result = helper.download_videos_from_ftp(
-                            filename=vid,
-                            base_url=config.ftp_server,
-                            out_dir=output_path,             # IMPORTANT: videos[-1]
-                            username=secret.ftp_username,
-                            password=secret.ftp_password,
-                        )
-                        if result:
-                            ftp_download = True              # Remember we pulled from FTP for later cleanup
-                        if result is None:
-                            # If FTP couldn't provide the file, try YouTube download with resolution detection
-                            result = helper.download_video_with_resolution(vid=vid, output_path=output_path)
+                        existing_path = os.path.join(output_path, f"{vid}.mp4")
+                        if os.path.exists(existing_path):
+                            # ----------------------------------------------------------
+                            # File already on SSD. Try to refresh from FTP SAFELY:
+                            # 1) Download to a temp dir.
+                            # 2) If FTP succeeds, delete the old file and replace.
+                            # 3) If FTP not available, keep the old file.
+                            # ----------------------------------------------------------
+                            tmp_dir = os.path.join(output_path, "__tmp_dl")
+                            os.makedirs(tmp_dir, exist_ok=True)
 
-                        if result:
-                            # Unpack downloader tuple: (file_path, title, resolution, fps)
-                            video_file_path, video_title, resolution, video_fps = result
+                            tmp_result = helper.download_videos_from_ftp(
+                                filename=vid,
+                                base_url=config.ftp_server,
+                                out_dir=tmp_dir,                 # download to temp folder
+                                username=secret.ftp_username,
+                                password=secret.ftp_password,
+                            )
 
-                            # Validate FPS to avoid downstream errors
-                            if video_fps is None or video_fps == 0 or (isinstance(video_fps,
-                                                                                  float) and math.isnan(video_fps)):
-                                logger.warning("Invalid video_fps!")
-                                continue
-
-                            # Point base_video_path to freshly downloaded file
-                            base_video_path = video_file_path
-                            logger.info(f"{vid}: downloaded to {video_file_path}.")
-                            helper.set_video_title(video_title)
-
-                            # Optionally compress original video to save space/bandwidth
-                            if config.compress_youtube_video:
-                                helper.compress_video(base_video_path)
+                            if tmp_result:
+                                # FTP had the file → replace the existing one
+                                tmp_video_path, video_title, resolution, video_fps = tmp_result
+                                if video_fps is None or video_fps == 0 or (isinstance(video_fps, float) and math.isnan(video_fps)):  # noqa: E501
+                                    logger.warning("Invalid video_fps in refreshed file!")
+                                    # cleanup temp and keep old file
+                                    try:
+                                        os.remove(tmp_video_path)
+                                    except Exception:
+                                        pass
+                                else:
+                                    # Remove old, move new into place
+                                    try:
+                                        os.remove(existing_path)
+                                    except FileNotFoundError:
+                                        pass
+                                    final_path = os.path.join(output_path, f"{vid}.mp4")
+                                    shutil.move(tmp_video_path, final_path)
+                                    base_video_path = final_path
+                                    ftp_download = True
+                                    logger.info(f"{vid}: refreshed from FTP at {final_path}.")
+                                    helper.set_video_title(video_title)
+                                    if config.compress_youtube_video:
+                                        helper.compress_video(base_video_path)
+                            elif tmp_result is None:
+                                # FTP not available → keep existing file; still allow YT fallback if needed below
+                                logger.info(f"{vid}: FTP not available; keeping existing SSD copy.")
+                                base_video_path = existing_path
+                                video_title = vid
+                                helper.set_video_title(video_title)
+                                video_fps = helper.get_video_fps(base_video_path)
+                                if video_fps is None or video_fps == 0 or (isinstance(video_fps, float) and math.isnan(video_fps)):  # noqa: E501
+                                    logger.warning("Invalid video_fps on existing SSD copy; attempting YouTube fallback.")  # noqa: E501
+                                    # Try YouTube fallback to refresh a bad file
+                                    yt_result = helper.download_video_with_resolution(vid=vid, output_path=output_path)
+                                    if yt_result:
+                                        video_file_path, video_title, resolution, video_fps = yt_result
+                                        if video_fps and (not isinstance(video_fps, float) or not math.isnan(video_fps)):  # noqa: E501
+                                            base_video_path = video_file_path
+                                            helper.set_video_title(video_title)
+                                            if config.compress_youtube_video:
+                                                helper.compress_video(base_video_path)
+                                    else:
+                                        logger.error(f"{vid}: YouTube fallback failed. Using existing (possibly bad) file.")  # noqa: E501
                         else:
-                            # Both FTP and YouTube failed → skip this video
-                            logger.error(f"{vid}: forced download failed (FTP+fallback). Skipping.")
-                            continue
-
-                    else:
-                        # ------------------------------------------------------------
-                        # DEFAULT MODE: Prefer caches (video_paths) and download only if missing
-                        # ------------------------------------------------------------
-                        exists_somewhere = any(os.path.exists(os.path.join(path,
-                                                                           f"{vid}.mp4")) for path in video_paths)
-
-                        if not exists_somewhere:
-                            # Attempt FTP download into output_path (videos[-1])
+                            # No SSD copy yet: do the usual FTP→YouTube download into videos[-1]
                             result = helper.download_videos_from_ftp(
                                 filename=vid,
                                 base_url=config.ftp_server,
@@ -266,35 +285,63 @@ if __name__ == "__main__":
                             if result:
                                 ftp_download = True
                             if result is None:
-                                # Fallback to YouTube if FTP returns no file
                                 result = helper.download_video_with_resolution(vid=vid, output_path=output_path)
 
                             if result:
                                 video_file_path, video_title, resolution, video_fps = result
-                                if video_fps is None or video_fps == 0 or (isinstance(video_fps, float) and math.isnan(video_fps)):  # noqa:E501
+                                if video_fps is None or video_fps == 0 or (isinstance(video_fps, float) and math.isnan(video_fps)):  # noqa: E501
                                     logger.warning("Invalid video_fps!")
                                     continue
-
                                 base_video_path = video_file_path
                                 logger.info(f"{vid}: downloaded to {video_file_path}.")
                                 helper.set_video_title(video_title)
                                 if config.compress_youtube_video:
                                     helper.compress_video(base_video_path)
                             else:
-                                # As a last resort, check if the presumed output file exists already
+                                logger.error(f"{vid}: forced download failed (FTP+fallback). Skipping.")
+                                continue
+
+                    else:
+                        # Default path: use caches from any video_paths; download only if missing
+                        exists_somewhere = any(os.path.exists(os.path.join(path, f"{vid}.mp4")) for path in video_paths)  # noqa: E501
+                        if not exists_somewhere:
+                            result = helper.download_videos_from_ftp(
+                                filename=vid,
+                                base_url=config.ftp_server,
+                                out_dir=output_path,
+                                username=secret.ftp_username,
+                                password=secret.ftp_password,
+                            )
+                            if result:
+                                ftp_download = True
+                            if result is None:
+                                result = helper.download_video_with_resolution(vid=vid, output_path=output_path)
+
+                            if result:
+                                video_file_path, video_title, resolution, video_fps = result
+                                if video_fps is None or video_fps == 0 or (isinstance(video_fps, float) and math.isnan(video_fps)):  # noqa: E501
+                                    logger.warning("Invalid video_fps!")
+                                    continue
+                                base_video_path = video_file_path
+                                logger.info(f"{vid}: downloaded to {video_file_path}.")
+                                helper.set_video_title(video_title)
+                                if config.compress_youtube_video:
+                                    helper.compress_video(base_video_path)
+                            else:
+                                # Last-resort: maybe file already exists at output_path
                                 if os.path.exists(base_video_path):
-                                    video_title = vid                  # Fallback title if unknown
-                                    logger.info(f"{vid}: download failed, but video found locally at {base_video_path}.")  # noqa:E501
+                                    video_title = vid
+                                    logger.info(f"{vid}: download failed, but video found locally at {base_video_path}.")  # noqa: E501
                                     helper.set_video_title(video_title)
                                     video_fps = helper.get_video_fps(base_video_path)
-                                    if video_fps is None or video_fps == 0 or (isinstance(video_fps, float) and math.isnan(video_fps)):  # noqa:E501
+                                    if video_fps is None or video_fps == 0 or (isinstance(video_fps, float) and math.isnan(video_fps)):  # noqa: E501
                                         logger.warning("Invalid video_fps!")
                                         continue
                                 else:
                                     logger.error(f"{vid}: video not found and download failed. Skipping.")
                                     continue
                         else:
-                            # Use the first folder that contains the file (preserve original behavior)
+                            # Use the first path that contains the file
                             logger.info(f"{vid}: using already downloaded video.")
                             existing_folder = next(
                                 (path for path in video_paths if os.path.exists(os.path.join(path, f"{vid}.mp4"))),
@@ -305,86 +352,45 @@ if __name__ == "__main__":
                             video_title = vid
                             helper.set_video_title(video_title)
                             video_fps = helper.get_video_fps(base_video_path)
-                            if video_fps is None or video_fps == 0 or (isinstance(video_fps, float) and math.isnan(video_fps)):  # noqa:E501
+                            if video_fps is None or video_fps == 0 or (isinstance(video_fps, float) and math.isnan(video_fps)):  # noqa: E501
                                 logger.warning("Invalid video_fps!")
                                 continue
 
-                    # =================================================================
-                    # PER-SEGMENT PROCESSING (trim + detection/seg + CSV export)
-                    # =================================================================
-                    for start_time, end_time, time_of_day_value in zip(start_times_list, end_times_list, time_of_day_list):  # noqa:E501
-                        # Track file paths discovered across all configured data folders
-                        bbox_paths, seg_paths = [], []
+                    # If both modes are disabled, this was a download-only pass
+                    if not seg_mode_cfg and not bbox_mode_cfg:
+                        continue
 
-                        # Use integer FPS for consistent filenames and YOLO expectations
+                    # =================================================================
+                    # SEGMENT LOOP: Only run what's missing per segment (bbox/seg)
+                    # =================================================================
+                    for start_time, end_time, time_of_day_value in zip(start_times_list, end_times_list, time_of_day_list):  # noqa: E501
+                        # Consistent FPS as integer for filenames
                         if video_fps is not None:
                             video_fps = int(video_fps)
+                        segment_csv = f"{vid}_{start_time}_{video_fps}.csv"
 
-                        # Output CSV basename pattern includes vid, segment start, and fps
-                        filename = f"{vid}_{start_time}_{video_fps}.csv"
+                        # Check if outputs exist (strict, FPS-specific) across ALL data folders
+                        has_bbox = any(os.path.isfile(os.path.join(folder, "bbox", segment_csv)) for folder in data_folders)  # noqa: E501
+                        has_seg = any(os.path.isfile(os.path.join(folder, "seg",  segment_csv)) for folder in data_folders)  # noqa: E501
 
-                        # Look for existing outputs (so we can skip reprocessing)
-                        for folder in data_folders:
-                            bbox_path = os.path.join(folder, "bbox", filename)
-                            seg_path = os.path.join(folder, "seg", filename)
-                            if os.path.isfile(bbox_path):
-                                bbox_paths.append(bbox_path)
-                            if os.path.isfile(seg_path):
-                                seg_paths.append(seg_path)
+                        # Decide what to run per mode (independent)
+                        run_bbox = bool(bbox_mode_cfg and not has_bbox)
+                        run_seg = bool(seg_mode_cfg and not has_seg)
 
-                        # Decide which modes (bbox/seg) to run for this segment
-                        found_path = None
-                        bbox_mode = False
-                        seg_mode = False
-
-                        if config.tracking_mode and not config.segmentation_mode:
-                            # Only bbox requested
-                            if bbox_paths:
-                                found_path = bbox_paths
-                                continue     # Skip; already have bbox output
-                            else:
-                                bbox_mode = True
-                        elif config.segmentation_mode and not config.tracking_mode:
-                            # Only segmentation requested
-                            if seg_paths:
-                                found_path = seg_paths
-                                continue     # Skip; already have seg output
-                            else:
-                                seg_mode = True
-                        elif config.tracking_mode and config.segmentation_mode:
-                            # Both requested: if both exist, skip; else run missing part(s)
-                            if bbox_paths and seg_paths:
-                                found_path = list(zip(bbox_paths, seg_paths))
-                                continue
-                            elif bbox_paths:
-                                found_path = bbox_paths
-                                seg_mode = True   # need seg
-                            elif seg_paths:
-                                found_path = seg_paths
-                                bbox_mode = True  # need bbox
-                            else:
-                                bbox_mode = seg_mode = True
-                        else:
-                            # Neither mode enabled → nothing to do for this segment
-                            found_path = None
-
-                        # If neither mode is required (i.e., outputs exist), skip
-                        if not bbox_mode and not seg_mode:
-                            logger.info(f"{vid}: YOLO file {filename} exists. Skipping segment.")
+                        # If nothing needed for this segment, skip it early
+                        if not run_bbox and not run_seg:
+                            logger.info(f"{vid}: outputs exist for segment {start_time}; skipping segment.")
                             processed_flag = True
                             continue
 
-                        # ------------------------------------------------------------
-                        # If external SSD is used, ensure processing uses SSD path
-                        # ------------------------------------------------------------
+                        # If SSD is used, ensure we operate on the SSD copy
                         if config.external_ssd:
                             try:
-                                # Only copy if the file isn't already in the SSD folder
                                 if os.path.dirname(base_video_path) != internal_ssd:
                                     out = helper.copy_video_safe(base_video_path, internal_ssd, vid)
                                     logger.debug(f"Copied to {out}.")
                             except Exception as exc:
-                                # Log additional context for easier debugging
+                                # Add context for easier diagnosis
                                 src_exists = os.path.isfile(base_video_path)
                                 dest_file = os.path.join(internal_ssd, f"{vid}.mp4")
                                 dest_parent_exists = os.path.isdir(internal_ssd)
@@ -394,129 +400,107 @@ if __name__ == "__main__":
                                     f"dest={dest_file!r} dest_parent_exists={dest_parent_exists} err={exc!r}"
                                 )
                                 raise
-                            # Switch base to SSD copy for trimming and inference
                             base_video_path = os.path.join(internal_ssd, f"{vid}.mp4")
 
-                        # Temporary trimmed video path (lives on SSD when applicable)
+                        # Temporary path for trimmed segment (on active drive)
                         trimmed_video_path = os.path.join(
                             internal_ssd if config.external_ssd else output_path,
-                            f"{video_title}_mod.mp4"
+                            f"{vid}_mod.mp4"
                         )
 
-                        # Decide whether to trim (only when start/end provided and some mode is active)
+                        # Trim only if there's something to run for this segment
                         if start_time is None and end_time is None:
                             logger.info(f"{vid}: no trimming required for this video.")
-                        elif bbox_mode or seg_mode:
+                        elif run_bbox or run_seg:
                             logger.info(f"{vid}: trimming in progress for segment {start_time}-{end_time}s.")
-                            # Subtract 1 sec to avoid potential decoder boundary issues at the tail
-                            end_time_adj = end_time - 1
+                            end_time_adj = end_time - 1  # small guard against decoder boundary issues
                             helper.trim_video(base_video_path, trimmed_video_path, start_time, end_time_adj)
                             logger.info(f"{vid}: trimming completed for segment {start_time}-{end_time}s.")
 
-                        # ------------------------------------------------------------
-                        # Run detection/segmentation on the trimmed segment
-                        # ------------------------------------------------------------
-                        if seg_mode or bbox_mode:
-                            if video_fps > 0:  # Guard against invalid FPS
-                                logger.info(
-                                    f"{vid}: YOLO analysis for {start_time}-{end_time}s at {video_fps} FPS."
-                                )
-                                helper.tracking_mode(
-                                    trimmed_video_path,                    # input segment
-                                    output_path,                           # where annotated output goes (if enabled)
-                                    video_title=f"{video_title}_mod.mp4",  # propagated title for helper
-                                    video_fps=video_fps,                   # ensures consistent frame stepping
-                                    seg_mode=seg_mode,
-                                    bbox_mode=bbox_mode,
-                                    flag=config.save_annotated_video       # toggle saving annotated video
-                                )
-                                counter_processed += 1
-                                processed_flag = True
-                            else:
-                                logger.warning(f"{vid}: FPS value is {video_fps}. Skipping tracking mode.")
+                        # Run analysis (bbox/seg as needed)
+                        if (run_bbox or run_seg) and video_fps > 0:  # type: ignore
+                            logger.info(
+                                f"{vid}: running analysis "
+                                f"{'(bbox)' if run_bbox else ''}"
+                                f"{' & ' if run_bbox and run_seg else ''}"
+                                f"{'(seg)' if run_seg else ''} at {video_fps} FPS."
+                            )
+                            helper.tracking_mode(
+                                trimmed_video_path,
+                                output_path,
+                                video_title=f"{vid}_mod.mp4",
+                                video_fps=video_fps,
+                                seg_mode=run_seg,               # run only needed parts
+                                bbox_mode=run_bbox,
+                                flag=config.save_annotated_video
+                            )
+                            counter_processed += 1
+                            processed_flag = True
+                        elif run_bbox or run_seg:
+                            logger.warning(f"{vid}: invalid FPS ({video_fps}); skipping analysis.")
 
-                            # --------------------------------------------------------
-                            # Move/rename produced CSV(s) from runs/* to data folders
-                            # --------------------------------------------------------
-                            if bbox_mode:
-                                old_file_path = os.path.join("runs", "detect", f"{vid}.csv")
-                                new_file_path = os.path.join("runs", "detect", f"{vid}_{start_time}_{video_fps}.csv")
-                                if os.path.exists(old_file_path):
-                                    os.rename(old_file_path, new_file_path)
-                                else:
-                                    logger.error(f"{vid}: error:{old_file_path} does not exist.")
-                                if os.path.exists(new_file_path):
-                                    shutil.move(new_file_path, os.path.join(data_path, "bbox"))
-                                else:
-                                    logger.error(f"{vid}: error: {new_file_path} does not exist.")
+                        # Move/rename generated CSV(s) based on modes we actually ran
+                        if run_bbox:
+                            old = os.path.join("runs", "detect", f"{vid}.csv")
+                            new = os.path.join("runs", "detect", segment_csv)
+                            if os.path.exists(old):
+                                os.rename(old, new)
+                            if os.path.exists(new):
+                                shutil.move(new, os.path.join(data_path, "bbox"))
+                        if run_seg:
+                            old = os.path.join("runs", "segment", f"{vid}.csv")
+                            new = os.path.join("runs", "segment", segment_csv)
+                            if os.path.exists(old):
+                                os.rename(old, new)
+                            if os.path.exists(new):
+                                shutil.move(new, os.path.join(data_path, "seg"))
 
-                            if seg_mode:
-                                old_file_path = os.path.join("runs", "segment", f"{vid}.csv")
-                                new_file_path = os.path.join("runs", "segment", f"{vid}_{start_time}_{video_fps}.csv")
-                                if os.path.exists(old_file_path):
-                                    os.rename(old_file_path, new_file_path)
-                                else:
-                                    logger.error(f"{vid}: error:{old_file_path} does not exist.")
-                                if os.path.exists(new_file_path):
-                                    shutil.move(new_file_path, os.path.join(data_path, "seg"))
-                                else:
-                                    logger.error(f"{vid}: error: {new_file_path} does not exist.")
-
-                            # --------------------------------------------------------
-                            # Cleanup or archive runs/* depending on delete_runs_files
-                            # --------------------------------------------------------
+                        # Cleanup runs/* or archive, depending on config
+                        if run_bbox or run_seg:
                             if delete_runs_files:
-                                if bbox_mode and os.path.isdir(os.path.join("runs", "detect")):
+                                if run_bbox and os.path.isdir(os.path.join("runs", "detect")):
                                     shutil.rmtree(os.path.join("runs", "detect"))
-                                if seg_mode and os.path.isdir(os.path.join("runs", "segment")):
+                                if run_seg and os.path.isdir(os.path.join("runs", "segment")):
                                     shutil.rmtree(os.path.join("runs", "segment"))
                             else:
-                                # If preserving, rename runs folders with title+resolution+timestamp
-                                if bbox_mode:
-                                    source_folder = os.path.join("runs", "detect")
-                                    destination_folder = os.path.join(
-                                        "runs", f"{video_title}_{resolution}_{datetime.now()}"
-                                    )
-                                    helper.rename_folder(source_folder, destination_folder)
-                                if seg_mode:
-                                    source_folder = os.path.join("runs", "segment")
-                                    destination_folder = os.path.join(
-                                        "runs", f"{video_title}_{resolution}_{datetime.now()}"
-                                    )
-                                    helper.rename_folder(source_folder, destination_folder)
+                                # Archive folders with a timestamp if keeping runs/*
+                                ts = datetime.now()
+                                if run_bbox and os.path.isdir(os.path.join("runs", "detect")):
+                                    helper.rename_folder(os.path.join("runs", "detect"),
+                                                         os.path.join("runs", f"{vid}_{resolution}_{ts}"))
+                                if run_seg and os.path.isdir(os.path.join("runs", "segment")):
+                                    helper.rename_folder(os.path.join("runs", "segment"),
+                                                         os.path.join("runs", f"{vid}_{resolution}_{ts}"))
 
-                        # Remove temporary trimmed file (only if tracking_mode was active)
+                        # Remove temporary trimmed file if tracking mode is enabled globally
                         if config.tracking_mode:
                             try:
                                 os.remove(trimmed_video_path)
                             except FileNotFoundError:
-                                pass  # Already removed or wasn't created (no-op)
+                                pass
 
-                    # -----------------------------------------------------------------
-                    # Per-video cleanup after all segments processed
-                    # -----------------------------------------------------------------
+                    # -------------------------------------------------------------
+                    # Per-video cleanup (base file) after all segments handled
+                    # -------------------------------------------------------------
                     if config.external_ssd and processed_flag:
-                        # Remove the base file on SSD if we processed at least one segment
                         try:
                             os.remove(base_video_path)
                         except FileNotFoundError:
                             pass
                     if ftp_download:
-                        # If video came from FTP, remove base file to save storage
                         try:
                             os.remove(base_video_path)
                         except FileNotFoundError:
                             pass
                     if delete_youtube_video:
-                        # Remove the original mp4 from output folder if configured
                         try:
                             os.remove(os.path.join(output_path, f"{vid}.mp4"))
                         except FileNotFoundError:
                             pass
 
-            # ---------------------------------------------------------------------
-            # Email notification on successful pass (only if anything was processed)
-            # ---------------------------------------------------------------------
+            # -----------------------------------------------------------------
+            # Email success summary (only if anything was processed)
+            # -----------------------------------------------------------------
             if config.email_send and counter_processed:
                 time_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 common.send_email(
@@ -529,26 +513,25 @@ if __name__ == "__main__":
                     recipients=config.email_recipients
                 )
 
-            # ---------------------------------------------------------------------
-            # Sleep between cycles (optional), cleanup mod videos, optionally git pull
-            # ---------------------------------------------------------------------
+            # -----------------------------------------------------------------
+            # Sleep between passes; clean *_mod.mp4 remnants; optionally git pull
+            # -----------------------------------------------------------------
             if config.sleep_sec:
-                helper.delete_youtube_mod_videos(video_paths)  # Remove *_mod.mp4 leftovers in video_paths
+                helper.delete_youtube_mod_videos(video_paths)
                 logger.info(f"Sleeping for {config.sleep_sec} s before attempting to go over mapping again.")
                 time.sleep(config.sleep_sec)
 
-            # Optionally pull latest mapping or code updates
             if config.git_pull:
                 common.git_pull()
 
     # =============================================================================
-    # Crash handling: email notification with error details then re-raise
+    # Crash handling: email details then re-raise for visibility
     # =============================================================================
     except Exception as e:
         try:
             if config.email_send:
                 time_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                # Fun image left from original script; kept for continuity
+                # kept from original (fun image): fine to send as plain link or ignore
                 image_url = "https://i.pinimg.com/474x/20/82/0f/20820fd73c946d3e1d2e6efe23e1b2f3.jpg"
                 common.send_email(
                     subject=f"‼️ Processing job crashed on machine {config.machine_name}",
@@ -560,6 +543,6 @@ if __name__ == "__main__":
                     recipients=config.email_recipients
                 )
         except Exception:
-            # If email sending fails or config not ready, just swallow and re-raise
+            # If config/email not ready or mail fails, swallow and re-raise
             pass
         raise
