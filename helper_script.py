@@ -8,7 +8,7 @@ from moviepy.video.io.VideoFileClip import VideoFileClip
 import cv2
 from ultralytics import YOLO
 from collections import defaultdict
-from typing import Optional, Set, List, Any
+from typing import Optional, Set, Any
 import shutil
 import numpy as np
 import pandas as pd
@@ -288,155 +288,262 @@ class Youtube_Helper:
 
                 time.sleep(backoff * attempt)
 
-    def download_videos_from_ftp(self, filename: str, base_url: Optional[str] = None, out_dir: str = ".",
-                                 username: Optional[str] = None, password: Optional[str] = None,
-                                 token: Optional[str] = None, timeout: int = 20):
+    def download_videos_from_ftp(
+        self,
+        filename: str,
+        base_url: Optional[str] = None,
+        out_dir: str = ".",
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+        token: Optional[str] = None,
+        timeout: int = 20,
+        debug: bool = True,            # <--- new: turn verbose logging on/off
+        max_pages: int = 500,          # safety limit for crawling
+    ) -> Optional[tuple[str, str, str, float]]:
 
-        """Search for a video file in tue1/tue2/tue3 directories and download it.
+        """
+        Search and download a specific `.mp4` file from a multi-directory
+        FastAPI-based HTTP file server (e.g., files.mobility-squad.com).
 
-        This method crawls through the `/v/{alias}/browse` directories of the
-        provided `base_url` (with aliases "tue1", "tue2", "tue3") to locate
-        and download the specified video file. It returns the local path along
-        with metadata if the file is found and downloaded, otherwise returns None.
+        This function attempts direct download from known `/files/` paths
+        (tue1/tue2/tue3), and if not found, recursively crawls the `/browse`
+        pages to locate the video file. Progress is shown with `tqdm`.
 
         Args:
-            filename (str): Name of the file to search (without extension or with `.mp4`).
-            base_url (str, optional): Root URL of the file server (must end with a slash).
-            out_dir (str, optional): Local directory where the video should be saved.
-                Defaults to the current directory `"."`.
-            username (str, optional): Username for basic authentication.
-            password (str, optional): Password for basic authentication.
-            token (str | None, optional): API token to include as a query parameter
-                in every request. Defaults to None.
-            timeout (int, optional): Request timeout in seconds. Defaults to 20.
+            filename (str): Target file name (with or without `.mp4` extension).
+            base_url (str, optional): Base URL of the file server. Must include protocol,
+                e.g. `"https://files.mobility-squad.com/"`.
+            out_dir (str, optional): Local output directory to save the video.
+                Defaults to current directory `"."`.
+            username (str, optional): Username for HTTP Basic Auth.
+            password (str, optional): Password for HTTP Basic Auth.
+            token (str, optional): Token string for token-based authentication.
+                Sent as a query parameter `?token=...`.
+            timeout (int, optional): Request timeout in seconds. Default is 20.
+            max_pages (int, optional): Safety limit for crawl depth/pages. Default is 500.
 
         Returns:
-            tuple[str, str, str, float] | None:
-                - Local file path (str)
-                - Original filename (str)
-                - Resolution label (str, e.g., "1080p")
-                - Frames per second (float)
-                Returns None if the file is not found.
+            Optional[Tuple[str, str, str, float]]:
+                Returns a tuple `(local_path, filename, resolution_label, fps)`
+                if the download succeeds, or `None` if the file is not found or
+                download fails.
 
-        Raises:
-            requests.HTTPError: If an HTTP request fails with a status code error.
+        Logging:
+            - `logger.info`: start, success summaries.
+            - `logger.debug`: HTTP requests, crawl steps, file matches.
+            - `logger.warning`: non-fatal issues (metadata failures, skipped pages).
+            - `logger.error`: fatal errors (network/IO exceptions).
+
+        Example:
+            ```python
+            result = self.download_videos_from_http_fileserver(
+                filename="3ai7SUaPoHM",
+                base_url="https://files.mobility-squad.com/",
+                out_dir="./downloads",
+                username="mobility",
+                password="your_password"
+            )
+            if result:
+                path, name, res, fps = result
+                print(f"Downloaded {name} ({res}, {fps} fps) to {path}")
+            else:
+                print("File not found or failed.")
+            ```
         """
 
-        if base_url is None or base_url == "" or username == "" or password == "":
+        # -------------------- Input Preparation --------------------
+        if not base_url:
+            logger.error("Base URL is missing.")
             return None
 
-        base_url_str = base_url
+        base = base_url if base_url.endswith("/") else base_url + "/"
+        if username == "":
+            username = None
+        if password == "":
+            password = None
 
-        # Ensure filename ends with .mp4
         filename_with_ext = filename if filename.lower().endswith(".mp4") else f"{filename}.mp4"
+        filename_lower = filename_with_ext.lower()
+        aliases = ["tue1", "tue2", "tue3"]
+        req_params = {"token": token} if token else None
 
-        # Ensure trailing slash
-        if not base_url_str.endswith("/"):
-            base_url_str += "/"
+        logger.info(f"Starting download for '{filename_with_ext}'")
+        logger.debug(f"Base URL: {base} | Auth: {'Basic' if username and password else 'None'} | Token: {'Yes' if token else 'No'}")  # noqa: E501
 
-        aliases: List[str] = ["tue1", "tue2", "tue3"]
-        visited: Set[str] = set()
+        # ---------- Session ----------
+        with requests.Session() as session:
+            if username and password:
+                session.auth = (username, password)
+            session.headers.update({"User-Agent": "multi-fileserver-downloader/1.0"})
 
-        # Build per-request params (avoid touching session.params)
-        req_params: Optional[dict] = {"token": token} if token else None
-
-        try:
-            with requests.Session() as session:
-                session.auth = (username, password) if (username and password) else None
-                session.headers.update({"User-Agent": "multi-fileserver-downloader/1.0"})
-
-                def fetch(url: str) -> Optional[requests.Response]:
-                    try:
-                        r = session.get(url, timeout=timeout, params=req_params)
-                        r.raise_for_status()
-                        return r
-                    except requests.RequestException:
-                        return None
-
-                def is_dir_link(a) -> bool:
-                    href = a.get("href") or ""
-                    return "/browse" in href and href.endswith("/")
-
-                def is_file_link(a) -> bool:
-                    href = a.get("href") or ""
-                    return "/files/" in href
-
-                def crawl(start_url: str) -> Optional[str]:
-                    stack: List[str] = [start_url]
-                    while stack:
-                        url = stack.pop()
-                        if url in visited:
-                            continue
-                        visited.add(url)
-
-                        resp = fetch(url)
-                        if resp is None:
-                            return None
-
-                        try:
-                            soup = BeautifulSoup(resp.text, "html.parser")
-                        except Exception:
-                            return None
-
-                        for a in soup.find_all("a"):
-                            href = a.get("href")
-                            if not href:
-                                continue
-                            full = urljoin(base_url_str, href)
-
-                            if is_file_link(a):
-                                anchor_text = (a.text or "").strip()
-                                if anchor_text == filename_with_ext:
-                                    return full
-
-                                parsed = urlparse(full)
-                                tail = pathlib.PurePosixPath(str(parsed.path)).name
-                                if tail == filename_with_ext and filename_with_ext.lower().endswith(".mp4"):
-                                    return full
-
-                            if is_dir_link(a):
-                                stack.append(full)
-
+            def fetch(url: str, stream: bool = False) -> Optional[requests.Response]:
+                """GET with logging and safe error handling."""
+                try:
+                    r = session.get(url, timeout=timeout, params=req_params, stream=stream)
+                    logger.debug(f"GET {url} -> {r.status_code}")
+                    if r.status_code == 401:
+                        logger.error(f"Authentication failed for {url}")
+                    r.raise_for_status()
+                    return r
+                except requests.RequestException as e:
+                    logger.warning(f"Request failed [{url}]: {e}")
                     return None
 
-                for alias in aliases:
-                    start = urljoin(base_url_str, f"v/{alias}/browse")
-                    found_url = crawl(start)
-                    if not found_url:
+            # ---------- 1. Try direct /files paths ----------
+            for alias in aliases:
+                direct_url = urljoin(base, f"v/{alias}/files/{filename_with_ext}")
+                logger.debug(f"Trying direct URL: {direct_url}")
+                r = fetch(direct_url, stream=True)
+                if r is None:
+                    continue
+
+                logger.info(f"Found file via direct URL: {direct_url}")
+                content_len = int(r.headers.get("content-length", 0))
+                logger.debug(f"Content-Length: {content_len or 'unknown'} bytes")
+
+                os.makedirs(out_dir, exist_ok=True)
+                local_path = os.path.join(out_dir, filename_with_ext)
+
+                # Avoid overwriting
+                if os.path.exists(local_path):
+                    stem, suf = os.path.splitext(local_path)
+                    i = 1
+                    while os.path.exists(f"{stem} ({i}){suf}"):
+                        i += 1
+                    local_path = f"{stem} ({i}){suf}"
+                    logger.warning(f"File exists, saving as: {local_path}")
+
+                # ---------- Download ----------
+                try:
+                    total = content_len or None
+                    written = 0
+                    with open(local_path, "wb") as f, tqdm(
+                        total=total,
+                        unit="B",
+                        unit_scale=True,
+                        unit_divisor=1024,
+                        desc=f"Downloading from ftp: {filename_with_ext}",
+                    ) as bar:
+                        for chunk in r.iter_content(chunk_size=1024 * 1024):
+                            if chunk:
+                                f.write(chunk)
+                                written += len(chunk)
+                                if total:
+                                    bar.update(len(chunk))
+                    logger.info(f"Download complete: {local_path} ({written} bytes)")
+                except Exception as e:
+                    logger.error(f"Download failed for {filename_with_ext}: {e}")
+                    return None
+
+                # ---------- Metadata ----------
+                resolution, fps = "unknown", 0.0
+                try:
+                    fps = float(self.get_video_fps(local_path))  # type: ignore
+                    resolution = Youtube_Helper.get_video_resolution_label(local_path)
+                    logger.debug(f"Metadata extracted: fps={fps}, resolution={resolution}")
+                except Exception as e:
+                    logger.warning(f"Metadata extraction failed: {e}")
+
+                logger.info(f"✅ Saved '{filename_with_ext}' (res={resolution}, fps={fps})")
+                return local_path, filename, resolution, fps
+
+            # ---------- 2. Crawl /browse fallback ----------
+            visited: Set[str] = set()
+
+            def is_dir_link(href: str) -> bool:
+                return href.startswith("/v/") and "/browse" in href
+
+            def is_file_link(href: str) -> bool:
+                return "/files/" in href
+
+            def crawl(start_url: str) -> Optional[str]:
+                """Recursively traverse /browse pages."""
+                stack = [start_url]
+                pages_seen = 0
+                while stack:
+                    url = stack.pop()
+                    if url in visited:
+                        continue
+                    visited.add(url)
+                    pages_seen += 1
+                    if pages_seen > max_pages:
+                        logger.warning(f"Crawl aborted after {max_pages} pages.")
+                        return None
+
+                    resp = fetch(url)
+                    if resp is None:
                         continue
 
                     try:
-                        os.makedirs(out_dir, exist_ok=True)
-                        local_path = os.path.join(out_dir, filename_with_ext)
+                        soup = BeautifulSoup(resp.text, "html.parser")
+                    except Exception as e:
+                        logger.warning(f"HTML parse failed at {url}: {e}")
+                        continue
 
-                        with session.get(found_url, stream=True, timeout=timeout, params=req_params) as r:
-                            r.raise_for_status()
-                            total = int(r.headers.get("content-length", 0))
-                            with open(local_path, "wb") as f, tqdm(
-                                total=total,
-                                unit="B",
-                                unit_scale=True,
-                                unit_divisor=1024,
-                                desc=f"Downloading via ftp: {filename_with_ext}",
-                            ) as bar:
-                                for chunk in r.iter_content(chunk_size=1024 * 1024):
-                                    if chunk:
-                                        f.write(chunk)
-                                        bar.update(len(chunk))
-                    except (requests.RequestException, OSError):
-                        return None
+                    for a in soup.find_all("a"):
+                        href = (a.get("href") or "").strip()
+                        if not href:
+                            continue
+                        full = urljoin(url, href)
 
-                    try:
-                        fps = self.get_video_fps(local_path)
-                        resolution = Youtube_Helper.get_video_resolution_label(local_path)
-                    except Exception:
-                        return None
+                        if is_file_link(href):
+                            anchor_text = (a.text or "").strip().lower()
+                            tail = pathlib.PurePosixPath(urlparse(full).path).name.lower()
+                            if anchor_text == filename_lower or tail == filename_lower:
+                                logger.info(f"File located via crawl: {full}")
+                                return full
+                        if is_dir_link(href):
+                            stack.append(full)
 
-                    return local_path, filename, resolution, fps
-
+                logger.debug("Crawl finished — no file found.")
                 return None
 
-        except Exception:
+            for alias in aliases:
+                start_url = urljoin(base, f"v/{alias}/browse")
+                logger.debug(f"Crawling alias: {alias} -> {start_url}")
+                found = crawl(start_url)
+                if not found:
+                    continue
+
+                r = fetch(found, stream=True)
+                if not r:
+                    continue
+
+                os.makedirs(out_dir, exist_ok=True)
+                local_path = os.path.join(out_dir, filename_with_ext)
+
+                try:
+                    total = int(r.headers.get("content-length", 0)) or None
+                    written = 0
+                    with open(local_path, "wb") as f, tqdm(
+                        total=total,
+                        unit="B",
+                        unit_scale=True,
+                        unit_divisor=1024,
+                        desc=f"Downloading {filename_with_ext}",
+                    ) as bar:
+                        for chunk in r.iter_content(chunk_size=1024 * 1024):
+                            if chunk:
+                                f.write(chunk)
+                                written += len(chunk)
+                                if total:
+                                    bar.update(len(chunk))
+                    logger.info(f"Downloaded via crawl: {local_path} ({written} bytes)")
+                except Exception as e:
+                    logger.error(f"Download during crawl failed: {e}")
+                    return None
+
+                resolution, fps = "unknown", 0.0
+                try:
+                    fps = float(self.get_video_fps(local_path))  # type: ignore
+                    resolution = Youtube_Helper.get_video_resolution_label(local_path)
+                    logger.debug(f"Metadata: fps={fps}, resolution={resolution}")
+                except Exception as e:
+                    logger.warning(f"Metadata extraction failed: {e}")
+
+                return local_path, filename, resolution, fps
+
+            logger.warning(f"File '{filename_with_ext}' not found in any alias.")
             return None
 
     def download_video_with_resolution(self, vid, resolutions=["720p", "480p", "360p", "144p"], output_path="."):

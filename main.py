@@ -178,7 +178,7 @@ if __name__ == "__main__":
                                                                  out_dir=output_path,
                                                                  username=secret.ftp_username,
                                                                  password=secret.ftp_password,
-                                                                 # token=None  # only if you switch to token auth
+                                                                 # token=None
                                                                  )
                         if result:
                             ftp_download = True
