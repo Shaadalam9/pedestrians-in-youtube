@@ -1655,12 +1655,12 @@ if __name__ == "__main__":
                             marginal_y=None,  # type: ignore
                             file_name='scatter_all_total_time-video_count')  # type: ignore
         # histogram of dates of videos
-        fig = plots_class.video_histogram_by_month(df=df,
-                                                   video_count_col='video_count',
-                                                   upload_date_col='upload_date',
-                                                   xaxis_title='Upload month (year-month)',
-                                                   yaxis_title='Number of videos',
-                                                   save_file=True)
+        plots_class.video_histogram_by_month(df=df,
+                                             video_count_col='video_count',
+                                             upload_date_col='upload_date',
+                                             xaxis_title='Upload month (year-month)',
+                                             yaxis_title='Number of videos',
+                                             save_file=True)
         # maps with all cities and population heatmap
         plots_class.mapbox_map(df=df,
                                hover_data=hover_data,
