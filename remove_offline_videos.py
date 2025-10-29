@@ -29,7 +29,6 @@ def remove_video_data(input_file, output_file, video_ids_to_remove):
             end_time_col_idx = header.index('end_time')
             vehicle_type_col_idx = header.index('vehicle_type')
             upload_date_col_idx = header.index('upload_date')
-            fps_list_col_idx = header.index('fps_list')
             channel_col_idx = header.index('channel')
         except ValueError as e:
             print(f"Error: Missing expected column in header - {e}")
@@ -95,7 +94,6 @@ def remove_video_data(input_file, output_file, video_ids_to_remove):
             start_time = ast.literal_eval(row[start_time_col_idx])
             end_time = ast.literal_eval(row[end_time_col_idx])
             vehicle_type = ast.literal_eval(row[vehicle_type_col_idx])
-            fps_list = ast.literal_eval(row[fps_list_col_idx])
 
             # For upload_date and channel, they also contain unquoted strings.
             # We can use re.findall for a similar effect, or a more direct string manipulation.
@@ -110,7 +108,6 @@ def remove_video_data(input_file, output_file, video_ids_to_remove):
             new_end_time = []
             new_vehicle_type = []
             new_upload_date = []
-            new_fps_list = []
             new_channel = []
 
             for i, video_id in enumerate(videos):
@@ -127,8 +124,6 @@ def remove_video_data(input_file, output_file, video_ids_to_remove):
                         new_vehicle_type.append(vehicle_type[i])
                     if i < len(upload_date):
                         new_upload_date.append(upload_date[i])
-                    if i < len(fps_list):
-                        new_fps_list.append(fps_list[i])
                     if i < len(channel):
                         new_channel.append(channel[i])
 
@@ -155,7 +150,6 @@ def remove_video_data(input_file, output_file, video_ids_to_remove):
             original_row[end_time_col_idx] = format_list_output(new_end_time)
             original_row[vehicle_type_col_idx] = format_list_output(new_vehicle_type)
             original_row[upload_date_col_idx] = format_list_output(new_upload_date)
-            original_row[fps_list_col_idx] = format_list_output(new_fps_list)
             original_row[channel_col_idx] = format_list_output(new_channel)
 
             writer.writerow(original_row)
@@ -167,11 +161,7 @@ output_csv_file = 'mapping_cleaned.csv'
 
 # List of video IDs to remove
 videos_to_delete = [
-    'fQ8oi4JEwFU', '9u_PhtS4wtc', 'EUGYfzARI3Y', '7AMTygnk-i8',
-    'QgGTTYYAxLg', 'bMydG1xiHzc', 'ZdwHjHIC7jA', 'Ab9FMZ2pKeI',
-    '0S_YhLT9qwfQ', 'Nyk4ySw5QXs', 'mFE5jn4MyTs', 'BeSoDontuQo',
-    'TJcXzdB-sqQ', 'y2iGUHl-5Eg', 'AkDF2kxfcDY', 'd_WuEG7NQEg',
-    'AdYYTIiWceo', 'aBAuD4GhVQh'
+    'ScClHuZtmL8'
 ]
 
 # Run the script
