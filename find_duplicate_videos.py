@@ -1,13 +1,10 @@
-# by Shadab Alam <md_shadab_alam@outlook.com> and Pavlo Bazilinskyy <pavlo.bazilinskyy@gmail.com>
 import os
+import hashlib
 from collections import defaultdict
 import common
-from custom_logger import CustomLogger
-
-logger = CustomLogger(__name__)  # use custom logger
 
 # ===== SETTINGS =====
-DELETE_DUPLICATES = False  # <<< Set to True to delete smaller duplicates
+DELETE_DUPLICATES = False  # <<< Set to True to delete smaller or identical duplicates
 VIDEO_EXTS = (".mp4", ".avi", ".mkv", ".mov", ".webm")
 # =====================
 
@@ -21,6 +18,15 @@ def human_bytes(n: int) -> str:
         f /= 1024.0
         i += 1
     return f"{f:.2f} {units[i]}"
+
+
+def file_hash(path, chunk_size=8192):
+    """Compute SHA256 hash of a file."""
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(chunk_size), b""):
+            h.update(chunk)
+    return h.hexdigest()
 
 
 # your folders
@@ -43,7 +49,7 @@ total_dupe_files = sum(len(v) for v in duplicate_groups.values())
 deleted_files = 0
 bytes_freed = 0
 
-logger.info("\n=== duplicate videos by filename ===\n")
+print("\n=== duplicate videos by filename ===\n")
 
 for name, paths in sorted(duplicate_groups.items()):
     sized_paths = []
@@ -54,14 +60,14 @@ for name, paths in sorted(duplicate_groups.items()):
             size = -1
         sized_paths.append((p, size))
 
-    logger.info(f"filename: {name}")
+    print(f"filename: {name}")
     for p, s in sized_paths:
         size_str = "unknown" if s < 0 else human_bytes(s)
-        logger.info(f"   {p}  ({size_str})")
+        print(f"   {p}  ({size_str})")
 
     readable_sizes = [s for _, s in sized_paths if s >= 0]
     if not readable_sizes:
-        logger.info("   [skip] could not read any file sizes.\n")
+        print("   [skip] could not read any file sizes.\n")
         continue
 
     max_size = max(readable_sizes)
@@ -69,9 +75,23 @@ for name, paths in sorted(duplicate_groups.items()):
     keeper = largest_candidates[0]
     to_delete = [(p, s) for p, s in sized_paths if s >= 0 and s < max_size]
 
-    if not to_delete and len(largest_candidates) > 1:
-        logger.info("   [note] multiple files have the same (largest) size; none deleted automatically.\n")
-        continue
+    # Handle equal-size duplicates
+    equal_size_candidates = [p for p, s in sized_paths if s == max_size]
+    if len(equal_size_candidates) > 1:
+        print("   [note] equal-size duplicates detected, comparing content...")
+        try:
+            hashes = [(p, file_hash(p)) for p in equal_size_candidates]
+            # Group by hash
+            seen_hashes = {}
+            for p, h in hashes:
+                if h in seen_hashes:
+                    # same hash, mark for deletion
+                    s = os.path.getsize(p)
+                    to_delete.append((p, s))
+                else:
+                    seen_hashes[h] = p
+        except Exception as e:
+            print(f"   [warn] hashing failed: {e}")
 
     if DELETE_DUPLICATES and to_delete:
         for p, s in to_delete:
@@ -79,22 +99,22 @@ for name, paths in sorted(duplicate_groups.items()):
                 os.remove(p)
                 deleted_files += 1
                 bytes_freed += s
-                logger.info(f"   [deleted] {p} ({human_bytes(s)})")
+                print(f"   [deleted] {p} ({human_bytes(s)})")
             except OSError as e:
-                logger.info(f"   [error] failed to delete {p}: {e}")
-        logger.info(f"   [kept] {keeper} ({human_bytes(max_size)})\n")
+                print(f"   [error] failed to delete {p}: {e}")
+        print(f"   [kept] {keeper} ({human_bytes(max_size)})\n")
     else:
         for p, s in to_delete:
-            logger.info(f"   [would delete] {p} ({human_bytes(s)})")
-        logger.info(f"   [would keep] {keeper} ({human_bytes(max_size)})\n")
+            print(f"   [would delete] {p} ({human_bytes(s)})")
+        print(f"   [would keep] {keeper} ({human_bytes(max_size)})\n")
 
-logger.info("=== summary ===")
-logger.info(f"duplicate groups: {total_groups}")
-logger.info(f"duplicate files (in those groups): {total_dupe_files}")
+print("=== summary ===")
+print(f"duplicate groups: {total_groups}")
+print(f"duplicate files (in those groups): {total_dupe_files}")
 if DELETE_DUPLICATES:
-    logger.info(f"deleted files: {deleted_files}")
-    logger.info(f"bytes freed: {bytes_freed} ({human_bytes(bytes_freed)})")
+    print(f"deleted files: {deleted_files}")
+    print(f"bytes freed: {bytes_freed} ({human_bytes(bytes_freed)})")
 else:
     potential = sum(max(0, len(paths) - 1) for paths in duplicate_groups.values())
-    logger.info(f"(dry run) potential deletions: {potential}")
-    logger.info("set DELETE_DUPLICATES = True at the top to remove smaller duplicates.")
+    print(f"(dry run) potential deletions: {potential}")
+    print("set DELETE_DUPLICATES = True at the top to remove smaller or identical duplicates.")
