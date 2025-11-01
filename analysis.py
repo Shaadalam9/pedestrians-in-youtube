@@ -1634,7 +1634,7 @@ if __name__ == "__main__":
         # create flag_city column
         df['flag_city'] = df.apply(lambda row: f"{analysis_class.iso3_to_flag.get(row['iso3'], '🏳️')} {row['city']}",
                                    axis=1)
-        # scatter plot with number of videos over total time
+        # scatter plot for cities with number of videos over total time
         plots_class.scatter(df=df,
                             x="total_time",
                             y="video_count",
@@ -1654,6 +1654,64 @@ if __name__ == "__main__":
                             marginal_x=None,  # type: ignore
                             marginal_y=None,  # type: ignore
                             file_name='scatter_all_total_time-video_count')  # type: ignore
+        # scatter plot for countries with number of videos over total time
+        
+        # compute total time per city first
+        def safe_list_parse(s):
+            """convert '[abc,def]' or '["abc","def"]' → ['abc','def']"""
+            if not isinstance(s, str):
+                return []
+            s = s.strip()
+            if s.startswith('[') and s.endswith(']'):
+                # try to extract text chunks between commas, stripping quotes and spaces
+                return [x.strip(" '\"") for x in re.split(r',\s*', s[1:-1]) if x.strip()]
+            return []
+
+        def safe_sum_parse(s):
+            """convert nested '[ [123],[456] ]' → 123 + 456"""
+            if not isinstance(s, str):
+                return 0
+            s = s.strip()
+            if not s.startswith('['):
+                return 0
+            # extract all numbers (even nested ones)
+            nums = re.findall(r'\d+', s)
+            return sum(map(int, nums)) if nums else 0
+        # compute totals per city
+        df["city_video_count"] = df["videos"].apply(lambda x: len(safe_list_parse(x)))
+        df["city_total_time"] = df["end_time"].apply(lambda x: safe_sum_parse(x))
+        # aggregate to country level
+        df_country = (
+            df.groupby(["country", "iso3", "continent"], as_index=False)
+              .agg(total_time=("city_total_time", "sum"),
+                   video_count=("city_video_count", "sum"))
+        )
+        # add flag + iso3 label
+        df_country["flag_country"] = df_country.apply(
+            lambda row: f"{analysis_class.iso3_to_flag.get(row['iso3'], '🏳️')} {row['iso3']}",
+            axis=1
+        )
+        # sort for readability
+        df_country = df_country.sort_values(by=["continent", "country"], ascending=[True, True])
+        # define hover data
+        hover_data = ["country", "continent", "total_time", "video_count"]
+        plots_class.scatter(df=df_country,
+                            x="total_time",
+                            y="video_count",
+                            color="continent",
+                            text="flag_country",
+                            xaxis_title="Total time of footage (s)",
+                            yaxis_title="Number of videos",
+                            pretty_text=False,
+                            marker_size=12,
+                            save_file=True,
+                            hover_data=hover_data,
+                            hover_name="country",
+                            legend_title="",
+                            label_distance_factor=1.0,
+                            marginal_x=None,
+                            marginal_y=None,
+                            file_name="scatter_all_country_total_time-video_count")
         # histogram of dates of videos
         plots_class.video_histogram_by_month(df=df,
                                              video_count_col='video_count',
