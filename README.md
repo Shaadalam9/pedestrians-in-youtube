@@ -238,8 +238,8 @@ Crossing decision time and crossing speed (sorted by countries). -->
 [![Total time of footage over number of detected pedestrians](figures/scatter_total_time-person.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/scatter_total_time-person.html)
 Total time of footage over number of detected pedestrians.
 
-[![Detected pedestrian over time of footage](figures/scatter_total_time-person.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/scatter_total_time-person.html)
-Detected pedestrian over time of footage (countries).
+<!-- [![Detected pedestrian over time of footage](figures/scatter_total_time-person.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/scatter_total_time-person.html)
+Detected pedestrian over time of footage (countries). -->
 
 ### Description of dataset (cities included in analysis)
 [![Locations of cities with footage in dataset](figures/mapbox_map.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/mapbox_map.html)
