@@ -1708,7 +1708,7 @@ if __name__ == "__main__":
                             hover_data=hover_data,
                             hover_name="country",
                             legend_title="",
-                            label_distance_factor=1.0,
+                            label_distance_factor=0.1,
                             marginal_x=None,
                             marginal_y=None,
                             file_name="scatter_all_country_total_time-video_count")
