@@ -1675,9 +1675,9 @@ class Plots():
         else:
             fig.show()
 
-    def video_histogram_by_month(self, df, video_count_col='video_count', upload_date_col='upload_date', 
-                                 xaxis_title='Upload Month', yaxis_title='Number of Videos', 
-                                 file_name=None, save_file=False, font_family=None, font_size=None, 
+    def video_histogram_by_month(self, df, video_count_col='video_count', upload_date_col='upload_date',
+                                 xaxis_title='Upload Month', yaxis_title='Number of Videos',
+                                 file_name=None, save_file=False, font_family=None, font_size=None,
                                  title=None):
         """
         Output a histogram of video counts by the month of upload_date, where upload_date is a string list of dates in
@@ -1762,7 +1762,7 @@ class Plots():
 
         # Apply parsing and collect invalid dates
         df['parsed_dates'], df['invalid_dates'] = zip(*df[upload_date_col].apply(parse_date_list))
-        
+
         # Log invalid dates
         invalid_rows = df[df['invalid_dates'].apply(len) > 0]
         if not invalid_rows.empty:
@@ -1785,7 +1785,7 @@ class Plots():
         # Explode parsed_dates to create one row per date
         df_exploded = df.explode('parsed_dates')
         df_exploded = df_exploded[df_exploded['parsed_dates'].notna() & (df_exploded['parsed_dates'] != '')]
-        
+
         if len(df_exploded) == 0:
             logger.error('No valid dates after exploding.')
             return -1
@@ -1850,9 +1850,15 @@ class Plots():
                 tickmode='array',
                 tickvals=year_positions,
                 ticktext=year_labels,
-                tickangle=45
+                tickangle=45,
+                title=dict(font=dict(size=(font_size or 12) + 10)),
+                tickfont=dict(size=(font_size or 12) + 4)
+                ),
+            yaxis=dict(
+                title=dict(font=dict(size=(font_size or 12) + 10)),
+                tickfont=dict(size=(font_size or 12) + 4)
+                )
             )
-        )
 
         # Save or show
         if save_file:
