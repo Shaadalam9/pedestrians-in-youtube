@@ -1655,7 +1655,7 @@ if __name__ == "__main__":
                             marginal_y=None,  # type: ignore
                             file_name='scatter_all_total_time-video_count')  # type: ignore
         # scatter plot for countries with number of videos over total time
-        
+
         # compute total time per city first
         def safe_list_parse(s):
             """convert '[abc,def]' or '["abc","def"]' → ['abc','def']"""
@@ -1709,8 +1709,8 @@ if __name__ == "__main__":
                             hover_name="country",
                             legend_title="",
                             label_distance_factor=0.1,
-                            marginal_x=None,
-                            marginal_y=None,
+                            marginal_x=None,  # type: ignore
+                            marginal_y=None,  # type: ignore
                             file_name="scatter_all_country_total_time-video_count")
         # histogram of dates of videos
         plots_class.video_histogram_by_month(df=df,
