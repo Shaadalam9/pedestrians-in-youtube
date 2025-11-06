@@ -232,6 +232,9 @@ Total time of footage over the number of videos in the dataset on the country le
 [![Time of upload of videos](figures/hist_months.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/hist_months.html)
 Time of upload of videos.
 
+[![Distribution by type of vehicle](figures/bar_vehicle_type_time_of_day.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/bar_vehicle_type_time_of_day.html)
+Distribution by type of vehicle.
+
 <!-- [![Crossing decision time and crossing speed (sorted by countries)](figures/consolidated.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/consolidated.html)
 Crossing decision time and crossing speed (sorted by countries). -->
 
