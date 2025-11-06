@@ -5138,3 +5138,130 @@ class Plots():
                                 scale=SCALE,
                                 save_eps=False,
                                 save_final=True)
+
+    def bar(self, df, y: list, y_legend=None, x=None, stacked=False, pretty_text=False, orientation='v',
+            xaxis_title=None, yaxis_title=None, show_all_xticks=False, show_all_yticks=False, show_text_labels=False,
+            font_family=None, font_size=None, name_file=None, save_file=False, save_final=False, fig_save_width=1320,
+            fig_save_height=680):
+        """
+        Barplot for questionnaire data. Passing a list with one variable will output a simple barplot; passing a list
+        of variables will output a grouped barplot.
+
+        Args:
+            df (dataframe): dataframe with stimuli data.
+            y (list): column names of dataframe to plot.
+            y_legend (list, optional): names for variables to be shown in the legend.
+            x (list): values in index of dataframe to plot for. If no value is given, the index of df is used.
+            stacked (bool, optional): show as stacked chart.
+            pretty_text (bool, optional): prettify ticks by replacing _ with spaces and capitalising each value.
+            orientation (str, optional): orientation of bars. v=vertical, h=horizontal.
+            xaxis_title (str, optional): title for x axis.
+            yaxis_title (str, optional): title for y axis.
+            show_all_xticks (bool, optional): show all ticks on x axis.
+            show_all_yticks (bool, optional): show all ticks on y axis.
+            show_text_labels (bool, optional): output automatically positioned text labels.
+            name_file (str, optional): name of file to save.
+            save_file (bool, optional): flag for saving an html file with plot.
+            save_final (bool, optional): flag for saving an a final figure to /figures.
+            fig_save_width (int, optional): width of figures to be saved.
+            fig_save_height (int, optional): height of figures to be saved.
+            font_family (str, optional): font family to be used across the figure. None = use config value.
+            font_size (int, optional): font size to be used across the figure. None = use config value.
+        """
+        logger.info('Creating bar chart for x={} and y={}.', x, y)
+        # prettify text
+        if pretty_text:
+            for variable in y:
+                # check if column contains strings
+                if isinstance(df.iloc[0][variable], str):
+                    # replace underscores with spaces
+                    df[variable] = df[variable].str.replace('_', ' ')
+                    # capitalise
+                    df[variable] = df[variable].str.capitalize()
+        # use index of df if no is given
+        if x is None or (isinstance(x, (list, pd.Series, np.ndarray)) and len(x) == 0):
+            x = df.index
+        # create figure
+        fig = go.Figure()
+        # go over variables to plot
+        for variable in range(len(y)):
+            # showing text labels
+            if show_text_labels:
+                text = df[y[variable]]
+            else:
+                text = None
+            # custom labels for legend
+            if y_legend:
+                name = y_legend[variable]
+            else:
+                name = y[variable]
+            # plot variable
+            fig.add_trace(go.Bar(x=x,
+                                 y=df[y[variable]],
+                                 name=name,
+                                 orientation=orientation,
+                                 text=text,
+                                 textposition='auto'))
+        # add tabs if multiple variables are plotted
+        if len(y) > 1:
+            fig.update_layout(barmode='group')
+            buttons = list([dict(label='All',
+                                 method='update',
+                                 args=[{'visible': [True] * df[y].shape[0]},
+                                       {'title': 'All', 'showlegend': True}])])
+            # counter for traversing through stimuli
+            counter_rows = 0
+            for variable in y:
+                visibility = [[counter_rows == j] for j in range(len(y))]
+                visibility = [item for sublist in visibility for item in sublist]  # type: ignore
+                button = dict(label=variable,
+                              method='update',
+                              args=[{'visible': visibility},
+                                    {'title': variable}])
+                buttons.append(button)
+                counter_rows = counter_rows + 1
+            updatemenus = [dict(x=-0.15, buttons=buttons, showactive=True)]
+            fig['layout']['updatemenus'] = updatemenus
+            fig['layout']['title'] = 'All'
+        # update layout
+        fig.update_layout(template=common.get_configs('plotly_template'), xaxis_title=xaxis_title,
+                          yaxis_title=yaxis_title)
+        # format text labels
+        if show_text_labels:
+            fig.update_traces(texttemplate='%{text:.2f}')
+        # show all ticks on x axis
+        if show_all_xticks:
+            fig.update_layout(xaxis=dict(dtick=1))
+        # show all ticks on x axis
+        if show_all_yticks:
+            fig.update_layout(yaxis=dict(dtick=1))
+        # stacked bar chart
+        if stacked:
+            fig.update_layout(barmode='stack')
+        # update font family
+        if font_family:
+            # use given value
+            fig.update_layout(font=dict(family=font_family))
+        else:
+            # use value from config file
+            fig.update_layout(font=dict(family=common.get_configs('font_family')))
+        # update font size
+        if font_size:
+            # use given value
+            fig.update_layout(font=dict(size=font_size))
+        else:
+            # use value from config file
+            fig.update_layout(font=dict(size=common.get_configs('font_size')))
+        # save file to local output folder
+        if save_file:
+            # build filename
+            if not name_file:
+                name_file = 'bar_' + '-'.join(str(val) for val in y) + '_' + '-'.join(str(val) for val in x)
+            self.save_plotly_figure(fig,
+                                    name_file,
+                                    width=fig_save_width,
+                                    height=fig_save_height,
+                                    save_final=save_final)  # also save as "final" figure
+        # open it in localhost instead
+        else:
+            fig.show()

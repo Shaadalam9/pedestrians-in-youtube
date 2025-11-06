@@ -301,6 +301,23 @@ class Analysis():
         'ZWE': '🇿🇼',  # Zimbabwe
     }
 
+    # vehicle type mapping
+    vehicle_map = {
+        0: "Car",
+        1: "Bus",
+        2: "Truck",
+        3: "Two-wheeler",
+        4: "Bicycle",
+        5: "Automated car",
+        6: "Automated bus",
+        7: "Automated truck",
+        8: "Automated two-wheeler",
+        9: "Electric scooter"
+    }
+
+    # time of day mapping
+    time_map = {0: "Day", 1: "Night"}
+
     def __init__(self) -> None:
         pass
 
@@ -1655,7 +1672,7 @@ if __name__ == "__main__":
                             marginal_y=None,  # type: ignore
                             file_name='scatter_all_total_time-video_count')  # type: ignore
         # scatter plot for countries with number of videos over total time
-        
+
         # compute total time per city first
         def safe_list_parse(s):
             """convert '[abc,def]' or '["abc","def"]' → ['abc','def']"""
@@ -1709,9 +1726,10 @@ if __name__ == "__main__":
                             hover_name="country",
                             legend_title="",
                             label_distance_factor=0.1,
-                            marginal_x=None,
-                            marginal_y=None,
+                            marginal_x=None,  # type: ignore
+                            marginal_y=None,  # type: ignore
                             file_name="scatter_all_country_total_time-video_count")
+
         # histogram of dates of videos
         plots_class.video_histogram_by_month(df=df,
                                              video_count_col='video_count',
@@ -1737,6 +1755,124 @@ if __name__ == "__main__":
                                density_col='total_time',
                                density_radius=10,
                                file_name='mapbox_map_all_time')
+
+        # Type of vehicle over time of day
+        df = df_mapping.copy()  # copy df to manipulate for output
+        # --- expand rows so each video becomes one row ---
+        expanded_rows = []
+        for _, row in df.iterrows():
+            try:
+                vehicle_types = ast.literal_eval(row["vehicle_type"])
+                times_of_day = ast.literal_eval(row["time_of_day"])
+                if isinstance(vehicle_types, list) and isinstance(times_of_day, list):
+                    for v_type, tod in zip(vehicle_types, times_of_day):
+                        if not isinstance(v_type, list):
+                            v_type = [v_type]
+                        if not isinstance(tod, list):
+                            tod = [tod]
+                        for vt in v_type:
+                            for t in tod:
+                                expanded_rows.append({"vehicle_type": vt, "time_of_day": t})
+            except Exception:
+                pass  # skip malformed rows
+
+        df_expanded = pd.DataFrame(expanded_rows)
+        # --- map to human-readable labels ---
+        df_expanded["vehicle_type_name"] = df_expanded["vehicle_type"].map(analysis_class.vehicle_map)
+        df_expanded["time_of_day_name"] = df_expanded["time_of_day"].map(analysis_class.time_map)
+        # drop rows where mapping failed
+        df_expanded = df_expanded.dropna(subset=["vehicle_type_name", "time_of_day_name"])
+        # --- aggregate counts ---
+        df_summary = (
+            df_expanded.groupby(["vehicle_type_name", "time_of_day_name"])
+            .size()
+            .reset_index(name="count")
+        )
+        # --- pivot into wide format for stacked bar plot ---
+        df_pivot = (
+            df_summary.pivot(index="vehicle_type_name", columns="time_of_day_name", values="count")
+            .fillna(0)
+            .reset_index()
+        )
+        # ensure consistent order of vehicle types
+        vehicle_order = [
+            "Car", "Bus", "Truck", "Two-wheeler", "Bicycle",
+            "Automated car", "Automated bus", "Automated truck",
+            "Automated two-wheeler", "Electric scooter"
+        ]
+        df_pivot["vehicle_type_name"] = pd.Categorical(df_pivot["vehicle_type_name"], categories=vehicle_order,
+                                                       ordered=True)
+        df_pivot = df_pivot.sort_values("vehicle_type_name")
+        # --- plot ---
+        plots_class.bar(
+            df=df_pivot,
+            x=df_pivot["vehicle_type_name"],
+            y=[col for col in ["Day", "Night"] if col in df_pivot.columns],
+            y_legend=["Day", "Night"],
+            stacked=True,
+            pretty_text=False,
+            orientation="v",
+            xaxis_title="Type of vehicle",
+            yaxis_title="Number of segments",
+            show_text_labels=False,
+            save_file=True,
+            save_final=True,
+            name_file="bar_vehicle_type_time_of_day"
+        )
+
+        # Continent over time of day
+        df = df_mapping.copy()  # copy df to manipulate for output
+        # --- expand rows so each video becomes one row ---
+        expanded_rows = []
+        for _, row in df.iterrows():
+            try:
+                times_of_day = ast.literal_eval(row["time_of_day"])
+                if isinstance(times_of_day, list):
+                    for tod in times_of_day:
+                        if not isinstance(tod, list):
+                            tod = [tod]
+                        for t in tod:
+                            expanded_rows.append({
+                                "continent": row["continent"],
+                                "time_of_day": t
+                            })
+            except Exception:
+                pass  # skip malformed rows
+        df_expanded = pd.DataFrame(expanded_rows)
+        # --- map to human-readable labels ---
+        df_expanded["time_of_day_name"] = df_expanded["time_of_day"].map(analysis_class.time_map)
+        # drop rows where mapping failed
+        df_expanded = df_expanded.dropna(subset=["time_of_day_name", "continent"])
+        # --- aggregate counts ---
+        df_summary = (
+            df_expanded.groupby(["continent", "time_of_day_name"])
+            .size()
+            .reset_index(name="count")
+        )
+        # --- pivot into wide format for stacked bar plot ---
+        df_pivot = (
+            df_summary.pivot(index="continent", columns="time_of_day_name", values="count")
+            .fillna(0)
+            .reset_index()
+        )
+        # ensure only expected columns
+        time_columns = [col for col in ["Day", "Night"] if col in df_pivot.columns]
+        # --- plot ---
+        plots_class.bar(
+            df=df_pivot,
+            x=df_pivot["continent"],
+            y=time_columns,
+            y_legend=time_columns,
+            stacked=True,
+            pretty_text=False,
+            orientation="v",
+            xaxis_title="Continent",
+            yaxis_title="Number of videos",
+            show_text_labels=False,
+            save_file=True,
+            save_final=True,
+            name_file="bar_continent_time_of_day"
+        )
 
         total_duration = values_class.calculate_total_seconds(df_mapping)
 
