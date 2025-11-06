@@ -301,6 +301,23 @@ class Analysis():
         'ZWE': '🇿🇼',  # Zimbabwe
     }
 
+    # vehicle type mapping
+    vehicle_map = {
+        0: "Car",
+        1: "Bus",
+        2: "Truck",
+        3: "Two-wheeler",
+        4: "Bicycle",
+        5: "Automated car",
+        6: "Automated bus",
+        7: "Automated truck",
+        8: "Automated two-wheeler",
+        9: "Electric scooter"
+    }
+
+    # time of day mapping
+    time_map = {0: "Day", 1: "Night"}
+
     def __init__(self) -> None:
         pass
 
@@ -1628,177 +1645,90 @@ if __name__ == "__main__":
         # Sort by continent and city, both in ascending order
         df = df.sort_values(by=["continent", "country"], ascending=[True, True])
         # map with all cities
-        # plots_class.mapbox_map(df=df, hover_data=hover_data, file_name='mapbox_map_all')
-        # # Sort by continent and city, both in ascending order
-        # df = df.sort_values(by=["country", "city"], ascending=[True, True])
-        # # create flag_city column
-        # df['flag_city'] = df.apply(lambda row: f"{analysis_class.iso3_to_flag.get(row['iso3'], '🏳️')} {row['city']}",
-        #                            axis=1)
-        # # scatter plot for cities with number of videos over total time
-        # plots_class.scatter(df=df,
-        #                     x="total_time",
-        #                     y="video_count",
-        #                     color="country",
-        #                     text="flag_city",
-        #                     xaxis_title='Total time of footage (s)',
-        #                     yaxis_title='Number of videos',
-        #                     pretty_text=False,
-        #                     marker_size=10,
-        #                     save_file=True,
-        #                     hover_data=hover_data,
-        #                     hover_name="city",
-        #                     legend_title="",
-        #                     # legend_x=0.01,
-        #                     # legend_y=1.0,
-        #                     label_distance_factor=5.0,
-        #                     marginal_x=None,  # type: ignore
-        #                     marginal_y=None,  # type: ignore
-        #                     file_name='scatter_all_total_time-video_count')  # type: ignore
-        # # scatter plot for countries with number of videos over total time
+        plots_class.mapbox_map(df=df, hover_data=hover_data, file_name='mapbox_map_all')
+        # Sort by continent and city, both in ascending order
+        df = df.sort_values(by=["country", "city"], ascending=[True, True])
+        # create flag_city column
+        df['flag_city'] = df.apply(lambda row: f"{analysis_class.iso3_to_flag.get(row['iso3'], '🏳️')} {row['city']}",
+                                   axis=1)
+        # scatter plot for cities with number of videos over total time
+        plots_class.scatter(df=df,
+                            x="total_time",
+                            y="video_count",
+                            color="country",
+                            text="flag_city",
+                            xaxis_title='Total time of footage (s)',
+                            yaxis_title='Number of videos',
+                            pretty_text=False,
+                            marker_size=10,
+                            save_file=True,
+                            hover_data=hover_data,
+                            hover_name="city",
+                            legend_title="",
+                            # legend_x=0.01,
+                            # legend_y=1.0,
+                            label_distance_factor=5.0,
+                            marginal_x=None,  # type: ignore
+                            marginal_y=None,  # type: ignore
+                            file_name='scatter_all_total_time-video_count')  # type: ignore
+        # scatter plot for countries with number of videos over total time
 
-        # # compute total time per city first
-        # def safe_list_parse(s):
-        #     """convert '[abc,def]' or '["abc","def"]' → ['abc','def']"""
-        #     if not isinstance(s, str):
-        #         return []
-        #     s = s.strip()
-        #     if s.startswith('[') and s.endswith(']'):
-        #         # try to extract text chunks between commas, stripping quotes and spaces
-        #         return [x.strip(" '\"") for x in re.split(r',\s*', s[1:-1]) if x.strip()]
-        #     return []
+        # compute total time per city first
+        def safe_list_parse(s):
+            """convert '[abc,def]' or '["abc","def"]' → ['abc','def']"""
+            if not isinstance(s, str):
+                return []
+            s = s.strip()
+            if s.startswith('[') and s.endswith(']'):
+                # try to extract text chunks between commas, stripping quotes and spaces
+                return [x.strip(" '\"") for x in re.split(r',\s*', s[1:-1]) if x.strip()]
+            return []
 
-        # def safe_sum_parse(s):
-        #     """convert nested '[ [123],[456] ]' → 123 + 456"""
-        #     if not isinstance(s, str):
-        #         return 0
-        #     s = s.strip()
-        #     if not s.startswith('['):
-        #         return 0
-        #     # extract all numbers (even nested ones)
-        #     nums = re.findall(r'\d+', s)
-        #     return sum(map(int, nums)) if nums else 0
-        # # compute totals per city
-        # df["city_video_count"] = df["videos"].apply(lambda x: len(safe_list_parse(x)))
-        # df["city_total_time"] = df["end_time"].apply(lambda x: safe_sum_parse(x))
-        # # aggregate to country level
-        # df_country = (
-        #     df.groupby(["country", "iso3", "continent"], as_index=False)
-        #       .agg(total_time=("city_total_time", "sum"),
-        #            video_count=("city_video_count", "sum"))
-        # )
-        # # add flag + iso3 label
-        # df_country["flag_country"] = df_country.apply(
-        #     lambda row: f"{analysis_class.iso3_to_flag.get(row['iso3'], '🏳️')} {row['iso3']}",
-        #     axis=1
-        # )
-        # # sort for readability
-        # df_country = df_country.sort_values(by=["continent", "country"], ascending=[True, True])
-        # # define hover data
-        # hover_data = ["country", "continent", "total_time", "video_count"]
-        # plots_class.scatter(df=df_country,
-        #                     x="total_time",
-        #                     y="video_count",
-        #                     color="continent",
-        #                     text="flag_country",
-        #                     xaxis_title="Total time of footage (s)",
-        #                     yaxis_title="Number of videos",
-        #                     pretty_text=False,
-        #                     marker_size=12,
-        #                     save_file=True,
-        #                     hover_data=hover_data,
-        #                     hover_name="country",
-        #                     legend_title="",
-        #                     label_distance_factor=0.1,
-        #                     marginal_x=None,  # type: ignore
-        #                     marginal_y=None,  # type: ignore
-        #                     file_name="scatter_all_country_total_time-video_count")
-
-        # vehicle type mapping (from HTML)
-        vehicle_map = {
-            0: "car",
-            1: "bus",
-            2: "truck",
-            3: "two-wheeler",
-            4: "bicycle",
-            5: "automated car",
-            6: "automated bus",
-            7: "automated truck",
-            8: "automated two-wheeler",
-            9: "electric scooter"
-        }
-
-        # time of day mapping
-        time_map = {0: "day", 1: "night"}
-
-        # --- 1️⃣ load mapping file ---
-        df = pd.read_csv("mapping.csv")
-
-        # --- 2️⃣ expand rows so each video becomes one row ---
-        expanded_rows = []
-        for _, row in df.iterrows():
-            try:
-                vehicle_types = ast.literal_eval(row["vehicle_type"])
-                times_of_day = ast.literal_eval(row["time_of_day"])
-                if isinstance(vehicle_types, list) and isinstance(times_of_day, list):
-                    for v_type, tod in zip(vehicle_types, times_of_day):
-                        if not isinstance(v_type, list):
-                            v_type = [v_type]
-                        if not isinstance(tod, list):
-                            tod = [tod]
-                        for vt in v_type:
-                            for t in tod:
-                                expanded_rows.append({"vehicle_type": vt, "time_of_day": t})
-            except Exception:
-                pass  # skip malformed rows
-
-        df_expanded = pd.DataFrame(expanded_rows)
-
-        # --- 3️⃣ map to human-readable labels ---
-        df_expanded["vehicle_type_name"] = df_expanded["vehicle_type"].map(vehicle_map)
-        df_expanded["time_of_day_name"] = df_expanded["time_of_day"].map(time_map)
-
-        # drop rows where mapping failed
-        df_expanded = df_expanded.dropna(subset=["vehicle_type_name", "time_of_day_name"])
-
-        # --- 4️⃣ aggregate counts ---
-        df_summary = (
-            df_expanded.groupby(["vehicle_type_name", "time_of_day_name"])
-            .size()
-            .reset_index(name="count")
+        def safe_sum_parse(s):
+            """convert nested '[ [123],[456] ]' → 123 + 456"""
+            if not isinstance(s, str):
+                return 0
+            s = s.strip()
+            if not s.startswith('['):
+                return 0
+            # extract all numbers (even nested ones)
+            nums = re.findall(r'\d+', s)
+            return sum(map(int, nums)) if nums else 0
+        # compute totals per city
+        df["city_video_count"] = df["videos"].apply(lambda x: len(safe_list_parse(x)))
+        df["city_total_time"] = df["end_time"].apply(lambda x: safe_sum_parse(x))
+        # aggregate to country level
+        df_country = (
+            df.groupby(["country", "iso3", "continent"], as_index=False)
+              .agg(total_time=("city_total_time", "sum"),
+                   video_count=("city_video_count", "sum"))
         )
-
-        # --- 5️⃣ pivot into wide format for stacked bar plot ---
-        df_pivot = (
-            df_summary.pivot(index="vehicle_type_name", columns="time_of_day_name", values="count")
-            .fillna(0)
-            .reset_index()
+        # add flag + iso3 label
+        df_country["flag_country"] = df_country.apply(
+            lambda row: f"{analysis_class.iso3_to_flag.get(row['iso3'], '🏳️')} {row['iso3']}",
+            axis=1
         )
-
-        # ensure consistent order of vehicle types
-        vehicle_order = [
-            "car", "bus", "truck", "two-wheeler", "bicycle",
-            "automated car", "automated bus", "automated truck",
-            "automated two-wheeler", "electric scooter"
-        ]
-        df_pivot["vehicle_type_name"] = pd.Categorical(df_pivot["vehicle_type_name"], categories=vehicle_order, ordered=True)
-        df_pivot = df_pivot.sort_values("vehicle_type_name")
-
-        # --- 6️⃣ plot ---
-        plots_class.bar(
-            df=df_pivot,
-            x=df_pivot["vehicle_type_name"],
-            y=[col for col in ["day", "night"] if col in df_pivot.columns],
-            y_legend=["day", "night"],
-            stacked=True,
-            pretty_text=False,
-            orientation="v",
-            xaxis_title="vehicle type",
-            yaxis_title="number of videos",
-            show_text_labels=False,
-            save_file=True,
-            save_final=True,
-            name_file="bar_vehicle_type_vs_time_of_day"
-        )
+        # sort for readability
+        df_country = df_country.sort_values(by=["continent", "country"], ascending=[True, True])
+        # define hover data
+        hover_data = ["country", "continent", "total_time", "video_count"]
+        plots_class.scatter(df=df_country,
+                            x="total_time",
+                            y="video_count",
+                            color="continent",
+                            text="flag_country",
+                            xaxis_title="Total time of footage (s)",
+                            yaxis_title="Number of videos",
+                            pretty_text=False,
+                            marker_size=12,
+                            save_file=True,
+                            hover_data=hover_data,
+                            hover_name="country",
+                            legend_title="",
+                            label_distance_factor=0.1,
+                            marginal_x=None,  # type: ignore
+                            marginal_y=None,  # type: ignore
+                            file_name="scatter_all_country_total_time-video_count")
 
         # histogram of dates of videos
         plots_class.video_histogram_by_month(df=df,
@@ -1825,6 +1755,124 @@ if __name__ == "__main__":
                                density_col='total_time',
                                density_radius=10,
                                file_name='mapbox_map_all_time')
+
+        # Type of vehicle over time of day
+        df = df_mapping.copy()  # copy df to manipulate for output
+        # --- expand rows so each video becomes one row ---
+        expanded_rows = []
+        for _, row in df.iterrows():
+            try:
+                vehicle_types = ast.literal_eval(row["vehicle_type"])
+                times_of_day = ast.literal_eval(row["time_of_day"])
+                if isinstance(vehicle_types, list) and isinstance(times_of_day, list):
+                    for v_type, tod in zip(vehicle_types, times_of_day):
+                        if not isinstance(v_type, list):
+                            v_type = [v_type]
+                        if not isinstance(tod, list):
+                            tod = [tod]
+                        for vt in v_type:
+                            for t in tod:
+                                expanded_rows.append({"vehicle_type": vt, "time_of_day": t})
+            except Exception:
+                pass  # skip malformed rows
+
+        df_expanded = pd.DataFrame(expanded_rows)
+        # --- map to human-readable labels ---
+        df_expanded["vehicle_type_name"] = df_expanded["vehicle_type"].map(analysis_class.vehicle_map)
+        df_expanded["time_of_day_name"] = df_expanded["time_of_day"].map(analysis_class.time_map)
+        # drop rows where mapping failed
+        df_expanded = df_expanded.dropna(subset=["vehicle_type_name", "time_of_day_name"])
+        # --- aggregate counts ---
+        df_summary = (
+            df_expanded.groupby(["vehicle_type_name", "time_of_day_name"])
+            .size()
+            .reset_index(name="count")
+        )
+        # --- pivot into wide format for stacked bar plot ---
+        df_pivot = (
+            df_summary.pivot(index="vehicle_type_name", columns="time_of_day_name", values="count")
+            .fillna(0)
+            .reset_index()
+        )
+        # ensure consistent order of vehicle types
+        vehicle_order = [
+            "Car", "Bus", "Truck", "Two-wheeler", "Bicycle",
+            "Automated car", "Automated bus", "Automated truck",
+            "Automated two-wheeler", "Electric scooter"
+        ]
+        df_pivot["vehicle_type_name"] = pd.Categorical(df_pivot["vehicle_type_name"], categories=vehicle_order,
+                                                       ordered=True)
+        df_pivot = df_pivot.sort_values("vehicle_type_name")
+        # --- plot ---
+        plots_class.bar(
+            df=df_pivot,
+            x=df_pivot["vehicle_type_name"],
+            y=[col for col in ["Day", "Night"] if col in df_pivot.columns],
+            y_legend=["Day", "Night"],
+            stacked=True,
+            pretty_text=False,
+            orientation="v",
+            xaxis_title="Type of vehicle",
+            yaxis_title="Number of segments",
+            show_text_labels=False,
+            save_file=True,
+            save_final=True,
+            name_file="bar_vehicle_type_time_of_day"
+        )
+
+        # Continent over time of day
+        df = df_mapping.copy()  # copy df to manipulate for output
+        # --- expand rows so each video becomes one row ---
+        expanded_rows = []
+        for _, row in df.iterrows():
+            try:
+                times_of_day = ast.literal_eval(row["time_of_day"])
+                if isinstance(times_of_day, list):
+                    for tod in times_of_day:
+                        if not isinstance(tod, list):
+                            tod = [tod]
+                        for t in tod:
+                            expanded_rows.append({
+                                "continent": row["continent"],
+                                "time_of_day": t
+                            })
+            except Exception:
+                pass  # skip malformed rows
+        df_expanded = pd.DataFrame(expanded_rows)
+        # --- map to human-readable labels ---
+        df_expanded["time_of_day_name"] = df_expanded["time_of_day"].map(analysis_class.time_map)
+        # drop rows where mapping failed
+        df_expanded = df_expanded.dropna(subset=["time_of_day_name", "continent"])
+        # --- aggregate counts ---
+        df_summary = (
+            df_expanded.groupby(["continent", "time_of_day_name"])
+            .size()
+            .reset_index(name="count")
+        )
+        # --- pivot into wide format for stacked bar plot ---
+        df_pivot = (
+            df_summary.pivot(index="continent", columns="time_of_day_name", values="count")
+            .fillna(0)
+            .reset_index()
+        )
+        # ensure only expected columns
+        time_columns = [col for col in ["Day", "Night"] if col in df_pivot.columns]
+        # --- plot ---
+        plots_class.bar(
+            df=df_pivot,
+            x=df_pivot["continent"],
+            y=time_columns,
+            y_legend=time_columns,
+            stacked=True,
+            pretty_text=False,
+            orientation="v",
+            xaxis_title="Continent",
+            yaxis_title="Number of videos",
+            show_text_labels=False,
+            save_file=True,
+            save_final=True,
+            name_file="bar_continent_time_of_day"
+        )
 
         total_duration = values_class.calculate_total_seconds(df_mapping)
 
