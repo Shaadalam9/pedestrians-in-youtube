@@ -3995,4 +3995,5 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 3994,Emden,[],,Germany,DEU,Europe,53.3670541,7.2058304,0.0,51526,83491249,3.8,0.0,173.0,47.8,31.9,0.0,[GmCs62WVrrY],[[0]],[[0]],[[437]],[0],[02082024],[UCUXzou-vPVnzB_zEk9NyQLg]
 3995,Uithoorn,[],,Netherlands,NLD,Europe,52.2411412,4.8251096,0.0,26846,18100436,4.0,0.0,177.0,42.2,28.1,0.0,"[i-VtitceQ60,srU3LgFncpA]","[[0], [0]]","[[46], [2647]]","[[190], [2742]]","[0,0]","[14082017,17112017]","[UC5ZRTRi-PN0PiIHQbj_oU7Q,UC5ZRTRi-PN0PiIHQbj_oU7Q]"
 3996,Ten Post,[],,Netherlands,NLD,Europe,53.2972128,6.7290836,0.0,680,18100436,4.0,0.0,177.0,42.2,28.1,0.0,[kpk0Gs_AgTI],[[0]],[[914]],[[1099]],[4],[30072019],[UCZc_O8AexP_2iZIFlJ2lEHA]
-3997,Winneweer,[],,Netherlands,NLD,Europe,53.3110117,6.7443251,0.0,95,18100436,4,0.0,177,42.2,28.1,0.0,[kpk0Gs_AgTI],[[0]],[[1268]],[[1363]],[4],[30072019],[UCZc_O8AexP_2iZIFlJ2lEHA]
+3997,Winneweer,[],,Netherlands,NLD,Europe,53.3110117,6.7443251,0.0,95,18100436,4.0,0.0,177.0,42.2,28.1,0.0,[kpk0Gs_AgTI],[[0]],[[1268]],[[1363]],[4],[30072019],[UCZc_O8AexP_2iZIFlJ2lEHA]
+3998,Ten Boer,[],,Netherlands,NLD,Europe,53.2773154,6.6951182,0.0,4355,18100436,4,0.0,177,42.2,28.1,0.0,[kpk0Gs_AgTI],[[0]],[[412]],[[566]],[4],[30072019],[UCZc_O8AexP_2iZIFlJ2lEHA]
