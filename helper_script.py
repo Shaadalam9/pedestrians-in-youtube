@@ -561,6 +561,7 @@ class Youtube_Helper:
             tuple or None: A tuple (video_file_path, vid, resolution, fps) if successful,
                             or None if methods fail.
         """
+
         try:
             # Optionally upgrade pytubefix (if configured and it is Monday)
             if self.update_package and datetime.datetime.today().weekday() == 0:
@@ -599,9 +600,48 @@ class Youtube_Helper:
                         selected_stream = video_streams[0]
                     break
 
+            # --- Minimal-change fallback block (added) ---
             if not selected_stream:
-                logger.error(f"{vid}: no stream available for video in the specified resolutions.")
-                return None
+                # Fallback: auto-pick the highest available 'p' (progressive preferred) <= 720p
+
+                def _height_from_res(res_str: str) -> int:
+                    # Extract numeric height from strings like '720p', '1080p60', '576p'
+                    if not res_str:
+                        return -1
+                    m = re.search(r'(\d{3,4})p', res_str)
+                    return int(m.group(1)) if m else -1
+
+                streams = youtube_object.streams
+                progressive_candidates = []
+                adaptive_candidates = []
+
+                for s in streams:
+                    # resolution attribute can be 'resolution' or 'res' depending on pytube variant
+                    res_attr = getattr(s, "resolution", None) or getattr(s, "res", None)
+                    h = _height_from_res(res_attr)  # type: ignore
+                    if 0 < h <= 720:
+                        mime = getattr(s, "mime_type", "") or ""
+                        if "mp4" not in mime.lower():
+                            continue
+                        if getattr(s, "is_progressive", False):
+                            progressive_candidates.append((h, s))
+                        else:
+                            adaptive_candidates.append((h, s))
+
+                chosen = None
+                if progressive_candidates:
+                    chosen = max(progressive_candidates, key=lambda t: t[0])[1]
+                elif adaptive_candidates:
+                    chosen = max(adaptive_candidates, key=lambda t: t[0])[1]
+
+                if chosen:
+                    selected_stream = chosen
+                    selected_resolution = getattr(chosen, "resolution", None) or getattr(chosen, "res", None)
+                    logger.debug(f"{vid}: no preferred match; picked highest available {selected_resolution} (≤720p).")
+                else:
+                    logger.error(f"{vid}: no stream available ≤ 720p.")
+                    return None
+            # --- End fallback block ---
 
             # Construct the file path for the downloaded video.
             video_file_path = os.path.join(output_path, f"{vid}.mp4")
