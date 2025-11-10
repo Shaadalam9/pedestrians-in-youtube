@@ -5183,6 +5183,7 @@ class Plots():
             x = df.index
         # create figure
         fig = go.Figure()
+
         # go over variables to plot
         for variable in range(len(y)):
             # showing text labels
@@ -5190,11 +5191,13 @@ class Plots():
                 text = df[y[variable]]
             else:
                 text = None
+
             # custom labels for legend
             if y_legend:
                 name = y_legend[variable]
             else:
                 name = y[variable]
+
             # plot variable
             fig.add_trace(go.Bar(x=x,
                                  y=df[y[variable]],
@@ -5221,23 +5224,29 @@ class Plots():
                 buttons.append(button)
                 counter_rows = counter_rows + 1
             updatemenus = [dict(x=-0.15, buttons=buttons, showactive=True)]
-            fig['layout']['updatemenus'] = updatemenus
-            fig['layout']['title'] = 'All'
+            fig['layout']['updatemenus'] = updatemenus  # pyright: ignore[reportIndexIssue]
+            fig['layout']['title'] = 'All'  # pyright: ignore[reportIndexIssue]
+
         # update layout
         fig.update_layout(template=common.get_configs('plotly_template'), xaxis_title=xaxis_title,
                           yaxis_title=yaxis_title)
+
         # format text labels
         if show_text_labels:
             fig.update_traces(texttemplate='%{text:.2f}')
+
         # show all ticks on x axis
         if show_all_xticks:
             fig.update_layout(xaxis=dict(dtick=1))
+
         # show all ticks on x axis
         if show_all_yticks:
             fig.update_layout(yaxis=dict(dtick=1))
+
         # stacked bar chart
         if stacked:
             fig.update_layout(barmode='stack')
+
         # update font family
         if font_family:
             # use given value
@@ -5245,6 +5254,7 @@ class Plots():
         else:
             # use value from config file
             fig.update_layout(font=dict(family=common.get_configs('font_family')))
+
         # update font size
         if font_size:
             # use given value
@@ -5252,16 +5262,19 @@ class Plots():
         else:
             # use value from config file
             fig.update_layout(font=dict(size=common.get_configs('font_size')))
+
         # save file to local output folder
         if save_file:
             # build filename
             if not name_file:
                 name_file = 'bar_' + '-'.join(str(val) for val in y) + '_' + '-'.join(str(val) for val in x)
+
             self.save_plotly_figure(fig,
                                     name_file,
                                     width=fig_save_width,
                                     height=fig_save_height,
                                     save_final=save_final)  # also save as "final" figure
+
         # open it in localhost instead
         else:
             fig.show()
