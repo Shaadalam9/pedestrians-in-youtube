@@ -1361,8 +1361,8 @@ class Plots():
                                 save_eps=False,
                                 save_png=False)
 
-    def mapbox_map(self, df, density_col=None, density_radius=30, hover_data=None, file_name="mapbox_map",
-                   save_final=True):
+    def mapbox_map(self, df, density_col=None, density_radius=30, hover_data=None, hover_name=None,
+                   file_name="mapbox_map", save_final=True):
         """Generates a world map of cities using Mapbox, with optional density visualization.
 
         This method can create either:
@@ -1377,6 +1377,7 @@ class Plots():
             density_radius (int, optional): The pixel radius for density spread. Defaults to 30.
             hover_data (list, optional): List of additional DataFrame columns to display when hovering.
                 Defaults to None.
+            hover_name (list, optional): title on top of hover popup.    
             file_name (str, optional): Name of the saved file (without extension). Defaults to "mapbox_map".
             save_final (bool, optional): If True, saves the figure. Defaults to True.
 
@@ -1390,7 +1391,7 @@ class Plots():
                 lat="lat",
                 lon="lon",
                 hover_data=hover_data,
-                hover_name="city",
+                hover_name=hover_name,
                 color=df["continent"],  # Color points by continent
                 zoom=1.3  # Initial zoom level # pyright: ignore[reportArgumentType]
             )
@@ -1408,8 +1409,8 @@ class Plots():
                     lon=df["lon"].mean()
                 ),  # Center map on mean coordinates
                 mapbox_style="carto-positron",  # Light and clean map style
-                hover_name="city",
                 hover_data=hover_data,
+                hover_name=hover_name
             )
 
         # Update map layout to improve appearance

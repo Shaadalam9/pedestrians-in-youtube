@@ -1641,24 +1641,31 @@ if __name__ == "__main__":
 
         df['total_time'] = df.apply(compute_total_time, axis=1)
 
+        # create flag_city column
+        df['flag_city'] = df.apply(lambda row: f"{analysis_class.iso3_to_flag.get(row['iso3'], '🏳️')} {row['city']}",
+                                   axis=1)
+        # Create a new country label with emoji flag + country name
+        df["flag_country"] = df.apply(
+            lambda row: f"{analysis_class.iso3_to_flag.get(row['iso3'], '🏳️')} {row['country']}",
+            axis=1
+        )
+
         # Data to avoid showing on hover in scatter plots
         columns_remove = ['videos', 'time_of_day', 'start_time', 'end_time', 'upload_date', 'vehicle_type', 'channel',
-                          'display_label']
+                          'display_label', 'flag_city', 'flag_country']
         hover_data = list(set(df.columns) - set(columns_remove))
         # Sort by continent and city, both in ascending order
         df = df.sort_values(by=["continent", "country"], ascending=[True, True])
         # map with all cities
-        plots_class.mapbox_map(df=df, hover_data=hover_data, file_name='mapbox_map_all')
+        plots_class.mapbox_map(df=df, hover_data=hover_data, hover_name="flag_city", file_name='mapbox_map_all')
         # Sort by continent and city, both in ascending order
         df = df.sort_values(by=["country", "city"], ascending=[True, True])
-        # create flag_city column
-        df['flag_city'] = df.apply(lambda row: f"{analysis_class.iso3_to_flag.get(row['iso3'], '🏳️')} {row['city']}",
-                                   axis=1)
+
         # scatter plot for cities with number of videos over total time
         plots_class.scatter(df=df,
                             x="total_time",
                             y="video_count",
-                            color="country",
+                            color="flag_country",
                             text="flag_city",
                             xaxis_title='Total time of footage (s)',
                             yaxis_title='Number of videos',
@@ -1666,7 +1673,7 @@ if __name__ == "__main__":
                             marker_size=10,
                             save_file=True,
                             hover_data=hover_data,
-                            hover_name="city",
+                            hover_name="flag_city",
                             legend_title="",
                             # legend_x=0.01,
                             # legend_y=1.0,
