@@ -1733,7 +1733,7 @@ if __name__ == "__main__":
                             marker_size=12,
                             save_file=True,
                             hover_data=hover_data,
-                            hover_name="country",
+                            hover_name="flag_country",
                             legend_title="",
                             label_distance_factor=0.1,
                             marginal_x=None,  # type: ignore
