@@ -579,12 +579,15 @@
                         <option value="1" {{ "selected" if vehicle_type_video == 1 else "" }}>1 (bus)</option>
                         <option value="2" {{ "selected" if vehicle_type_video == 2 else "" }}>2 (truck)</option>
                         <option value="3" {{ "selected" if vehicle_type_video == 3 else "" }}>3 (two-wheeler)</option>
-                        <option value="4" {{ "selected" if vehicle_type_video == 4 else "" }}>4 (bicycle)</option>
+                        <option value="4" {{ "selected" if vehicle_type_video == 4 else "" }}>4 (bicycle/e-bicycle)</option>
                         <option value="5" {{ "selected" if vehicle_type_video == 5 else "" }}>5 (automated car)</option>
                         <option value="6" {{ "selected" if vehicle_type_video == 6 else "" }}>6 (automated bus)</option>
                         <option value="7" {{ "selected" if vehicle_type_video == 7 else "" }}>7 (automated truck)</option>
                         <option value="8" {{ "selected" if vehicle_type_video == 8 else "" }}>8 (automated two-wheeler)</option>
                         <option value="9" {{ "selected" if vehicle_type_video == 9 else "" }}>9 (electric scooter)</option>
+                        <option value="10" {{ "selected" if vehicle_type_video == 10 else "" }}>10 (non-electric scooter)</option>
+                        <option value="11" {{ "selected" if vehicle_type_video == 11 else "" }}>11 (monowheel/unicycle)</option>
+                        <option value="12" {{ "selected" if vehicle_type_video == 12 else "" }}>12 (pedestrian)</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -689,6 +692,8 @@
                 <!-- Embed the YouTube video only if a valid video ID is available -->
                 <iframe id="embeddedVideo" src="https://www.youtube.com/embed/{{ video_id }}?start={{ timestamp }}&enablejsapi=1&autoplay=1&mute=1" frameborder="0" allowfullscreen allow="autoplay"></iframe>
                 <p class="short_row"><strong>Current time:</strong> <span id="currentTime">0</span> s. <strong>Last second:</strong> <span id="lastSecond" style="cursor:pointer; text-decoration:underline;" title="Click to copy">0</span> s. <strong>ID:</strong> <span id="videoTitle">{{ video_id }}</span>. <strong>Upload date:</strong> <span id="videoUploadDate">{{ yt_upload_date }}</span>.</p>
+                <p class="short_row"><strong>Type of vehicle</strong>: {{ vehicle_type_video }}</p>
+                <p class="short_row"><strong>Time of day</strong>: {{ time_of_day_video }}</p>
                 <p class="short_row"><strong>Start time</strong>: {{ start_time_video }}</p>
                 <p class="short_row"><strong>End time</strong>: {{ end_time_video }}</p>
                 <p class="short_row"><strong>Description:</strong> <span id="videoDescription">{{ yt_description }}</span></p>

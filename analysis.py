@@ -312,7 +312,10 @@ class Analysis():
         6: "Automated bus",
         7: "Automated truck",
         8: "Automated two-wheeler",
-        9: "Electric scooter"
+        9: "Electric scooter",
+        10: "Non-electric scooter",
+        11: "Monowheel/unicycle",
+        12: "Pedestrian"
     }
 
     # time of day mapping

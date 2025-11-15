@@ -89,7 +89,7 @@ def form():
     start_time_video = []
     end_time_video = []
     vehicle_type_video = 0
-    time_of_day_video = 0
+    time_of_day_video = []
 
     if request.method == 'POST':
         if 'fetch_data' in request.form:
@@ -178,6 +178,9 @@ def form():
                     start_time_video = start_time_list[position]
                     end_time_list = ast.literal_eval(existing_data_row.get('end_time', ''))
                     end_time_video = end_time_list[position]
+                    vehicle_type_video = vehicle_type_list[position]
+                    time_of_day_list = ast.literal_eval(existing_data_row.get('time_of_day', ''))
+                    time_of_day_video = time_of_day_list[position]
             else:
                 message = "No entry for city found. You can add new data."
                 iso2_code = common.get_iso2_country_code(common.correct_country(country))
@@ -357,6 +360,7 @@ def form():
                         vehicle_type_list[video_index] = int(vehicle_type_video)
                     start_time_video = start_time_list[video_index]
                     end_time_video = end_time_list[video_index]
+                    time_of_day_video = time_of_day_list[video_index]
 
                     # Update the DataFrame row with the modified lists and new data
                     df.at[idx, 'videos'] = '[' + ','.join(videos_list) + ']'  # Join the list as a string
@@ -463,6 +467,7 @@ def form():
                     df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
                     start_time_video = [int(x) for x in start_time]
                     end_time_video = [int(x) for x in end_time]
+                    time_of_day_video = [int(x) for x in time_of_day]
 
                 # Save to CSV
                 save_csv(df, FILE_PATH)
@@ -490,7 +495,7 @@ def form():
 
     # Cast to int for checks
     vehicle_type_video = int(vehicle_type_video) if vehicle_type_video is not None else None
-    time_of_day_video = int(time_of_day_video) if time_of_day_video is not None else None
+    # time_of_day_video = int(time_of_day_video) if time_of_day_video is not None else None
 
     return render_template(
         "add_video.html", message=message, df=df, city=city, country=country, state=state, video_url=video_url,
