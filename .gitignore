@@ -36,7 +36,7 @@ config
 secret
 
 mapping_bkp.csv
-mapping_cleanedcsv
+mapping_cleaned.csv
 mapping_queue.csv
 
 # Pickle files
