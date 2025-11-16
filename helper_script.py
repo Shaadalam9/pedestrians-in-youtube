@@ -288,18 +288,10 @@ class Youtube_Helper:
 
                 time.sleep(backoff * attempt)
 
-    def download_videos_from_ftp(
-        self,
-        filename: str,
-        base_url: Optional[str] = None,
-        out_dir: str = ".",
-        username: Optional[str] = None,
-        password: Optional[str] = None,
-        token: Optional[str] = None,
-        timeout: int = 20,
-        debug: bool = True,            # <--- new: turn verbose logging on/off
-        max_pages: int = 500,          # safety limit for crawling
-    ) -> Optional[tuple[str, str, str, float]]:
+    def download_videos_from_ftp(self, filename: str, base_url: Optional[str] = None, out_dir: str = ".",
+                                 username: Optional[str] = None, password: Optional[str] = None,
+                                 token: Optional[str] = None, timeout: int = 20, debug: bool = True,
+                                 max_pages: int = 500,) -> Optional[tuple[str, str, str, float]]:
 
         """
         Search and download a specific `.mp4` file from a multi-directory
@@ -364,7 +356,7 @@ class Youtube_Helper:
 
         filename_with_ext = filename if filename.lower().endswith(".mp4") else f"{filename}.mp4"
         filename_lower = filename_with_ext.lower()
-        aliases = ["tue1", "tue2", "tue3"]
+        aliases = ["tue1", "tue2", "tue3", "tue4"]
         req_params = {"token": token} if token else None
 
         logger.info(f"Starting download for '{filename_with_ext}'")
