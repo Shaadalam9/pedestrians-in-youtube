@@ -779,12 +779,13 @@ class Youtube_Helper:
             return None
 
     @staticmethod
-    def get_video_resolution_label(video_path: str) -> str:
+    def get_video_resolution_label(self, video_path: str) -> str:
         """Return the resolution label (e.g., '720p', '1080p') for a given video file.
 
         This method inspects the video file to determine its frame height and then
         maps it to a common resolution label. If the resolution does not match a
-        well-known standard, it falls back to returning `<height>p`.
+        well-known standard (within a small tolerance), it falls back to returning
+        '<height>p'.
 
         Args:
             video_path (str): Path to the video file.
@@ -792,10 +793,6 @@ class Youtube_Helper:
         Returns:
             str: Resolution label (e.g., "720p", "1080p", "2160p").
                  Falls back to "<height>p" if no predefined label exists.
-
-        Raises:
-            FileNotFoundError: If the provided video path does not exist.
-            RuntimeError: If the video file cannot be opened with OpenCV.
         """
         # Ensure the video file exists
         if not os.path.exists(video_path):
@@ -822,8 +819,21 @@ class Youtube_Helper:
             2160: "2160p",  # 4K UHD
         }
 
-        # Return label if known, otherwise fallback to "<height>p"
-        return labels.get(height, f"{height}p")
+        # If we have an exact match, return it directly
+        if height in labels:
+            return labels[height]
+
+        # Otherwise, snap to the nearest standard height within a tolerance.
+        # This avoids weird labels like "718p" when it's effectively 720p.
+        tolerance = 8  # pixels
+        standard_heights = sorted(labels.keys())
+        closest = min(standard_heights, key=lambda h: abs(h - height))
+
+        if abs(closest - height) <= tolerance:
+            return labels[closest]
+
+        # Fallback: non-standard resolution
+        return f"{height}p"
 
     def trim_video(self, input_path, output_path, start_time, end_time):
         """
@@ -1680,17 +1690,30 @@ class Youtube_Helper:
                     cv2.imwrite(bbox_frame_filename, bbox_annotated_frame)
 
             # Save txt files (only if detections found and not failed)
+            # ------------ SEGMENT TXT (ensure unique-id or -1) ------------
             if seg_mode and not seg_failed and seg_boxes_xywh is not None and seg_boxes_xywh.size(0) > 0:
                 with open(seg_text_filename, 'r') as seg_text_file:
                     seg_data = seg_text_file.readlines()
                 new_txt_file_name_seg = os.path.join("runs", "segment", "labels", f"label_{frame_count}.txt")
 
                 if len(seg_data) != len(seg_confidences):
-                    logger.warning(f"Warning: Number of bbox lines ({len(seg_data)}) does not match number of confidences ({len(seg_confidences)}).")  # noqa:E501
+                    logger.warning(
+                        f"Warning: Number of seg bbox lines ({len(seg_data)}) "
+                        f"does not match number of confidences ({len(seg_confidences)})."
+                    )
 
                 with open(new_txt_file_name_seg, 'w') as seg_new_file:
                     for line, conf in zip(seg_data, seg_confidences):
+                        # original YOLO line (e.g. "cls x y w h [track_id]")
                         line = line.rstrip('\n')
+                        parts = line.split()
+
+                        # If YOLO did NOT write a track_id, we add -1 as unique-id
+                        # Expected: at least 5 values (class + 4 box coords)
+                        # If only 5, we assume no track_id and append -1.
+                        if len(parts) == 5:
+                            line = line + " -1"
+
                         seg_new_file.write(f"{line} {conf:.6f}\n")
 
                 seg_labels_path = os.path.join("runs", "segment", "labels")
@@ -1698,18 +1721,29 @@ class Youtube_Helper:
                 self.merge_txt_to_csv_dynamically_seg(seg_labels_path, seg_output_csv_path, frame_count)
                 os.remove(seg_text_filename)
 
+            # ------------ BBOX TXT (ensure unique-id or -1) ------------
             if bbox_mode and not bbox_failed and bbox_boxes_xywh is not None and bbox_boxes_xywh.size(0) > 0:
                 with open(bbox_text_filename, 'r') as bbox_text_file:
                     bbox_data = bbox_text_file.readlines()
                 new_txt_file_name_bbox = os.path.join("runs", "detect", "labels", f"label_{frame_count}.txt")
 
                 if len(bbox_data) != len(bbox_confidences):
-                    logger.warning(f"Warning: Number of bbox lines ({len(bbox_data)}) does not match number of confidences ({len(bbox_confidences)}).")  # noqa:E501
+                    logger.warning(
+                        f"Warning: Number of bbox lines ({len(bbox_data)}) "
+                        f"does not match number of confidences ({len(bbox_confidences)})."
+                    )
 
                 with open(new_txt_file_name_bbox, 'w') as bbox_new_file:
                     for line, conf in zip(bbox_data, bbox_confidences):
                         line = line.rstrip('\n')
+                        parts = line.split()
+
+                        # If YOLO did NOT write a track_id, add -1 as unique-id
+                        if len(parts) == 5:
+                            line = line + " -1"
+
                         bbox_new_file.write(f"{line} {conf:.6f}\n")
+
                 bbox_labels_path = os.path.join("runs", "detect", "labels")
                 bbox_output_csv_path = os.path.join("runs", "detect", f"{self.video_title}.csv")
                 self.merge_txt_to_csv_dynamically_bbox(bbox_labels_path, bbox_output_csv_path, frame_count)
