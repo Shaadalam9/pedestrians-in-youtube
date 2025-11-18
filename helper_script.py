@@ -431,7 +431,7 @@ class Youtube_Helper:
                 resolution, fps = "unknown", 0.0
                 try:
                     fps = float(self.get_video_fps(local_path))  # type: ignore
-                    resolution = Youtube_Helper.get_video_resolution_label(local_path)
+                    resolution = self.get_video_resolution_label(local_path)
                     logger.debug(f"Metadata extracted: fps={fps}, resolution={resolution}")
                 except Exception as e:
                     logger.warning(f"Metadata extraction failed: {e}")
@@ -528,7 +528,7 @@ class Youtube_Helper:
                 resolution, fps = "unknown", 0.0
                 try:
                     fps = float(self.get_video_fps(local_path))  # type: ignore
-                    resolution = Youtube_Helper.get_video_resolution_label(local_path)
+                    resolution = self.get_video_resolution_label(local_path)
                     logger.debug(f"Metadata: fps={fps}, resolution={resolution}")
                 except Exception as e:
                     logger.warning(f"Metadata extraction failed: {e}")
@@ -778,7 +778,6 @@ class Youtube_Helper:
             logger.error(f"Failed to retrieve FPS: {e}")
             return None
 
-    @staticmethod
     def get_video_resolution_label(self, video_path: str) -> str:
         """Return the resolution label (e.g., '720p', '1080p') for a given video file.
 
