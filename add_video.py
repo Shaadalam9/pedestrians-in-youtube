@@ -89,7 +89,7 @@ def form():
     start_time_video = []
     end_time_video = []
     vehicle_type_video = 0
-    time_of_day_video = []
+    time_of_day_video = 0
 
     if request.method == 'POST':
         if 'fetch_data' in request.form:
@@ -495,14 +495,16 @@ def form():
 
     # Cast to int for checks
     vehicle_type_video = int(vehicle_type_video) if vehicle_type_video is not None else None
-    # time_of_day_video = int(time_of_day_video) if time_of_day_video is not None else None
+    time_of_day_last = extract_last_int(time_of_day_video)
+    time_of_day_last = int(time_of_day_last) if time_of_day_last is not None else None
 
     return render_template(
         "add_video.html", message=message, df=df, city=city, country=country, state=state, video_url=video_url,
         video_id=video_id, existing_data=existing_data_row, upload_date_video=upload_date_video,
         channel_video=channel_video, timestamp=end_time_input, yt_title=yt_title, yt_description=yt_description,
         yt_upload_date=yt_upload_date, yt_channel=yt_channel, start_time_video=start_time_video,
-        end_time_video=end_time_video, vehicle_type_video=vehicle_type_video, time_of_day_video=time_of_day_video
+        end_time_video=end_time_video, vehicle_type_video=vehicle_type_video, time_of_day_video=time_of_day_video,
+        time_of_day_last=time_of_day_last
     )
 
 
@@ -808,6 +810,42 @@ def get_coordinates(city, state, country):
     except GeocoderUnavailable:
         print(f"Geocoding server could not be reached for {location_query}.")
         return None, None  # Return None if city is not found
+
+
+def extract_last_int(value):
+    # Case 1: already an int
+    if isinstance(value, int):
+        return value
+
+    # Case 2: Python list object (not string)
+    if isinstance(value, list):
+        if len(value) > 0:
+            try:
+                return int(value[-1])
+            except:  # noqa: E722
+                return None
+        return None
+
+    # Case 3: string that may contain list or number
+    if isinstance(value, str):
+        val = value.strip()
+
+        # If it's something like "3"
+        try:
+            return int(val)
+        except:  # noqa: E722
+            pass
+
+        # If it's a list-like string
+        try:
+            parsed = ast.literal_eval(val)
+            if isinstance(parsed, list) and len(parsed) > 0:
+                return int(parsed[-1])
+            return None
+        except:  # noqa: E722
+            return None
+
+    return None
 
 
 if __name__ == "__main__":
