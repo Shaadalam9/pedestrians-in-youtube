@@ -75,6 +75,8 @@ class Analysis():
         'ARG': '🇦🇷',  # Argentina
         'ARM': '🇦🇲',  # Armenia
         'ASM': '🇦🇸',  # American Samoa
+        'ATA': '🇦🇶',  # Antarctica
+        'ATF': '🏳️',  # French Southern Territories (no Unicode flag)
         'ATG': '🇦🇬',  # Antigua and Barbuda
         'AUS': '🇦🇺',  # Australia
         'AUT': '🇦🇹',  # Austria
@@ -98,9 +100,11 @@ class Analysis():
         'BRB': '🇧🇧',  # Barbados
         'BRN': '🇧🇳',  # Brunei
         'BTN': '🇧🇹',  # Bhutan
+        'BVT': '🏳️',  # Bouvet Island (no Unicode flag)
         'BWA': '🇧🇼',  # Botswana
         'CAF': '🇨🇫',  # Central African Republic
         'CAN': '🇨🇦',  # Canada
+        'CCK': '🇨🇨',  # Cocos (Keeling) Islands
         'CHE': '🇨🇭',  # Switzerland
         'CHL': '🇨🇱',  # Chile
         'CHN': '🇨🇳',  # China
@@ -115,6 +119,7 @@ class Analysis():
         'CRI': '🇨🇷',  # Costa Rica
         'CUB': '🇨🇺',  # Cuba
         'CUW': '🇨🇼',  # Curaçao
+        'CXR': '🇨🇽',  # Christmas Island
         'CYM': '🇰🇾',  # Cayman Islands
         'CYP': '🇨🇾',  # Cyprus
         'CZE': '🇨🇿',  # Czechia
@@ -156,6 +161,7 @@ class Analysis():
         'GUM': '🇬🇺',  # Guam
         'GUY': '🇬🇾',  # Guyana
         'HKG': '🇭🇰',  # Hong Kong
+        'HMD': '🇭🇲',  # Heard Island and McDonald Islands
         'HND': '🇭🇳',  # Honduras
         'HRV': '🇭🇷',  # Croatia
         'HTI': '🇭🇹',  # Haiti
@@ -163,6 +169,7 @@ class Analysis():
         'IDN': '🇮🇩',  # Indonesia
         'IMN': '🇮🇲',  # Isle of Man
         'IND': '🇮🇳',  # India
+        'IOT': '🇮🇴',  # British Indian Ocean Territory
         'IRL': '🇮🇪',  # Ireland
         'IRN': '🇮🇷',  # Iran
         'IRQ': '🇮🇶',  # Iraq
@@ -231,6 +238,7 @@ class Analysis():
         'OMN': '🇴🇲',  # Oman
         'PAK': '🇵🇰',  # Pakistan
         'PAN': '🇵🇦',  # Panama
+        'PCN': '🇵🇳',  # Pitcairn Islands
         'PER': '🇵🇪',  # Peru
         'PHL': '🇵🇭',  # Philippines
         'PLW': '🇵🇼',  # Palau
@@ -251,12 +259,15 @@ class Analysis():
         'SDN': '🇸🇩',  # Sudan
         'SEN': '🇸🇳',  # Senegal
         'SGP': '🇸🇬',  # Singapore
+        'SGS': '🏳️',  # South Georgia & South Sandwich Islands (no Unicode flag)
         'SHN': '🇸🇭',  # Saint Helena
+        'SJM': '🏳️',  # Svalbard and Jan Mayen (no Unicode flag)
         'SLB': '🇸🇧',  # Solomon Islands
         'SLE': '🇸🇱',  # Sierra Leone
         'SLV': '🇸🇻',  # El Salvador
         'SMR': '🇸🇲',  # San Marino
         'SOM': '🇸🇴',  # Somalia
+        'SPM': '🇵🇲',  # Saint Pierre and Miquelon
         'SRB': '🇷🇸',  # Serbia
         'SSD': '🇸🇸',  # South Sudan
         'STP': '🇸🇹',  # São Tomé and Príncipe
@@ -273,6 +284,7 @@ class Analysis():
         'TGO': '🇹🇬',  # Togo
         'THA': '🇹🇭',  # Thailand
         'TJK': '🇹🇯',  # Tajikistan
+        'TKL': '🇹🇰',  # Tokelau
         'TKM': '🇹🇲',  # Turkmenistan
         'TLS': '🇹🇱',  # Timor-Leste
         'TON': '🇹🇴',  # Tonga
@@ -284,17 +296,20 @@ class Analysis():
         'TZA': '🇹🇿',  # Tanzania
         'UGA': '🇺🇬',  # Uganda
         'UKR': '🇺🇦',  # Ukraine
+        'UMI': '🇺🇲',  # U.S. Minor Outlying Islands
         'URY': '🇺🇾',  # Uruguay
         'USA': '🇺🇸',  # United States
         'UZB': '🇺🇿',  # Uzbekistan
+        'VAT': '🇻🇦',  # Vatican City
         'VCT': '🇻🇨',  # Saint Vincent and the Grenadines
         'VEN': '🇻🇪',  # Venezuela
         'VGB': '🇻🇬',  # British Virgin Islands
         'VIR': '🇻🇮',  # U.S. Virgin Islands
         'VNM': '🇻🇳',  # Vietnam
         'VUT': '🇻🇺',  # Vanuatu
+        'WLF': '🇼🇫',  # Wallis and Futuna
         'WSM': '🇼🇸',  # Samoa
-        'XKX': '🇽🇰',  # Kosovo (non-standard, using XK)
+        'XKX': '🇽🇰',  # Kosovo
         'YEM': '🇾🇪',  # Yemen
         'ZAF': '🇿🇦',  # South Africa
         'ZMB': '🇿🇲',  # Zambia
