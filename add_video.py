@@ -367,44 +367,17 @@ def form():
                     df.at[idx, 'time_of_day'] = str(time_of_day_list)  # Store as string representation
                     df.at[idx, 'start_time'] = str(start_time_list)    # Store as string representation
                     df.at[idx, 'end_time'] = str(end_time_list)        # Store as string representation
-                    if gmp:
-                        df.at[idx, 'gmp'] = float(gmp)
-                    else:
-                        df.at[idx, 'gmp'] = 0.0
-                    if population_city:
-                        df.at[idx, 'population_city'] = int(population_city)
-                    else:
-                        df.at[idx, 'population_city'] = 0
-                    if population_country:
-                        df.at[idx, 'population_country'] = int(population_country)
-                    else:
-                        df.at[idx, 'population_country'] = 0
-                    if traffic_mortality:
-                        df.at[idx, 'traffic_mortality'] = float(traffic_mortality)
-                    else:
-                        df.at[idx, 'traffic_mortality'] = 0.0
+                    df.at[idx, 'gmp'] = to_float_safe(gmp)
+                    df.at[idx, 'population_city'] = to_int_safe(population_city)
+                    df.at[idx, 'population_country'] = to_int_safe(population_country)
+                    df.at[idx, 'traffic_mortality'] = to_float_safe(traffic_mortality)
                     df.at[idx, 'continent'] = continent
                     df.at[idx, 'city_aka'] = city_aka
-                    if literacy_rate:
-                        df.at[idx, 'literacy_rate'] = float(literacy_rate)
-                    else:
-                        df.at[idx, 'literacy_rate'] = 0.0
-                    if avg_height:
-                        df.at[idx, 'avg_height'] = float(avg_height)
-                    else:
-                        df.at[idx, 'avg_height'] = 0.0
-                    if med_age:
-                        df.at[idx, 'med_age'] = float(med_age)
-                    else:
-                        df.at[idx, 'med_age'] = 0.0
-                    if lat:
-                        df.at[idx, 'lat'] = float(lat)
-                    else:
-                        df.at[idx, 'lat'] = 0.0
-                    if lon:
-                        df.at[idx, 'lon'] = float(lon)
-                    else:
-                        df.at[idx, 'lon'] = 0.0
+                    df.at[idx, 'literacy_rate'] = to_float_safe(literacy_rate)
+                    df.at[idx, 'avg_height'] = to_float_safe(avg_height)
+                    df.at[idx, 'med_age'] = to_float_safe(med_age)
+                    df.at[idx, 'lat'] = to_float_safe(lat)
+                    df.at[idx, 'lon'] = to_float_safe(lon)
                     for i in range(len(upload_date_list)):
                         if upload_date_list[i] != 'None' and upload_date_list[i]:
                             upload_date_list[i] = int(upload_date_list[i])
@@ -846,6 +819,26 @@ def extract_last_int(value):
             return None
 
     return None
+
+
+def to_int_safe(value):
+    if value is None:
+        return 0
+    try:
+        # Convert floats like "67391582.0"
+        f = float(value)
+        return int(f)
+    except Exception:
+        return 0
+
+
+def to_float_safe(value):
+    if value is None:
+        return 0.0
+    try:
+        return float(value)
+    except Exception:
+        return 0.0
 
 
 if __name__ == "__main__":
