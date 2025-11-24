@@ -1,6 +1,8 @@
 # Runs and output folders
 runs/
 _output/
+check_videos_report.json
+corrupt_files.txt
 
 # Video and data folders
 video/
