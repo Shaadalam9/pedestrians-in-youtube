@@ -1902,8 +1902,16 @@ if __name__ == "__main__":
         total_duration = values_class.calculate_total_seconds(df_mapping)
 
         # Displays values before applying filters
-        logger.info(f"Duration of videos in seconds: {total_duration}, in minutes: {total_duration/60:.2f}, in " +
-                    f"hours: {total_duration/60/60:.2f} before filtering.")
+        logger.info(
+            f"Duration of videos in seconds: {total_duration}, "
+            f"in minutes: {total_duration/60:.2f}, "
+            f"in hours: {total_duration/3600:.2f}, "
+            f"in days: {total_duration/86400:.2f}, "
+            f"in weeks: {total_duration/604800:.2f}, "
+            f"in months: {total_duration/2629800:.2f}, "   # average month (30.44 days)
+            f"in years: {total_duration/31557600:.2f} "    # average year (365.25 days)
+            f"before filtering."
+        )
         logger.info("Total number of videos before filtering: {}.", values_class.calculate_total_videos(df_mapping))
 
         country, number = Analysis.get_unique_values(df_mapping, "iso3")
