@@ -4454,3 +4454,7 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 4453,Olbia,[],,Italy,ITA,Europe,40.9232659,9.5027442,0.0,0,58927633.0,5.3,99.35,168.0,48.0,35.9,0.0,[wGpM0NWPvV0],[[0]],[[1845]],[[2922]],[0],[05112022],[UCXDaH0VYahdSKj1QzFi_2WA]
 4454,Bastia,[],,France,FRA,Europe,42.6993979,9.4509187,0.0,41001,66351959.0,5.1,0.0,172.0,41.4,32.4,0.0,"[0EKGN25E8hg,aBYAJ5D8mrY]","[[0], [0]]","[[0], [350]]","[[393], [679]]","[3,0]","[13072023,25062017]","[UCbWOXM2gzdtE5um-a9IiBJw,UCkghjA-Ly9FK8lIlsDlHcsQ]"
 4455,Porto-Vecchio,[],,France,FRA,Europe,41.5911382,9.2794469,0.0,11820,66351959.0,5.1,0.0,172.0,41.4,32.4,0.0,"[dymAzdwpLGw,_215mMBYSGg]","[[0], [0]]","[[10], [10]]","[[300], [470]]","[0,0]","[20082025,14082025]","[UCIXQ0CGBdj8krcoQ67CnETw,UCIXQ0CGBdj8krcoQ67CnETw]"
+4456,Nuoro,[],,Italy,ITA,Europe,40.2640891,9.1272041,0.0,35948,58927633.0,5.3,99.35,168.0,48.0,35.9,0.0,[cBLfza0wMdY],[[0]],[[24]],[[240]],[0],[04042025],[UCsaHEEyZCmdiMcl1e_KPkXg]
+4457,Alghero,[],,Italy,ITA,Europe,40.5587291,8.3153206,0.0,34261,58927633.0,5.3,99.35,168.0,48.0,35.9,0.0,[cBLfza0wMdY],[[0]],[[6506]],[[7545]],[0],[04042025],[UCsaHEEyZCmdiMcl1e_KPkXg]
+4458,Carbonia,[],,Italy,ITA,Europe,39.165332,8.527834,0.0,21664,58927633.0,5.3,99.35,168.0,48.0,35.9,15.0,[MfIzqQUCHM4],[[0]],[[54]],[[810]],[0],[21122021],[UCDa3EXu6zIBGUrcENKhXt0g]
+4459,Perdaxius,[],,Italy,ITA,Europe,39.161033,8.611436,0.0,842,58927633,5.3,99.35,168,48.0,35.9,0.0,[MfIzqQUCHM4],[[0]],[[1288]],[[1390]],[0],[21122021],[UCDa3EXu6zIBGUrcENKhXt0g]
