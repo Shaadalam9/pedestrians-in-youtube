@@ -4507,7 +4507,7 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 4506,San Luis de Sabinillas,[],,Spain,ESP,Europe,36.367303,-5.227807,0.0,6276,49315949,3.9,99.7,169.0,45.0,34.7,0.0,[FHIv7UUleh0],[[0]],[[0]],[[310]],[0],[03092024],[UCIEYAtvhx3RjGYgy_TZr2Jw]
 4507,Almeria,[],,Spain,ESP,Europe,36.8414197,-2.4628135,0.0,196851,49315949,3.9,99.7,169.0,45.0,34.7,0.0,[qgZfjuBgorc],[[0]],[[0]],[[1815]],[0],[09082024],[UCIEYAtvhx3RjGYgy_TZr2Jw]
 4508,Giurgiu,[],,Romania,ROU,Europe,43.8959058,25.9658111,0.0,54551,19036031,10.3,99.16,171.0,45.1,35.8,15.38,[9p-354p7Xjs],[[0]],[[0]],[[1770]],[0],[24052024],[UCIEYAtvhx3RjGYgy_TZr2Jw]
-4509,Fagaras,[],,Romania,ROU,Europe,45.8449461,24.9703211,0.0,0,19036031,10.3,99.16,171.0,45.1,35.8,0.0,[JNcWrRDSVGs],[[0]],[[0]],[[1576]],[0],[01032024],[UCIEYAtvhx3RjGYgy_TZr2Jw]
+4509,Fagaras,[],,Romania,ROU,Europe,45.8449461,24.9703211,0.0,26284,19036031,10.3,99.16,171.0,45.1,35.8,0.0,[JNcWrRDSVGs],[[0]],[[0]],[[1576]],[0],[01032024],[UCIEYAtvhx3RjGYgy_TZr2Jw]
 4510,Curtea de Arges,[Curtea de Argeș],,Romania,ROU,Europe,45.1469341,24.6779826,0.0,32178,19036031,10.3,99.16,171.0,45.1,35.8,18.92,[Y05W_PKtwQw],[[0]],[[0]],[[1798]],[0],[02022024],[UCIEYAtvhx3RjGYgy_TZr2Jw]
 4511,Pleven,[],,Bulgaria,BGR,Europe,43.406045,24.620373,0.0,90209,6437360,9.2,98.35,169.0,44.7,41.3,0.0,[DXQEuapcFK0],[[0]],[[0]],[[1798]],[0],[02092023],[UCIEYAtvhx3RjGYgy_TZr2Jw]
 4512,Rosenheim,[],,Germany,DEU,Europe,47.8539273,12.127262,0.0,60167,83491249,3.8,0.0,173.0,47.8,31.9,0.0,[APTP9hcv2V0],[[0]],[[0]],[[1790]],[0],[07062022],[UCIEYAtvhx3RjGYgy_TZr2Jw]
