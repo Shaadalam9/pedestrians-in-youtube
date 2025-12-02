@@ -4394,7 +4394,7 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 4393,Bellagio,[],,Italy,ITA,Europe,45.9872549,9.2613001,0.0,2823,58927633.0,5.3,99.35,168.0,48.0,35.9,0.0,"[rDS0OyOS_nI,CTZ9IgtAlfI]","[[0],[0]]","[[2460],[40]]","[[2763],[770]]","[0,0]","[6112023,10092023]","[UCjEhCsLQUf3NDq-nIW_qsvg,UCjEhCsLQUf3NDq-nIW_qsvg]"
 4394,Lecco,[],,Italy,ITA,Europe,45.854152,9.390546,0.0,46580,58927633.0,5.3,99.35,168.0,48.0,35.9,0.0,[CTZ9IgtAlfI],[[0]],[[1788]],[[2162]],[0],[10092023],[UCjEhCsLQUf3NDq-nIW_qsvg]
 4395,Venice,[],FL,United States,USA,North America,27.0998315,-82.4442832,0.0,1915,340110988.0,12.7,0.0,170.0,38.5,41.4,0.0,[NlkZeL-JDFo],[[0]],[[250]],[[1442]],[0],[23122022],[UCITQTC-JQu6kWmrzhkKUiAg]
-4396,Novi Pazar,[],,Serbia,SRB,Africa,43.1406913,20.518057,0.0,85996,0.0,7.5,99.34,175.0,43.7,0.0,0.0,[SDqpUykStHo],"[[0,0,1]]","[[0,2349,2946]]","[[1992,2945,3635]]",[0],[17062024],[UCHhqou8CmYuktpXZN0H91xA]
+4396,Novi Pazar,[],,Serbia,SRB,Europe,43.1406913,20.518057,0.0,85996,6567783.0,7.5,99.34,175.0,43.7,36.2,0.0,[SDqpUykStHo],"[[0,0,1]]","[[0,2349,2946]]","[[1992,2945,3635]]",[0],[17062024],[UCHhqou8CmYuktpXZN0H91xA]
 4397,Priboj,[],,Serbia,SRB,Europe,43.582629,19.52539,0.0,13172,6567783.0,7.5,99.34,175.0,43.7,36.2,0.0,[_DjuN_lv91U],[[0]],[[22]],[[805]],[0],[05092016],[UCHhqou8CmYuktpXZN0H91xA]
 4398,Keytesville,[],MO,United States,USA,North America,39.4344706,-92.9382485,0.0,455,340110988.0,12.7,0.0,170.0,38.5,41.4,0.0,[0rSoea92b-Y],[[0]],[[0]],[[1423]],[0],[31012017],[UCReNJUrRzWiMBINRGQIMvyA]
 4399,Hell,[],,Norway,NOR,Europe,63.4449171,10.9127178,0.0,1589,5606944.0,2.1,0.0,173.0,40.6,27.6,0.0,[CTl92xLsYQg],[[0]],[[1050]],[[1560]],[0],[25042020],[UCMZkTUD8lqoxD1AqUag3mvQ]
