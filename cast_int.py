@@ -9,7 +9,7 @@ def clean_to_int(x):
     try:
         # works for "67391582.0", 67391582.0, "67391582"
         return int(float(x))
-    except:
+    except:  # noqa: E722
         return None
 
 
