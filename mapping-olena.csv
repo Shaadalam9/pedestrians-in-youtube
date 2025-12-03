@@ -3052,7 +3052,7 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 3051,Vlaardingen,[],,Netherlands,NLD,Europe,51.9097536,4.3402639,0.0,73798,16655799,4.0,0.0,177.0,42.2,28.1,0.0,[6vDxQxdrD0Y],[[1]],[[650]],[[1166]],[0],[21012025],[UCSXSCzMyK5RZ9j1HbO9Fubg]
 3052,Poeldijk,[],,Netherlands,NLD,Europe,52.0225167,4.218242,0.0,5800,16655799,4.0,0.0,177.0,42.2,28.1,0.0,"[RHbzZAVJPdY,wV5wfGCO7fk]","[[1],[0]]","[[1051],[936]]","[[1200],[1347]]","[0,0]","[3122024,25032025]","[UCSXSCzMyK5RZ9j1HbO9Fubg,UCSXSCzMyK5RZ9j1HbO9Fubg]"
 3053,Nieuwendijk,[],,Netherlands,NLD,Europe,51.7764266,4.9190121,0.0,3659,16655799,4.0,0.0,177.0,42.2,28.1,0.0,[Qd8xeQGuKSY],[[0]],[[1458]],[[1608]],[0],[21072023],[UCHKMX5Dj22Ga_5MgTlyMzjw]
-3054,Zaandam,[],,Netherlands,NLD,Europe,52.4424926,4.8298607,0.0,71708,16655799,4.0,0.0,177.0,42.2,28.1,41.46,[TIUxyCzxeAs],[[0]],[[18]],[[155]],[0],[28102022],[UCLeztQkAq09NP6JhyPlLJqg]
+3054,Zaandam,[],,Netherlands,NLD,Europe,52.4424926,4.8298607,0.0,71708,16655799,4.0,0.0,177.0,42.2,28.1,41.46,"[TIUxyCzxeAs,F04e6GWMsSA]","[[0], [0]]","[[18], [360]]","[[155], [584]]","[0,0]","[28102022,19122021]","[UCLeztQkAq09NP6JhyPlLJqg,UCh2TFND46FdgPwTjLaawQJw]"
 3055,Zaandijk,[],,Netherlands,NLD,Europe,52.4744145,4.8080282,0.0,9040,16655799,4.0,0.0,177.0,42.2,28.1,0.0,[TIUxyCzxeAs],[[0]],[[322]],[[679]],[0],[28102022],[UCLeztQkAq09NP6JhyPlLJqg]
 3056,Wormerveer,[],,Netherlands,NLD,Europe,52.4952218,4.7876566,0.0,0,16655799,4.0,0.0,177.0,42.2,28.1,29.73,[TIUxyCzxeAs],"[[0,0]]","[[721,1036]]","[[960,1586]]",[0],[28102022],[UCLeztQkAq09NP6JhyPlLJqg]
 3057,Wormer,[],,Netherlands,NLD,Europe,52.4983267,4.8123847,0.0,12890,16655799,4.0,0.0,177.0,42.2,28.1,0.0,[TIUxyCzxeAs],[[0]],[[961]],[[1035]],[0],[28102022],[UCLeztQkAq09NP6JhyPlLJqg]
@@ -4496,3 +4496,4 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 4495,Arad,[],,Romania,ROU,Europe,46.1753793,21.3196342,0.0,169065,19036031,10.3,99.16,171.0,45.1,35.8,0.0,[GaZWyJBsMl4],[[0]],[[0]],[[1799]],[0],[28062023],[UC8gCwZPoh3Vza-pGZAA8E0w]
 4496,Ruse,[],,Bulgaria,BGR,Europe,43.8480413,25.9542057,0.0,143417,6437360,9.2,98.35,169.0,44.7,41.3,59.26,[N5bofLDX6cM],[[0]],[[0]],[[1798]],[0],[27052023],[UC8gCwZPoh3Vza-pGZAA8E0w]
 4497,Medias,[],,Romania,ROU,Europe,46.1625212,24.3473855,0.0,53040,19036031,10.3,99.16,171.0,45.1,35.8,42.86,[BApzB_IK0F4],[[0]],[[0]],[[1798]],[0],[24052023],[UC8gCwZPoh3Vza-pGZAA8E0w]
+4498,Volendam,[],,Netherlands,NLD,Europe,52.4963759,5.0682736,0.0,22000,18100436,4,0.0,177,42.2,28.1,19.05,[F04e6GWMsSA],[[0]],[[1767]],[[2042]],[0],[19122021],[UCh2TFND46FdgPwTjLaawQJw]
