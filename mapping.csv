@@ -4523,7 +4523,7 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 4522,Martina Franca,[],,Italy,ITA,Europe,40.7042378,17.3399908,0.0,37685,58927633,5.3,99.35,168.0,48.0,35.9,0.0,[faS0EqCCfDE],[[0]],[[957]],[[2631]],[0],[03022025],[UCAhkUEDfztvmwDvEYeTB88g]
 4523,Mahón,"[Maó,Mahon,Mao]",,Spain,ESP,Europe,39.8894922,4.2662071,0.0,29125,49315949,3.9,99.7,169.0,45.0,34.7,0.0,[TaQ8AVurAr0],[[0]],[[467]],[[2353]],[0],[18102024],[UCAhkUEDfztvmwDvEYeTB88g]
 4524,Sciacca,[],,Italy,ITA,Europe,37.5064786,13.0823323,0.0,40569,58927633,5.3,99.35,168.0,48.0,35.9,21.43,[fNg02OwwCWc],[[1]],[[25]],[[604]],[0],[08092025],[UCdVVFkUc1vSPH9dARLfuzGw]
-4525,Turgutreis,[],,Türkiye,TUR,Europe,37.0057722,27.2578341,0.0,6041,85664944,6.7,97.26,169.0,33.5,41.9,0.0,[PPmiFk4YqIE],"[[0,0]]","[[0,1069]]","[[1065,1389]]",[0],[5072023],[UC20vyRWEaC2GIS8DkmeRQaA]
+4525,Turgutreis,[],,Türkiye,TUR,Asia,37.0057722,27.2578341,0.0,6041,85664944,6.7,97.26,169.0,33.5,41.9,0.0,[PPmiFk4YqIE],"[[0,0]]","[[0,1069]]","[[1065,1389]]",[0],[5072023],[UC20vyRWEaC2GIS8DkmeRQaA]
 4526,Kolymbia,[],,Greece,GRC,Europe,36.2532461,28.1611108,0.0,350,10400720,,0.0,173.0,46.2,32.9,0.0,[_mp3wVVZX3M],[[0]],[[0]],[[334]],[0],[03112021],[UCv033S0A-uVLkR5YVp1jg3A]
 4527,Rhodes,[],,Greece,GRC,Europe,36.1725297,27.9194016,0.0,56128,10400720,,0.0,173.0,46.2,32.9,0.0,[_yfG2X8dAbM],[[0]],[[0]],[[430]],[0],[15092021],[UCv033S0A-uVLkR5YVp1jg3A]
 4528,Helsingborg,[],,Sweden,SWE,Europe,56.0442098,12.703706,0.0,104250,10605098,0.0,0.0,174.0,41.0,30.0,0.0,"[3PDTbgGbUFE,CSTNkZZ1qfU]","[[0],[0]]","[[0],[0]]","[[412],[779]]","[0,0]","[25052021,8042021]","[UCv033S0A-uVLkR5YVp1jg3A,UCv033S0A-uVLkR5YVp1jg3A]"
