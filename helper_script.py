@@ -15,7 +15,6 @@ import pandas as pd
 import world_bank_data as wb
 import yt_dlp
 import pycountry
-from pycountry_convert import country_name_to_country_alpha2, country_alpha2_to_continent_code
 from custom_logger import CustomLogger
 import common
 import torch
@@ -1306,127 +1305,6 @@ class Youtube_Helper:
         # Save the updated DataFrame back to the same CSV
         data.to_csv(self.mapping, index=False)
         logger.info("Mapping file updated successfully with country population.")
-
-    def get_continent_from_country(self, country):
-        """
-        Returns the continent based on the country name using pycountry_convert.
-        """
-        try:
-            # Convert country name to ISO Alpha-2 code
-            alpha2_code = country_name_to_country_alpha2(country)
-            # Convert ISO Alpha-2 code to continent code
-            continent_code = country_alpha2_to_continent_code(alpha2_code)
-            # Map continent codes to continent names
-            continent_map = {
-                "AF": "Africa",
-                "AS": "Asia",
-                "EU": "Europe",
-                "NA": "North America",
-                "SA": "South America",
-                "OC": "Oceania",
-                "AN": "Antarctica"
-            }
-            return continent_map.get(continent_code, "Unknown")
-        except KeyError:
-            return "Unknown"
-
-    def get_upload_date(self, video_id):
-        """
-        Retrieves the upload date of a YouTube video given its video ID.
-
-        Parameters:
-            video_id (str): YouTube video ID.
-
-        Returns:
-            str or None: Upload date in 'ddmmyyyy' format or None if not retrievable.
-        """
-        try:
-            # Construct YouTube URL from video ID
-            video_url = f"https://www.youtube.com/watch?v={video_id}"
-
-            # Create YouTube object
-            yt = YouTube(video_url)
-
-            # Fetch upload date
-            upload_date = yt.publish_date
-
-            if upload_date:
-                # Format the date as ddmmyyyy
-                return upload_date.strftime('%d%m%Y')
-            else:
-                return None
-        except Exception:
-            return None
-
-    def get_latest_traffic_mortality(self):
-        """
-        Fetch the latest traffic mortality data from the World Bank.
-
-        Returns:
-            pd.DataFrame: DataFrame with iso3 and the latest Traffic Mortality Rate.
-        """
-        # World Bank indicator for traffic mortality rate
-        indicator = 'SH.STA.TRAF.P5'  # Road traffic deaths per 100,000 people
-
-        # Fetch the most recent data (mrv=1 for the most recent value)
-        traffic_mortality_data = wb.get_series(indicator, id_or_value='id', mrv=1)
-
-        # Convert the data to a DataFrame
-        traffic_df = traffic_mortality_data.reset_index()
-
-        # Rename columns appropriately
-        traffic_df = traffic_df.rename(columns={
-            traffic_df.columns[0]: 'ISO_country',
-            traffic_df.columns[2]: 'Year',
-            traffic_df.columns[3]: 'traffic_mortality'
-        })
-
-        # Keep only the latest value for each country
-        traffic_df = traffic_df.sort_values(by=['ISO_country', 'Year'],
-                                            ascending=[True, False]).drop_duplicates(subset=['ISO_country'])
-
-        # Add default value for XKX
-        traffic_df.loc[traffic_df['ISO_country'] == 'XKX', 'traffic_mortality'] = 7.4
-
-        return traffic_df[['ISO_country', 'traffic_mortality']]
-
-    def fill_traffic_mortality(self, df):
-        """
-        Fill the traffic mortality rate column in a CSV file using World Bank data.
-
-        Args:
-            file_path (str): Path to the input CSV file.
-        """
-        try:
-            # Ensure the required columns exist
-            if 'iso3' not in df.columns or 'traffic_mortality' not in df.columns:
-                logger.error("The required columns 'iso3' and 'traffic_mortality' are missing from the file.")
-                return
-
-            # Get the latest traffic mortality data
-            traffic_df = self.get_latest_traffic_mortality()
-
-            # Merge the traffic mortality data with the existing DataFrame
-            updated_df = pd.merge(df, traffic_df, on='iso3', how='left', suffixes=('', '_new'))
-
-            # Update the traffic_mortality column with the new data
-            updated_df['traffic_mortality'] = updated_df['traffic_mortality_new'].combine_first(
-                updated_df['traffic_mortality'])
-
-            # Drop the temporary column
-            updated_df = updated_df.drop(columns=['traffic_mortality_new'])
-
-            # Update in-memory mapping
-            self.mapping = updated_df
-
-            # Persist to the original CSV path
-            mapping_path = common.get_configs("mapping")  # <- get the path again
-            updated_df.to_csv(mapping_path, index=False)
-
-            logger.info("Mapping file updated successfully with traffic mortality rate.")
-
-        except Exception as e:
-            logger.error(f"An error occurred: {e}")
 
     def get_latest_gini_values(self):
         """

@@ -50,11 +50,8 @@ if __name__ == "__main__":
             delete_youtube_video=common.get_configs("delete_youtube_video"),
             data=common.get_configs("data"),                       # ordered list of data dirs
             countries_analyse=common.get_configs("countries_analyse"),
-            update_ISO_code=common.get_configs("update_ISO_code"),
             update_pop_country=common.get_configs("update_pop_country"),
-            update_mortality_rate=common.get_configs("update_mortality_rate"),
             update_gini_value=common.get_configs("update_gini_value"),
-            update_upload_date=common.get_configs("update_upload_date"),
             segmentation_mode=common.get_configs("segmentation_mode"),
             tracking_mode=common.get_configs("tracking_mode"),
             save_annotated_video=common.get_configs("save_annotated_video"),
@@ -108,36 +105,11 @@ if __name__ == "__main__":
             # -----------------------------------------------------------------
             # Optional mapping maintenance (all in-place on `mapping`)
             # -----------------------------------------------------------------
-            if config.update_ISO_code:
-                if "country" not in mapping.columns:
-                    raise KeyError("The CSV file does not have a 'country' column.")
-                if "iso3" not in mapping.columns:
-                    mapping["iso3"] = None
-                for index, row in mapping.iterrows():
-                    mapping.at[index, "iso3"] = helper.get_iso_alpha_3(row["country"], row["iso3"])  # type: ignore
-                mapping.to_csv(config.mapping, index=False)
-                logger.info("Mapping file updated with ISO codes.")
 
             if config.update_pop_country:
                 helper.update_population_in_csv(mapping)
-            if config.update_mortality_rate:
-                helper.fill_traffic_mortality(mapping)
             if config.update_gini_value:
                 helper.fill_gini_data(mapping)
-
-            if config.update_upload_date:
-                # Compute upload dates for entries like "[id1,id2]"
-                def extract_upload_dates(video_column):
-                    upload_dates = []
-                    for video_list in video_column:
-                        video_ids = [vid.strip() for vid in video_list.strip('[]').split(',')]
-                        dates = [helper.get_upload_date(vid) for vid in video_ids]
-                        upload_dates.append(f"[{','.join(date if date else 'None' for date in dates)}]")
-                    return upload_dates
-
-                mapping['upload_date'] = extract_upload_dates(mapping['videos'])
-                mapping.to_csv(config.mapping, index=False)
-                logger.info("Mapping file updated successfully with upload dates.")
 
             # -----------------------------------------------------------------
             # Workspace setup: clean YOLO runs/* and ensure data dirs exist
