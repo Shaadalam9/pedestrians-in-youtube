@@ -4813,7 +4813,7 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 4812,Náchod,[Nachod],,Czechia,CZE,Europe,50.4167025,16.1622871,0.0,21263,10882341,5.9,0.0,175.0,43.9,25.0,0.0,[HoMU-BdRQXk],[[0]],[[0]],[[417]],[2],[15092023],[UC4JDYNTwaxT2Ah2EELBaR9g]
 4813,Przystajń,[],,Poland,POL,Europe,50.8843223,18.6920764,0.0,2283,37392000,9.4,98.74,173.0,41.7,30.2,0.0,[1GmpfO0f-gs],[[0]],[[0]],[[323]],[2],[24082023],[UC4JDYNTwaxT2Ah2EELBaR9g]
 4814,Kłobuck,[Klobuck],,Poland,POL,Europe,50.9025547,18.93716,0.0,12934,37392000,9.4,98.74,173.0,41.7,30.2,0.0,[1iLcshz_Ukg],[[0]],[[0]],[[327]],[2],[17082023],[UC4JDYNTwaxT2Ah2EELBaR9g]
-4815,Świebodzice,[Swiebodzice],,Poland,POL,Europe,50.859169,16.319329,0.0,23228,37392000,9.4,98.74,173.0,41.7,30.2,0.0,[Rkd6csaXokg],[[0]],[[0]],[[345]],[2],[16082023],[UC4JDYNTwaxT2Ah2EELBaR9g]
+4815,Świebodzice,[Swiebodzice],,Poland,POL,Europe,50.859169,16.319329,0.0,23228,37392000,9.4,98.74,173.0,41.7,30.2,0.0,"[Rkd6csaXokg,tA6IW-bf5OU]","[[0], [0]]","[[0], [0]]","[[345], [399]]","[2,2]","[16082023,17042023]","[UC4JDYNTwaxT2Ah2EELBaR9g,UC4JDYNTwaxT2Ah2EELBaR9g]"
 4816,Wieluń,[Wielun],,Poland,POL,Europe,51.2204544,18.5700965,0.0,21624,37392000,9.4,98.74,173.0,41.7,30.2,25.58,[xfHg19nFKZs],[[0]],[[0]],[[510]],[2],[11082023],[UC4JDYNTwaxT2Ah2EELBaR9g]
 4817,Tarnowskie Góry,[Tarnowskie Gory],,Poland,POL,Europe,50.4445194,18.8554757,0.0,60938,37392000,9.4,98.74,173.0,41.7,30.2,0.0,[G3nzx6pGsho],[[0]],[[0]],[[818]],[2],[08082023],[UC4JDYNTwaxT2Ah2EELBaR9g]
 4818,Miasteczko Śląskie,[Miasteczko Slaskie],,Poland,POL,Europe,50.4915736,18.9230247,0.0,7327,37392000,9.4,98.74,173.0,41.7,30.2,0.0,[tUfkqhF_HZ4],[[0]],[[0]],[[306]],[2],[04082023],[UC4JDYNTwaxT2Ah2EELBaR9g]
@@ -4846,3 +4846,4 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 4845,Moordrecht,[],,Netherlands,NLD,Europe,51.9865065,4.6698314,0.0,9015,18100436,4.0,0.0,177.0,42.2,28.1,0.0,[awrmyU0PdEw],[[0]],[[719]],[[1030]],[0],[28092022],[UCQBKeIYd3GXbkBtedQiXCXA]
 4846,Stiens,[],,Netherlands,NLD,Europe,53.2607534,5.7642074,0.0,7300,18100436,4.0,0.0,177.0,42.2,28.1,0.0,[SVOLIZiPHrM],[[0]],[[598]],[[875]],[1],[18072015],[UCJk-VJsfatRKFGg06W60afw]
 4847,Roosendaal,[],,Netherlands,NLD,Europe,51.5331484,4.4561276,0.0,77725,18100436,4.0,0.0,177.0,42.2,28.1,0.0,"[7phajga6j4M,5wRSfy_ot6o]","[[0],[0]]","[[0],[293]]","[[1369],[933]]","[0,0]","[18022021,22022021]","[UCHMz3FfCLAcKEEf7dws2l9A,UCHMz3FfCLAcKEEf7dws2l9A]"
+4848,Brodnica,[],,Poland,POL,Europe,53.25782,19.399447,0.0,27341,37392000,9.4,98.74,173.0,41.7,30.2,28.57,[suJEcod8kIw],[[0]],[[0]],[[616]],[2],[20042023],[UC4JDYNTwaxT2Ah2EELBaR9g]
