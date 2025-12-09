@@ -4915,4 +4915,6 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 4914,Peitz,[],,Germany,DEU,Europe,51.8584667,14.4110395,0.0,4333,83491249,3.8,0.0,173.0,47.8,31.9,0.0,[3TsbEe_vu7U],[[0]],[[0]],[[365]],[2],[15072022],[UC4JDYNTwaxT2Ah2EELBaR9g]
 4915,Neuhardenberg,[],,Germany,DEU,Europe,52.5965971,14.2383658,0.0,2504,83491249,3.8,0.0,173.0,47.8,31.9,0.0,[bsAxbWv5C5M],[[0]],[[0]],[[559]],[2],[13072022],[UC4JDYNTwaxT2Ah2EELBaR9g]
 4916,Stąporków,[Staporkow],,Poland,POL,Europe,51.1380145,20.5573073,0.0,5946,37392000,9.4,98.74,173.0,41.7,30.2,0.0,[T6cmkhZojCM],[[0]],[[0]],[[363]],[2],[09072022],[UC4JDYNTwaxT2Ah2EELBaR9g]
-4917,Spremberg,[],,Germany,DEU,Europe,51.5714513,14.3804302,0.0,2489,83491249,3.8,0.0,173,47.8,31.9,0.0,[uuw4v_scOz4],[[0]],[[0]],[[476]],[2],[30062022],[UC4JDYNTwaxT2Ah2EELBaR9g]
+4917,Spremberg,[],,Germany,DEU,Europe,51.5714513,14.3804302,0.0,2489,83491249,3.8,0.0,173.0,47.8,31.9,0.0,[uuw4v_scOz4],[[0]],[[0]],[[476]],[2],[30062022],[UC4JDYNTwaxT2Ah2EELBaR9g]
+4918,Kalmthout,[],,Belgium,BEL,Europe,51.3832723,4.4763255,0.0,17485,11825551,,0.0,171.0,41.9,27.2,0.0,[XNSFdFVP3DU],[[0]],[[0]],[[394]],[0],[30062019],[UCLeztQkAq09NP6JhyPlLJqg]
+4919,Ridderkerk,[],,Netherlands,NLD,Europe,51.8714812,4.5999778,0.0,45189,18100436,4.0,0.0,177.0,42.2,28.1,0.0,[l-1-wPWl3VI],"[[0, 0]]","[[114, 2041]]","[[1988, 2209]]",[0],[8042016],[UCBpl4esO3eym5FAAngMXAhQ]
