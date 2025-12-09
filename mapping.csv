@@ -4847,3 +4847,8 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 4846,Stiens,[],,Netherlands,NLD,Europe,53.2607534,5.7642074,0.0,7300,18100436,4.0,0.0,177.0,42.2,28.1,0.0,[SVOLIZiPHrM],[[0]],[[598]],[[875]],[1],[18072015],[UCJk-VJsfatRKFGg06W60afw]
 4847,Roosendaal,[],,Netherlands,NLD,Europe,51.5331484,4.4561276,0.0,77725,18100436,4.0,0.0,177.0,42.2,28.1,0.0,"[7phajga6j4M,5wRSfy_ot6o]","[[0],[0]]","[[0],[293]]","[[1369],[933]]","[0,0]","[18022021,22022021]","[UCHMz3FfCLAcKEEf7dws2l9A,UCHMz3FfCLAcKEEf7dws2l9A]"
 4848,Brodnica,[],,Poland,POL,Europe,53.25782,19.399447,0.0,27341,37392000,9.4,98.74,173.0,41.7,30.2,28.57,[suJEcod8kIw],[[0]],[[0]],[[616]],[2],[20042023],[UC4JDYNTwaxT2Ah2EELBaR9g]
+4849,Bełżyce,[Belzyce],,Poland,POL,Europe,51.175063,22.2749995,0.0,6958,37392000,9.4,98.74,173.0,41.7,30.2,29.79,[KRS26UMI-BQ],[[0]],[[0]],[[322]],[2],[13042023],[UC4JDYNTwaxT2Ah2EELBaR9g]
+4850,Wałbrzych,[Walbrzych],,Poland,POL,Europe,50.765562,16.28105,0.0,127431,37392000,9.4,98.74,173.0,41.7,30.2,28.57,[PWrGd6RNK4w],[[0]],[[0]],[[1106]],[2],[07042023],[UC4JDYNTwaxT2Ah2EELBaR9g]
+4851,Świdnica,[Swidnica],,Poland,POL,Europe,50.8424835,16.4870549,0.0,60351,37392000,9.4,98.74,173.0,41.7,30.2,62.16,[kHf3kYInQAo],[[0]],[[0]],[[737]],[2],[06042023],[UC4JDYNTwaxT2Ah2EELBaR9g]
+4852,Wohyń,[Wohyn],,Poland,POL,Europe,51.7562261,22.7863152,0.0,2000,37392000,9.4,98.74,173.0,41.7,30.2,0.0,[4_zBTWZMfxU],[[0]],[[0]],[[316]],[2],[04042023],[UC4JDYNTwaxT2Ah2EELBaR9g]
+4853,Lwówek Śląski,[Lwowek Slaski],,Poland,POL,Europe,51.1108891,15.5850018,0.0,9657,37392000,9.4,98.74,173,41.7,30.2,25.0,[mqiXYLRv5ck],[[0]],[[0]],[[440]],[2],[02042023],[UC4JDYNTwaxT2Ah2EELBaR9g]
