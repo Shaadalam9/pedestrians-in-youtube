@@ -4918,4 +4918,7 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 4917,Spremberg,[],,Germany,DEU,Europe,51.5714513,14.3804302,0.0,2489,83491249,3.8,0.0,173.0,47.8,31.9,0.0,[uuw4v_scOz4],[[0]],[[0]],[[476]],[2],[30062022],[UC4JDYNTwaxT2Ah2EELBaR9g]
 4918,Kalmthout,[],,Belgium,BEL,Europe,51.3832723,4.4763255,0.0,17485,11825551,,0.0,171.0,41.9,27.2,0.0,[XNSFdFVP3DU],[[0]],[[0]],[[394]],[0],[30062019],[UCLeztQkAq09NP6JhyPlLJqg]
 4919,Ridderkerk,[],,Netherlands,NLD,Europe,51.8714812,4.5999778,0.0,45189,18100436,4.0,0.0,177.0,42.2,28.1,0.0,[l-1-wPWl3VI],"[[0, 0]]","[[114, 2041]]","[[1988, 2209]]",[0],[8042016],[UCBpl4esO3eym5FAAngMXAhQ]
-4920,Brunssum,[],,Netherlands,NLD,Europe,50.9431108,5.9705675,0.0,29254,18100436,4,0.0,177,42.2,28.1,0.0,[NyKPUvYQiYE],[[0]],[[22]],[[340]],[0],[09052024],[UCxyiGr-9Jl3yjEZ6BdUhGdA]
+4920,Brunssum,[],,Netherlands,NLD,Europe,50.9431108,5.9705675,0.0,29254,18100436,4.0,0.0,177.0,42.2,28.1,0.0,[NyKPUvYQiYE],[[0]],[[22]],[[340]],[0],[09052024],[UCxyiGr-9Jl3yjEZ6BdUhGdA]
+4921,Hoensbroek,[],,Netherlands,NLD,Europe,50.9239397,5.9293862,0.0,25000,18100436,4.0,0.0,177.0,42.2,28.1,0.0,[x4jXryBnyYY],[[0]],[[0]],[[345]],[1],[26052016],[UC2-_sbbMB1VNM95LGJmx6rg]
+4922,Schinnen,[],,Netherlands,NLD,Europe,50.9425257,5.8861938,0.0,12911,18100436,4.0,0.0,177.0,42.2,28.1,0.0,[x4jXryBnyYY],[[0]],[[660]],[[895]],[1],[26052016],[UC2-_sbbMB1VNM95LGJmx6rg]
+4923,Geleen,[],,Netherlands,NLD,Europe,50.9699953,5.8267029,0.0,32790,18100436,4,0.0,177,42.2,28.1,0.0,[x4jXryBnyYY],[[0]],[[1195]],[[1836]],[1],[26052016],[UC2-_sbbMB1VNM95LGJmx6rg]
