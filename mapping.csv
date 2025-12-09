@@ -4924,3 +4924,6 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 4923,Geleen,[],,Netherlands,NLD,Europe,50.9699953,5.8267029,0.0,32790,18100436,4.0,0.0,177.0,42.2,28.1,0.0,[x4jXryBnyYY],[[0]],[[1195]],[[1836]],[1],[26052016],[UC2-_sbbMB1VNM95LGJmx6rg]
 4924,Thesinge,[],,Netherlands,NLD,Europe,53.2664193,6.6507974,0.0,440,18100436,4.0,0.0,177.0,42.2,28.1,0.0,[axuEpDIoKWc],[[0]],[[875]],[[1081]],[0],[10082015],[UCyU768Oeys5HLsOrHtM95GQ]
 4925,Pelt,[],,Belgium,BEL,Europe,51.2197672,5.4299496,0.0,13344,11825551,5.8,0.0,171.0,41.9,27.2,0.0,[SYDDy0HMP4I],[[0]],[[234]],[[451]],[0],[12032022],[UCLeztQkAq09NP6JhyPlLJqg]
+4926,Leer,[],,Germany,DEU,Europe,53.2049511,7.4595298,0.0,33886,83491249,3.8,0.0,173.0,47.8,31.9,0.0,[pNMUAc9uguM],[[0]],[[2551]],[[4136]],[0],[25072015],[UCyU768Oeys5HLsOrHtM95GQ]
+4927,Venlo,[],,Netherlands,NLD,Europe,51.371352,6.17226,0.0,101603,18100436,4.0,0.0,177.0,42.2,28.1,0.0,[iaqm4_uObO0],[[0]],[[114]],[[402]],[0],[19082024],[UCpkg_O-UUfFpoPBLVUuWHIw]
+4928,Neer,[],,Netherlands,NLD,Europe,51.2620493,5.9883704,0.0,3380,18100436,4.0,0.0,177.0,42.2,28.1,0.0,[iaqm4_uObO0],[[0]],[[816]],[[885]],[0],[19082024],[UCpkg_O-UUfFpoPBLVUuWHIw]
