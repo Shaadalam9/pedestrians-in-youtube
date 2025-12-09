@@ -4921,4 +4921,5 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 4920,Brunssum,[],,Netherlands,NLD,Europe,50.9431108,5.9705675,0.0,29254,18100436,4.0,0.0,177.0,42.2,28.1,0.0,[NyKPUvYQiYE],[[0]],[[22]],[[340]],[0],[09052024],[UCxyiGr-9Jl3yjEZ6BdUhGdA]
 4921,Hoensbroek,[],,Netherlands,NLD,Europe,50.9239397,5.9293862,0.0,25000,18100436,4.0,0.0,177.0,42.2,28.1,0.0,[x4jXryBnyYY],[[0]],[[0]],[[345]],[1],[26052016],[UC2-_sbbMB1VNM95LGJmx6rg]
 4922,Schinnen,[],,Netherlands,NLD,Europe,50.9425257,5.8861938,0.0,12911,18100436,4.0,0.0,177.0,42.2,28.1,0.0,[x4jXryBnyYY],[[0]],[[660]],[[895]],[1],[26052016],[UC2-_sbbMB1VNM95LGJmx6rg]
-4923,Geleen,[],,Netherlands,NLD,Europe,50.9699953,5.8267029,0.0,32790,18100436,4,0.0,177,42.2,28.1,0.0,[x4jXryBnyYY],[[0]],[[1195]],[[1836]],[1],[26052016],[UC2-_sbbMB1VNM95LGJmx6rg]
+4923,Geleen,[],,Netherlands,NLD,Europe,50.9699953,5.8267029,0.0,32790,18100436,4.0,0.0,177.0,42.2,28.1,0.0,[x4jXryBnyYY],[[0]],[[1195]],[[1836]],[1],[26052016],[UC2-_sbbMB1VNM95LGJmx6rg]
+4924,Thesinge,[],,Netherlands,NLD,Europe,53.2664193,6.6507974,0.0,440,18100436,4,0.0,177,42.2,28.1,0.0,[axuEpDIoKWc],[[0]],[[875]],[[1081]],[0],[10082015],[UCyU768Oeys5HLsOrHtM95GQ]
