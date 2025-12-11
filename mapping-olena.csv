@@ -4955,5 +4955,10 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 4954,Arcen,[],,Netherlands,NLD,Europe,51.476261,6.1785077,0.0,8793,18100436,4.0,0.0,177.0,42.2,28.1,6.25,[yFKhjI8z2RQ],[[0]],[[700]],[[875]],[0],[16062014],[UCrHksEEXW4Z6ZgjRTsdBQLQ]
 4955,Zeist,[],,Netherlands,NLD,Europe,52.0892832,5.2276307,0.0,60949,18100436,4.0,0.0,177.0,42.2,28.1,0.0,[QXCz_ZvdHTw],[[0]],[[653]],[[1609]],[0],[04112016],[UCLeztQkAq09NP6JhyPlLJqg]
 4956,Enkhuizen,[],,Netherlands,NLD,Europe,52.704891,5.288876,0.0,17365,18100436,4.0,0.0,177.0,42.2,28.1,0.0,[3NQgzxmaXoY],[[0]],[[1219]],[[1452]],[0],[13032021],[UCLeztQkAq09NP6JhyPlLJqg]
-4957,Alkmaar,[],,Netherlands,NLD,Europe,52.634313,4.750946,0.0,94853,18100436,4.0,0.0,177.0,42.2,28.1,0.0,[HkEm8KjMgL4],"[[0, 0]]","[[7, 931]]","[[346, 1042]]",[1],[22092018],[UCnVIYe-o6wKMorsVpNELBNA]
-4958,Sint Pancras,[],,Netherlands,NLD,Europe,52.6523824,4.7797186,0.0,6050,18100436,4,0.0,177,42.2,28.1,0.0,[HkEm8KjMgL4],[[0]],[[1043]],[[1377]],[1],[22092018],[UCnVIYe-o6wKMorsVpNELBNA]
+4957,Alkmaar,[],,Netherlands,NLD,Europe,52.632438,4.750214,0.0,94853,18100436,4.0,0.0,177.0,42.2,28.1,0.0,"[HkEm8KjMgL4,gTP7l9rITso,g_10sKRo_Tg]","[[0, 0], [0], [0]]","[[7, 931], [1633], [6]]","[[346, 1042], [2186], [190]]","[1,0,1]","[22092018,1052023,3082018]","[UCnVIYe-o6wKMorsVpNELBNA,UCfaUH_R4V8W1TX8fBjrivUQ,UCnVIYe-o6wKMorsVpNELBNA]"
+4958,Sint Pancras,[],,Netherlands,NLD,Europe,52.6523824,4.7797186,0.0,6050,18100436,4.0,0.0,177.0,42.2,28.1,0.0,[HkEm8KjMgL4],[[0]],[[1043]],[[1377]],[1],[22092018],[UCnVIYe-o6wKMorsVpNELBNA]
+4959,Schoorldam,[],,Netherlands,NLD,Europe,52.7072897,4.7183865,0.0,310,18100436,4.0,0.0,177.0,42.2,28.1,0.0,[g_10sKRo_Tg],[[0]],[[646]],[[775]],[1],[03082018],[UCnVIYe-o6wKMorsVpNELBNA]
+4960,Schoorl,[],,Netherlands,NLD,Europe,52.7009081,4.693947,0.0,3210,18100436,4.0,0.0,177.0,42.2,28.1,0.0,[g_10sKRo_Tg],[[0]],[[776]],[[932]],[1],[03082018],[UCnVIYe-o6wKMorsVpNELBNA]
+4961,Groet,[],,Netherlands,NLD,Europe,52.7210122,4.6684187,0.0,0,18100436,4.0,0.0,177.0,42.2,28.1,0.0,[g_10sKRo_Tg],[[0]],[[933]],[[1103]],[1],[03082018],[UCnVIYe-o6wKMorsVpNELBNA]
+4962,Camperduin,[],,Netherlands,NLD,Europe,52.7255457,4.6514869,0.0,250,18100436,4.0,0.0,177.0,42.2,28.1,0.0,[g_10sKRo_Tg],[[0]],[[1125]],[[1199]],[1],[03082018],[UCnVIYe-o6wKMorsVpNELBNA]
+4963,Petten,[],,Netherlands,NLD,Europe,52.7685974,4.6626091,0.0,1640,18100436,4,0.0,177,42.2,28.1,0.0,[g_10sKRo_Tg],[[0]],[[1517]],[[1620]],[1],[03082018],[UCnVIYe-o6wKMorsVpNELBNA]
