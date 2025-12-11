@@ -3708,7 +3708,7 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 3707,Kidapawan,[],Cotabato,Philippines,PHL,Asia,7.0095784,125.0905037,0.0,79652,109581085,12.0,98.47,160.0,25.4,42.3,0.0,[qTRDALPuiso],[[0]],[[760]],[[1251]],[0],[29042022],[UC37fjLRrKHhL2B7RztSOOLg]
 3708,Ipil,[],Zamboanga Sibugay,Philippines,PHL,Asia,7.7821902,122.5867388,0.0,19195,109581085,12.0,98.47,160.0,25.4,42.3,0.0,[afqINFTIZ2Q],[[0]],[[10]],[[377]],[0],[01072020],[UC2oxUcq_WTdnQZz6M3cQENA]
 3709,Mierlo,[],,Netherlands,NLD,Europe,51.4437624,5.6187496,0.0,27900,16655799,4.0,0.0,177.0,42.2,28.1,4.17,[Kv8mfIBEd2o],[[0]],[[418]],[[580]],[0],[01012024],[UCHKMX5Dj22Ga_5MgTlyMzjw]
-3710,Helmond,[],,Netherlands,NLD,Europe,51.4790956,5.6557686,0.0,74740,16655799,4.0,0.0,177.0,42.2,28.1,0.0,[Kv8mfIBEd2o],[[0]],[[647]],[[991]],[0],[01012024],[UCHKMX5Dj22Ga_5MgTlyMzjw]
+3710,Helmond,[],,Netherlands,NLD,Europe,51.4790956,5.6557686,0.0,74740,16655799,4.0,0.0,177.0,42.2,28.1,0.0,"[Kv8mfIBEd2o,UGKI6-rqCLA]","[[0], [0]]","[[647], [0]]","[[991], [470]]","[0,0]","[1012024,18032025]","[UCHKMX5Dj22Ga_5MgTlyMzjw,UCulHlRj23dTGzbGCs8WyqkA]"
 3711,Heeze,[],,Netherlands,NLD,Europe,51.3832098,5.5715902,0.0,16243,16655799,4.0,0.0,177.0,42.2,28.1,0.0,[Kv8mfIBEd2o],[[0]],[[1949]],[[2080]],[0],[01012024],[UCHKMX5Dj22Ga_5MgTlyMzjw]
 3712,Valencia,[Valencia City],Bukidnon,Philippines,PHL,Asia,7.9028844,125.0898033,0.0,83591,109581085,12.0,98.47,160.0,25.4,42.3,0.0,"[msUDNmLxAvk,m-teJt8tEpg,ZMieUYg0LLc,fMqt2yU8hnQ]","[[0],[0],[0],[0]]","[[0],[5],[30],[10]]","[[821],[358],[1254],[1375]]","[0,0,0,0]","[5022024,12032025,10042023,24082024]","[UC1L8h1f1tRAbhHLk4puJRWQ,UCq52OW2eyXt-t2IPzyjJHxA,UC6qr3JJdnm_EhYTaR0-MKIA,UCkF1ToTiMXnaIPRfktJjxbg]"
 3713,Cronulla,[],NSW,Australia,AUS,Oceania,-34.0575259,151.1523851,0.0,17899,25687041,4.9,0.0,172.0,38.9,34.4,0.0,[6kKKc1G5iKU],[[0]],[[0]],[[1281]],[0],[10092025],[UCghyEiYtFNIc6d47dqoY_8w]
@@ -4952,4 +4952,4 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 4951,Kazimierz Dolny,[],,Poland,POL,Europe,51.3220058,21.947372,0.0,2500,37392000,9.4,98.74,173.0,41.7,30.2,52.94,[b9Dmjegke6Q],[[0]],[[0]],[[485]],[0],[18042021],[UCMOGzU4kB1J8TC3FsaSAaJQ]
 4952,Głubczyce,[Glubczyce],,Poland,POL,Europe,50.2001072,17.8301977,0.0,45679,37392000,9.4,98.74,173.0,41.7,30.2,23.91,[CnEQZRODc7E],[[0]],[[0]],[[443]],[0],[07032021],[UCMOGzU4kB1J8TC3FsaSAaJQ]
 4953,Kamień Śląski,[Kamien Slaski],,Poland,POL,Europe,50.538798,18.076674,0.0,0,37392000,9.4,98.74,173.0,41.7,30.2,0.0,[9JBuTqJM0tc],[[0]],[[0]],[[549]],[0],[25082020],[UCMOGzU4kB1J8TC3FsaSAaJQ]
-4954,Arcen,[],,Netherlands,NLD,Europe,51.476261,6.1785077,0.0,8793,18100436,4,0.0,177,42.2,28.1,6.25,[yFKhjI8z2RQ],[[0]],[[700]],[[875]],[0],[16062014],[UCrHksEEXW4Z6ZgjRTsdBQLQ]
+4954,Arcen,[],,Netherlands,NLD,Europe,51.476261,6.1785077,0.0,8793,18100436,4.0,0.0,177.0,42.2,28.1,6.25,[yFKhjI8z2RQ],[[0]],[[700]],[[875]],[0],[16062014],[UCrHksEEXW4Z6ZgjRTsdBQLQ]
