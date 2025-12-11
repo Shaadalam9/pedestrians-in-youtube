@@ -3948,7 +3948,7 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 3947,Monte Verde,[],,Brazil,BRA,South America,-22.8598471970938,-46.0376646066236,-1.0,8088,212559409,16.0,94.8,169.0,34.7,53.4,0.0,[lEKwJXyuIfo],[[0]],[[13]],[[415]],[0],[23012022],[UCR--hB5_Bp258DeEiyocxng]
 3948,Camanducaia,[],,Brazil,BRA,South America,-22.755278,-46.144444,0.0,21074,212559409,16.0,94.8,169.0,34.7,53.4,0.0,[lEKwJXyuIfo],[[0]],[[2500]],[[2735]],[0],[23012022],[UCR--hB5_Bp258DeEiyocxng]
 3949,Curitiba,[],,Brazil,BRA,South America,-25.4944375,-49.284271,0.0,1948626,212559409,16.0,94.8,169.0,34.7,53.4,20.0,[S1qnfiU3mgw],"[[0,1]]","[[43,4298]]","[[4220,5497]]",[0],[2112023],[UClsI6uK3Dwl-ryMo5yj5ZzQ]
-3950,Kampen,[],,Netherlands,NLD,Europe,52.5559484,5.9033303,0.0,48980,16655799,4.0,0.0,177.0,42.2,28.1,0.0,[7QRzYn0Iykg],[[0]],[[36]],[[665]],[0],[01072022],[UCcwGwvM5iPB9IvtTnMTVcEg]
+3950,Kampen,[],,Netherlands,NLD,Europe,52.5559484,5.9033303,0.0,48980,16655799,4.0,0.0,177.0,42.2,28.1,0.0,"[7QRzYn0Iykg,O6CUGsuERAA]","[[0], [0]]","[[36], [4096]]","[[665], [4609]]","[0,0]","[1072022,17062022]","[UCcwGwvM5iPB9IvtTnMTVcEg,UCcwGwvM5iPB9IvtTnMTVcEg]"
 3951,Oostendorp,[],,Netherlands,NLD,Europe,52.4436619,5.8550114,0.0,2985,16655799,4.0,0.0,177.0,42.2,28.1,0.0,[7QRzYn0Iykg],[[0]],[[1981]],[[2224]],[0],[01072022],[UCcwGwvM5iPB9IvtTnMTVcEg]
 3952,Elburg,[],,Netherlands,NLD,Europe,52.4156591,5.8413217,0.0,21844,16655799,4.0,0.0,177.0,42.2,28.1,0.0,[7QRzYn0Iykg],[[0]],[[2225]],[[2411]],[0],[01072022],[UCcwGwvM5iPB9IvtTnMTVcEg]
 3953,Doornspijk,[],,Netherlands,NLD,Europe,52.4194984,5.8208683,0.0,1555,16655799,4.0,0.0,177.0,42.2,28.1,0.0,[7QRzYn0Iykg],[[0]],[[2423]],[[2633]],[0],[01072022],[UCcwGwvM5iPB9IvtTnMTVcEg]
@@ -4544,7 +4544,7 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 4543,Naujoji Vilnia,[],,Lithuania,LTU,Europe,54.6908669,25.421441,0.0,36800,2894886,8.1,99.82,174.0,45.0,35.7,43.24,[CK_wuAlCLY0],[[0]],[[1260]],[[1354]],[0],[12112022],[UCJWVPxKZMNZMxN8-QInF7RQ]
 4544,Toruń,[Torun],,Poland,POL,Europe,53.0145361,18.5965831,0.0,196935,37392000,9.4,98.74,173.0,41.7,30.2,54.05,[3e3IuzN9wsc],[[0]],[[0]],[[885]],[0],[03092022],[UCJWVPxKZMNZMxN8-QInF7RQ]
 4545,Oranienburg,[],,Germany,DEU,Europe,52.7529379,13.2457591,0.0,40793,83491249,3.8,0.0,173.0,47.8,31.9,0.0,"[KbcuAyU_fjc,bjuBNnjGkSo,QtbP5Myyaog,iKMlZBx8pIM]","[[0],[0],[1],[0]]","[[0],[2830],[680],[2010]]","[[550],[3120],[1858],[3016]]","[0,0,0,0]","[1052021,10042021,7042024,9032014]","[UCJWVPxKZMNZMxN8-QInF7RQ,UCJWVPxKZMNZMxN8-QInF7RQ,UC3Oitj1VdRtlly_2XUsR2Rw,UCoPhChIKf0MwAvqBn3FmJPA]"
-4546,Hoorn,[],,Netherlands,NLD,Europe,52.653272,5.0735802,0.0,68852,18100436,4.0,0.0,177.0,42.2,28.1,23.91,[lfeH0bCgAF8],[[0]],[[1088]],[[1805]],[0],[03042025],[UC682KjmItVgnBQ6q588CAzA]
+4546,Hoorn,[],,Netherlands,NLD,Europe,52.653272,5.0735802,0.0,68852,18100436,4.0,0.0,177.0,42.2,28.1,23.91,"[lfeH0bCgAF8,O6CUGsuERAA]","[[0], [0]]","[[1088], [58]]","[[1805], [225]]","[0,0]","[3042025,17062022]","[UC682KjmItVgnBQ6q588CAzA,UCcwGwvM5iPB9IvtTnMTVcEg]"
 4547,Peniscola,[],,Spain,ESP,Europe,40.3577844,0.4073793,0.0,7447,49315949,3.9,99.7,169.0,45.0,34.7,0.0,[imedYBd-5Hg],[[0]],[[27]],[[833]],[0],[28102021],[UCBDlqtIUWDfkl29t2hwXj3Q]
 4548,Ferdinandshof,[],,Germany,DEU,Europe,53.6639135,13.8900976,0.0,3165,83491249,3.8,0.0,173.0,47.8,31.9,0.0,[IKik1aJV0vw],"[[0,0]]","[[0,515]]","[[390,650]]",[2],[1092025],[UCNO9g0e-h2kEKa2SRFdK2Ng]
 4549,Torgelow,[],,Germany,DEU,Europe,53.6304232,14.0113284,0.0,10665,83491249,3.8,0.0,173.0,47.8,31.9,0.0,[IKik1aJV0vw],[[0]],[[755]],[[980]],[2],[01092025],[UCNO9g0e-h2kEKa2SRFdK2Ng]
@@ -4954,4 +4954,4 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 4953,Kamień Śląski,[Kamien Slaski],,Poland,POL,Europe,50.538798,18.076674,0.0,0,37392000,9.4,98.74,173.0,41.7,30.2,0.0,[9JBuTqJM0tc],[[0]],[[0]],[[549]],[0],[25082020],[UCMOGzU4kB1J8TC3FsaSAaJQ]
 4954,Arcen,[],,Netherlands,NLD,Europe,51.476261,6.1785077,0.0,8793,18100436,4.0,0.0,177.0,42.2,28.1,6.25,[yFKhjI8z2RQ],[[0]],[[700]],[[875]],[0],[16062014],[UCrHksEEXW4Z6ZgjRTsdBQLQ]
 4955,Zeist,[],,Netherlands,NLD,Europe,52.0892832,5.2276307,0.0,60949,18100436,4.0,0.0,177.0,42.2,28.1,0.0,[QXCz_ZvdHTw],[[0]],[[653]],[[1609]],[0],[04112016],[UCLeztQkAq09NP6JhyPlLJqg]
-4956,Enkhuizen,[],,Netherlands,NLD,Europe,52.704891,5.288876,0.0,17365,18100436,4,0.0,177,42.2,28.1,0.0,[3NQgzxmaXoY],[[0]],[[1219]],[[1452]],[0],[13032021],[UCLeztQkAq09NP6JhyPlLJqg]
+4956,Enkhuizen,[],,Netherlands,NLD,Europe,52.704891,5.288876,0.0,17365,18100436,4.0,0.0,177.0,42.2,28.1,0.0,[3NQgzxmaXoY],[[0]],[[1219]],[[1452]],[0],[13032021],[UCLeztQkAq09NP6JhyPlLJqg]
