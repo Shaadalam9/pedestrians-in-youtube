@@ -5,7 +5,7 @@ match_thresh: 0.6
 model: auto
 new_track_thresh: 0.7
 proximity_thresh: 0.5
-track_buffer: 60
+track_buffer: 50
 track_high_thresh: 0.7
 track_low_thresh: 0.3
 tracker_type: botsort
