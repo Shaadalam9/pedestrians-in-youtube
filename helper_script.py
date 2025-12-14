@@ -848,14 +848,17 @@ class Youtube_Helper:
         seg_mode: bool,
         bbox_csv_out: Optional[str] = None,
         seg_csv_out: Optional[str] = None,
-        bbox_model: YOLO | None = None,
-        seg_model: YOLO | None = None,
+        bbox_model: "YOLO | None" = None,
+        seg_model: "YOLO | None" = None,
         flush_every_n_frames: int = 30,
-        # ---- optional tqdm controls (safe defaults) ----
-        show_frame_pbar: bool = False,
-        tqdm_position: int = 1,
+        # progress / logging
         job_label: str = "",
+        show_frame_pbar: bool = True,
+        tqdm_position: int = 1,
         postfix_every_n: int = 30,
+        # ID behavior
+        remap_ids_per_clip: bool = True,
+        force_tracker_reset: bool = True,
     ) -> None:
         """
         Thread-safe alternative to legacy tracking_mode():
@@ -864,15 +867,29 @@ class Youtube_Helper:
           - writes CSVs directly in the SAME schema you used before
           - does NOT use runs/ paths, and does NOT create per-frame txt artifacts
 
-        IMPORTANT: tracker reset per segment is enforced via persist=False on first frame.
+        Notes:
+          - `unique-id` from Ultralytics trackers is not guaranteed to start at 1 per clip
+            when models are reused across jobs/threads. If you need per-CSV IDs starting at 1,
+            enable `remap_ids_per_clip=True`.
+          - `force_tracker_reset=True` attempts to clear Ultralytics internal tracker state
+            at the start of each clip (best-effort, depends on Ultralytics version).
         """
+        import csv
+        import math
+        import os
+        import shutil
+        import time
 
-        if bbox_mode and (bbox_csv_out is None):
+        import cv2
+        import torch
+        from tqdm import tqdm
+
+        if bbox_mode and bbox_csv_out is None:
             raise ValueError("bbox_mode=True requires bbox_csv_out")
-        if seg_mode and (seg_csv_out is None):
+        if seg_mode and seg_csv_out is None:
             raise ValueError("seg_mode=True requires seg_csv_out")
 
-        # If caller didn't provide models, use thread-local ones
+        # If caller didn't provide models, use thread-local ones (your method)
         if bbox_model is None or (seg_mode and seg_model is None):
             bbox_m, seg_m = self.get_thread_models(bbox_mode=bbox_mode, seg_mode=seg_mode)
             if bbox_model is None:
@@ -887,14 +904,50 @@ class Youtube_Helper:
 
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
+        # Make per-clip tracker configs (your method may create temp YAMLs)
         bbox_tracker_eff = self.make_tracker_config(self.bbox_tracker, video_fps) if bbox_mode else self.bbox_tracker
         seg_tracker_eff = self.make_tracker_config(self.seg_tracker, video_fps) if seg_mode else self.seg_tracker
+
+        def _write_rows_csv(path: str, header: list[str], rows: list[list]) -> None:
+            if not rows:
+                return
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            file_exists = os.path.exists(path)
+            with open(path, "a", newline="", encoding="utf-8") as f:
+                w = csv.writer(f)
+                if not file_exists:
+                    w.writerow(header)
+                w.writerows(rows)
+
+        def _best_effort_reset_tracker(model) -> None:
+            """
+            Ultralytics internals differ by version. This is a safe best-effort reset.
+            It prevents the common issue where track IDs continue across clips when the model is reused.
+            """
+            try:
+                # Some versions store trackers on predictor
+                pred = getattr(model, "predictor", None)
+                if pred is not None:
+                    if hasattr(pred, "trackers"):
+                        pred.trackers = None
+                    if hasattr(pred, "tracker"):
+                        pred.tracker = None
+            except Exception:
+                pass
+
+        # Optional: reset tracker state at the start of each clip
+        if force_tracker_reset:
+            if bbox_mode and bbox_model is not None:
+                _best_effort_reset_tracker(bbox_model)
+            if seg_mode and seg_model is not None:
+                _best_effort_reset_tracker(seg_model)
 
         cap = cv2.VideoCapture(input_video_path)
         if not cap.isOpened():
             raise RuntimeError(f"Failed to open video: {input_video_path}")
 
-        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0)
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or 0
+        desc = f"Frames {job_label}".strip() if job_label else "Frames"
 
         bbox_header = ["yolo-id", "x-center", "y-center", "width", "height", "unique-id", "confidence", "frame-count"]
         seg_header = ["yolo-id", "mask-polygon", "unique-id", "confidence", "frame-count"]
@@ -903,35 +956,60 @@ class Youtube_Helper:
         seg_buf: list[list] = []
         frame_count = 0
 
+        # Per-clip remap (ensures IDs start at 1 in every CSV)
+        bbox_id_map: dict[int, int] = {}
+        seg_id_map: dict[int, int] = {}
+        bbox_next_id = 1
+        seg_next_id = 1
+
+        def _remap(track_id: int, mode: str) -> int:
+            nonlocal bbox_next_id, seg_next_id
+            if track_id < 0:
+                return -1
+            if mode == "bbox":
+                if track_id not in bbox_id_map:
+                    bbox_id_map[track_id] = bbox_next_id
+                    bbox_next_id += 1
+                return bbox_id_map[track_id]
+            else:
+                if track_id not in seg_id_map:
+                    seg_id_map[track_id] = seg_next_id
+                    seg_next_id += 1
+                return seg_id_map[track_id]
+
+        t_start = time.time()
+
         pbar = None
-        t0 = time.time()
+        if show_frame_pbar:
+            pbar = tqdm(
+                total=total_frames if total_frames > 0 else None,
+                desc=desc,
+                unit="frame",
+                dynamic_ncols=True,
+                position=tqdm_position,
+                leave=False,
+            )
 
         try:
-            if show_frame_pbar:
-                pbar = tqdm(
-                    total=total_frames if total_frames > 0 else None,
-                    desc=f"{job_label} frames" if job_label else "frames",
-                    unit="frame",
-                    position=tqdm_position,
-                    leave=False,
-                    dynamic_ncols=True,
-                )
-
             while True:
                 ok, frame = cap.read()
                 if not ok:
                     break
 
                 frame_count += 1
-                persist_flag = frame_count > 1  # reset per clip; persist within clip
+
+                # IMPORTANT:
+                # - persist=False on first frame ensures a fresh tracker for this clip (per Ultralytics semantics)
+                # - persist=True thereafter keeps IDs stable within the clip
+                persist_flag = frame_count > 1
 
                 # ---------------- SEG ----------------
-                if seg_mode:
+                if seg_mode and seg_model is not None:
                     seg_results = seg_model.track(
                         frame,
                         tracker=seg_tracker_eff,
                         persist=persist_flag,
-                        conf=self.confidence,
+                        conf=float(getattr(self, "confidence", 0.0)),
                         verbose=False,
                         device=device,
                         save=False,
@@ -942,13 +1020,21 @@ class Youtube_Helper:
                     boxes = r.boxes
                     masks = getattr(r, "masks", None)
 
-                    if boxes is not None and boxes.xywhn is not None and boxes.xywhn.size(0) > 0:
+                    if boxes is not None and getattr(boxes, "xywhn", None) is not None and boxes.xywhn.size(0) > 0:
                         n = int(boxes.xywhn.size(0))
                         cls_list = boxes.cls.int().cpu().tolist()
-                        id_list = boxes.id.int().cpu().tolist() if getattr(boxes, "id", None) is not None else [-1] * n
-                        conf_list = boxes.conf.cpu().tolist() if getattr(boxes, "conf", None) is not None else [math.nan] * n
+                        raw_ids = (
+                            boxes.id.int().cpu().tolist()
+                            if getattr(boxes, "id", None) is not None
+                            else [-1] * n
+                        )
+                        conf_list = (
+                            boxes.conf.cpu().tolist()
+                            if getattr(boxes, "conf", None) is not None
+                            else [math.nan] * n
+                        )
 
-                        # masks.xyn is a list of polygons (normalized points)
+                        # masks.xyn: list of Nx2 polygons (normalized)
                         if masks is not None and getattr(masks, "xyn", None) is not None:
                             polys = masks.xyn
                             m = min(len(polys), n)
@@ -958,21 +1044,26 @@ class Youtube_Helper:
                                 for x, y in poly:
                                     flat.append(str(float(x)))
                                     flat.append(str(float(y)))
+
+                                tid = int(raw_ids[i])
+                                if remap_ids_per_clip:
+                                    tid = _remap(tid, "seg")
+
                                 seg_buf.append([
                                     int(cls_list[i]),
                                     " ".join(flat),
-                                    int(id_list[i]),
+                                    tid,
                                     float(conf_list[i]),
-                                    frame_count
+                                    frame_count,
                                 ])
 
                 # ---------------- BBOX ----------------
-                if bbox_mode:
+                if bbox_mode and bbox_model is not None:
                     bbox_results = bbox_model.track(
                         frame,
                         tracker=bbox_tracker_eff,
                         persist=persist_flag,
-                        conf=self.confidence,
+                        conf=float(getattr(self, "confidence", 0.0)),
                         verbose=False,
                         device=device,
                         save=False,
@@ -982,44 +1073,68 @@ class Youtube_Helper:
                     r = bbox_results[0]
                     boxes = r.boxes
 
-                    if boxes is not None and boxes.xywhn is not None and boxes.xywhn.size(0) > 0:
+                    if boxes is not None and getattr(boxes, "xywhn", None) is not None and boxes.xywhn.size(0) > 0:
                         xywhn = boxes.xywhn.cpu().tolist()
                         cls_list = boxes.cls.int().cpu().tolist()
-                        id_list = boxes.id.int().cpu().tolist() if getattr(boxes, "id", None) is not None else [-1] * len(xywhn)
-                        conf_list = boxes.conf.cpu().tolist() if getattr(boxes, "conf", None) is not None else [math.nan] * len(xywhn)
+                        raw_ids = (
+                            boxes.id.int().cpu().tolist()
+                            if getattr(boxes, "id", None) is not None
+                            else [-1] * len(xywhn)
+                        )
+                        conf_list = (
+                            boxes.conf.cpu().tolist()
+                            if getattr(boxes, "conf", None) is not None
+                            else [math.nan] * len(xywhn)
+                        )
 
-                        for (x, y, w, h), c, tid, confv in zip(xywhn, cls_list, id_list, conf_list):
-                            bbox_buf.append([int(c), float(x), float(y), float(w), float(h), int(tid), float(confv), frame_count])
+                        for (x, y, w, h), c, tid, confv in zip(xywhn, cls_list, raw_ids, conf_list):
+                            tid = int(tid)
+                            if remap_ids_per_clip:
+                                tid = _remap(tid, "bbox")
 
-                # ---------------- flush ----------------
+                            bbox_buf.append([
+                                int(c),
+                                float(x),
+                                float(y),
+                                float(w),
+                                float(h),
+                                tid,
+                                float(confv),
+                                frame_count,
+                            ])
+
+                # flush
                 if frame_count % flush_every_n_frames == 0:
                     if bbox_mode and bbox_csv_out:
-                        self._write_rows_csv(bbox_csv_out, bbox_header, bbox_buf)
+                        _write_rows_csv(bbox_csv_out, bbox_header, bbox_buf)
                         bbox_buf.clear()
                     if seg_mode and seg_csv_out:
-                        self._write_rows_csv(seg_csv_out, seg_header, seg_buf)
+                        _write_rows_csv(seg_csv_out, seg_header, seg_buf)
                         seg_buf.clear()
 
-                # ---------------- tqdm ----------------
-                if pbar:
+                # progress bar + speed
+                if pbar is not None:
                     pbar.update(1)
                     if postfix_every_n and (frame_count % postfix_every_n == 0):
-                        elapsed = time.time() - t0
-                        eff_fps = (frame_count / elapsed) if elapsed > 0 else 0.0
-                        pbar.set_postfix_str(f"yolo_fps={eff_fps:.2f}")
+                        elapsed = max(1e-6, time.time() - t_start)
+                        fps_eff = frame_count / elapsed
+                        pbar.set_postfix({
+                            "fps": f"{fps_eff:.2f}",
+                            "frame": frame_count,
+                        })
 
             # final flush
             if bbox_mode and bbox_csv_out:
-                self._write_rows_csv(bbox_csv_out, bbox_header, bbox_buf)
+                _write_rows_csv(bbox_csv_out, bbox_header, bbox_buf)
             if seg_mode and seg_csv_out:
-                self._write_rows_csv(seg_csv_out, seg_header, seg_buf)
+                _write_rows_csv(seg_csv_out, seg_header, seg_buf)
 
         finally:
             cap.release()
-            if pbar:
+            if pbar is not None:
                 pbar.close()
 
-            # cleanup temp tracker configs
+            # cleanup temp tracker configs (if your make_tracker_config creates temp dirs)
             for p in (bbox_tracker_eff, seg_tracker_eff):
                 if isinstance(p, str) and "tracker_cfg_" in p:
                     try:
@@ -1051,3 +1166,189 @@ class Youtube_Helper:
             "tracking_mode() is legacy and not thread-safe. "
             "Use tracking_mode_threadsafe() in the multithreaded pipeline."
         )
+
+    def tracking_mode_threadsafe_window(
+        self,
+        source_video_path: str,
+        start_time_s: int,
+        end_time_s: int,
+        video_fps: int,
+        bbox_mode: bool,
+        seg_mode: bool,
+        bbox_csv_out: Optional[str] = None,
+        seg_csv_out: Optional[str] = None,
+        bbox_model: YOLO | None = None,
+        seg_model: YOLO | None = None,
+        flush_every_n_frames: int = 30,
+        # optional progress
+        show_frame_pbar: bool = False,
+        tqdm_position: int = 1,
+        job_label: str = "",
+        postfix_every_n: int = 30,
+    ) -> None:
+        """
+        Track ONLY frames in [start_time_s, end_time_s) from source_video_path (no mp4 trimming).
+        Writes the same CSV schemas as before with frame-count starting at 1 for this segment.
+        """
+
+        if bbox_mode and bbox_csv_out is None:
+            raise ValueError("bbox_mode=True requires bbox_csv_out")
+        if seg_mode and seg_csv_out is None:
+            raise ValueError("seg_mode=True requires seg_csv_out")
+
+        # thread-local models if not provided
+        if bbox_model is None or (seg_mode and seg_model is None):
+            bbox_m, seg_m = self.get_thread_models(bbox_mode=bbox_mode, seg_mode=seg_mode)
+            if bbox_model is None:
+                bbox_model = bbox_m
+            if seg_model is None:
+                seg_model = seg_m
+
+        if bbox_mode and bbox_model is None:
+            raise ValueError("bbox_mode=True but bbox_model is None")
+        if seg_mode and seg_model is None:
+            raise ValueError("seg_mode=True but seg_model is None")
+
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+
+        bbox_tracker_eff = self.make_tracker_config(self.bbox_tracker, video_fps) if bbox_mode else self.bbox_tracker
+        seg_tracker_eff = self.make_tracker_config(self.seg_tracker, video_fps) if seg_mode else self.seg_tracker
+
+        cap = cv2.VideoCapture(source_video_path)
+        if not cap.isOpened():
+            raise RuntimeError(f"Failed to open video: {source_video_path}")
+
+        # Frame range
+        start_frame = int(round(start_time_s * video_fps))
+        end_frame = int(round(end_time_s * video_fps))  # exclusive
+        frames_to_process = max(0, end_frame - start_frame)
+
+        # Seek to start frame
+        cap.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
+
+        bbox_header = ["yolo-id", "x-center", "y-center", "width", "height", "unique-id", "confidence", "frame-count"]
+        seg_header = ["yolo-id", "mask-polygon", "unique-id", "confidence", "frame-count"]
+
+        bbox_buf: list[list] = []
+        seg_buf: list[list] = []
+
+        frame_count = 0  # segment-local frame counter (starts at 1)
+        processed = 0
+
+        pbar = None
+        t0 = _time.time()
+
+        try:
+            if show_frame_pbar:
+                pbar = _tqdm(
+                    total=frames_to_process,
+                    desc=f"{job_label} frames" if job_label else "frames",
+                    unit="frame",
+                    position=tqdm_position,
+                    leave=False,
+                    dynamic_ncols=True,
+                )
+
+            while processed < frames_to_process:
+                ok, frame = cap.read()
+                if not ok:
+                    break
+
+                processed += 1
+                frame_count += 1
+
+                # reset per segment; persist within this segment
+                persist_flag = True
+
+                # --- SEG ---
+                if seg_mode:
+                    seg_results = seg_model.track(
+                        frame,
+                        tracker=seg_tracker_eff,
+                        persist=persist_flag,
+                        conf=self.confidence,
+                        verbose=False,
+                        device=device,
+                        save=False,
+                        save_txt=False,
+                        show=False,
+                    )
+                    r = seg_results[0]
+                    boxes = r.boxes
+                    masks = getattr(r, "masks", None)
+
+                    if boxes is not None and boxes.xywhn is not None and boxes.xywhn.size(0) > 0:
+                        n = int(boxes.xywhn.size(0))
+                        cls_list = boxes.cls.int().cpu().tolist()
+                        id_list = boxes.id.int().cpu().tolist() if getattr(boxes, "id", None) is not None else [-1] * n
+                        conf_list = boxes.conf.cpu().tolist() if getattr(boxes, "conf", None) is not None else [math.nan] * n
+
+                        if masks is not None and getattr(masks, "xyn", None) is not None:
+                            polys = masks.xyn
+                            m = min(len(polys), n)
+                            for i in range(m):
+                                poly = polys[i]
+                                flat = []
+                                for x, y in poly:
+                                    flat.append(str(float(x)))
+                                    flat.append(str(float(y)))
+                                seg_buf.append([int(cls_list[i]), " ".join(flat), int(id_list[i]), float(conf_list[i]), frame_count])
+
+                # --- BBOX ---
+                if bbox_mode:
+                    bbox_results = bbox_model.track(
+                        frame,
+                        tracker=bbox_tracker_eff,
+                        persist=persist_flag,
+                        conf=self.confidence,
+                        verbose=False,
+                        device=device,
+                        save=False,
+                        save_txt=False,
+                        show=False,
+                    )
+                    r = bbox_results[0]
+                    boxes = r.boxes
+
+                    if boxes is not None and boxes.xywhn is not None and boxes.xywhn.size(0) > 0:
+                        xywhn = boxes.xywhn.cpu().tolist()
+                        cls_list = boxes.cls.int().cpu().tolist()
+                        id_list = boxes.id.int().cpu().tolist() if getattr(boxes, "id", None) is not None else [-1] * len(xywhn)
+                        conf_list = boxes.conf.cpu().tolist() if getattr(boxes, "conf", None) is not None else [math.nan] * len(xywhn)
+
+                        for (x, y, w, h), c, tid, confv in zip(xywhn, cls_list, id_list, conf_list):
+                            bbox_buf.append([int(c), float(x), float(y), float(w), float(h), int(tid), float(confv), frame_count])
+
+                # flush
+                if frame_count % flush_every_n_frames == 0:
+                    if bbox_mode and bbox_csv_out:
+                        self._write_rows_csv(bbox_csv_out, bbox_header, bbox_buf)
+                        bbox_buf.clear()
+                    if seg_mode and seg_csv_out:
+                        self._write_rows_csv(seg_csv_out, seg_header, seg_buf)
+                        seg_buf.clear()
+
+                # tqdm
+                if pbar:
+                    pbar.update(1)
+                    if postfix_every_n and (frame_count % postfix_every_n == 0):
+                        elapsed = _time.time() - t0
+                        eff = (frame_count / elapsed) if elapsed > 0 else 0.0
+                        pbar.set_postfix_str(f"yolo_fps={eff:.2f}")
+
+            # final flush
+            if bbox_mode and bbox_csv_out:
+                self._write_rows_csv(bbox_csv_out, bbox_header, bbox_buf)
+            if seg_mode and seg_csv_out:
+                self._write_rows_csv(seg_csv_out, seg_header, seg_buf)
+
+        finally:
+            cap.release()
+            if pbar:
+                pbar.close()
+            for p in (bbox_tracker_eff, seg_tracker_eff):
+                if isinstance(p, str) and "tracker_cfg_" in p:
+                    try:
+                        shutil.rmtree(os.path.dirname(p), ignore_errors=True)
+                    except Exception:
+                        pass

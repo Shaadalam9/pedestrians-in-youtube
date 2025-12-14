@@ -557,16 +557,12 @@ if __name__ == "__main__":
                         )
 
                         try:
-                            # Trim
-                            logger.info(f"[trim-start] thread={th} job={job_label}")
-                            end_time_adj = max(st, et - 1)
-                            helper.trim_video(base_video_path, trimmed_path, st, end_time_adj)
-                            logger.info(f"[trim-done] thread={th} job={job_label}")
-
-                            # Track with per-frame tqdm inside helper
-                            logger.info(f"[track-start] thread={th} job={job_label}")
-                            helper.tracking_mode_threadsafe(
-                                input_video_path=trimmed_path,
+                            # Track directly on the source video window (no trimming)
+                            logger.info(f"[track-start] thread={th} job={job_label} window={st}-{et}s")
+                            helper.tracking_mode_threadsafe_window(
+                                source_video_path=base_video_path,
+                                start_time_s=st,
+                                end_time_s=et,
                                 video_fps=int(video_fps),
                                 bbox_mode=do_bbox,
                                 seg_mode=do_seg,
@@ -574,8 +570,8 @@ if __name__ == "__main__":
                                 seg_csv_out=seg_out,
                                 job_label=job_label,
                                 tqdm_position=tqdm_pos,
-                                show_frame_pbar=True,          # turn on frame tqdm
-                                postfix_every_n=30,            # update postfix every N frames (optional)
+                                show_frame_pbar=True,
+                                postfix_every_n=30,
                             )
                             logger.info(f"[track-done] thread={th} job={job_label}")
 
@@ -587,10 +583,10 @@ if __name__ == "__main__":
                             return 1
 
                         finally:
-                            try:
-                                os.remove(trimmed_path)
-                            except FileNotFoundError:
-                                pass
+                            # try:
+                            #     os.remove(trimmed_path)
+                            # except FileNotFoundError:
+                            #     pass
 
                             dt = time.time() - t0
                             logger.info(f"[worker-done] thread={th} job={job_label} elapsed_sec={dt:.2f}")
