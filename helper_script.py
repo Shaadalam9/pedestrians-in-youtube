@@ -1,4 +1,14 @@
 # by Shadab Alam <md_shadab_alam@outlook.com> and Pavlo Bazilinskyy <pavlo.bazilinskyy@gmail.com>
+# -----------------------------------------------------------------------------
+# helper_script.py (thread-safe tracking + per-frame tqdm)
+#
+# Key additions vs legacy:
+# - tracking_mode_threadsafe(): writes CSVs directly (same schema), no runs/ usage
+# - Thread-local YOLO model cache: one model instance per worker thread
+# - Thread-safe tracker YAML handling: per-job temp YAML copy for custom trackers
+# - Optional per-segment ID remap so unique-id starts at 1 for each segment (default ON)
+# - Optional per-frame tqdm progress bar (safe with multiple workers via position=)
+# -----------------------------------------------------------------------------
 
 from __future__ import annotations
 
@@ -21,11 +31,9 @@ from urllib.parse import urljoin, urlparse
 
 import cv2
 import pandas as pd
-import pycountry
 import requests
 import torch
 import world_bank_data as wb
-import yaml
 import yt_dlp
 from bs4 import BeautifulSoup
 from moviepy.video.io.VideoFileClip import VideoFileClip
@@ -40,7 +48,7 @@ from custom_logger import CustomLogger
 logger = CustomLogger(__name__)
 logging.getLogger("ultralytics").setLevel(logging.ERROR)
 
-# Consts (kept for legacy path)
+# Consts / defaults
 LINE_THICKNESS = 1
 RENDER = False
 SHOW_LABELS = False
@@ -48,62 +56,58 @@ SHOW_CONF = False
 
 UPGRADE_LOG_FILE = "upgrade_log.json"
 
+# Thread-local storage for per-thread model instances
+_TLS = threading.local()
+
 
 class Youtube_Helper:
     """
-    Helper class for:
-      - Video acquisition (HTTP file server first, then YouTube fallback)
-      - Trimming and video metadata
-      - Mapping enrichment (ISO3, population, mortality, gini, upload_date)
-      - Thread-safe YOLO tracking/segmentation CSV generation
+    Helper class: download/trim/video utils + tracking.
     """
 
-    _TLS = threading.local()
-
     def __init__(self, video_title: Optional[str] = None):
+        self.video_title = video_title
+
+        # Models / trackers (same keys you already use)
         self.tracking_model = common.get_configs("tracking_model")
         self.segment_model = common.get_configs("segment_model")
-
         self.bbox_tracker = common.get_configs("bbox_tracker")
         self.seg_tracker = common.get_configs("seg_tracker")
 
-        # Confidence: keep old default behavior; prefer config if available
-        try:
-            self.confidence = float(common.get_configs("confidence"))
-        except Exception:
-            self.confidence = 0.0
-
+        # Tracking behavior
+        self.confidence = float(common.get_configs("confidence") or 0.0) if "confidence" in dir(common) else 0.0    # noqa: E501
         try:
             self.track_buffer_sec = float(common.get_configs("track_buffer_sec"))
         except Exception:
-            self.track_buffer_sec = 1.0
+            self.track_buffer_sec = 2.0
 
-        # Legacy flags (kept for compatibility)
-        self.display_frame_tracking = common.get_configs("display_frame_tracking")
-        self.display_frame_segmentation = common.get_configs("display_frame_segmentation")
-        self.save_annoted_img = common.get_configs("save_annoted_img")
-        self.save_tracked_img = common.get_configs("save_tracked_img")
-        self.delete_labels = common.get_configs("delete_labels")
-        self.delete_frames = common.get_configs("delete_frames")
-
-        self.update_package = common.get_configs("update_package")
-        self.need_authentication = common.get_configs("need_authentication")
+        # Existing flags (kept for compatibility; not required by thread-safe path)
+        self.display_frame_tracking = bool(common.get_configs("display_frame_tracking"))
+        self.display_frame_segmentation = bool(common.get_configs("display_frame_segmentation"))
+        self.output_path = common.get_configs("videos")
+        self.save_annoted_img = bool(common.get_configs("save_annoted_img"))
+        self.save_tracked_img = bool(common.get_configs("save_tracked_img"))
+        self.delete_labels = bool(common.get_configs("delete_labels"))
+        self.delete_frames = bool(common.get_configs("delete_frames"))
+        self.update_package = bool(common.get_configs("update_package"))
+        self.need_authentication = bool(common.get_configs("need_authentication"))
         self.client = common.get_configs("client")
 
-        self.video_title = video_title or ""
-
-        # Mapping path (do not keep a DF here as authoritative state)
-        self.mapping_path = common.get_configs("mapping")
+        # Mapping (some pipelines still use this)
+        try:
+            self.mapping_path = common.get_configs("mapping")
+            self.mapping = pd.read_csv(self.mapping_path)
+        except Exception:
+            self.mapping_path = None
+            self.mapping = None
 
     # -------------------------------------------------------------------------
-    # Utility: video title
+    # General utilities
     # -------------------------------------------------------------------------
+
     def set_video_title(self, title: str) -> None:
         self.video_title = title
 
-    # -------------------------------------------------------------------------
-    # Utility: folder rename/delete
-    # -------------------------------------------------------------------------
     def rename_folder(self, old_name: str, new_name: str) -> None:
         try:
             os.rename(old_name, new_name)
@@ -112,33 +116,22 @@ class Youtube_Helper:
         except FileExistsError:
             logger.error(f"Error: Folder '{new_name}' already exists.")
 
-    def delete_folder(self, folder_path: str) -> bool:
-        if os.path.exists(folder_path) and os.path.isdir(folder_path):
-            try:
-                shutil.rmtree(folder_path)
-                logger.info(f"Folder '{folder_path}' deleted successfully.")
-                return True
-            except Exception as e:
-                logger.error(f"Failed to delete folder '{folder_path}': {e}")
-                return False
-        logger.info(f"Folder '{folder_path}' does not exist.")
-        return False
+    # -------------------------------------------------------------------------
+    # Package upgrade logging (kept)
+    # -------------------------------------------------------------------------
 
-    # -------------------------------------------------------------------------
-    # Package upgrade logging
-    # -------------------------------------------------------------------------
-    def load_upgrade_log(self) -> dict[str, str]:
+    def load_upgrade_log(self) -> dict:
         if not os.path.exists(UPGRADE_LOG_FILE):
             return {}
         try:
-            with open(UPGRADE_LOG_FILE, "r", encoding="utf-8") as file:
-                return json.load(file)
-        except json.JSONDecodeError:
+            with open(UPGRADE_LOG_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
             return {}
 
-    def save_upgrade_log(self, log_data: dict[str, str]) -> None:
-        with open(UPGRADE_LOG_FILE, "w", encoding="utf-8") as file:
-            json.dump(log_data, file)
+    def save_upgrade_log(self, log_data: dict) -> None:
+        with open(UPGRADE_LOG_FILE, "w", encoding="utf-8") as f:
+            json.dump(log_data, f)
 
     def was_upgraded_today(self, package_name: str) -> bool:
         log_data = self.load_upgrade_log()
@@ -154,7 +147,6 @@ class Youtube_Helper:
         if self.was_upgraded_today(package_name):
             logging.debug(f"{package_name} upgrade already attempted today. Skipping.")
             return
-
         try:
             logging.info(f"Upgrading {package_name}...")
             subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", package_name])
@@ -165,8 +157,9 @@ class Youtube_Helper:
             self.mark_as_upgraded(package_name)
 
     # -------------------------------------------------------------------------
-    # Safe copy to SSD
+    # File stability + safe copy (kept)
     # -------------------------------------------------------------------------
+
     @staticmethod
     def _wait_for_stable_file(src: str, checks: int = 2, interval: float = 0.5, timeout: float = 30) -> bool:
         deadline = time.time() + timeout
@@ -221,9 +214,8 @@ class Youtube_Helper:
                 try:
                     with open(tmp, "rb") as f:
                         os.fsync(f.fileno())
-                except (OSError, AttributeError):
+                except Exception:
                     pass
-
                 os.replace(tmp, dest)
 
                 if os.stat(dest).st_size != src_size:
@@ -237,15 +229,14 @@ class Youtube_Helper:
                         os.remove(tmp)
                 except OSError:
                     pass
-
                 if attempt >= max_attempts:
                     raise
-
                 time.sleep(backoff * attempt)
 
     # -------------------------------------------------------------------------
-    # HTTP file-server ("FTP") download (kept name for compatibility)
+    # Download: FTP-like HTTP file server (kept)
     # -------------------------------------------------------------------------
+
     def download_videos_from_ftp(
         self,
         filename: str,
@@ -274,6 +265,10 @@ class Youtube_Helper:
         req_params = {"token": token} if token else None
 
         logger.info(f"Starting download for '{filename_with_ext}'")
+        if debug:
+            logger.debug(
+                f"Base URL: {base} | Auth: {'Basic' if username and password else 'None'} | Token: {'Yes' if token else 'No'}"  # noqa: E501
+            )
 
         with requests.Session() as session:
             if username and password:
@@ -293,17 +288,22 @@ class Youtube_Helper:
                     logger.warning(f"Request failed [{url}]: {e}")
                     return None
 
-            # 1) direct URLs
+            # 1) Try direct /files paths
             for alias in aliases:
                 direct_url = urljoin(base, f"v/{alias}/files/{filename_with_ext}")
+                if debug:
+                    logger.debug(f"Trying direct URL: {direct_url}")
                 r = fetch(direct_url, stream=True)
                 if r is None:
                     continue
 
+                logger.info(f"Found file via direct URL: {direct_url}")
+                content_len = int(r.headers.get("content-length", 0))
+
                 os.makedirs(out_dir, exist_ok=True)
                 local_path = os.path.join(out_dir, filename_with_ext)
 
-                # avoid overwriting
+                # avoid overwrite
                 if os.path.exists(local_path):
                     stem, suf = os.path.splitext(local_path)
                     i = 1
@@ -313,7 +313,7 @@ class Youtube_Helper:
                     logger.warning(f"File exists, saving as: {local_path}")
 
                 try:
-                    total = int(r.headers.get("content-length", 0)) or None
+                    total = content_len or None
                     written = 0
                     with open(local_path, "wb") as f, tqdm(
                         total=total,
@@ -321,6 +321,7 @@ class Youtube_Helper:
                         unit_scale=True,
                         unit_divisor=1024,
                         desc=f"Downloading from ftp: {filename_with_ext}",
+                        dynamic_ncols=True,
                     ) as bar:
                         for chunk in r.iter_content(chunk_size=1024 * 1024):
                             if chunk:
@@ -342,7 +343,7 @@ class Youtube_Helper:
 
                 return local_path, filename, resolution, fps
 
-            # 2) crawl /browse
+            # 2) Crawl /browse fallback
             visited: Set[str] = set()
 
             def is_dir_link(href: str) -> bool:
@@ -375,7 +376,7 @@ class Youtube_Helper:
                         continue
 
                     for a in soup.find_all("a"):
-                        href = (a.get("href") or "").strip()
+                        href = (a.get("href") or "").strip()  # type: ignore
                         if not href:
                             continue
                         full = urljoin(url, href)
@@ -386,7 +387,6 @@ class Youtube_Helper:
                             if anchor_text == filename_lower or tail == filename_lower:
                                 logger.info(f"File located via crawl: {full}")
                                 return full
-
                         if is_dir_link(href):
                             stack.append(full)
 
@@ -394,6 +394,8 @@ class Youtube_Helper:
 
             for alias in aliases:
                 start_url = urljoin(base, f"v/{alias}/browse")
+                if debug:
+                    logger.debug(f"Crawling alias: {alias} -> {start_url}")
                 found = crawl(start_url)
                 if not found:
                     continue
@@ -414,6 +416,7 @@ class Youtube_Helper:
                         unit_scale=True,
                         unit_divisor=1024,
                         desc=f"Downloading {filename_with_ext}",
+                        dynamic_ncols=True,
                     ) as bar:
                         for chunk in r.iter_content(chunk_size=1024 * 1024):
                             if chunk:
@@ -439,20 +442,21 @@ class Youtube_Helper:
             return None
 
     # -------------------------------------------------------------------------
-    # YouTube download with resolution preference (pytubefix -> yt_dlp fallback)
+    # Download: YouTube with resolution preference (kept)
     # -------------------------------------------------------------------------
-    def download_video_with_resolution(self, vid: str, resolutions: list[str] | None = None, output_path: str = "."):
-        if resolutions is None:
-            resolutions = ["720p", "480p", "360p", "144p"]
 
-        # pytubefix path
+    def download_video_with_resolution(
+        self,
+        vid: str,
+        resolutions: list[str] = ["720p", "480p", "360p", "144p"],
+        output_path: str = ".",
+    ) -> Optional[tuple[str, str, str, float]]:
         try:
             if self.update_package and datetime.datetime.today().weekday() == 0:
                 self.upgrade_package_if_needed("pytube")
                 self.upgrade_package_if_needed("pytubefix")
 
             youtube_url = f"https://www.youtube.com/watch?v={vid}"
-
             if self.need_authentication:
                 youtube_object = YouTube(
                     youtube_url,
@@ -462,67 +466,65 @@ class Youtube_Helper:
                     on_progress_callback=on_progress,
                 )
             else:
-                youtube_object = YouTube(
-                    youtube_url,
-                    self.client,
-                    on_progress_callback=on_progress,
-                )
+                youtube_object = YouTube(youtube_url, self.client, on_progress_callback=on_progress)
 
             selected_stream = None
             selected_resolution = None
 
             for resolution in resolutions:
-                video_streams = youtube_object.streams.filter(res=resolution)
-                if video_streams:
+                streams = youtube_object.streams.filter(res=resolution)
+                if streams:
                     selected_resolution = resolution
-                    selected_stream = video_streams.first() if hasattr(video_streams, "first") else video_streams[0]
+                    selected_stream = streams.first() if hasattr(streams, "first") else streams[0]
                     break
 
-            # fallback: highest available <=720p mp4 (progressive preferred)
+            # fallback: pick best <= 720p mp4
             if not selected_stream:
+
                 def _height_from_res(res_str: str) -> int:
                     if not res_str:
                         return -1
                     m = re.search(r"(\d{3,4})p", res_str)
                     return int(m.group(1)) if m else -1
 
-                progressive = []
-                adaptive = []
+                progressive_candidates = []
+                adaptive_candidates = []
                 for s in youtube_object.streams:
                     res_attr = getattr(s, "resolution", None) or getattr(s, "res", None)
-                    h = _height_from_res(str(res_attr))
+                    h = _height_from_res(res_attr or "")
                     if 0 < h <= 720:
-                        mime = (getattr(s, "mime_type", "") or "").lower()
-                        if "mp4" not in mime:
+                        mime = getattr(s, "mime_type", "") or ""
+                        if "mp4" not in mime.lower():
                             continue
                         if getattr(s, "is_progressive", False):
-                            progressive.append((h, s))
+                            progressive_candidates.append((h, s))
                         else:
-                            adaptive.append((h, s))
+                            adaptive_candidates.append((h, s))
 
                 chosen = None
-                if progressive:
-                    chosen = max(progressive, key=lambda t: t[0])[1]
-                elif adaptive:
-                    chosen = max(adaptive, key=lambda t: t[0])[1]
+                if progressive_candidates:
+                    chosen = max(progressive_candidates, key=lambda t: t[0])[1]
+                elif adaptive_candidates:
+                    chosen = max(adaptive_candidates, key=lambda t: t[0])[1]
 
-                if not chosen:
-                    logger.error(f"{vid}: no usable stream <= 720p.")
+                if chosen:
+                    selected_stream = chosen
+                    selected_resolution = getattr(chosen, "resolution", None) or getattr(chosen, "res", None)
+                else:
+                    logger.error(f"{vid}: no stream available ≤ 720p.")
                     return None
 
-                selected_stream = chosen
-                selected_resolution = getattr(chosen, "resolution", None) or getattr(chosen, "res", None)
-
             video_file_path = os.path.join(output_path, f"{vid}.mp4")
-            logger.info(f"{vid}: download started with pytubefix (res={selected_resolution}).")
-
+            logger.info(f"{vid}: download in {selected_resolution} started with pytubefix.")
             selected_stream.download(output_path, filename=f"{vid}.mp4")
+
             self.video_title = youtube_object.title
             fps = self.get_video_fps(video_file_path)
-            return video_file_path, vid, str(selected_resolution), fps
+            logger.info(f"{vid}: FPS={fps}.")
+            return video_file_path, vid, str(selected_resolution), float(fps or 0.0)
 
         except Exception as e:
-            logger.error(f"{vid}: pytubefix download method failed: {e}")
+            logger.error(f"{vid}: pytubefix download failed: {e}")
             logger.info(f"{vid}: falling back to yt_dlp method.")
 
         # yt_dlp fallback
@@ -562,7 +564,8 @@ class Youtube_Helper:
                     break
 
             if not selected_format_str:
-                raise RuntimeError(f"{vid}: no stream available via yt_dlp in requested resolutions.")
+                logger.error(f"{vid}: no stream available in requested resolutions via yt_dlp.")
+                raise RuntimeError("yt_dlp: no matching format")
 
             po_token = common.get_secrets("po_token")
 
@@ -577,28 +580,30 @@ class Youtube_Helper:
                 "cookiesfrombrowser": ("chrome",),
             }
 
-            logger.info(f"{vid}: download started with yt_dlp (res={selected_resolution}).")
+            logger.info(f"{vid}: download in {selected_resolution} started with yt_dlp.")
             with yt_dlp.YoutubeDL(download_opts) as ydl:  # type: ignore
                 ydl.download([youtube_url])
 
             video_file_path = os.path.join(output_path, f"{vid}.mp4")
-            self.video_title = str(info_dict.get("title") or vid)
+            self.video_title = info_dict.get("title")  # type: ignore
             fps = self.get_video_fps(video_file_path)
-            return video_file_path, vid, str(selected_resolution), fps
+            logger.info(f"{vid}: FPS={fps}.")
+            return video_file_path, vid, str(selected_resolution), float(fps or 0.0)
 
         except Exception as e:
-            logger.error(f"{vid}: yt_dlp download method failed: {e}.")
+            logger.error(f"{vid}: yt_dlp download failed: {e}")
             return None
 
     # -------------------------------------------------------------------------
-    # Video metadata + trimming
+    # Video info / trimming
     # -------------------------------------------------------------------------
+
     def get_video_fps(self, video_file_path: str) -> Optional[float]:
         try:
             video = cv2.VideoCapture(video_file_path)
             fps = video.get(cv2.CAP_PROP_FPS)
             video.release()
-            return round(float(fps), 0)
+            return float(round(fps, 0))
         except Exception as e:
             logger.error(f"Failed to retrieve FPS: {e}")
             return None
@@ -615,210 +620,189 @@ class Youtube_Helper:
         cap.release()
 
         labels = {
-            144: "144p",
-            240: "240p",
-            360: "360p",
-            480: "480p",
-            720: "720p",
-            1080: "1080p",
-            1440: "1440p",
-            2160: "2160p",
+            144: "144p", 240: "240p", 360: "360p", 480: "480p",
+            720: "720p", 1080: "1080p", 1440: "1440p", 2160: "2160p"
         }
         if height in labels:
             return labels[height]
 
         tolerance = 8
-        closest = min(labels.keys(), key=lambda h: abs(h - height))
+        standard_heights = sorted(labels.keys())
+        closest = min(standard_heights, key=lambda h: abs(h - height))
         if abs(closest - height) <= tolerance:
             return labels[closest]
-
         return f"{height}p"
 
-    def trim_video(self, input_path: str, output_path: str, start_time: float, end_time: float) -> None:
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    def trim_video(self, input_path: str, output_path: str, start_time: int, end_time: int) -> None:
         video_clip = VideoFileClip(input_path).subclip(start_time, end_time)
-        # keep behavior; suppress verbose output
-        video_clip.write_videofile(output_path, codec="libx264", audio_codec="aac", logger=None)
+        os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
+        video_clip.write_videofile(output_path, codec="libx264", audio_codec="aac", verbose=False, logger=None)
         video_clip.close()
 
     # -------------------------------------------------------------------------
-    # Compression
+    # Housekeeping
     # -------------------------------------------------------------------------
-    def detect_gpu(self) -> Optional[str]:
-        try:
-            nvidia_check = subprocess.run(["nvidia-smi"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-            if nvidia_check.returncode == 0:
-                return "hevc_nvenc"
 
-            intel_check = subprocess.run(["vainfo"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-            if "Intel" in intel_check.stdout:
-                return "hevc_qsv"
-        except FileNotFoundError:
-            pass
-        return None
+    def delete_folder(self, folder_path: str) -> bool:
+        if os.path.exists(folder_path) and os.path.isdir(folder_path):
+            try:
+                shutil.rmtree(folder_path)
+                logger.info(f"Folder '{folder_path}' deleted successfully.")
+                return True
+            except Exception as e:
+                logger.error(f"Failed to delete folder '{folder_path}': {e}")
+                return False
+        logger.info(f"Folder '{folder_path}' does not exist.")
+        return False
 
-    def extract_youtube_id(self, file_path: str) -> str:
-        filename = os.path.basename(file_path)
-        youtube_id, _ext = os.path.splitext(filename)
-        if not youtube_id or len(youtube_id) < 5:
-            raise ValueError("Invalid YouTube ID extracted.")
-        return youtube_id
-
-    def compress_video(self, input_path: str, codec: str = "libx265", preset: str = "slow", crf: int = 17) -> None:
-        if not os.path.exists(input_path):
-            raise FileNotFoundError(f"Input file not found: {input_path}")
-
-        filename = os.path.basename(input_path)
-        tmp_out = os.path.join(common.root_dir, f"__tmp_compress_{filename}")
-
-        codec_hw = self.detect_gpu()
-        if codec_hw:
-            codec = codec_hw
-
-        # Correct ffmpeg arg order: output path should be last
-        command = [
-            "ffmpeg",
-            "-y",
-            "-i", input_path,
-            "-c:v", codec,
-            "-preset", preset,
-            "-crf", str(crf),
-            "-progress", "pipe:1",
-            "-nostats",
-            tmp_out,
-        ]
-
-        try:
-            video_id = self.extract_youtube_id(input_path)
-            logger.info(
-                f"Started compression of {video_id} with {codec}. Current size={os.path.getsize(input_path)}."
-            )
-            subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-            logger.info(
-                f"Finished compression of {video_id} with {codec}. New size={os.path.getsize(tmp_out)}."
-            )
-            shutil.move(tmp_out, input_path)
-        except Exception as e:
-            if os.path.exists(tmp_out):
-                try:
-                    os.remove(tmp_out)
-                except Exception:
-                    pass
-            logger.error(f"Video compression failed: {e}. Using uncompressed file.")
-
-    # -------------------------------------------------------------------------
-    # Cleanup helpers
-    # -------------------------------------------------------------------------
     def delete_youtube_mod_videos(self, folders: list[str]) -> None:
-        # supports both legacy "{id}_mod.mp4" and new unique variants "{id}_*_mod.mp4"
-        patterns = [
-            re.compile(r"^[A-Za-z0-9_-]{11}_mod\.mp4$"),
-            re.compile(r"^[A-Za-z0-9_-]{11}_.+_mod\.mp4$"),
-        ]
+        pattern = re.compile(r"^[A-Za-z0-9_-]{11}_.*_mod\.mp4$")
         for folder in folders:
             if not os.path.exists(folder):
                 logger.info(f"Skipping missing folder: {folder}")
                 continue
-            for filename in os.listdir(folder):
-                if any(p.match(filename) for p in patterns):
-                    file_path = os.path.join(folder, filename)
+            for fn in os.listdir(folder):
+                if pattern.match(fn):
+                    fp = os.path.join(folder, fn)
                     try:
-                        os.remove(file_path)
-                        logger.info(f"Deleted: {file_path}")
+                        os.remove(fp)
+                        logger.info(f"Deleted: {fp}")
                     except Exception as e:
-                        logger.info(f"Failed to delete {file_path}: {e}")
+                        logger.info(f"Failed to delete {fp}: {e}")
 
     # -------------------------------------------------------------------------
-    # Mapping enrichment: ISO3 / population / mortality / gini / upload date
+    # Mapping helpers (kept)
     # -------------------------------------------------------------------------
+
     def get_iso_alpha_3(self, country_name: str, existing_iso: Optional[str]) -> Optional[str]:
         try:
+            import pycountry
             return pycountry.countries.lookup(country_name).alpha_3
-        except LookupError:
+        except Exception:
             if country_name.strip().upper() == "KOSOVO":
                 return "XKX"
             return existing_iso if existing_iso else None
 
+    def get_upload_date(self, video_id: str) -> Optional[str]:
+        try:
+            video_url = f"https://www.youtube.com/watch?v={video_id}"
+            yt = YouTube(video_url)
+            upload_date = yt.publish_date
+            return upload_date.strftime("%d%m%Y") if upload_date else None
+        except Exception:
+            return None
+
     def get_latest_population(self) -> pd.DataFrame:
         indicator = "SP.POP.TOTL"
         population_data = wb.get_series(indicator, id_or_value="id", mrv=1)
-        population_df = population_data.reset_index()
-        population_df = population_df.rename(
-            columns={
-                population_df.columns[0]: "iso3",
-                population_df.columns[2]: "Year",
-                population_df.columns[3]: "Population",
-            }
-        )
-        population_df["Population"] = population_df["Population"] / 1000
-        return population_df
+        df = population_data.reset_index()
+        df = df.rename(columns={df.columns[0]: "iso3", df.columns[2]: "Year", df.columns[3]: "Population"})
+        df["Population"] = df["Population"] / 1000
+        return df
 
     def update_population_in_csv(self, data: pd.DataFrame) -> None:
         if "iso3" not in data.columns:
-            raise KeyError("The CSV file does not have an 'iso3' column.")
-
+            raise KeyError("The CSV file does not have a 'iso3' column.")
         if "population_country" not in data.columns:
             data["population_country"] = None
 
         latest_population = self.get_latest_population()
         population_dict = dict(zip(latest_population["iso3"], latest_population["Population"]))
-
-        for index, row in data.iterrows():
+        for idx, row in data.iterrows():
             iso3 = row["iso3"]
-            data.at[index, "population_country"] = population_dict.get(iso3, None)
+            data.at[idx, "population_country"] = population_dict.get(iso3, None)  # type: ignore
 
-        # IMPORTANT FIX: write to path, not self.mapping DF
-        data.to_csv(self.mapping_path, index=False)
+        mapping_path = common.get_configs("mapping")
+        data.to_csv(mapping_path, index=False)
         logger.info("Mapping file updated successfully with country population.")
 
+    def get_latest_gini_values(self) -> pd.DataFrame:
+        indicator = "SI.POV.GINI"
+        gini_data = wb.get_series(indicator, id_or_value="id", mrv=1)
+        df = gini_data.reset_index()
+        df = df.rename(columns={df.columns[0]: "iso3", df.columns[2]: "Year", df.columns[3]: "gini"})
+        df = df.sort_values(by=["iso3", "Year"], ascending=[True, False]).drop_duplicates(subset=["iso3"])
+        return df[["iso3", "gini"]]
+
+    def fill_gini_data(self, df: pd.DataFrame) -> None:
+        try:
+            if "iso3" not in df.columns:
+                logger.error("Missing column 'iso3'.")
+                return
+            if "gini" not in df.columns:
+                df["gini"] = None
+
+            gini_df = self.get_latest_gini_values()
+            updated_df = pd.merge(df, gini_df, on="iso3", how="left", suffixes=("", "_new"))
+            updated_df["gini"] = updated_df["gini_new"].combine_first(updated_df["gini"])
+            updated_df = updated_df.drop(columns=["gini_new"])
+
+            mapping_path = common.get_configs("mapping")
+            updated_df.to_csv(mapping_path, index=False)
+            logger.info("Mapping file updated successfully with GINI value.")
+        except Exception as e:
+            logger.error(f"An error occurred: {e}")
+
     # -------------------------------------------------------------------------
-    # Thread-safe YOLO tracking/segmentation (NEW)
+    # Thread-safe tracking helpers
     # -------------------------------------------------------------------------
+
+    @staticmethod
+    def _write_rows_csv(path: str, header: list[str], rows: list[list]) -> None:
+        if not rows:
+            return
+        os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+        file_exists = os.path.exists(path)
+        with open(path, "a", newline="", encoding="utf-8") as f:
+            w = csv.writer(f)
+            if not file_exists:
+                w.writerow(header)
+            w.writerows(rows)
+
     def get_thread_models(self, bbox_mode: bool, seg_mode: bool) -> tuple[Optional[YOLO], Optional[YOLO]]:
-        # bbox model
+        """
+        Thread-local cache: each worker thread gets its own YOLO model instances.
+        This avoids race conditions inside Ultralytics trackers.
+        """
         if bbox_mode:
-            if not hasattr(self._TLS, "bbox_model") or self._TLS.bbox_model is None:
-                logger.info(f"[models] Loading bbox model in thread={threading.current_thread().name}: {self.tracking_model}")
-                self._TLS.bbox_model = YOLO(self.tracking_model)
+            if not hasattr(_TLS, "bbox_model") or _TLS.bbox_model is None:
+                _TLS.bbox_model = YOLO(self.tracking_model)
         else:
-            if not hasattr(self._TLS, "bbox_model"):
-                self._TLS.bbox_model = None
+            _TLS.bbox_model = None
 
-        # seg model
         if seg_mode:
-            if not hasattr(self._TLS, "seg_model") or self._TLS.seg_model is None:
-                logger.info(f"[models] Loading seg model in thread={threading.current_thread().name}: {self.segment_model}")
-                self._TLS.seg_model = YOLO(self.segment_model)
+            if not hasattr(_TLS, "seg_model") or _TLS.seg_model is None:
+                _TLS.seg_model = YOLO(self.segment_model)
         else:
-            if not hasattr(self._TLS, "seg_model"):
-                self._TLS.seg_model = None
+            _TLS.seg_model = None
 
-        return self._TLS.bbox_model, self._TLS.seg_model
+        return _TLS.bbox_model, _TLS.seg_model
 
     def make_tracker_config(self, tracker_path: str, video_fps: int) -> str:
-        if not isinstance(tracker_path, str) or not tracker_path.endswith(".yaml"):
-            return tracker_path
-
-        # Only edit if it is an actual local file
-        if not os.path.isfile(tracker_path):
+        """
+        Thread-safe alternative to in-place YAML edits:
+        - Only for bbox_custom_tracker.yaml / seg_custom_tracker.yaml
+        - Creates a temp copy with track_buffer = track_buffer_sec * fps
+        """
+        if not (isinstance(tracker_path, str) and tracker_path.endswith(".yaml") and os.path.isfile(tracker_path)):
             return tracker_path
 
         base = os.path.basename(tracker_path)
         if base not in ("bbox_custom_tracker.yaml", "seg_custom_tracker.yaml"):
             return tracker_path
 
-        # Convert seconds to frames (Ultralytics tracker expects frames)
         try:
-            track_buffer_sec = float(common.get_configs("track_buffer_sec"))
+            import yaml
         except Exception:
-            track_buffer_sec = 2.0
+            return tracker_path
 
-        track_buffer_frames = int(round(track_buffer_sec * float(video_fps)))
+        try:
+            with open(tracker_path, "r", encoding="utf-8") as f:
+                cfg = yaml.safe_load(f) or {}
+        except Exception:
+            return tracker_path
 
-        with open(tracker_path, "r", encoding="utf-8") as f:
-            cfg = yaml.safe_load(f) or {}
-
-        cfg["track_buffer"] = track_buffer_frames
+        cfg["track_buffer"] = float(self.track_buffer_sec) * float(video_fps)
 
         tmp_dir = tempfile.mkdtemp(prefix="tracker_cfg_")
         tmp_path = os.path.join(tmp_dir, base)
@@ -828,17 +812,9 @@ class Youtube_Helper:
 
         return tmp_path
 
-    @staticmethod
-    def _write_rows_csv(path: str, header: list[str], rows: list[list]) -> None:
-        if not rows:
-            return
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        file_exists = os.path.exists(path)
-        with open(path, "a", newline="", encoding="utf-8") as f:
-            w = csv.writer(f)
-            if not file_exists:
-                w.writerow(header)
-            w.writerows(rows)
+    # -------------------------------------------------------------------------
+    # THE FUNCTION YOU ASKED TO REWRITE (FULL)
+    # -------------------------------------------------------------------------
 
     def tracking_mode_threadsafe(
         self,
@@ -848,17 +824,16 @@ class Youtube_Helper:
         seg_mode: bool,
         bbox_csv_out: Optional[str] = None,
         seg_csv_out: Optional[str] = None,
-        bbox_model: "YOLO | None" = None,
-        seg_model: "YOLO | None" = None,
+        bbox_model: YOLO | None = None,
+        seg_model: YOLO | None = None,
         flush_every_n_frames: int = 30,
-        # progress / logging
+        # Progress UI / logging
         job_label: str = "",
         show_frame_pbar: bool = True,
         tqdm_position: int = 1,
         postfix_every_n: int = 30,
-        # ID behavior
-        remap_ids_per_clip: bool = True,
-        force_tracker_reset: bool = True,
+        # Output semantics
+        remap_track_ids_per_segment: bool = True,
     ) -> None:
         """
         Thread-safe alternative to legacy tracking_mode():
@@ -867,31 +842,22 @@ class Youtube_Helper:
           - writes CSVs directly in the SAME schema you used before
           - does NOT use runs/ paths, and does NOT create per-frame txt artifacts
 
-        Notes:
-          - `unique-id` from Ultralytics trackers is not guaranteed to start at 1 per clip
-            when models are reused across jobs/threads. If you need per-CSV IDs starting at 1,
-            enable `remap_ids_per_clip=True`.
-          - `force_tracker_reset=True` attempts to clear Ultralytics internal tracker state
-            at the start of each clip (best-effort, depends on Ultralytics version).
+        IMPORTANT:
+          - Each segment/clip is tracked independently.
+          - Tracker reset per clip is enforced via persist=False on the first frame.
+          - By default, we REMAP track IDs within each clip so unique-id starts from 1
+            (this avoids confusing "starts from 11" when the underlying tracker keeps
+             incrementing IDs across multiple clips processed by the same thread).
         """
-        import csv
-        import math
-        import os
-        import shutil
-        import time
 
-        import cv2
-        import torch
-        from tqdm import tqdm
-
-        if bbox_mode and bbox_csv_out is None:
+        if bbox_mode and (bbox_csv_out is None):
             raise ValueError("bbox_mode=True requires bbox_csv_out")
-        if seg_mode and seg_csv_out is None:
+        if seg_mode and (seg_csv_out is None):
             raise ValueError("seg_mode=True requires seg_csv_out")
 
-        # If caller didn't provide models, use thread-local ones (your method)
+        # Use thread-local models if not provided
         if bbox_model is None or (seg_mode and seg_model is None):
-            bbox_m, seg_m = self.get_thread_models(bbox_mode=bbox_mode, seg_mode=seg_mode)
+            bbox_m, seg_m = self.get_thread_models(bbox_mode, seg_mode)
             if bbox_model is None:
                 bbox_model = bbox_m
             if seg_model is None:
@@ -904,50 +870,16 @@ class Youtube_Helper:
 
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
-        # Make per-clip tracker configs (your method may create temp YAMLs)
         bbox_tracker_eff = self.make_tracker_config(self.bbox_tracker, video_fps) if bbox_mode else self.bbox_tracker
         seg_tracker_eff = self.make_tracker_config(self.seg_tracker, video_fps) if seg_mode else self.seg_tracker
-
-        def _write_rows_csv(path: str, header: list[str], rows: list[list]) -> None:
-            if not rows:
-                return
-            os.makedirs(os.path.dirname(path), exist_ok=True)
-            file_exists = os.path.exists(path)
-            with open(path, "a", newline="", encoding="utf-8") as f:
-                w = csv.writer(f)
-                if not file_exists:
-                    w.writerow(header)
-                w.writerows(rows)
-
-        def _best_effort_reset_tracker(model) -> None:
-            """
-            Ultralytics internals differ by version. This is a safe best-effort reset.
-            It prevents the common issue where track IDs continue across clips when the model is reused.
-            """
-            try:
-                # Some versions store trackers on predictor
-                pred = getattr(model, "predictor", None)
-                if pred is not None:
-                    if hasattr(pred, "trackers"):
-                        pred.trackers = None
-                    if hasattr(pred, "tracker"):
-                        pred.tracker = None
-            except Exception:
-                pass
-
-        # Optional: reset tracker state at the start of each clip
-        if force_tracker_reset:
-            if bbox_mode and bbox_model is not None:
-                _best_effort_reset_tracker(bbox_model)
-            if seg_mode and seg_model is not None:
-                _best_effort_reset_tracker(seg_model)
 
         cap = cv2.VideoCapture(input_video_path)
         if not cap.isOpened():
             raise RuntimeError(f"Failed to open video: {input_video_path}")
 
-        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or 0
-        desc = f"Frames {job_label}".strip() if job_label else "Frames"
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0)
+        if total_frames <= 0:
+            total_frames = 0  # tqdm will run without a known total
 
         bbox_header = ["yolo-id", "x-center", "y-center", "width", "height", "unique-id", "confidence", "frame-count"]
         seg_header = ["yolo-id", "mask-polygon", "unique-id", "confidence", "frame-count"]
@@ -956,35 +888,34 @@ class Youtube_Helper:
         seg_buf: list[list] = []
         frame_count = 0
 
-        # Per-clip remap (ensures IDs start at 1 in every CSV)
+        # Optional per-clip ID remapping (avoids 11/12/13 starts, etc.)
         bbox_id_map: dict[int, int] = {}
         seg_id_map: dict[int, int] = {}
         bbox_next_id = 1
         seg_next_id = 1
 
-        def _remap(track_id: int, mode: str) -> int:
-            nonlocal bbox_next_id, seg_next_id
-            if track_id < 0:
+        def _map_id(raw_id: int, id_map: dict[int, int], next_id_holder: list[int]) -> int:
+            # raw_id could be -1 if tracker didn't provide one
+            if raw_id is None or raw_id < 0:
                 return -1
-            if mode == "bbox":
-                if track_id not in bbox_id_map:
-                    bbox_id_map[track_id] = bbox_next_id
-                    bbox_next_id += 1
-                return bbox_id_map[track_id]
-            else:
-                if track_id not in seg_id_map:
-                    seg_id_map[track_id] = seg_next_id
-                    seg_next_id += 1
-                return seg_id_map[track_id]
+            if raw_id in id_map:
+                return id_map[raw_id]
+            nid = next_id_holder[0]
+            id_map[raw_id] = nid
+            next_id_holder[0] += 1
+            return nid
 
-        t_start = time.time()
+        bbox_next = [bbox_next_id]
+        seg_next = [seg_next_id]
 
+        # Per-frame tqdm
         pbar = None
         if show_frame_pbar:
+            desc = f"frames: {job_label}" if job_label else "frames"
             pbar = tqdm(
                 total=total_frames if total_frames > 0 else None,
                 desc=desc,
-                unit="frame",
+                unit="f",
                 dynamic_ncols=True,
                 position=tqdm_position,
                 leave=False,
@@ -997,19 +928,15 @@ class Youtube_Helper:
                     break
 
                 frame_count += 1
-
-                # IMPORTANT:
-                # - persist=False on first frame ensures a fresh tracker for this clip (per Ultralytics semantics)
-                # - persist=True thereafter keeps IDs stable within the clip
-                persist_flag = frame_count > 1
+                persist_flag = frame_count > 1  # reset per clip; persist within clip
 
                 # ---------------- SEG ----------------
-                if seg_mode and seg_model is not None:
-                    seg_results = seg_model.track(
+                if seg_mode:
+                    seg_results = seg_model.track(  # type: ignore
                         frame,
                         tracker=seg_tracker_eff,
                         persist=persist_flag,
-                        conf=float(getattr(self, "confidence", 0.0)),
+                        conf=self.confidence,
                         verbose=False,
                         device=device,
                         save=False,
@@ -1020,10 +947,10 @@ class Youtube_Helper:
                     boxes = r.boxes
                     masks = getattr(r, "masks", None)
 
-                    if boxes is not None and getattr(boxes, "xywhn", None) is not None and boxes.xywhn.size(0) > 0:
+                    if boxes is not None and boxes.xywhn is not None and boxes.xywhn.size(0) > 0:
                         n = int(boxes.xywhn.size(0))
                         cls_list = boxes.cls.int().cpu().tolist()
-                        raw_ids = (
+                        raw_id_list = (
                             boxes.id.int().cpu().tolist()
                             if getattr(boxes, "id", None) is not None
                             else [-1] * n
@@ -1034,7 +961,6 @@ class Youtube_Helper:
                             else [math.nan] * n
                         )
 
-                        # masks.xyn: list of Nx2 polygons (normalized)
                         if masks is not None and getattr(masks, "xyn", None) is not None:
                             polys = masks.xyn
                             m = min(len(polys), n)
@@ -1045,25 +971,28 @@ class Youtube_Helper:
                                     flat.append(str(float(x)))
                                     flat.append(str(float(y)))
 
-                                tid = int(raw_ids[i])
-                                if remap_ids_per_clip:
-                                    tid = _remap(tid, "seg")
+                                raw_tid = int(raw_id_list[i]) if i < len(raw_id_list) else -1
+                                tid = (
+                                    _map_id(raw_tid, seg_id_map, seg_next)
+                                    if remap_track_ids_per_segment
+                                    else raw_tid
+                                )
 
                                 seg_buf.append([
                                     int(cls_list[i]),
                                     " ".join(flat),
-                                    tid,
+                                    int(tid),
                                     float(conf_list[i]),
                                     frame_count,
                                 ])
 
                 # ---------------- BBOX ----------------
-                if bbox_mode and bbox_model is not None:
-                    bbox_results = bbox_model.track(
+                if bbox_mode:
+                    bbox_results = bbox_model.track(  # type: ignore
                         frame,
                         tracker=bbox_tracker_eff,
                         persist=persist_flag,
-                        conf=float(getattr(self, "confidence", 0.0)),
+                        conf=self.confidence,
                         verbose=False,
                         device=device,
                         save=False,
@@ -1073,10 +1002,10 @@ class Youtube_Helper:
                     r = bbox_results[0]
                     boxes = r.boxes
 
-                    if boxes is not None and getattr(boxes, "xywhn", None) is not None and boxes.xywhn.size(0) > 0:
+                    if boxes is not None and boxes.xywhn is not None and boxes.xywhn.size(0) > 0:
                         xywhn = boxes.xywhn.cpu().tolist()
                         cls_list = boxes.cls.int().cpu().tolist()
-                        raw_ids = (
+                        raw_id_list = (
                             boxes.id.int().cpu().tolist()
                             if getattr(boxes, "id", None) is not None
                             else [-1] * len(xywhn)
@@ -1087,10 +1016,13 @@ class Youtube_Helper:
                             else [math.nan] * len(xywhn)
                         )
 
-                        for (x, y, w, h), c, tid, confv in zip(xywhn, cls_list, raw_ids, conf_list):
-                            tid = int(tid)
-                            if remap_ids_per_clip:
-                                tid = _remap(tid, "bbox")
+                        for j, ((x, y, w, h), c, raw_tid, confv) in enumerate(zip(xywhn, cls_list, raw_id_list, conf_list)):  # noqa: E501
+                            raw_tid = int(raw_tid) if raw_tid is not None else -1
+                            tid = (
+                                _map_id(raw_tid, bbox_id_map, bbox_next)
+                                if remap_track_ids_per_segment
+                                else raw_tid
+                            )
 
                             bbox_buf.append([
                                 int(c),
@@ -1098,228 +1030,12 @@ class Youtube_Helper:
                                 float(y),
                                 float(w),
                                 float(h),
-                                tid,
+                                int(tid),
                                 float(confv),
                                 frame_count,
                             ])
 
-                # flush
-                if frame_count % flush_every_n_frames == 0:
-                    if bbox_mode and bbox_csv_out:
-                        _write_rows_csv(bbox_csv_out, bbox_header, bbox_buf)
-                        bbox_buf.clear()
-                    if seg_mode and seg_csv_out:
-                        _write_rows_csv(seg_csv_out, seg_header, seg_buf)
-                        seg_buf.clear()
-
-                # progress bar + speed
-                if pbar is not None:
-                    pbar.update(1)
-                    if postfix_every_n and (frame_count % postfix_every_n == 0):
-                        elapsed = max(1e-6, time.time() - t_start)
-                        fps_eff = frame_count / elapsed
-                        pbar.set_postfix({
-                            "fps": f"{fps_eff:.2f}",
-                            "frame": frame_count,
-                        })
-
-            # final flush
-            if bbox_mode and bbox_csv_out:
-                _write_rows_csv(bbox_csv_out, bbox_header, bbox_buf)
-            if seg_mode and seg_csv_out:
-                _write_rows_csv(seg_csv_out, seg_header, seg_buf)
-
-        finally:
-            cap.release()
-            if pbar is not None:
-                pbar.close()
-
-            # cleanup temp tracker configs (if your make_tracker_config creates temp dirs)
-            for p in (bbox_tracker_eff, seg_tracker_eff):
-                if isinstance(p, str) and "tracker_cfg_" in p:
-                    try:
-                        shutil.rmtree(os.path.dirname(p), ignore_errors=True)
-                    except Exception:
-                        pass
-
-    # -------------------------------------------------------------------------
-    # Legacy tracking_mode (kept for compatibility; NOT thread-safe)
-    # -------------------------------------------------------------------------
-    def update_track_buffer_in_yaml(self, yaml_path: str, video_fps: int) -> None:
-        """
-        Legacy in-place updater (NOT thread-safe). Prefer make_tracker_config() instead.
-        """
-        with open(yaml_path, "r", encoding="utf-8") as f:
-            cfg = yaml.safe_load(f) or {}
-        cfg["track_buffer"] = float(self.track_buffer_sec) * float(video_fps)
-        with open(yaml_path, "w", encoding="utf-8") as f:
-            yaml.safe_dump(cfg, f, sort_keys=False)
-
-    def tracking_mode(self, *args, **kwargs):
-        """
-        LEGACY METHOD (not thread-safe):
-        retained so older runners don't break.
-
-        In the multithreaded pipeline, call tracking_mode_threadsafe() instead.
-        """
-        raise RuntimeError(
-            "tracking_mode() is legacy and not thread-safe. "
-            "Use tracking_mode_threadsafe() in the multithreaded pipeline."
-        )
-
-    def tracking_mode_threadsafe_window(
-        self,
-        source_video_path: str,
-        start_time_s: int,
-        end_time_s: int,
-        video_fps: int,
-        bbox_mode: bool,
-        seg_mode: bool,
-        bbox_csv_out: Optional[str] = None,
-        seg_csv_out: Optional[str] = None,
-        bbox_model: YOLO | None = None,
-        seg_model: YOLO | None = None,
-        flush_every_n_frames: int = 30,
-        # optional progress
-        show_frame_pbar: bool = False,
-        tqdm_position: int = 1,
-        job_label: str = "",
-        postfix_every_n: int = 30,
-    ) -> None:
-        """
-        Track ONLY frames in [start_time_s, end_time_s) from source_video_path (no mp4 trimming).
-        Writes the same CSV schemas as before with frame-count starting at 1 for this segment.
-        """
-
-        if bbox_mode and bbox_csv_out is None:
-            raise ValueError("bbox_mode=True requires bbox_csv_out")
-        if seg_mode and seg_csv_out is None:
-            raise ValueError("seg_mode=True requires seg_csv_out")
-
-        # thread-local models if not provided
-        if bbox_model is None or (seg_mode and seg_model is None):
-            bbox_m, seg_m = self.get_thread_models(bbox_mode=bbox_mode, seg_mode=seg_mode)
-            if bbox_model is None:
-                bbox_model = bbox_m
-            if seg_model is None:
-                seg_model = seg_m
-
-        if bbox_mode and bbox_model is None:
-            raise ValueError("bbox_mode=True but bbox_model is None")
-        if seg_mode and seg_model is None:
-            raise ValueError("seg_mode=True but seg_model is None")
-
-        device = "cuda" if torch.cuda.is_available() else "cpu"
-
-        bbox_tracker_eff = self.make_tracker_config(self.bbox_tracker, video_fps) if bbox_mode else self.bbox_tracker
-        seg_tracker_eff = self.make_tracker_config(self.seg_tracker, video_fps) if seg_mode else self.seg_tracker
-
-        cap = cv2.VideoCapture(source_video_path)
-        if not cap.isOpened():
-            raise RuntimeError(f"Failed to open video: {source_video_path}")
-
-        # Frame range
-        start_frame = int(round(start_time_s * video_fps))
-        end_frame = int(round(end_time_s * video_fps))  # exclusive
-        frames_to_process = max(0, end_frame - start_frame)
-
-        # Seek to start frame
-        cap.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
-
-        bbox_header = ["yolo-id", "x-center", "y-center", "width", "height", "unique-id", "confidence", "frame-count"]
-        seg_header = ["yolo-id", "mask-polygon", "unique-id", "confidence", "frame-count"]
-
-        bbox_buf: list[list] = []
-        seg_buf: list[list] = []
-
-        frame_count = 0  # segment-local frame counter (starts at 1)
-        processed = 0
-
-        pbar = None
-        t0 = _time.time()
-
-        try:
-            if show_frame_pbar:
-                pbar = _tqdm(
-                    total=frames_to_process,
-                    desc=f"{job_label} frames" if job_label else "frames",
-                    unit="frame",
-                    position=tqdm_position,
-                    leave=False,
-                    dynamic_ncols=True,
-                )
-
-            while processed < frames_to_process:
-                ok, frame = cap.read()
-                if not ok:
-                    break
-
-                processed += 1
-                frame_count += 1
-
-                # reset per segment; persist within this segment
-                persist_flag = True
-
-                # --- SEG ---
-                if seg_mode:
-                    seg_results = seg_model.track(
-                        frame,
-                        tracker=seg_tracker_eff,
-                        persist=persist_flag,
-                        conf=self.confidence,
-                        verbose=False,
-                        device=device,
-                        save=False,
-                        save_txt=False,
-                        show=False,
-                    )
-                    r = seg_results[0]
-                    boxes = r.boxes
-                    masks = getattr(r, "masks", None)
-
-                    if boxes is not None and boxes.xywhn is not None and boxes.xywhn.size(0) > 0:
-                        n = int(boxes.xywhn.size(0))
-                        cls_list = boxes.cls.int().cpu().tolist()
-                        id_list = boxes.id.int().cpu().tolist() if getattr(boxes, "id", None) is not None else [-1] * n
-                        conf_list = boxes.conf.cpu().tolist() if getattr(boxes, "conf", None) is not None else [math.nan] * n
-
-                        if masks is not None and getattr(masks, "xyn", None) is not None:
-                            polys = masks.xyn
-                            m = min(len(polys), n)
-                            for i in range(m):
-                                poly = polys[i]
-                                flat = []
-                                for x, y in poly:
-                                    flat.append(str(float(x)))
-                                    flat.append(str(float(y)))
-                                seg_buf.append([int(cls_list[i]), " ".join(flat), int(id_list[i]), float(conf_list[i]), frame_count])
-
-                # --- BBOX ---
-                if bbox_mode:
-                    bbox_results = bbox_model.track(
-                        frame,
-                        tracker=bbox_tracker_eff,
-                        persist=persist_flag,
-                        conf=self.confidence,
-                        verbose=False,
-                        device=device,
-                        save=False,
-                        save_txt=False,
-                        show=False,
-                    )
-                    r = bbox_results[0]
-                    boxes = r.boxes
-
-                    if boxes is not None and boxes.xywhn is not None and boxes.xywhn.size(0) > 0:
-                        xywhn = boxes.xywhn.cpu().tolist()
-                        cls_list = boxes.cls.int().cpu().tolist()
-                        id_list = boxes.id.int().cpu().tolist() if getattr(boxes, "id", None) is not None else [-1] * len(xywhn)
-                        conf_list = boxes.conf.cpu().tolist() if getattr(boxes, "conf", None) is not None else [math.nan] * len(xywhn)
-
-                        for (x, y, w, h), c, tid, confv in zip(xywhn, cls_list, id_list, conf_list):
-                            bbox_buf.append([int(c), float(x), float(y), float(w), float(h), int(tid), float(confv), frame_count])
-
-                # flush
+                # Flush periodically
                 if frame_count % flush_every_n_frames == 0:
                     if bbox_mode and bbox_csv_out:
                         self._write_rows_csv(bbox_csv_out, bbox_header, bbox_buf)
@@ -1328,13 +1044,15 @@ class Youtube_Helper:
                         self._write_rows_csv(seg_csv_out, seg_header, seg_buf)
                         seg_buf.clear()
 
-                # tqdm
-                if pbar:
+                # tqdm update
+                if pbar is not None:
                     pbar.update(1)
                     if postfix_every_n and (frame_count % postfix_every_n == 0):
-                        elapsed = _time.time() - t0
-                        eff = (frame_count / elapsed) if elapsed > 0 else 0.0
-                        pbar.set_postfix_str(f"yolo_fps={eff:.2f}")
+                        pbar.set_postfix({
+                            "f": frame_count,
+                            "bbox_rows": (0 if not bbox_mode else len(bbox_buf)),
+                            "seg_rows": (0 if not seg_mode else len(seg_buf)),
+                        })
 
             # final flush
             if bbox_mode and bbox_csv_out:
@@ -1344,8 +1062,10 @@ class Youtube_Helper:
 
         finally:
             cap.release()
-            if pbar:
+            if pbar is not None:
                 pbar.close()
+
+            # cleanup temp tracker configs (only when we created a temp dir)
             for p in (bbox_tracker_eff, seg_tracker_eff):
                 if isinstance(p, str) and "tracker_cfg_" in p:
                     try:
