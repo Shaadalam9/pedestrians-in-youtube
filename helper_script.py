@@ -895,7 +895,7 @@ class Youtube_Helper:
         seg_csv_out: Optional[str] = None,
         bbox_model: YOLO | None = None,
         seg_model: YOLO | None = None,
-        flush_every_n_frames: int = 30,
+        flush_every_n_frames: int = 600,  # CHANGED: was 30
         # Progress UI / logging
         job_label: str = "",
         show_frame_pbar: bool = True,
@@ -920,6 +920,9 @@ class Youtube_Helper:
         if seg_mode and (seg_csv_out is None):
             raise ValueError("seg_mode=True requires seg_csv_out")
 
+        # Allow config override (optional, but recommended)
+        flush_every_n_frames = int(_safe_get_config("flush_every_n_frames", flush_every_n_frames))
+
         # Use thread-local models if not provided
         if bbox_model is None or (seg_mode and seg_model is None):
             bbox_m, seg_m = self.get_thread_models(bbox_mode, seg_mode)
@@ -933,13 +936,11 @@ class Youtube_Helper:
         if seg_mode and seg_model is None:
             raise ValueError("seg_mode=True but seg_model is None")
 
-        # Ultralytics device argument can be "cpu", "cuda", or an index like 0
         device: Any = 0 if torch.cuda.is_available() else "cpu"
 
         bbox_tracker_eff = self.make_tracker_config(self.bbox_tracker, video_fps) if bbox_mode else self.bbox_tracker
         seg_tracker_eff = self.make_tracker_config(self.seg_tracker, video_fps) if seg_mode else self.seg_tracker
 
-        # Headers
         bbox_header = ["yolo-id", "x-center", "y-center", "width", "height", "unique-id", "confidence", "frame-count"]
         seg_header = ["yolo-id", "mask-polygon", "unique-id", "confidence", "frame-count"]
 
@@ -963,7 +964,7 @@ class Youtube_Helper:
             next_id_holder[0] += 1
             return nid
 
-        # Progress bar (optional)
+        # Progress bar
         total_frames: Optional[int] = None
         if show_frame_pbar:
             try:
@@ -987,159 +988,118 @@ class Youtube_Helper:
                 leave=False,
             )
 
+        # CHANGED: keep CSV files open for the whole segment
+        bbox_f = seg_f = None
+        bbox_w = seg_w = None
+
         try:
-            # -----------------------------------------------------------------
-            # Snellius/HPC path: streaming over the video file
-            # -----------------------------------------------------------------
-            if self.snellius_mode:
-                if seg_mode:
-                    # Stream segmentation results per frame
-                    seg_iter = seg_model.track(  # type: ignore
-                        source=input_video_path,
-                        stream=True,
-                        persist=True,
-                        tracker=seg_tracker_eff,
-                        conf=self.confidence,
-                        verbose=False,
-                        device=device,
-                        save=False,
-                        save_txt=False,
-                        show=False,
-                    )
-                else:
-                    seg_iter = None
+            if bbox_mode and bbox_csv_out:
+                os.makedirs(os.path.dirname(bbox_csv_out) or ".", exist_ok=True)
+                bbox_new = not os.path.exists(bbox_csv_out)
+                bbox_f = open(bbox_csv_out, "a", newline="", encoding="utf-8")
+                bbox_w = csv.writer(bbox_f)
+                if bbox_new:
+                    bbox_w.writerow(bbox_header)
 
-                if bbox_mode:
-                    # Stream bbox results per frame
-                    bbox_iter = bbox_model.track(  # type: ignore
-                        source=input_video_path,
-                        stream=True,
-                        persist=True,
-                        tracker=bbox_tracker_eff,
-                        conf=self.confidence,
-                        verbose=False,
-                        device=device,
-                        save=False,
-                        save_txt=False,
-                        show=False,
-                    )
-                else:
-                    bbox_iter = None
+            if seg_mode and seg_csv_out:
+                os.makedirs(os.path.dirname(seg_csv_out) or ".", exist_ok=True)
+                seg_new = not os.path.exists(seg_csv_out)
+                seg_f = open(seg_csv_out, "a", newline="", encoding="utf-8")
+                seg_w = csv.writer(seg_f)
+                if seg_new:
+                    seg_w.writerow(seg_header)
 
-                # If both modes are on, this will decode twice (two iterators).
-                # Your current configs typically run bbox-only, which is optimal.
-                def _iter_results(it):
-                    for r in it:
-                        # Ultralytics sometimes yields a list; normalize
-                        if isinstance(r, (list, tuple)):
-                            yield (r[0] if r else None)
-                        else:
-                            yield r
+            try:
+                # -------------------------------------------------------------
+                # Snellius/HPC path: streaming over the video file
+                # -------------------------------------------------------------
+                if self.snellius_mode:
+                    if seg_mode:
+                        seg_iter = seg_model.track(  # type: ignore
+                            source=input_video_path,
+                            stream=True,
+                            persist=True,
+                            tracker=seg_tracker_eff,
+                            conf=self.confidence,
+                            verbose=False,
+                            device=device,
+                            save=False,
+                            save_txt=False,
+                            show=False,
+                        )
+                    else:
+                        seg_iter = None
 
-                if seg_iter is not None:
-                    seg_stream = _iter_results(seg_iter)
-                else:
-                    seg_stream = None
+                    if bbox_mode:
+                        bbox_iter = bbox_model.track(  # type: ignore
+                            source=input_video_path,
+                            stream=True,
+                            persist=True,
+                            tracker=bbox_tracker_eff,
+                            conf=self.confidence,
+                            verbose=False,
+                            device=device,
+                            save=False,
+                            save_txt=False,
+                            show=False,
+                        )
+                    else:
+                        bbox_iter = None
 
-                if bbox_iter is not None:
-                    bbox_stream = _iter_results(bbox_iter)
-                else:
-                    bbox_stream = None
+                    def _iter_results(it):
+                        for r in it:
+                            if isinstance(r, (list, tuple)):
+                                yield (r[0] if r else None)
+                            else:
+                                yield r
 
-                # Drive the loop based on available stream(s)
-                if bbox_stream is not None and seg_stream is None:
-                    for r in bbox_stream:
-                        if r is None:
-                            continue
-                        frame_count += 1
+                    seg_stream = _iter_results(seg_iter) if seg_iter is not None else None
+                    bbox_stream = _iter_results(bbox_iter) if bbox_iter is not None else None
 
-                        boxes = getattr(r, "boxes", None)
-                        if boxes is not None and getattr(boxes, "xywhn", None) is not None and boxes.xywhn.size(0) > 0:
-                            xywhn = boxes.xywhn.cpu().tolist()
-                            cls_list = boxes.cls.int().cpu().tolist()
-                            raw_id_list = (
-                                boxes.id.int().cpu().tolist()
-                                if getattr(boxes, "id", None) is not None
-                                else [-1] * len(xywhn)
-                            )
-                            conf_list = (
-                                boxes.conf.cpu().tolist()
-                                if getattr(boxes, "conf", None) is not None
-                                else [math.nan] * len(xywhn)
-                            )
+                    # Drive based on one stream when possible (avoid double decode)
+                    if bbox_stream is not None and seg_stream is None:
+                        for r in bbox_stream:
+                            if r is None:
+                                continue
+                            frame_count += 1
 
-                            for (x, y, w, h), c, raw_tid, confv in zip(xywhn, cls_list, raw_id_list, conf_list):
-                                raw_tid = int(raw_tid) if raw_tid is not None else -1
-                                tid = _map_id(raw_tid, bbox_id_map, bbox_next) if remap_track_ids_per_segment else raw_tid
+                            boxes = getattr(r, "boxes", None)
+                            if boxes is not None and getattr(boxes, "xywhn", None) is not None and boxes.xywhn.size(0) > 0:
+                                xywhn = boxes.xywhn.cpu().tolist()
+                                cls_list = boxes.cls.int().cpu().tolist()
+                                raw_id_list = (
+                                    boxes.id.int().cpu().tolist()
+                                    if getattr(boxes, "id", None) is not None
+                                    else [-1] * len(xywhn)
+                                )
+                                conf_list = (
+                                    boxes.conf.cpu().tolist()
+                                    if getattr(boxes, "conf", None) is not None
+                                    else [math.nan] * len(xywhn)
+                                )
 
-                                bbox_buf.append([int(c), float(x), float(y), float(w), float(h), int(tid), float(confv), frame_count])
+                                for (x, y, w, h), c, raw_tid, confv in zip(xywhn, cls_list, raw_id_list, conf_list):
+                                    raw_tid = int(raw_tid) if raw_tid is not None else -1
+                                    tid = _map_id(raw_tid, bbox_id_map, bbox_next) if remap_track_ids_per_segment else raw_tid
+                                    bbox_buf.append([int(c), float(x), float(y), float(w), float(h), int(tid), float(confv), frame_count])
 
-                        if frame_count % flush_every_n_frames == 0:
-                            if bbox_csv_out:
-                                self._write_rows_csv(bbox_csv_out, bbox_header, bbox_buf)
-                                bbox_buf.clear()
+                            if frame_count % flush_every_n_frames == 0:
+                                if bbox_w and bbox_buf:
+                                    bbox_w.writerows(bbox_buf)
+                                    bbox_buf.clear()
+                                    bbox_f.flush()
 
-                        if pbar is not None:
-                            pbar.update(1)
-                            if postfix_every_n and (frame_count % postfix_every_n == 0):
-                                pbar.set_postfix({"f": frame_count, "bbox_rows": len(bbox_buf)})
+                            if pbar is not None:
+                                pbar.update(1)
+                                if postfix_every_n and (frame_count % postfix_every_n == 0):
+                                    pbar.set_postfix({"f": frame_count, "buf": len(bbox_buf)})
 
-                elif seg_stream is not None and bbox_stream is None:
-                    for r in seg_stream:
-                        if r is None:
-                            continue
-                        frame_count += 1
-
-                        boxes = getattr(r, "boxes", None)
-                        masks = getattr(r, "masks", None)
-
-                        if boxes is not None and getattr(boxes, "xywhn", None) is not None and boxes.xywhn.size(0) > 0:
-                            n = int(boxes.xywhn.size(0))
-                            cls_list = boxes.cls.int().cpu().tolist()
-                            raw_id_list = (
-                                boxes.id.int().cpu().tolist()
-                                if getattr(boxes, "id", None) is not None
-                                else [-1] * n
-                            )
-                            conf_list = (
-                                boxes.conf.cpu().tolist()
-                                if getattr(boxes, "conf", None) is not None
-                                else [math.nan] * n
-                            )
-
-                            if masks is not None and getattr(masks, "xyn", None) is not None:
-                                polys = masks.xyn
-                                m = min(len(polys), n)
-                                for i in range(m):
-                                    poly = polys[i]
-                                    flat = []
-                                    for x, y in poly:
-                                        flat.append(str(float(x)))
-                                        flat.append(str(float(y)))
-
-                                    raw_tid = int(raw_id_list[i]) if i < len(raw_id_list) else -1
-                                    tid = _map_id(raw_tid, seg_id_map, seg_next) if remap_track_ids_per_segment else raw_tid
-
-                                    seg_buf.append([int(cls_list[i]), " ".join(flat), int(tid), float(conf_list[i]), frame_count])
-
-                        if frame_count % flush_every_n_frames == 0:
-                            if seg_csv_out:
-                                self._write_rows_csv(seg_csv_out, seg_header, seg_buf)
-                                seg_buf.clear()
-
-                        if pbar is not None:
-                            pbar.update(1)
-                            if postfix_every_n and (frame_count % postfix_every_n == 0):
-                                pbar.set_postfix({"f": frame_count, "seg_rows": len(seg_buf)})
-
-                else:
-                    # Both on: sequentially run seg then bbox (decodes twice). Kept for compatibility.
-                    # If you ever enable seg_mode on Snellius, consider merging outputs in one pass.
-                    if seg_stream is not None:
+                    elif seg_stream is not None and bbox_stream is None:
                         for r in seg_stream:
                             if r is None:
                                 continue
                             frame_count += 1
+
                             boxes = getattr(r, "boxes", None)
                             masks = getattr(r, "masks", None)
 
@@ -1169,22 +1129,182 @@ class Youtube_Helper:
 
                                         raw_tid = int(raw_id_list[i]) if i < len(raw_id_list) else -1
                                         tid = _map_id(raw_tid, seg_id_map, seg_next) if remap_track_ids_per_segment else raw_tid
-
                                         seg_buf.append([int(cls_list[i]), " ".join(flat), int(tid), float(conf_list[i]), frame_count])
 
-                            if frame_count % flush_every_n_frames == 0 and seg_csv_out:
-                                self._write_rows_csv(seg_csv_out, seg_header, seg_buf)
-                                seg_buf.clear()
+                            if frame_count % flush_every_n_frames == 0:
+                                if seg_w and seg_buf:
+                                    seg_w.writerows(seg_buf)
+                                    seg_buf.clear()
+                                    seg_f.flush()
 
-                    # Reset frame count for bbox pass output semantics? Keep a consistent count per pass.
-                    # We keep frame_count continuing (matches original "frame-count" increasing).
-                    if bbox_stream is not None:
-                        for r in bbox_stream:
-                            if r is None:
-                                continue
-                            frame_count += 1
-                            boxes = getattr(r, "boxes", None)
-                            if boxes is not None and getattr(boxes, "xywhn", None) is not None and boxes.xywhn.size(0) > 0:
+                            if pbar is not None:
+                                pbar.update(1)
+                                if postfix_every_n and (frame_count % postfix_every_n == 0):
+                                    pbar.set_postfix({"f": frame_count, "buf": len(seg_buf)})
+
+                    else:
+                        # Both on: decodes twice; kept for compatibility
+                        if seg_stream is not None:
+                            for r in seg_stream:
+                                if r is None:
+                                    continue
+                                frame_count += 1
+
+                                boxes = getattr(r, "boxes", None)
+                                masks = getattr(r, "masks", None)
+
+                                if boxes is not None and getattr(boxes, "xywhn", None) is not None and boxes.xywhn.size(0) > 0:
+                                    n = int(boxes.xywhn.size(0))
+                                    cls_list = boxes.cls.int().cpu().tolist()
+                                    raw_id_list = (
+                                        boxes.id.int().cpu().tolist()
+                                        if getattr(boxes, "id", None) is not None
+                                        else [-1] * n
+                                    )
+                                    conf_list = (
+                                        boxes.conf.cpu().tolist()
+                                        if getattr(boxes, "conf", None) is not None
+                                        else [math.nan] * n
+                                    )
+
+                                    if masks is not None and getattr(masks, "xyn", None) is not None:
+                                        polys = masks.xyn
+                                        m = min(len(polys), n)
+                                        for i in range(m):
+                                            poly = polys[i]
+                                            flat = []
+                                            for x, y in poly:
+                                                flat.append(str(float(x)))
+                                                flat.append(str(float(y)))
+
+                                            raw_tid = int(raw_id_list[i]) if i < len(raw_id_list) else -1
+                                            tid = _map_id(raw_tid, seg_id_map, seg_next) if remap_track_ids_per_segment else raw_tid
+                                            seg_buf.append([int(cls_list[i]), " ".join(flat), int(tid), float(conf_list[i]), frame_count])
+
+                                if frame_count % flush_every_n_frames == 0:
+                                    if seg_w and seg_buf:
+                                        seg_w.writerows(seg_buf)
+                                        seg_buf.clear()
+                                        seg_f.flush()
+
+                        if bbox_stream is not None:
+                            for r in bbox_stream:
+                                if r is None:
+                                    continue
+                                frame_count += 1
+
+                                boxes = getattr(r, "boxes", None)
+                                if boxes is not None and getattr(boxes, "xywhn", None) is not None and boxes.xywhn.size(0) > 0:
+                                    xywhn = boxes.xywhn.cpu().tolist()
+                                    cls_list = boxes.cls.int().cpu().tolist()
+                                    raw_id_list = (
+                                        boxes.id.int().cpu().tolist()
+                                        if getattr(boxes, "id", None) is not None
+                                        else [-1] * len(xywhn)
+                                    )
+                                    conf_list = (
+                                        boxes.conf.cpu().tolist()
+                                        if getattr(boxes, "conf", None) is not None
+                                        else [math.nan] * len(xywhn)
+                                    )
+
+                                    for (x, y, w, h), c, raw_tid, confv in zip(xywhn, cls_list, raw_id_list, conf_list):
+                                        raw_tid = int(raw_tid) if raw_tid is not None else -1
+                                        tid = _map_id(raw_tid, bbox_id_map, bbox_next) if remap_track_ids_per_segment else raw_tid
+                                        bbox_buf.append([int(c), float(x), float(y), float(w), float(h), int(tid), float(confv), frame_count])
+
+                                if frame_count % flush_every_n_frames == 0:
+                                    if bbox_w and bbox_buf:
+                                        bbox_w.writerows(bbox_buf)
+                                        bbox_buf.clear()
+                                        bbox_f.flush()
+
+                    # Final flush
+                    if bbox_w and bbox_buf:
+                        bbox_w.writerows(bbox_buf)
+                        bbox_buf.clear()
+                    if seg_w and seg_buf:
+                        seg_w.writerows(seg_buf)
+                        seg_buf.clear()
+
+                    return
+
+                # -------------------------------------------------------------
+                # Default (non-Snellius) path: OpenCV per-frame loop
+                # -------------------------------------------------------------
+                cap = cv2.VideoCapture(input_video_path)
+                if not cap.isOpened():
+                    raise RuntimeError(f"Failed to open video: {input_video_path}")
+
+                try:
+                    while True:
+                        ok, frame = cap.read()
+                        if not ok:
+                            break
+
+                        frame_count += 1
+                        persist_flag = frame_count > 1
+
+                        if seg_mode:
+                            seg_results = seg_model.track(  # type: ignore
+                                frame,
+                                tracker=seg_tracker_eff,
+                                persist=persist_flag,
+                                conf=self.confidence,
+                                verbose=False,
+                                device=device,
+                                save=False,
+                                save_txt=False,
+                                show=False,
+                            )
+                            r = seg_results[0]
+                            boxes = r.boxes
+                            masks = getattr(r, "masks", None)
+
+                            if boxes is not None and boxes.xywhn is not None and boxes.xywhn.size(0) > 0:
+                                n = int(boxes.xywhn.size(0))
+                                cls_list = boxes.cls.int().cpu().tolist()
+                                raw_id_list = (
+                                    boxes.id.int().cpu().tolist()
+                                    if getattr(boxes, "id", None) is not None
+                                    else [-1] * n
+                                )
+                                conf_list = (
+                                    boxes.conf.cpu().tolist()
+                                    if getattr(boxes, "conf", None) is not None
+                                    else [math.nan] * n
+                                )
+
+                                if masks is not None and getattr(masks, "xyn", None) is not None:
+                                    polys = masks.xyn
+                                    m = min(len(polys), n)
+                                    for i in range(m):
+                                        poly = polys[i]
+                                        flat = []
+                                        for x, y in poly:
+                                            flat.append(str(float(x)))
+                                            flat.append(str(float(y)))
+
+                                        raw_tid = int(raw_id_list[i]) if i < len(raw_id_list) else -1
+                                        tid = _map_id(raw_tid, seg_id_map, seg_next) if remap_track_ids_per_segment else raw_tid
+                                        seg_buf.append([int(cls_list[i]), " ".join(flat), int(tid), float(conf_list[i]), frame_count])
+
+                        if bbox_mode:
+                            bbox_results = bbox_model.track(  # type: ignore
+                                frame,
+                                tracker=bbox_tracker_eff,
+                                persist=persist_flag,
+                                conf=self.confidence,
+                                verbose=False,
+                                device=device,
+                                save=False,
+                                save_txt=False,
+                                show=False,
+                            )
+                            r = bbox_results[0]
+                            boxes = r.boxes
+
+                            if boxes is not None and boxes.xywhn is not None and boxes.xywhn.size(0) > 0:
                                 xywhn = boxes.xywhn.cpu().tolist()
                                 cls_list = boxes.cls.int().cpu().tolist()
                                 raw_id_list = (
@@ -1203,151 +1323,56 @@ class Youtube_Helper:
                                     tid = _map_id(raw_tid, bbox_id_map, bbox_next) if remap_track_ids_per_segment else raw_tid
                                     bbox_buf.append([int(c), float(x), float(y), float(w), float(h), int(tid), float(confv), frame_count])
 
-                            if frame_count % flush_every_n_frames == 0 and bbox_csv_out:
-                                self._write_rows_csv(bbox_csv_out, bbox_header, bbox_buf)
+                        if frame_count % flush_every_n_frames == 0:
+                            if bbox_w and bbox_buf:
+                                bbox_w.writerows(bbox_buf)
                                 bbox_buf.clear()
+                                bbox_f.flush()
+                            if seg_w and seg_buf:
+                                seg_w.writerows(seg_buf)
+                                seg_buf.clear()
+                                seg_f.flush()
 
-                # Final flush (Snellius path)
-                if bbox_mode and bbox_csv_out:
-                    self._write_rows_csv(bbox_csv_out, bbox_header, bbox_buf)
-                if seg_mode and seg_csv_out:
-                    self._write_rows_csv(seg_csv_out, seg_header, seg_buf)
+                        if pbar is not None:
+                            pbar.update(1)
+                            if postfix_every_n and (frame_count % postfix_every_n == 0):
+                                pbar.set_postfix({
+                                    "f": frame_count,
+                                    "bbox_buf": (0 if not bbox_mode else len(bbox_buf)),
+                                    "seg_buf": (0 if not seg_mode else len(seg_buf)),
+                                })
 
-                return  # done
+                    # final flush
+                    if bbox_w and bbox_buf:
+                        bbox_w.writerows(bbox_buf)
+                        bbox_buf.clear()
+                    if seg_w and seg_buf:
+                        seg_w.writerows(seg_buf)
+                        seg_buf.clear()
 
-            # -----------------------------------------------------------------
-            # Default (non-Snellius) path: OpenCV per-frame loop (unchanged behavior)
-            # -----------------------------------------------------------------
-            cap = cv2.VideoCapture(input_video_path)
-            if not cap.isOpened():
-                raise RuntimeError(f"Failed to open video: {input_video_path}")
-
-            try:
-                while True:
-                    ok, frame = cap.read()
-                    if not ok:
-                        break
-
-                    frame_count += 1
-                    persist_flag = frame_count > 1  # reset per clip; persist within clip
-
-                    # ---------------- SEG ----------------
-                    if seg_mode:
-                        seg_results = seg_model.track(  # type: ignore
-                            frame,
-                            tracker=seg_tracker_eff,
-                            persist=persist_flag,
-                            conf=self.confidence,
-                            verbose=False,
-                            device=device,
-                            save=False,
-                            save_txt=False,
-                            show=False,
-                        )
-                        r = seg_results[0]
-                        boxes = r.boxes
-                        masks = getattr(r, "masks", None)
-
-                        if boxes is not None and boxes.xywhn is not None and boxes.xywhn.size(0) > 0:
-                            n = int(boxes.xywhn.size(0))
-                            cls_list = boxes.cls.int().cpu().tolist()
-                            raw_id_list = (
-                                boxes.id.int().cpu().tolist()
-                                if getattr(boxes, "id", None) is not None
-                                else [-1] * n
-                            )
-                            conf_list = (
-                                boxes.conf.cpu().tolist()
-                                if getattr(boxes, "conf", None) is not None
-                                else [math.nan] * n
-                            )
-
-                            if masks is not None and getattr(masks, "xyn", None) is not None:
-                                polys = masks.xyn
-                                m = min(len(polys), n)
-                                for i in range(m):
-                                    poly = polys[i]
-                                    flat = []
-                                    for x, y in poly:
-                                        flat.append(str(float(x)))
-                                        flat.append(str(float(y)))
-
-                                    raw_tid = int(raw_id_list[i]) if i < len(raw_id_list) else -1
-                                    tid = _map_id(raw_tid, seg_id_map, seg_next) if remap_track_ids_per_segment else raw_tid
-
-                                    seg_buf.append([int(cls_list[i]), " ".join(flat), int(tid), float(conf_list[i]), frame_count])
-
-                    # ---------------- BBOX ----------------
-                    if bbox_mode:
-                        bbox_results = bbox_model.track(  # type: ignore
-                            frame,
-                            tracker=bbox_tracker_eff,
-                            persist=persist_flag,
-                            conf=self.confidence,
-                            verbose=False,
-                            device=device,
-                            save=False,
-                            save_txt=False,
-                            show=False,
-                        )
-                        r = bbox_results[0]
-                        boxes = r.boxes
-
-                        if boxes is not None and boxes.xywhn is not None and boxes.xywhn.size(0) > 0:
-                            xywhn = boxes.xywhn.cpu().tolist()
-                            cls_list = boxes.cls.int().cpu().tolist()
-                            raw_id_list = (
-                                boxes.id.int().cpu().tolist()
-                                if getattr(boxes, "id", None) is not None
-                                else [-1] * len(xywhn)
-                            )
-                            conf_list = (
-                                boxes.conf.cpu().tolist()
-                                if getattr(boxes, "conf", None) is not None
-                                else [math.nan] * len(xywhn)
-                            )
-
-                            for (x, y, w, h), c, raw_tid, confv in zip(xywhn, cls_list, raw_id_list, conf_list):
-                                raw_tid = int(raw_tid) if raw_tid is not None else -1
-                                tid = _map_id(raw_tid, bbox_id_map, bbox_next) if remap_track_ids_per_segment else raw_tid
-                                bbox_buf.append([int(c), float(x), float(y), float(w), float(h), int(tid), float(confv), frame_count])
-
-                    # Flush periodically
-                    if frame_count % flush_every_n_frames == 0:
-                        if bbox_mode and bbox_csv_out:
-                            self._write_rows_csv(bbox_csv_out, bbox_header, bbox_buf)
-                            bbox_buf.clear()
-                        if seg_mode and seg_csv_out:
-                            self._write_rows_csv(seg_csv_out, seg_header, seg_buf)
-                            seg_buf.clear()
-
-                    # tqdm update
-                    if pbar is not None:
-                        pbar.update(1)
-                        if postfix_every_n and (frame_count % postfix_every_n == 0):
-                            pbar.set_postfix({
-                                "f": frame_count,
-                                "bbox_rows": (0 if not bbox_mode else len(bbox_buf)),
-                                "seg_rows": (0 if not seg_mode else len(seg_buf)),
-                            })
-
-                # final flush
-                if bbox_mode and bbox_csv_out:
-                    self._write_rows_csv(bbox_csv_out, bbox_header, bbox_buf)
-                if seg_mode and seg_csv_out:
-                    self._write_rows_csv(seg_csv_out, seg_header, seg_buf)
+                finally:
+                    cap.release()
 
             finally:
-                cap.release()
+                if pbar is not None:
+                    pbar.close()
+
+                # cleanup temp tracker configs
+                for p in (bbox_tracker_eff, seg_tracker_eff):
+                    if isinstance(p, str) and "tracker_cfg_" in p:
+                        try:
+                            shutil.rmtree(os.path.dirname(p), ignore_errors=True)
+                        except Exception:
+                            pass
 
         finally:
-            if pbar is not None:
-                pbar.close()
-
-            # cleanup temp tracker configs (only when we created a temp dir)
-            for p in (bbox_tracker_eff, seg_tracker_eff):
-                if isinstance(p, str) and "tracker_cfg_" in p:
-                    try:
-                        shutil.rmtree(os.path.dirname(p), ignore_errors=True)
-                    except Exception:
-                        pass
+            try:
+                if bbox_f:
+                    bbox_f.close()
+            except Exception:
+                pass
+            try:
+                if seg_f:
+                    seg_f.close()
+            except Exception:
+                pass
