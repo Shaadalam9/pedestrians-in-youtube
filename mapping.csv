@@ -5219,4 +5219,6 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 5218,Mascaraque,[],,Spain,ESP,Europe,39.7160016,-3.8124941,0.0,523,49315949,3.9,99.7,169.0,45.0,34.7,0.0,[6FVEPjRP9-c],"[[0, 0]]","[[53, 630]]","[[582, 800]]",[0],[13022021],[UCg1sAFKjbgemJnIODXe_2BQ]
 5219,Consuegra,[],,Spain,ESP,Europe,39.460918,-3.6070786,0.0,10932,49315949,3.9,99.7,169.0,45.0,34.7,0.0,[hZoZytLyMqw],[[0]],[[50]],[[580]],[0],[09022021],[UCg1sAFKjbgemJnIODXe_2BQ]
 5220,Ceuta,[],,Spain,ESP,Europe,35.888361,-5.304138,0.0,83179,49315949,3.9,99.7,169.0,45.0,34.7,11.76,[ZkJP8vAl9ks],"[[0, 0, 0]]","[[16, 613, 894]]","[[595, 860, 1124]]",[0],[8022021],[UCg1sAFKjbgemJnIODXe_2BQ]
-5221,Guayonje,[],,Spain,ESP,Europe,28.488531,-16.4178003,0.0,1160,49315949,3.9,99.7,169,45.0,34.7,0.0,[HoUozx1ksJY],[[0]],[[16]],[[529]],[0],[02022021],[UCg1sAFKjbgemJnIODXe_2BQ]
+5221,Guayonje,[],,Spain,ESP,Europe,28.488531,-16.4178003,0.0,1160,49315949,3.9,99.7,169.0,45.0,34.7,0.0,[HoUozx1ksJY],[[0]],[[16]],[[529]],[0],[02022021],[UCg1sAFKjbgemJnIODXe_2BQ]
+5222,Vila Baleira,[],,Portugal,PRT,Europe,33.0593059,-16.3336622,0.0,4474,10749635,8.2,94.48,168.0,46.0,33.5,0.0,"[L58rQWvusCU,fNcVfiSn7Tg,WZSfTQ694Os]","[[0], [0], [0]]","[[0], [12], [358]]","[[643], [129], [457]]","[0,0,0]","[3102014,3102014,3102014]","[UCAPT8Z74RboQQdDX3FmQURg,UCAPT8Z74RboQQdDX3FmQURg,UCAPT8Z74RboQQdDX3FmQURg]"
+5223,Taganana,[],,Spain,ESP,Europe,28.5609575,-16.2177921,0.0,23,49315949,3.9,99.7,169,45.0,34.7,16.67,[e3t2CSwcXQw],[[0]],[[16]],[[240]],[0],[02022021],[UCg1sAFKjbgemJnIODXe_2BQ]
