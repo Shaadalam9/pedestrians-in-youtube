@@ -5243,4 +5243,5 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 5242,Buenavista del Norte,[],,Spain,ESP,Europe,28.3721177,-16.8512557,0.0,5231,49315949,3.9,99.7,169.0,45.0,34.7,0.0,[_-L03bEgbEc],"[[0, 0]]","[[18, 329]]","[[312, 698]]",[0],[23012021],[UCg1sAFKjbgemJnIODXe_2BQ]
 5243,El Tanque,[],,Spain,ESP,Europe,28.356273,-16.779809,0.0,2800,49315949,3.9,99.7,169.0,45.0,34.7,12.2,[RngVa2_ld-k],"[[0, 0]]","[[16, 87]]","[[61, 245]]",[0],[23012021],[UCg1sAFKjbgemJnIODXe_2BQ]
 5244,Mesa del Mar,[],,Spain,ESP,Europe,28.5033774,-16.4239192,0.0,457,49315949,3.9,99.7,169.0,45.0,34.7,0.0,[viKm3l5pxs0],[[0]],[[16]],[[795]],[0],[22012021],[UCg1sAFKjbgemJnIODXe_2BQ]
-5245,Los Gigantes,[],,Spain,ESP,Europe,28.245641,-16.8401413,0.0,2721,49315949,3.9,99.7,169,45.0,34.7,20.0,[XH4qiKwxdaA],[[0]],[[25]],[[189]],[0],[22012021],[UCg1sAFKjbgemJnIODXe_2BQ]
+5245,Los Gigantes,[],,Spain,ESP,Europe,28.245641,-16.8401413,0.0,2721,49315949,3.9,99.7,169.0,45.0,34.7,20.0,[XH4qiKwxdaA],[[0]],[[25]],[[189]],[0],[22012021],[UCg1sAFKjbgemJnIODXe_2BQ]
+5246,El Socorro,[],,Spain,ESP,Europe,28.5171603,-16.3625377,0.0,12339,49315949,3.9,99.7,169,45.0,34.7,0.0,[HhiSIbzKPqY],[[0]],[[118]],[[524]],[0],[22012021],[UCg1sAFKjbgemJnIODXe_2BQ]
