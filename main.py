@@ -20,20 +20,24 @@
 #   treated as DONE (regardless of FPS) and WILL NOT be reprocessed nor trigger download.
 #
 # Snellius/HPC mode additions (behind snellius_mode flag):
-# - Shard work by VIDEO across Slurm tasks (avoid redundant staging).
+# - Shard work by VIDEO or by SEGMENT across Slurm tasks (configurable).
 # - Stage videos and trims to node-local $TMPDIR when available.
 # - Force one segment worker per process/GPU (scale via Slurm tasks/arrays).
 # - Disable sleep/git-pull/email by default in batch jobs.
+# - Optional: disable YouTube fallback (recommended on HPC).
+# - Optional: set CUDA_VISIBLE_DEVICES from SLURM_LOCALID (only if not already set).
 # -----------------------------------------------------------------------------
 
 import ast
 import glob
+import hashlib
 import math
 import os
 import shutil
 import subprocess
 import threading
 import time
+import zlib
 from concurrent.futures import ThreadPoolExecutor, wait, FIRST_COMPLETED
 from dataclasses import dataclass
 from datetime import datetime
@@ -169,35 +173,110 @@ def _fps_is_bad(fps) -> bool:
     return fps is None or fps == 0 or (isinstance(fps, float) and math.isnan(fps))
 
 
+def _resolve_tmp_root(config: SimpleNamespace) -> str:
+    """
+    Resolve tmp root for Snellius staging. Preference:
+      1) $TMPDIR (if set by Slurm)
+      2) config.snellius_tmp_root (expandvars; may be "$TMPDIR")
+      3) empty string
+    """
+    env_tmp = os.getenv("TMPDIR", "") or ""
+    if env_tmp:
+        return env_tmp
+
+    cfg_tmp = str(getattr(config, "snellius_tmp_root", "") or "").strip()
+    if cfg_tmp:
+        return os.path.expandvars(cfg_tmp)
+
+    return ""
+
+
+def _maybe_bind_gpu_from_slurm_localid(config: SimpleNamespace):
+    """
+    If Snellius mode is enabled and CUDA_VISIBLE_DEVICES is not set by Slurm,
+    set it from SLURM_LOCALID so each task uses one distinct GPU per node.
+    """
+    if not bool(getattr(config, "snellius_mode", False)):
+        return
+    if not torch.cuda.is_available():
+        return
+
+    cur = os.environ.get("CUDA_VISIBLE_DEVICES", "").strip()
+    if cur:
+        return  # Slurm already set it (preferred)
+
+    local_id = int(os.environ.get("SLURM_LOCALID", "0"))
+    os.environ["CUDA_VISIBLE_DEVICES"] = str(local_id)
+    logger.info("Set CUDA_VISIBLE_DEVICES=%s from SLURM_LOCALID=%s", os.environ["CUDA_VISIBLE_DEVICES"], local_id)
+
+
+def _snellius_task_identity() -> Tuple[int, int]:
+    """
+    Determine (task_id, task_count) for sharding.
+    Prefer SLURM_PROCID/SLURM_NTASKS (MPI-style multi-task jobs).
+    Fallback to array-task semantics if present.
+    """
+    procid = os.getenv("SLURM_PROCID", None)
+    ntasks = os.getenv("SLURM_NTASKS", None)
+    if procid is not None and ntasks is not None:
+        try:
+            return int(procid), int(ntasks)
+        except Exception:
+            pass
+
+    # Array fallback
+    array_id = os.getenv("SLURM_ARRAY_TASK_ID", "0")
+    array_count = os.getenv("SLURM_ARRAY_TASK_COUNT", "1")
+    try:
+        return int(array_id), int(array_count)
+    except Exception:
+        return 0, 1
+
+
+def _shard_to_task(key: str, task_count: int) -> int:
+    """
+    Deterministic sharding: stable across runs.
+    Uses crc32 for speed.
+    """
+    if task_count <= 1:
+        return 0
+    h = zlib.crc32(key.encode("utf-8")) & 0xFFFFFFFF
+    return int(h % task_count)
+
+
 def _log_run_banner(config: SimpleNamespace):
     device = "cuda" if torch.cuda.is_available() else "cpu"
     gpu_name = torch.cuda.get_device_name(0) if torch.cuda.is_available() else "N/A"
 
     logger.info("============================================================")
     logger.info("Pipeline run configuration")
-    logger.info(f"  device={device} gpu={gpu_name}")
-    logger.info(f"  cpu_count={os.cpu_count()} torch_num_threads={torch.get_num_threads()}")
-    logger.info(f"  snellius_mode={bool(getattr(config, 'snellius_mode', False))}")
+    logger.info(f"device={device} gpu={gpu_name}")
+    logger.info(f"cpu_count={os.cpu_count()} torch_num_threads={torch.get_num_threads()}")
+    logger.info(f"snellius_mode={bool(getattr(config, 'snellius_mode', False))}")
     logger.info(
-        "  slurm_task_id=%s slurm_task_count=%s tmpdir=%s",
+        "slurm_task_id=%s slurm_task_count=%s slurm_localid=%s cuda_visible=%s tmpdir=%s",
         getattr(config, "slurm_task_id", 0),
         getattr(config, "slurm_task_count", 1),
+        os.getenv("SLURM_LOCALID", ""),
+        os.getenv("CUDA_VISIBLE_DEVICES", ""),
         getattr(config, "tmpdir", ""),
     )
-    logger.info(f"  max_workers={config.max_workers} (segment ThreadPoolExecutor)")
-    logger.info(f"  download_workers={config.download_workers} (download ThreadPoolExecutor)")
-    logger.info(f"  prefetch_videos={config.prefetch_videos} (max in-flight videos)")
-    logger.info(f"  max_active_segments_per_video={config.max_active_segments_per_video}")
-    logger.info(f"  active_threads_now={threading.active_count()}")
-    logger.info(f"  tracking_mode={config.tracking_mode} segmentation_mode={config.segmentation_mode}")
-    logger.info(f"  tracking_model={config.tracking_model}")
-    logger.info(f"  segment_model={config.segment_model}")
-    logger.info(f"  bbox_tracker={config.bbox_tracker}")
-    logger.info(f"  seg_tracker={config.seg_tracker}")
-    logger.info(f"  track_buffer_sec={config.track_buffer_sec}")
-    logger.info(f"  confidence={getattr(helper, 'confidence', 0.0)}")
-    logger.info(f"  external_ssd={config.external_ssd} compress_youtube_video={config.compress_youtube_video}")
-    logger.info(f"  delete_youtube_video={config.delete_youtube_video}")
+    logger.info(f"snellius_shard_mode={getattr(config, 'snellius_shard_mode', 'video')}")
+    logger.info(f"snellius_disable_youtube_fallback={bool(getattr(config, 'snellius_disable_youtube_fallback', False))}")
+    logger.info(f"max_workers={config.max_workers} (segment ThreadPoolExecutor)")
+    logger.info(f"download_workers={config.download_workers} (download ThreadPoolExecutor)")
+    logger.info(f"prefetch_videos={config.prefetch_videos} (max in-flight videos)")
+    logger.info(f"max_active_segments_per_video={config.max_active_segments_per_video}")
+    logger.info(f"active_threads_now={threading.active_count()}")
+    logger.info(f"tracking_mode={config.tracking_mode} segmentation_mode={config.segmentation_mode}")
+    logger.info(f"tracking_model={config.tracking_model}")
+    logger.info(f"segment_model={config.segment_model}")
+    logger.info(f"bbox_tracker={config.bbox_tracker}")
+    logger.info(f"seg_tracker={config.seg_tracker}")
+    logger.info(f"track_buffer_sec={config.track_buffer_sec}")
+    logger.info(f"confidence={getattr(helper, 'confidence', 0.0)}")
+    logger.info(f"external_ssd={config.external_ssd} compress_youtube_video={config.compress_youtube_video}")
+    logger.info(f"delete_youtube_video={config.delete_youtube_video}")
     logger.info("============================================================")
 
 
@@ -398,12 +477,20 @@ def _ensure_video_available(
     """
     Preserves your prior retrieval logic.
     Returns: (base_video_path, video_title, resolution, video_fps, ftp_download)
+
+    Snellius/HPC addition:
+      - if snellius_disable_youtube_fallback=True (and snellius_mode=True),
+        never attempt YouTube downloads. Only cached/FTP are allowed.
     """
     ftp_download = False
     resolution = "unknown"
     video_title = vid
 
     base_video_path = os.path.join(output_path, f"{vid}.mp4")
+
+    disable_yt = bool(getattr(config, "snellius_mode", False)) and bool(
+        getattr(config, "snellius_disable_youtube_fallback", False)
+    )
 
     if config.external_ssd:
         existing_path = os.path.join(output_path, f"{vid}.mp4")
@@ -453,6 +540,8 @@ def _ensure_video_available(
             video_fps = helper.get_video_fps(existing_path)
 
             if _fps_is_bad(video_fps):
+                if disable_yt:
+                    raise RuntimeError(f"{vid}: invalid FPS on SSD copy and YouTube fallback disabled (Snellius).")
                 logger.warning(f"{vid}: invalid FPS on SSD copy; attempting YouTube fallback.")
                 yt_result = helper.download_video_with_resolution(vid=vid, output_path=output_path)
                 if not yt_result:
@@ -476,6 +565,8 @@ def _ensure_video_available(
         if result:
             ftp_download = True
         if result is None:
+            if disable_yt:
+                raise RuntimeError(f"{vid}: FTP not found/failed and YouTube fallback disabled (Snellius).")
             logger.info(f"{vid}: FTP not found/failed; attempting YouTube download.")
             result = helper.download_video_with_resolution(vid=vid, output_path=output_path)
 
@@ -504,6 +595,8 @@ def _ensure_video_available(
         if result:
             ftp_download = True
         if result is None:
+            if disable_yt:
+                raise RuntimeError(f"{vid}: FTP not found/failed and YouTube fallback disabled (Snellius).")
             logger.info(f"{vid}: FTP not found/failed; attempting YouTube download.")
             result = helper.download_video_with_resolution(vid=vid, output_path=output_path)
 
@@ -605,8 +698,7 @@ if __name__ == "__main__":
         max_workers = max(1, int(_safe_get_config("max_workers", 3)))  # type: ignore[arg-type]
         download_workers = max(1, int(_safe_get_config("download_workers", 1)))  # type: ignore[arg-type]
         max_active_segments_per_video = max(
-            1, int(_safe_get_config("max_active_segments_per_video", 1))
-        )  # type: ignore[arg-type]
+            1, int(_safe_get_config("max_active_segments_per_video", 1)))  # type: ignore[arg-type]
 
         prefetch_raw = int(_safe_get_config("prefetch_videos", 0) or 0)
         prefetch_videos = prefetch_raw if prefetch_raw > 0 else (max_workers + 1)
@@ -643,17 +735,20 @@ if __name__ == "__main__":
             max_active_segments_per_video=int(max_active_segments_per_video),
             # Snellius/HPC master flag (default False so local behavior is unchanged)
             snellius_mode=bool(_safe_get_config("snellius_mode", False)),
+            # Snellius/HPC additional controls
+            snellius_shard_mode=str(_safe_get_config("snellius_shard_mode", "video") or "video").strip().lower(),
+            snellius_tmp_root=str(_safe_get_config("snellius_tmp_root", "") or ""),
+            snellius_disable_youtube_fallback=bool(_safe_get_config("snellius_disable_youtube_fallback", False)),
         )
 
         # ---------------------------------------------------------------------
         # Snellius/Slurm context + runtime overrides (only when snellius_mode=True)
         # ---------------------------------------------------------------------
-        config.slurm_task_id = int(os.getenv("SLURM_PROCID", os.getenv("SLURM_ARRAY_TASK_ID", "0")))
-        config.slurm_task_count = int(os.getenv("SLURM_NTASKS", os.getenv("SLURM_ARRAY_TASK_COUNT", "1")))
-        config.tmpdir = os.getenv("TMPDIR", "") or ""
+        config.slurm_task_id, config.slurm_task_count = _snellius_task_identity()
+        config.tmpdir = _resolve_tmp_root(config)
 
         if bool(config.snellius_mode):
-            # Scale via Slurm tasks/arrays (one process per GPU), not via in-process concurrency.
+            # One process == one GPU. Scale via Slurm tasks/arrays, not threads.
             config.max_workers = 1
             config.download_workers = 1
             config.max_active_segments_per_video = 1
@@ -671,6 +766,9 @@ if __name__ == "__main__":
 
             # TMPDIR is our fast work area; do not engage "SSD refresh" semantics.
             config.external_ssd = False
+
+            # Optional GPU binding assist
+            _maybe_bind_gpu_from_slurm_localid(config)
 
         # ---------------------------------------------------------------------
         # Load secrets
@@ -717,7 +815,8 @@ if __name__ == "__main__":
                 f"=== Pass {pass_index} started === rows={mapping.shape[0]} "
                 f"max_workers={config.max_workers} prefetch_videos={config.prefetch_videos} "
                 f"download_workers={config.download_workers} active_threads_now={threading.active_count()} "
-                f"tracking_mode={bool(config.tracking_mode)} seg_mode={bool(config.segmentation_mode)}"
+                f"tracking_mode={bool(config.tracking_mode)} seg_mode={bool(config.segmentation_mode)} "
+                f"shard_mode={getattr(config, 'snellius_shard_mode', 'video')}"
             )
 
             if config.update_pop_country:
@@ -751,6 +850,9 @@ if __name__ == "__main__":
             )
             bbox_done_start = existing_idx["bbox_start"]
             seg_done_start = existing_idx["seg_start"]
+
+            done_lock = threading.Lock()  # protects bbox_done_start/seg_done_start updates by workers
+
             logger.info(
                 f"Existing outputs indexed: bbox_start={len(bbox_done_start)} seg_start={len(seg_done_start)} "
                 f"(done by (vid,start) ignoring fps)"
@@ -760,6 +862,9 @@ if __name__ == "__main__":
             # Stage 1: Build per-video requests
             # -----------------------------------------------------------------
             req_by_vid: Dict[str, VideoReq] = {}
+
+            shard_mode = str(getattr(config, "snellius_shard_mode", "video") or "video").strip().lower()
+            use_sharding = bool(config.snellius_mode) and int(getattr(config, "slurm_task_count", 1)) > 1
 
             pbar_rows = tqdm(
                 mapping.iterrows(),
@@ -799,7 +904,6 @@ if __name__ == "__main__":
                     if not isinstance(st_list, list) or not isinstance(et_list, list):
                         continue
 
-                    needed_segments: List[Tuple[int, int]] = []
                     for st, et in zip(st_list, et_list):
                         st_i = int(st)
                         et_i = int(et)
@@ -807,44 +911,44 @@ if __name__ == "__main__":
                         # DONE logic ignores FPS (per your requirement)
                         bbox_done = (not bbox_mode_cfg) or ((vid, st_i) in bbox_done_start)
                         seg_done = (not seg_mode_cfg) or ((vid, st_i) in seg_done_start)
-
                         if bbox_done and seg_done:
                             continue
 
-                        needed_segments.append((st_i, et_i))
+                        # Snellius sharding:
+                        # - shard_mode="segment": assign each (vid,start) to exactly one task
+                        # - shard_mode="video": handled AFTER we build the per-video list
+                        if use_sharding and shard_mode == "segment":
+                            owner = _shard_to_task(f"{vid}:{st_i}", int(config.slurm_task_count))
+                            if owner != int(config.slurm_task_id):
+                                continue
 
-                    if not needed_segments:
-                        continue
+                        if vid not in req_by_vid:
+                            req_by_vid[vid] = VideoReq(
+                                vid=vid,
+                                segments=[],
+                                city=city,
+                                state=state,
+                                country=country,
+                                iso3=iso3,
+                            )
 
-                    if vid not in req_by_vid:
-                        req_by_vid[vid] = VideoReq(
-                            vid=vid,
-                            segments=[],
-                            city=city,
-                            state=state,
-                            country=country,
-                            iso3=iso3,
-                        )
-
-                    existing = set(req_by_vid[vid].segments)
-                    for seg in needed_segments:
-                        if seg not in existing:
+                        seg = (st_i, et_i)
+                        if seg not in set(req_by_vid[vid].segments):
                             req_by_vid[vid].segments.append(seg)
-                            existing.add(seg)
 
             pbar_rows.close()
 
             video_reqs = list(req_by_vid.values())
             logger.info(f"Pass {pass_index}: videos needing work={len(video_reqs)} (after done-index pre-check).")
 
-            # Snellius: shard by VIDEO across Slurm tasks to avoid redundant staging/I/O
-            if bool(config.snellius_mode) and int(getattr(config, "slurm_task_count", 1)) > 1:
+            # Snellius: shard by VIDEO across Slurm tasks (only if shard_mode=="video")
+            if use_sharding and shard_mode == "video":
                 task_id = int(getattr(config, "slurm_task_id", 0))
                 task_count = int(getattr(config, "slurm_task_count", 1))
                 video_reqs = sorted(video_reqs, key=lambda r: r.vid)
                 video_reqs = [vr for i, vr in enumerate(video_reqs) if (i % task_count) == task_id]
                 logger.info(
-                    "Snellius sharding applied: task_id=%d task_count=%d videos_assigned=%d",
+                    "Snellius video-sharding applied: task_id=%d task_count=%d videos_assigned=%d",
                     task_id,
                     task_count,
                     len(video_reqs),
@@ -1015,21 +1119,8 @@ if __name__ == "__main__":
 
                 fps_i = int(video_fps)
 
-                segment_jobs: List[
-                    Tuple[
-                        str,
-                        int,
-                        int,
-                        str,
-                        bool,
-                        bool,
-                        Optional[str],
-                        Optional[str],
-                        Optional[str],
-                        Optional[str],
-                        int,
-                    ]
-                ] = []
+                segment_jobs: List[Tuple[str, int, int, str, bool, bool, Optional[str],
+                                         Optional[str], Optional[str], Optional[str], int]] = []
 
                 for (st, et) in req.segments:
                     st_i = int(st)
@@ -1147,14 +1238,16 @@ if __name__ == "__main__":
                             os.makedirs(os.path.dirname(bbox_final), exist_ok=True)
                             os.replace(bbox_tmp, bbox_final)  # atomic on same filesystem
                             logger.info(f"[commit] job={job_label} bbox -> {bbox_final}")
-                            bbox_done_start.add((vid, st))  # optional: keep in-memory done set updated
+                            with done_lock:
+                                bbox_done_start.add((vid, st))  # keep in-memory done set updated
 
                     if do_seg and seg_tmp and seg_final:
                         if os.path.exists(seg_tmp):
                             os.makedirs(os.path.dirname(seg_final), exist_ok=True)
                             os.replace(seg_tmp, seg_final)
                             logger.info(f"[commit] job={job_label} seg -> {seg_final}")
-                            seg_done_start.add((vid, st))  # optional: keep in-memory done set updated
+                            with done_lock:
+                                seg_done_start.add((vid, st))  # keep in-memory done set updated
 
                     # Optional log sizes
                     if bbox_final and os.path.exists(bbox_final):
