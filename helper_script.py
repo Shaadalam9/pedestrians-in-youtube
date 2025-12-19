@@ -925,11 +925,11 @@ class Youtube_Helper:
         Thread-safe tracking:
           - writes CSVs directly in the SAME schema you used before
           - does NOT use runs/ paths
-          - per-clip tracker reset is ensured by running track() per clip
 
         Snellius mode:
-          - uses Ultralytics streaming over the video path (stream=True)
-            to avoid per-frame repeated model.track(frame) calls.
+          - tries Ultralytics streaming on the video path for speed
+          - if streaming tracker crashes (e.g., LinAlgError), falls back to OpenCV per-frame loop
+            starting at the next frame, so the whole Slurm step does not die.
         """
 
         if bbox_mode and (bbox_csv_out is None):
@@ -937,7 +937,6 @@ class Youtube_Helper:
         if seg_mode and (seg_csv_out is None):
             raise ValueError("seg_mode=True requires seg_csv_out")
 
-        # Allow config override (optional, but recommended)
         flush_every_n_frames = int(_safe_get_config("flush_every_n_frames", flush_every_n_frames))
 
         # Use thread-local models if not provided
@@ -965,7 +964,6 @@ class Youtube_Helper:
         seg_buf: list[list] = []
         frame_count = 0
 
-        # Optional per-clip ID remapping
         bbox_id_map: dict[int, int] = {}
         seg_id_map: dict[int, int] = {}
         bbox_next = [1]
@@ -981,15 +979,19 @@ class Youtube_Helper:
             next_id_holder[0] += 1
             return nid
 
+        def _is_linalg_error(e: BaseException) -> bool:
+            # SciPy raises numpy.linalg.LinAlgError (as in your traceback)
+            return isinstance(e, np.linalg.LinAlgError) or (e.__class__.__name__ == "LinAlgError")
+
         # Progress bar
         total_frames: Optional[int] = None
         if show_frame_pbar:
             try:
-                cap = cv2.VideoCapture(input_video_path)
-                if cap.isOpened():
-                    tf = int(cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0)
+                cap0 = cv2.VideoCapture(input_video_path)
+                if cap0.isOpened():
+                    tf = int(cap0.get(cv2.CAP_PROP_FRAME_COUNT) or 0)
                     total_frames = tf if tf > 0 else None
-                cap.release()
+                cap0.release()
             except Exception:
                 total_frames = None
 
@@ -1005,9 +1007,215 @@ class Youtube_Helper:
                 leave=False,
             )
 
-        # CHANGED: keep CSV files open for the whole segment
+        # Keep CSV files open for the whole segment
         bbox_f = seg_f = None
         bbox_w = seg_w = None
+
+        def _flush_buffers() -> None:
+            nonlocal bbox_buf, seg_buf
+            if bbox_w and bbox_buf:
+                bbox_w.writerows(bbox_buf)
+                bbox_buf.clear()
+                if bbox_f:
+                    bbox_f.flush()
+            if seg_w and seg_buf:
+                seg_w.writerows(seg_buf)
+                seg_buf.clear()
+                if seg_f:
+                    seg_f.flush()
+
+        def _opencv_loop_from_current_frame() -> None:
+            """
+            Continue processing via per-frame OpenCV loop.
+            Resumes at the current `frame_count` (i.e., next unread frame).
+            """
+            nonlocal frame_count, bbox_buf, seg_buf
+
+            cap = cv2.VideoCapture(input_video_path)
+            if not cap.isOpened():
+                raise RuntimeError(f"Failed to open video: {input_video_path}")
+
+            # Resume from next frame after those already processed
+            if frame_count > 0:
+                try:
+                    cap.set(cv2.CAP_PROP_POS_FRAMES, float(frame_count))
+                except Exception:
+                    pass
+
+            try:
+                while True:
+                    ok, frame = cap.read()
+                    if not ok:
+                        break
+
+                    frame_count += 1
+                    persist_flag = frame_count > 1
+
+                    if seg_mode:
+                        try:
+                            seg_results = seg_model.track(  # type: ignore
+                                frame,
+                                tracker=seg_tracker_eff,
+                                persist=persist_flag,
+                                conf=self.confidence,
+                                verbose=False,
+                                device=device,
+                                save=False,
+                                save_txt=False,
+                                show=False,
+                            )
+                        except Exception as e:
+                            # On LinAlgError or any tracker failure: reset and retry once; else predict for this frame.
+                            if _is_linalg_error(e):
+                                logger.warning(
+                                    f"[{job_label}][Frame {frame_count}] SEG LinAlgError; reset tracker and retry persist=False. err={e}"
+                                )
+                            else:
+                                logger.warning(
+                                    f"[{job_label}][Frame {frame_count}] SEG track failed; reset tracker and retry persist=False. err={e}"
+                                )
+
+                            self._reset_ultralytics_tracker(seg_model)  # type: ignore
+                            try:
+                                seg_results = seg_model.track(  # type: ignore
+                                    frame,
+                                    tracker=seg_tracker_eff,
+                                    persist=False,
+                                    conf=self.confidence,
+                                    verbose=False,
+                                    device=device,
+                                    save=False,
+                                    save_txt=False,
+                                    show=False,
+                                )
+                            except Exception as e2:
+                                logger.warning(
+                                    f"[{job_label}][Frame {frame_count}] SEG retry failed; using predict() this frame. err={e2}"
+                                )
+                                seg_results = seg_model.predict(  # type: ignore
+                                    frame,
+                                    conf=self.confidence,
+                                    verbose=False,
+                                    device=device,
+                                )
+
+                        r = seg_results[0]
+                        boxes = getattr(r, "boxes", None)
+                        masks = getattr(r, "masks", None)
+
+                        if boxes is not None and getattr(boxes, "xywhn", None) is not None and boxes.xywhn.size(0) > 0:
+                            n = int(boxes.xywhn.size(0))
+                            cls_list = boxes.cls.int().cpu().tolist()
+                            raw_id_list = (
+                                boxes.id.int().cpu().tolist()
+                                if getattr(boxes, "id", None) is not None
+                                else [-1] * n
+                            )
+                            conf_list = (
+                                boxes.conf.cpu().tolist()
+                                if getattr(boxes, "conf", None) is not None
+                                else [math.nan] * n
+                            )
+
+                            if masks is not None and getattr(masks, "xyn", None) is not None:
+                                polys = masks.xyn
+                                m = min(len(polys), n)
+                                for i in range(m):
+                                    poly = polys[i]
+                                    flat = []
+                                    for x, y in poly:
+                                        flat.append(str(float(x)))
+                                        flat.append(str(float(y)))
+
+                                    raw_tid = int(raw_id_list[i]) if i < len(raw_id_list) else -1
+                                    tid = _map_id(raw_tid, seg_id_map, seg_next) if remap_track_ids_per_segment else raw_tid
+                                    seg_buf.append([int(cls_list[i]), " ".join(flat), int(tid), float(conf_list[i]), frame_count])
+
+                    if bbox_mode:
+                        try:
+                            bbox_results = bbox_model.track(  # type: ignore
+                                frame,
+                                tracker=bbox_tracker_eff,
+                                persist=persist_flag,
+                                conf=self.confidence,
+                                verbose=False,
+                                device=device,
+                                save=False,
+                                save_txt=False,
+                                show=False,
+                            )
+                        except Exception as e:
+                            if _is_linalg_error(e):
+                                logger.warning(
+                                    f"[{job_label}][Frame {frame_count}] BBOX LinAlgError; reset tracker and retry persist=False. err={e}"
+                                )
+                            else:
+                                logger.warning(
+                                    f"[{job_label}][Frame {frame_count}] BBOX track failed; reset tracker and retry persist=False. err={e}"
+                                )
+
+                            self._reset_ultralytics_tracker(bbox_model)  # type: ignore
+                            try:
+                                bbox_results = bbox_model.track(  # type: ignore
+                                    frame,
+                                    tracker=bbox_tracker_eff,
+                                    persist=False,
+                                    conf=self.confidence,
+                                    verbose=False,
+                                    device=device,
+                                    save=False,
+                                    save_txt=False,
+                                    show=False,
+                                )
+                            except Exception as e2:
+                                logger.warning(
+                                    f"[{job_label}][Frame {frame_count}] BBOX retry failed; using predict() this frame. err={e2}"
+                                )
+                                bbox_results = bbox_model.predict(  # type: ignore
+                                    frame,
+                                    conf=self.confidence,
+                                    verbose=False,
+                                    device=device,
+                                )
+
+                        r = bbox_results[0]
+                        boxes = getattr(r, "boxes", None)
+
+                        if boxes is not None and getattr(boxes, "xywhn", None) is not None and boxes.xywhn.size(0) > 0:
+                            xywhn = boxes.xywhn.cpu().tolist()
+                            cls_list = boxes.cls.int().cpu().tolist()
+                            raw_id_list = (
+                                boxes.id.int().cpu().tolist()
+                                if getattr(boxes, "id", None) is not None
+                                else [-1] * len(xywhn)
+                            )
+                            conf_list = (
+                                boxes.conf.cpu().tolist()
+                                if getattr(boxes, "conf", None) is not None
+                                else [math.nan] * len(xywhn)
+                            )
+
+                            for (x, y, w, h), c, raw_tid, confv in zip(xywhn, cls_list, raw_id_list, conf_list):
+                                raw_tid = int(raw_tid) if raw_tid is not None else -1
+                                tid = _map_id(raw_tid, bbox_id_map, bbox_next) if remap_track_ids_per_segment else raw_tid
+                                bbox_buf.append([int(c), float(x), float(y), float(w), float(h), int(tid), float(confv), frame_count])
+
+                    if frame_count % flush_every_n_frames == 0:
+                        _flush_buffers()
+
+                    if pbar is not None:
+                        pbar.update(1)
+                        if postfix_every_n and (frame_count % postfix_every_n == 0):
+                            pbar.set_postfix({
+                                "f": frame_count,
+                                "bbox_buf": (0 if not bbox_mode else len(bbox_buf)),
+                                "seg_buf": (0 if not seg_mode else len(seg_buf)),
+                            })
+
+                _flush_buffers()
+
+            finally:
+                cap.release()
 
         try:
             if bbox_mode and bbox_csv_out:
@@ -1028,140 +1236,100 @@ class Youtube_Helper:
 
             try:
                 # -------------------------------------------------------------
-                # Snellius/HPC path: streaming over the video file
+                # Snellius/HPC path: streaming over the video file (fast)
+                #   If it throws (LinAlgError), fallback to OpenCV loop.
                 # -------------------------------------------------------------
                 if self.snellius_mode:
-                    if seg_mode:
-                        seg_iter = seg_model.track(  # type: ignore
-                            source=input_video_path,
-                            stream=True,
-                            persist=True,
-                            tracker=seg_tracker_eff,
-                            conf=self.confidence,
-                            verbose=False,
-                            device=device,
-                            save=False,
-                            save_txt=False,
-                            show=False,
-                        )
-                    else:
-                        seg_iter = None
+                    # If both bbox+seg are enabled, avoid double-decode complexity:
+                    # use the robust OpenCV loop directly.
+                    if bbox_mode and seg_mode:
+                        logger.info(f"[{job_label}] Snellius: bbox+seg enabled -> using OpenCV per-frame loop for robustness.")
+                        _opencv_loop_from_current_frame()
+                        return
 
-                    if bbox_mode:
-                        bbox_iter = bbox_model.track(  # type: ignore
-                            source=input_video_path,
-                            stream=True,
-                            persist=True,
-                            tracker=bbox_tracker_eff,
-                            conf=self.confidence,
-                            verbose=False,
-                            device=device,
-                            save=False,
-                            save_txt=False,
-                            show=False,
-                        )
-                    else:
-                        bbox_iter = None
+                    try:
+                        if bbox_mode:
+                            bbox_iter = bbox_model.track(  # type: ignore
+                                source=input_video_path,
+                                stream=True,
+                                persist=True,
+                                tracker=bbox_tracker_eff,
+                                conf=self.confidence,
+                                verbose=False,
+                                device=device,
+                                save=False,
+                                save_txt=False,
+                                show=False,
+                            )
 
-                    def _iter_results(it):
-                        for r in it:
-                            if isinstance(r, (list, tuple)):
-                                yield (r[0] if r else None)
-                            else:
-                                yield r
+                            def _iter_results(it):
+                                for rr in it:
+                                    if isinstance(rr, (list, tuple)):
+                                        yield (rr[0] if rr else None)
+                                    else:
+                                        yield rr
 
-                    seg_stream = _iter_results(seg_iter) if seg_iter is not None else None
-                    bbox_stream = _iter_results(bbox_iter) if bbox_iter is not None else None
+                            bbox_stream = _iter_results(bbox_iter)
 
-                    # Drive based on one stream when possible (avoid double decode)
-                    if bbox_stream is not None and seg_stream is None:
-                        for r in bbox_stream:
-                            if r is None:
-                                continue
-                            frame_count += 1
+                            for r in bbox_stream:
+                                if r is None:
+                                    continue
+                                frame_count += 1
 
-                            boxes = getattr(r, "boxes", None)
-                            if boxes is not None and getattr(boxes, "xywhn", None) is not None and boxes.xywhn.size(0) > 0:
-                                xywhn = boxes.xywhn.cpu().tolist()
-                                cls_list = boxes.cls.int().cpu().tolist()
-                                raw_id_list = (
-                                    boxes.id.int().cpu().tolist()
-                                    if getattr(boxes, "id", None) is not None
-                                    else [-1] * len(xywhn)
-                                )
-                                conf_list = (
-                                    boxes.conf.cpu().tolist()
-                                    if getattr(boxes, "conf", None) is not None
-                                    else [math.nan] * len(xywhn)
-                                )
+                                boxes = getattr(r, "boxes", None)
+                                if boxes is not None and getattr(boxes, "xywhn", None) is not None and boxes.xywhn.size(0) > 0:
+                                    xywhn = boxes.xywhn.cpu().tolist()
+                                    cls_list = boxes.cls.int().cpu().tolist()
+                                    raw_id_list = (
+                                        boxes.id.int().cpu().tolist()
+                                        if getattr(boxes, "id", None) is not None
+                                        else [-1] * len(xywhn)
+                                    )
+                                    conf_list = (
+                                        boxes.conf.cpu().tolist()
+                                        if getattr(boxes, "conf", None) is not None
+                                        else [math.nan] * len(xywhn)
+                                    )
 
-                                for (x, y, w, h), c, raw_tid, confv in zip(xywhn, cls_list, raw_id_list, conf_list):
-                                    raw_tid = int(raw_tid) if raw_tid is not None else -1
-                                    tid = _map_id(raw_tid, bbox_id_map, bbox_next) if remap_track_ids_per_segment else raw_tid
-                                    bbox_buf.append([int(c), float(x), float(y), float(w), float(h), int(tid), float(confv), frame_count])
+                                    for (x, y, w, h), c, raw_tid, confv in zip(xywhn, cls_list, raw_id_list, conf_list):
+                                        raw_tid = int(raw_tid) if raw_tid is not None else -1
+                                        tid = _map_id(raw_tid, bbox_id_map, bbox_next) if remap_track_ids_per_segment else raw_tid
+                                        bbox_buf.append([int(c), float(x), float(y), float(w), float(h), int(tid), float(confv), frame_count])
 
-                            if frame_count % flush_every_n_frames == 0:
-                                if bbox_w and bbox_buf:
-                                    bbox_w.writerows(bbox_buf)
-                                    bbox_buf.clear()
-                                    bbox_f.flush()
+                                if frame_count % flush_every_n_frames == 0:
+                                    _flush_buffers()
 
-                            if pbar is not None:
-                                pbar.update(1)
-                                if postfix_every_n and (frame_count % postfix_every_n == 0):
-                                    pbar.set_postfix({"f": frame_count, "buf": len(bbox_buf)})
+                                if pbar is not None:
+                                    pbar.update(1)
+                                    if postfix_every_n and (frame_count % postfix_every_n == 0):
+                                        pbar.set_postfix({"f": frame_count, "bbox_buf": len(bbox_buf)})
 
-                    elif seg_stream is not None and bbox_stream is None:
-                        for r in seg_stream:
-                            if r is None:
-                                continue
-                            frame_count += 1
+                            _flush_buffers()
+                            return
 
-                            boxes = getattr(r, "boxes", None)
-                            masks = getattr(r, "masks", None)
+                        if seg_mode:
+                            seg_iter = seg_model.track(  # type: ignore
+                                source=input_video_path,
+                                stream=True,
+                                persist=True,
+                                tracker=seg_tracker_eff,
+                                conf=self.confidence,
+                                verbose=False,
+                                device=device,
+                                save=False,
+                                save_txt=False,
+                                show=False,
+                            )
 
-                            if boxes is not None and getattr(boxes, "xywhn", None) is not None and boxes.xywhn.size(0) > 0:
-                                n = int(boxes.xywhn.size(0))
-                                cls_list = boxes.cls.int().cpu().tolist()
-                                raw_id_list = (
-                                    boxes.id.int().cpu().tolist()
-                                    if getattr(boxes, "id", None) is not None
-                                    else [-1] * n
-                                )
-                                conf_list = (
-                                    boxes.conf.cpu().tolist()
-                                    if getattr(boxes, "conf", None) is not None
-                                    else [math.nan] * n
-                                )
+                            def _iter_results(it):
+                                for rr in it:
+                                    if isinstance(rr, (list, tuple)):
+                                        yield (rr[0] if rr else None)
+                                    else:
+                                        yield rr
 
-                                if masks is not None and getattr(masks, "xyn", None) is not None:
-                                    polys = masks.xyn
-                                    m = min(len(polys), n)
-                                    for i in range(m):
-                                        poly = polys[i]
-                                        flat = []
-                                        for x, y in poly:
-                                            flat.append(str(float(x)))
-                                            flat.append(str(float(y)))
+                            seg_stream = _iter_results(seg_iter)
 
-                                        raw_tid = int(raw_id_list[i]) if i < len(raw_id_list) else -1
-                                        tid = _map_id(raw_tid, seg_id_map, seg_next) if remap_track_ids_per_segment else raw_tid
-                                        seg_buf.append([int(cls_list[i]), " ".join(flat), int(tid), float(conf_list[i]), frame_count])
-
-                            if frame_count % flush_every_n_frames == 0:
-                                if seg_w and seg_buf:
-                                    seg_w.writerows(seg_buf)
-                                    seg_buf.clear()
-                                    seg_f.flush()
-
-                            if pbar is not None:
-                                pbar.update(1)
-                                if postfix_every_n and (frame_count % postfix_every_n == 0):
-                                    pbar.set_postfix({"f": frame_count, "buf": len(seg_buf)})
-
-                    else:
-                        # Both on: decodes twice; kept for compatibility
-                        if seg_stream is not None:
                             for r in seg_stream:
                                 if r is None:
                                     continue
@@ -1199,228 +1367,54 @@ class Youtube_Helper:
                                             seg_buf.append([int(cls_list[i]), " ".join(flat), int(tid), float(conf_list[i]), frame_count])
 
                                 if frame_count % flush_every_n_frames == 0:
-                                    if seg_w and seg_buf:
-                                        seg_w.writerows(seg_buf)
-                                        seg_buf.clear()
-                                        seg_f.flush()
+                                    _flush_buffers()
 
-                        if bbox_stream is not None:
-                            for r in bbox_stream:
-                                if r is None:
-                                    continue
-                                frame_count += 1
+                                if pbar is not None:
+                                    pbar.update(1)
+                                    if postfix_every_n and (frame_count % postfix_every_n == 0):
+                                        pbar.set_postfix({"f": frame_count, "seg_buf": len(seg_buf)})
 
-                                boxes = getattr(r, "boxes", None)
-                                if boxes is not None and getattr(boxes, "xywhn", None) is not None and boxes.xywhn.size(0) > 0:
-                                    xywhn = boxes.xywhn.cpu().tolist()
-                                    cls_list = boxes.cls.int().cpu().tolist()
-                                    raw_id_list = (
-                                        boxes.id.int().cpu().tolist()
-                                        if getattr(boxes, "id", None) is not None
-                                        else [-1] * len(xywhn)
-                                    )
-                                    conf_list = (
-                                        boxes.conf.cpu().tolist()
-                                        if getattr(boxes, "conf", None) is not None
-                                        else [math.nan] * len(xywhn)
-                                    )
+                            _flush_buffers()
+                            return
 
-                                    for (x, y, w, h), c, raw_tid, confv in zip(xywhn, cls_list, raw_id_list, conf_list):
-                                        raw_tid = int(raw_tid) if raw_tid is not None else -1
-                                        tid = _map_id(raw_tid, bbox_id_map, bbox_next) if remap_track_ids_per_segment else raw_tid
-                                        bbox_buf.append([int(c), float(x), float(y), float(w), float(h), int(tid), float(confv), frame_count])
+                        # If neither mode (shouldn't happen)
+                        return
 
-                                if frame_count % flush_every_n_frames == 0:
-                                    if bbox_w and bbox_buf:
-                                        bbox_w.writerows(bbox_buf)
-                                        bbox_buf.clear()
-                                        bbox_f.flush()
+                    except Exception as e:
+                        # Streaming crashed: flush partial buffers and continue robustly
+                        _flush_buffers()
 
-                    # Final flush
-                    if bbox_w and bbox_buf:
-                        bbox_w.writerows(bbox_buf)
-                        bbox_buf.clear()
-                    if seg_w and seg_buf:
-                        seg_w.writerows(seg_buf)
-                        seg_buf.clear()
+                        if _is_linalg_error(e):
+                            logger.warning(
+                                f"[{job_label}] Snellius streaming crashed with LinAlgError at processed_frames={frame_count}. "
+                                f"Falling back to OpenCV loop. err={e}"
+                            )
+                        else:
+                            logger.warning(
+                                f"[{job_label}] Snellius streaming crashed at processed_frames={frame_count}. "
+                                f"Falling back to OpenCV loop. err={e}"
+                            )
 
-                    return
+                        # Reset trackers best-effort before fallback
+                        try:
+                            if bbox_mode and bbox_model is not None:
+                                self._reset_ultralytics_tracker(bbox_model)
+                        except Exception:
+                            pass
+                        try:
+                            if seg_mode and seg_model is not None:
+                                self._reset_ultralytics_tracker(seg_model)
+                        except Exception:
+                            pass
+
+                        _opencv_loop_from_current_frame()
+                        return
 
                 # -------------------------------------------------------------
                 # Default (non-Snellius) path: OpenCV per-frame loop
                 # -------------------------------------------------------------
-                cap = cv2.VideoCapture(input_video_path)
-                if not cap.isOpened():
-                    raise RuntimeError(f"Failed to open video: {input_video_path}")
-
-                try:
-                    while True:
-                        ok, frame = cap.read()
-                        if not ok:
-                            break
-
-                        frame_count += 1
-                        persist_flag = frame_count > 1
-
-                        if seg_mode:
-                            try:
-                                seg_results = seg_model.track(
-                                    frame,
-                                    tracker=seg_tracker_eff,
-                                    persist=persist_flag,
-                                    conf=self.confidence,
-                                    verbose=False,
-                                    device=device,
-                                    save=False,
-                                    save_txt=False,
-                                    show=False,
-                                )
-                            except np.linalg.LinAlgError as e:
-                                logger.warning(f"[track][seg] LinAlgError; resetting tracker and retrying with persist=False. err={e}")
-                                self._reset_ultralytics_tracker(seg_model)
-                                persist_flag = False
-                                try:
-                                    seg_results = seg_model.track(
-                                        frame,
-                                        tracker=seg_tracker_eff,
-                                        persist=False,
-                                        conf=self.confidence,
-                                        verbose=False,
-                                        device=device,
-                                        save=False,
-                                        save_txt=False,
-                                        show=False,
-                                    )
-                                except Exception as e2:
-                                    logger.error(f"[track][seg] track failed after reset; falling back to predict() for this frame. err={e2}")
-                                    seg_results = seg_model.predict(
-                                        frame,
-                                        conf=self.confidence,
-                                        verbose=False,
-                                        device=device,
-                                    )
-
-                            r = seg_results[0]
-                            boxes = r.boxes
-                            masks = getattr(r, "masks", None)
-
-                            if boxes is not None and boxes.xywhn is not None and boxes.xywhn.size(0) > 0:
-                                n = int(boxes.xywhn.size(0))
-                                cls_list = boxes.cls.int().cpu().tolist()
-                                raw_id_list = (
-                                    boxes.id.int().cpu().tolist()
-                                    if getattr(boxes, "id", None) is not None
-                                    else [-1] * n
-                                )
-                                conf_list = (
-                                    boxes.conf.cpu().tolist()
-                                    if getattr(boxes, "conf", None) is not None
-                                    else [math.nan] * n
-                                )
-
-                                if masks is not None and getattr(masks, "xyn", None) is not None:
-                                    polys = masks.xyn
-                                    m = min(len(polys), n)
-                                    for i in range(m):
-                                        poly = polys[i]
-                                        flat = []
-                                        for x, y in poly:
-                                            flat.append(str(float(x)))
-                                            flat.append(str(float(y)))
-
-                                        raw_tid = int(raw_id_list[i]) if i < len(raw_id_list) else -1
-                                        tid = _map_id(raw_tid, seg_id_map, seg_next) if remap_track_ids_per_segment else raw_tid
-                                        seg_buf.append([int(cls_list[i]), " ".join(flat), int(tid), float(conf_list[i]), frame_count])
-
-                        if bbox_mode:
-                            try:
-                                bbox_results = bbox_model.track(
-                                    frame,
-                                    tracker=bbox_tracker_eff,
-                                    persist=persist_flag,
-                                    conf=self.confidence,
-                                    verbose=False,
-                                    device=device,
-                                    save=False,
-                                    save_txt=False,
-                                    show=False,
-                                )
-                            except np.linalg.LinAlgError as e:
-                                logger.warning(f"[track][bbox] LinAlgError; resetting tracker and retrying with persist=False. err={e}")
-                                self._reset_ultralytics_tracker(bbox_model)
-                                persist_flag = False
-                                try:
-                                    bbox_results = bbox_model.track(
-                                        frame,
-                                        tracker=bbox_tracker_eff,
-                                        persist=False,
-                                        conf=self.confidence,
-                                        verbose=False,
-                                        device=device,
-                                        save=False,
-                                        save_txt=False,
-                                        show=False,
-                                    )
-                                except Exception as e2:
-                                    logger.error(f"[track][bbox] track failed after reset; falling back to predict() for this frame. err={e2}")
-                                    bbox_results = bbox_model.predict(
-                                        frame,
-                                        conf=self.confidence,
-                                        verbose=False,
-                                        device=device,
-                                    )
-
-                            r = bbox_results[0]
-                            boxes = r.boxes
-
-                            if boxes is not None and boxes.xywhn is not None and boxes.xywhn.size(0) > 0:
-                                xywhn = boxes.xywhn.cpu().tolist()
-                                cls_list = boxes.cls.int().cpu().tolist()
-                                raw_id_list = (
-                                    boxes.id.int().cpu().tolist()
-                                    if getattr(boxes, "id", None) is not None
-                                    else [-1] * len(xywhn)
-                                )
-                                conf_list = (
-                                    boxes.conf.cpu().tolist()
-                                    if getattr(boxes, "conf", None) is not None
-                                    else [math.nan] * len(xywhn)
-                                )
-
-                                for (x, y, w, h), c, raw_tid, confv in zip(xywhn, cls_list, raw_id_list, conf_list):
-                                    raw_tid = int(raw_tid) if raw_tid is not None else -1
-                                    tid = _map_id(raw_tid, bbox_id_map, bbox_next) if remap_track_ids_per_segment else raw_tid
-                                    bbox_buf.append([int(c), float(x), float(y), float(w), float(h), int(tid), float(confv), frame_count])
-
-                        if frame_count % flush_every_n_frames == 0:
-                            if bbox_w and bbox_buf:
-                                bbox_w.writerows(bbox_buf)
-                                bbox_buf.clear()
-                                bbox_f.flush()
-                            if seg_w and seg_buf:
-                                seg_w.writerows(seg_buf)
-                                seg_buf.clear()
-                                seg_f.flush()
-
-                        if pbar is not None:
-                            pbar.update(1)
-                            if postfix_every_n and (frame_count % postfix_every_n == 0):
-                                pbar.set_postfix({
-                                    "f": frame_count,
-                                    "bbox_buf": (0 if not bbox_mode else len(bbox_buf)),
-                                    "seg_buf": (0 if not seg_mode else len(seg_buf)),
-                                })
-
-                    # final flush
-                    if bbox_w and bbox_buf:
-                        bbox_w.writerows(bbox_buf)
-                        bbox_buf.clear()
-                    if seg_w and seg_buf:
-                        seg_w.writerows(seg_buf)
-                        seg_buf.clear()
-
-                finally:
-                    cap.release()
+                _opencv_loop_from_current_frame()
+                return
 
             finally:
                 if pbar is not None:
