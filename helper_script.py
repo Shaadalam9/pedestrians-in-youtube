@@ -37,6 +37,7 @@ from urllib.parse import urljoin, urlparse
 
 import cv2
 import pandas as pd
+import numpy as np
 import requests
 import torch
 import world_bank_data as wb
@@ -816,6 +817,22 @@ class Youtube_Helper:
     # Thread-safe tracking helpers
     # -------------------------------------------------------------------------
 
+    def _reset_ultralytics_tracker(self, model) -> None:
+        """
+        Best-effort reset of Ultralytics tracker state.
+        Works across multiple Ultralytics versions.
+        """
+        try:
+            pred = getattr(model, "predictor", None)
+            if pred is None:
+                return
+            if hasattr(pred, "trackers"):
+                pred.trackers = None
+            if hasattr(pred, "tracker"):
+                pred.tracker = None
+        except Exception:
+            pass
+
     @staticmethod
     def _write_rows_csv(path: str, header: list[str], rows: list[list]) -> None:
         if not rows:
@@ -1246,17 +1263,43 @@ class Youtube_Helper:
                         persist_flag = frame_count > 1
 
                         if seg_mode:
-                            seg_results = seg_model.track(  # type: ignore
-                                frame,
-                                tracker=seg_tracker_eff,
-                                persist=persist_flag,
-                                conf=self.confidence,
-                                verbose=False,
-                                device=device,
-                                save=False,
-                                save_txt=False,
-                                show=False,
-                            )
+                            try:
+                                seg_results = seg_model.track(
+                                    frame,
+                                    tracker=seg_tracker_eff,
+                                    persist=persist_flag,
+                                    conf=self.confidence,
+                                    verbose=False,
+                                    device=device,
+                                    save=False,
+                                    save_txt=False,
+                                    show=False,
+                                )
+                            except np.linalg.LinAlgError as e:
+                                logger.warning(f"[track][seg] LinAlgError; resetting tracker and retrying with persist=False. err={e}")
+                                self._reset_ultralytics_tracker(seg_model)
+                                persist_flag = False
+                                try:
+                                    seg_results = seg_model.track(
+                                        frame,
+                                        tracker=seg_tracker_eff,
+                                        persist=False,
+                                        conf=self.confidence,
+                                        verbose=False,
+                                        device=device,
+                                        save=False,
+                                        save_txt=False,
+                                        show=False,
+                                    )
+                                except Exception as e2:
+                                    logger.error(f"[track][seg] track failed after reset; falling back to predict() for this frame. err={e2}")
+                                    seg_results = seg_model.predict(
+                                        frame,
+                                        conf=self.confidence,
+                                        verbose=False,
+                                        device=device,
+                                    )
+
                             r = seg_results[0]
                             boxes = r.boxes
                             masks = getattr(r, "masks", None)
@@ -1290,17 +1333,43 @@ class Youtube_Helper:
                                         seg_buf.append([int(cls_list[i]), " ".join(flat), int(tid), float(conf_list[i]), frame_count])
 
                         if bbox_mode:
-                            bbox_results = bbox_model.track(  # type: ignore
-                                frame,
-                                tracker=bbox_tracker_eff,
-                                persist=persist_flag,
-                                conf=self.confidence,
-                                verbose=False,
-                                device=device,
-                                save=False,
-                                save_txt=False,
-                                show=False,
-                            )
+                            try:
+                                bbox_results = bbox_model.track(
+                                    frame,
+                                    tracker=bbox_tracker_eff,
+                                    persist=persist_flag,
+                                    conf=self.confidence,
+                                    verbose=False,
+                                    device=device,
+                                    save=False,
+                                    save_txt=False,
+                                    show=False,
+                                )
+                            except np.linalg.LinAlgError as e:
+                                logger.warning(f"[track][bbox] LinAlgError; resetting tracker and retrying with persist=False. err={e}")
+                                self._reset_ultralytics_tracker(bbox_model)
+                                persist_flag = False
+                                try:
+                                    bbox_results = bbox_model.track(
+                                        frame,
+                                        tracker=bbox_tracker_eff,
+                                        persist=False,
+                                        conf=self.confidence,
+                                        verbose=False,
+                                        device=device,
+                                        save=False,
+                                        save_txt=False,
+                                        show=False,
+                                    )
+                                except Exception as e2:
+                                    logger.error(f"[track][bbox] track failed after reset; falling back to predict() for this frame. err={e2}")
+                                    bbox_results = bbox_model.predict(
+                                        frame,
+                                        conf=self.confidence,
+                                        verbose=False,
+                                        device=device,
+                                    )
+
                             r = bbox_results[0]
                             boxes = r.boxes
 
