@@ -167,6 +167,32 @@
         #city-suggestions div:hover {
             background-color: #f0f8ff;
         }
+
+        /* make radio row match input height */
+        .radio-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 2;
+            padding: 8px;              /* same as input padding */
+            box-sizing: border-box;
+        }
+
+        /* ensure the whole label area is clickable and tall */
+        .radio-inline {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            height: 100%;              /* fill the row height */
+        }
+
+        /* radios themselves stay small; wrapper handles height */
+        .radio-wrapper input[type="radio"] {
+            flex: 0 0 auto;
+            width: auto;
+            padding: 0;
+        }
+
 }
     </style>
     <script src="https://www.youtube.com/iframe_api"></script>
@@ -623,11 +649,21 @@
 
                 <div class="form-group">
                     <label for="time_of_day">Time of day:</label>
-                    <select id="time_of_day" name="time_of_day">
-                        <option value="0" {{ "selected" if time_of_day_last == 0 else "" }}>0 (day)</option>
-                        <option value="1" {{ "selected" if time_of_day_last == 1 else "" }}>1 (night)</option>
-                    </select>
+                    <div class="input-wrapper radio-wrapper">
+                        <label class="radio-inline">
+                            <input type="radio" name="time_of_day" value="0"
+                                   {{ "checked" if time_of_day_last == 0 else "" }}>
+                            Day
+                        </label>
+                        <label class="radio-inline">
+                            <input type="radio" name="time_of_day" value="1"
+                                   {{ "checked" if time_of_day_last == 1 else "" }}>
+                            Night
+                        </label>
+                    </div>
                 </div>
+
+
                 <div class="form-group">
                     <label for="vehicle_type">Vehicle:</label>
                     <select id="vehicle_type" name="vehicle_type">
