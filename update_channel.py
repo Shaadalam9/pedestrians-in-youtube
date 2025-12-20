@@ -64,7 +64,7 @@ if __name__ == "__main__":
                 updated_channels.append(ch)
 
         # store clean list format like [UCabc,UCxyz]
-        df.at[idx, 'channel'] = f"[{','.join([c for c in updated_channels if c])}]"
+        df.at[idx, 'channel'] = f"[{','.join([c for c in updated_channels if c])}]"  # type: ignore
 
     # Save updated CSV
     output_file = 'mapping_with_channels.csv'

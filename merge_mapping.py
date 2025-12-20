@@ -70,7 +70,7 @@ for file in glob.glob('mapping-*.csv'):
 
         if not match.empty:
             idx = match.index[0]
-            existing_videos = set(main_df.at[idx, 'videos'])
+            existing_videos = set(main_df.at[idx, 'videos'])  # type: ignore
             new_videos = [vid for vid in new_row['videos'] if vid not in existing_videos]
 
             if new_videos:
@@ -78,7 +78,7 @@ for file in glob.glob('mapping-*.csv'):
                     for vid_idx, vid in enumerate(new_row['videos']):
                         if vid in new_videos:
                             value = new_row[col][vid_idx]
-                            main_df.at[idx, col].append(value)
+                            main_df.at[idx, col].append(value)  # type: ignore
         else:
             main_df = pd.concat([main_df, pd.DataFrame([new_row])], ignore_index=True)
 

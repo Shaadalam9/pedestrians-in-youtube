@@ -140,9 +140,9 @@ if __name__ == "__main__":
         city_population, country_population = get_population_data(city, iso2_code, iso3_code)
         print(city, country, iso2_code, iso3_code, city_population, country_population)
         if city_population is not None:
-            data.at[index, 'population_city'] = city_population
+            data.at[index, 'population_city'] = city_population  # type: ignore
         if country_population is not None:
-            data.at[index, 'population_country'] = country_population
+            data.at[index, 'population_country'] = country_population  # type: ignore
 
     # Save updated CSV
     updated_csv_file = 'mapping_updated.csv'
