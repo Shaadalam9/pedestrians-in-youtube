@@ -14,13 +14,8 @@ from typing import Tuple
 import torch
 
 from custom_logger import CustomLogger
-from helper_script import Youtube_Helper
 
 logger = CustomLogger(__name__)
-
-# Module-level helper used for logging effective runtime values (e.g., confidence).
-# This mirrors the existing behavior and avoids passing helper instances around.
-helper = Youtube_Helper()
 
 
 class HPC:
@@ -232,7 +227,7 @@ class HPC:
         logger.info("track_buffer_sec=%s", getattr(config, "track_buffer_sec", None))
 
         # Log effective confidence configured on the helper.
-        logger.info("confidence=%s", getattr(helper, "confidence", 0.0))
+        logger.info("confidence=%s", getattr(config, "confidence", 0.0))
 
         # Log storage and download policy flags.
         logger.info(

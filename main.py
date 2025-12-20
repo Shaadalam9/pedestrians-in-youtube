@@ -14,7 +14,6 @@ from dataclasses import dataclass
 
 from logmod import logs
 from custom_logger import CustomLogger
-from helper_script import Youtube_Helper
 from video_io import VideoIO
 from patches import Patches
 from config_utils import ConfigUtils
@@ -30,7 +29,6 @@ from parsing_utils import ParsingUtils
 logs(show_level=common.get_configs("logger_level"), show_color=True)
 logger = CustomLogger(__name__)
 
-helper = Youtube_Helper()
 patches_class = Patches()
 configutils_class = ConfigUtils()
 videoio_class = VideoIO()

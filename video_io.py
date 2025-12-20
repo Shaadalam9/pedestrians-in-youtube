@@ -19,12 +19,10 @@ from pytubefix.cli import on_progress
 from moviepy.video.io.VideoFileClip import VideoFileClip
 from urllib.parse import urljoin, urlparse
 from custom_logger import CustomLogger
-from helper_script import Youtube_Helper
 from parsing_utils import ParsingUtils
 from config_utils import ConfigUtils
 from maintenence.maintenence import Maintenance
 
-helper = Youtube_Helper()
 parsing_utils = ParsingUtils()
 config_utils = ConfigUtils()
 maintenance_class = Maintenance()
@@ -40,6 +38,9 @@ class VideoIO:
                                                                              True if self.snellius_mode else False))
         self.update_package = bool(config_utils._safe_get_config("update_package", False))
         self.need_authentication = bool(config_utils._safe_get_config("need_authentication", False))
+
+    def set_video_title(self, title: str) -> None:
+        self.video_title = title
 
     def _fps_is_bad(self, fps) -> bool:
         return fps is None or fps == 0 or (isinstance(fps, float) and math.isnan(fps))
@@ -205,7 +206,7 @@ class VideoIO:
                         video_fps2 = self.get_video_fps(existing_path)
                         if self._fps_is_bad(video_fps2):
                             raise RuntimeError(f"{vid}: existing SSD copy also has invalid FPS.")
-                        helper.set_video_title(video_title)
+                        self.set_video_title(video_title)
                         return existing_path, video_title, resolution, int(video_fps2), False  # type: ignore
 
                     try:
@@ -216,13 +217,13 @@ class VideoIO:
                     final_path = os.path.join(output_path, f"{vid}.mp4")
                     shutil.move(tmp_video_path, final_path)
                     ftp_download = True
-                    helper.set_video_title(video_title)
+                    self.set_video_title(video_title)
 
                     logger.info(f"{vid}: refreshed from FTP and replaced SSD copy at {final_path}.")
                     return final_path, video_title, resolution, int(video_fps), ftp_download
 
                 logger.info(f"{vid}: FTP not available; using existing SSD copy.")
-                helper.set_video_title(video_title)
+                self.set_video_title(video_title)
                 video_fps = self.get_video_fps(existing_path)
 
                 if self._fps_is_bad(video_fps):
@@ -235,7 +236,7 @@ class VideoIO:
                     video_file_path, video_title, resolution, video_fps = yt_result
                     if self._fps_is_bad(video_fps):
                         raise RuntimeError(f"{vid}: YouTube fallback produced invalid FPS.")
-                    helper.set_video_title(video_title)
+                    self.set_video_title(video_title)
                     return video_file_path, video_title, resolution, int(video_fps), False
 
                 return existing_path, video_title, resolution, int(video_fps), False  # type: ignore
@@ -257,7 +258,7 @@ class VideoIO:
             video_file_path, video_title, resolution, video_fps = result
             if self._fps_is_bad(video_fps):
                 raise RuntimeError(f"{vid}: invalid video_fps after download.")
-            helper.set_video_title(video_title)
+            self.set_video_title(video_title)
 
             logger.info(f"{vid}: downloaded successfully. res={resolution} fps={int(video_fps)} path={video_file_path}")  # noqa: E501
             return video_file_path, video_title, resolution, int(video_fps), ftp_download
@@ -280,14 +281,14 @@ class VideoIO:
                 video_file_path, video_title, resolution, video_fps = result
                 if self._fps_is_bad(video_fps):
                     raise RuntimeError(f"{vid}: invalid video_fps after download.")
-                helper.set_video_title(video_title)
+                self.set_video_title(video_title)
                 logger.info(
                     f"{vid}: downloaded successfully. res={resolution} fps={int(video_fps)} path={video_file_path}"
                 )
                 return video_file_path, video_title, resolution, int(video_fps), ftp_download
 
             if os.path.exists(base_video_path):
-                helper.set_video_title(video_title)
+                self.set_video_title(video_title)
                 video_fps = self.get_video_fps(base_video_path)
                 if self._fps_is_bad(video_fps):
                     raise RuntimeError(f"{vid}: invalid FPS on local fallback file.")
@@ -299,7 +300,7 @@ class VideoIO:
         existing_folder = next((p for p in video_paths if os.path.exists(os.path.join(p, f"{vid}.mp4"))), None)
         use_folder = existing_folder if existing_folder else video_paths[-1]
         base_video_path = os.path.join(use_folder, f"{vid}.mp4")
-        helper.set_video_title(video_title)
+        self.set_video_title(video_title)
 
         video_fps = self.get_video_fps(base_video_path)
         if self._fps_is_bad(video_fps):

@@ -1,7 +1,7 @@
 # by Pavlo Bazilinskyy <pavlo.bazilinskyy@gmail.com>
 import pandas as pd
 import ast
-from pytube import YouTube
+from pytubefix import YouTube
 from tqdm import tqdm
 import common
 from custom_logger import CustomLogger
@@ -61,7 +61,7 @@ if __name__ == "__main__":
             else:
                 updated_dates.append(date)
 
-        df.at[idx, 'upload_date'] = str(updated_dates)
+        df.at[idx, 'upload_date'] = str(updated_dates)  # type: ignore
 
     # Save updated CSV
     updated_csv_file = 'mapping_updated.csv'
