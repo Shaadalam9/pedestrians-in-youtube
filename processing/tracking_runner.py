@@ -315,7 +315,6 @@ class TrackingRunner:
 
         bbox_tracker_eff = self.make_tracker_config(self.bbox_tracker, video_fps) if bbox_mode else self.bbox_tracker
         seg_tracker_eff = self.make_tracker_config(self.seg_tracker, video_fps) if seg_mode else self.seg_tracker
-        print("Here is: ", bbox_tracker_eff)
 
         bbox_header = ["yolo-id", "x-center", "y-center", "width", "height", "unique-id", "confidence", "frame-count"]
         seg_header = ["yolo-id", "mask-polygon", "unique-id", "confidence", "frame-count"]
@@ -498,9 +497,8 @@ class TrackingRunner:
         def _opencv_loop_from_current_frame() -> None:
             nonlocal frame_count, bbox_buf, seg_buf
             last_log_t = time.time()
-
-            # Keep Ultralytics' tracker instance alive across frames.
-            # Passing tracker YAML every frame can re-initialize the tracker and scramble IDs.
+            # Keep Ultralytics tracker instances alive across frames.
+            # Passing tracker YAML on every frame can re-initialize the tracker and scramble IDs.
             bbox_tracker_passed = False
             seg_tracker_passed = False
 
@@ -542,7 +540,6 @@ class TrackingRunner:
                             )
                             if not seg_tracker_passed:
                                 seg_kwargs["tracker"] = seg_tracker_eff  # type: ignore
-
                             seg_results = seg_model.track(  # type: ignore
                                 frame,
                                 **seg_kwargs,
@@ -553,10 +550,11 @@ class TrackingRunner:
                             logger.warning(f"[{job_label}][Frame {frame_count}] SEG {msg}; reset+retry. err={e}")
                             self._reset_ultralytics_tracker(seg_model)  # type: ignore
                             try:
+                                seg_tracker_passed = False
                                 seg_results = seg_model.track(  # type: ignore
                                     frame,
                                     tracker=seg_tracker_eff,
-                                    persist=False,
+                                    persist=True,
                                     conf=self.confidence,
                                     verbose=False,
                                     device=device,
@@ -564,6 +562,7 @@ class TrackingRunner:
                                     save_txt=False,
                                     show=False,
                                 )
+                                seg_tracker_passed = True
                             except Exception as e2:
                                 logger.warning(f"[{job_label}][Frame {frame_count}] SEG retry failed; skipping seg parse. err={e2}")  # noqa: E501
                                 seg_results = None
@@ -619,7 +618,6 @@ class TrackingRunner:
                             )
                             if not bbox_tracker_passed:
                                 bbox_kwargs["tracker"] = bbox_tracker_eff  # type: ignore
-
                             bbox_results = bbox_model.track(  # type: ignore
                                 frame,
                                 **bbox_kwargs,
@@ -630,10 +628,11 @@ class TrackingRunner:
                             logger.warning(f"[{job_label}][Frame {frame_count}] BBOX {msg}; reset+retry. err={e}")
                             self._reset_ultralytics_tracker(bbox_model)  # type: ignore
                             try:
+                                bbox_tracker_passed = False
                                 bbox_results = bbox_model.track(  # type: ignore
                                     frame,
                                     tracker=bbox_tracker_eff,
-                                    persist=False,
+                                    persist=True,
                                     conf=self.confidence,
                                     verbose=False,
                                     device=device,
@@ -641,6 +640,7 @@ class TrackingRunner:
                                     save_txt=False,
                                     show=False,
                                 )
+                                bbox_tracker_passed = True
                             except Exception as e2:
                                 logger.warning(f"[{job_label}][Frame {frame_count}] BBOX retry failed; skipping bbox parse. err={e2}")  # noqa: E501
                                 bbox_results = None
@@ -717,13 +717,14 @@ class TrackingRunner:
                     seg_w.writerow(seg_header)
 
             try:
-                # Streaming tracking is the most stable ID lifecycle in Ultralytics.
-                # Use it whenever we're running a single mode (bbox XOR seg), regardless of snellius_mode.
+                # Streaming mode (single-mode only) gives the most stable tracker lifecycle/IDs.
+                # Use it whenever exactly one mode is enabled; otherwise use the OpenCV per-frame loop.
                 use_streaming = bool(bbox_mode) ^ bool(seg_mode)
-
-                # If both bbox+seg are requested, we currently fall back to the OpenCV per-frame loop.
-                # (Keeping both trackers perfectly synchronized in streaming mode would require a different architecture.)  # noqa: E501
                 if use_streaming:
+                    if bbox_mode and seg_mode:
+                        logger.info(f"[{job_label}] bbox+seg enabled -> OpenCV per-frame loop.")
+                        _opencv_loop_from_current_frame()
+                        return
 
                     last_log_t = time.time()
 
@@ -862,7 +863,7 @@ class TrackingRunner:
                         _flush_buffers()
                         msg = "LinAlgError" if _is_linalg_error(e) else "error"
                         logger.warning(
-                            f"[{job_label}] Snellius streaming crashed with {msg} at processed_frames={frame_count}. "
+                            f"[{job_label}] Streaming mode crashed with {msg} at processed_frames={frame_count}. "
                             f"Reset + fallback to OpenCV. err={e}"
                         )
 
