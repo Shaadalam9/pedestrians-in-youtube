@@ -51,7 +51,7 @@ class _AnnotatedVideoWriter:
         candidates = ["mp4v", "avc1", "H264", "XVID", "MJPG"]
         for fourcc_str in candidates:
             try:
-                fourcc = cv2.VideoWriter_fourcc(*fourcc_str)
+                fourcc = cv2.VideoWriter_fourcc(*fourcc_str)  # type: ignore
                 vw = cv2.VideoWriter(self.out_path, fourcc, self.fps, (w, h))
                 if vw is not None and vw.isOpened():
                     self._w = vw
@@ -296,8 +296,8 @@ class TrackingRunner:
         if seg_mode and seg_csv_out is None:
             raise ValueError("seg_mode=True requires seg_csv_out")
 
-        flush_every_n_frames = int(config_utils._safe_get_config("flush_every_n_frames", flush_every_n_frames))
-        progress_log_every_sec = float(config_utils._safe_get_config("progress_log_every_sec", 5.0))
+        flush_every_n_frames = int(config_utils._safe_get_config("flush_every_n_frames", flush_every_n_frames))  # type: ignore # noqa: E501
+        progress_log_every_sec = float(config_utils._safe_get_config("progress_log_every_sec", 5.0))  # type: ignore
 
         if bbox_model is None or (seg_mode and seg_model is None):
             bbox_m, seg_m = self.get_thread_models(bbox_mode, seg_mode)
@@ -315,6 +315,7 @@ class TrackingRunner:
 
         bbox_tracker_eff = self.make_tracker_config(self.bbox_tracker, video_fps) if bbox_mode else self.bbox_tracker
         seg_tracker_eff = self.make_tracker_config(self.seg_tracker, video_fps) if seg_mode else self.seg_tracker
+        print("Here is: ", bbox_tracker_eff)
 
         bbox_header = ["yolo-id", "x-center", "y-center", "width", "height", "unique-id", "confidence", "frame-count"]
         seg_header = ["yolo-id", "mask-polygon", "unique-id", "confidence", "frame-count"]
@@ -330,12 +331,12 @@ class TrackingRunner:
 
         # --- Trail settings to match your old behavior ---
         # Fixed length history in frames (default 30 as in your code)
-        trail_len = int(config_utils._safe_get_config("trail_len", 30))
+        trail_len = int(config_utils._safe_get_config("trail_len", 30))  # type: ignore
         trail_len = max(2, trail_len)
 
         # Fixed grey and thick line (default matches your (230,230,230) and LINE_THICKNESS*5 feel)
         trail_color = tuple(config_utils._safe_get_config("trail_color_bgr", (230, 230, 230)))  # type: ignore
-        trail_thickness = int(config_utils._safe_get_config("trail_thickness", 10))
+        trail_thickness = int(config_utils._safe_get_config("trail_thickness", 10))  # type: ignore
 
         # Separate histories for seg and bbox, keyed by RAW track_id (as in your code)
         seg_track_history = defaultdict(list)   # track_id -> [(x,y), ...]
@@ -473,7 +474,7 @@ class TrackingRunner:
             # Extract current-frame xywh (pixel) + raw track ids
             try:
                 boxes = getattr(r, "boxes", None) if r is not None else None
-                if boxes is not None and getattr(boxes, "xywh", None) is not None and getattr(boxes, "id", None) is not None:
+                if boxes is not None and getattr(boxes, "xywh", None) is not None and getattr(boxes, "id", None) is not None:  # noqa: E501
                     xywh_px = boxes.xywh.detach().cpu().numpy()  # pixel xywh
                     raw_ids = boxes.id.int().detach().cpu().tolist()
                 else:
@@ -498,6 +499,11 @@ class TrackingRunner:
             nonlocal frame_count, bbox_buf, seg_buf
             last_log_t = time.time()
 
+            # Keep Ultralytics' tracker instance alive across frames.
+            # Passing tracker YAML every frame can re-initialize the tracker and scramble IDs.
+            bbox_tracker_passed = False
+            seg_tracker_passed = False
+
             cap = cv2.VideoCapture(input_video_path)
             if not cap.isOpened():
                 raise RuntimeError(f"Failed to open video: {input_video_path}")
@@ -515,7 +521,7 @@ class TrackingRunner:
                         break
 
                     frame_count += 1
-                    persist_flag = frame_count > 1
+                    persist_flag = True  # noqa
 
                     # Prefer seg annotated output if available; otherwise bbox.
                     annot_r = None
@@ -525,10 +531,8 @@ class TrackingRunner:
                     if seg_mode:
                         seg_results = None
                         try:
-                            seg_results = seg_model.track(  # type: ignore
-                                frame,
-                                tracker=seg_tracker_eff,
-                                persist=persist_flag,
+                            seg_kwargs = dict(
+                                persist=True,
                                 conf=self.confidence,
                                 verbose=False,
                                 device=device,
@@ -536,6 +540,14 @@ class TrackingRunner:
                                 save_txt=False,
                                 show=False,
                             )
+                            if not seg_tracker_passed:
+                                seg_kwargs["tracker"] = seg_tracker_eff  # type: ignore
+
+                            seg_results = seg_model.track(  # type: ignore
+                                frame,
+                                **seg_kwargs,
+                            )
+                            seg_tracker_passed = True
                         except Exception as e:
                             msg = "LinAlgError" if _is_linalg_error(e) else "error"
                             logger.warning(f"[{job_label}][Frame {frame_count}] SEG {msg}; reset+retry. err={e}")
@@ -553,7 +565,7 @@ class TrackingRunner:
                                     show=False,
                                 )
                             except Exception as e2:
-                                logger.warning(f"[{job_label}][Frame {frame_count}] SEG retry failed; skipping seg parse. err={e2}")
+                                logger.warning(f"[{job_label}][Frame {frame_count}] SEG retry failed; skipping seg parse. err={e2}")  # noqa: E501
                                 seg_results = None
 
                         if seg_results is not None:
@@ -564,7 +576,7 @@ class TrackingRunner:
                             boxes = getattr(r, "boxes", None)
                             masks = getattr(r, "masks", None)
 
-                            if boxes is not None and getattr(boxes, "xywhn", None) is not None and boxes.xywhn.size(0) > 0:
+                            if boxes is not None and getattr(boxes, "xywhn", None) is not None and boxes.xywhn.size(0) > 0:  # noqa: E501
                                 n = int(boxes.xywhn.size(0))
                                 cls_list = boxes.cls.int().cpu().tolist()
                                 raw_id_list = (
@@ -589,17 +601,15 @@ class TrackingRunner:
                                             flat.append(str(float(y)))
 
                                         raw_tid = int(raw_id_list[i]) if i < len(raw_id_list) else -1
-                                        tid = _map_id(raw_tid, seg_id_map, seg_next) if remap_track_ids_per_segment else raw_tid
-                                        seg_buf.append([int(cls_list[i]), " ".join(flat), int(tid), float(conf_list[i]), frame_count])
+                                        tid = _map_id(raw_tid, seg_id_map, seg_next) if remap_track_ids_per_segment else raw_tid  # noqa: E501
+                                        seg_buf.append([int(cls_list[i]), " ".join(flat), int(tid), float(conf_list[i]), frame_count])  # noqa: E501
 
                     # --- BBOX ---
                     if bbox_mode:
                         bbox_results = None
                         try:
-                            bbox_results = bbox_model.track(  # type: ignore
-                                frame,
-                                tracker=bbox_tracker_eff,
-                                persist=persist_flag,
+                            bbox_kwargs = dict(
+                                persist=True,
                                 conf=self.confidence,
                                 verbose=False,
                                 device=device,
@@ -607,6 +617,14 @@ class TrackingRunner:
                                 save_txt=False,
                                 show=False,
                             )
+                            if not bbox_tracker_passed:
+                                bbox_kwargs["tracker"] = bbox_tracker_eff  # type: ignore
+
+                            bbox_results = bbox_model.track(  # type: ignore
+                                frame,
+                                **bbox_kwargs,
+                            )
+                            bbox_tracker_passed = True
                         except Exception as e:
                             msg = "LinAlgError" if _is_linalg_error(e) else "error"
                             logger.warning(f"[{job_label}][Frame {frame_count}] BBOX {msg}; reset+retry. err={e}")
@@ -624,7 +642,7 @@ class TrackingRunner:
                                     show=False,
                                 )
                             except Exception as e2:
-                                logger.warning(f"[{job_label}][Frame {frame_count}] BBOX retry failed; skipping bbox parse. err={e2}")
+                                logger.warning(f"[{job_label}][Frame {frame_count}] BBOX retry failed; skipping bbox parse. err={e2}")  # noqa: E501
                                 bbox_results = None
 
                         if bbox_results is not None:
@@ -634,7 +652,7 @@ class TrackingRunner:
                                 annot_mode = "bbox"
 
                             boxes = getattr(r, "boxes", None)
-                            if boxes is not None and getattr(boxes, "xywhn", None) is not None and boxes.xywhn.size(0) > 0:
+                            if boxes is not None and getattr(boxes, "xywhn", None) is not None and boxes.xywhn.size(0) > 0:  # noqa: E501
                                 xywhn = boxes.xywhn.cpu().tolist()
                                 cls_list = boxes.cls.int().cpu().tolist()
                                 raw_id_list = (
@@ -650,8 +668,8 @@ class TrackingRunner:
 
                                 for (x, y, w, h), c, raw_tid, confv in zip(xywhn, cls_list, raw_id_list, conf_list):
                                     raw_tid = int(raw_tid) if raw_tid is not None else -1
-                                    tid = _map_id(raw_tid, bbox_id_map, bbox_next) if remap_track_ids_per_segment else raw_tid
-                                    bbox_buf.append([int(c), float(x), float(y), float(w), float(h), int(tid), float(confv), frame_count])
+                                    tid = _map_id(raw_tid, bbox_id_map, bbox_next) if remap_track_ids_per_segment else raw_tid  # noqa: E501
+                                    bbox_buf.append([int(c), float(x), float(y), float(w), float(h), int(tid), float(confv), frame_count])  # noqa: E501
 
                     # Annotated MP4: draw trails like reference and write
                     if annot_r is not None:
@@ -699,12 +717,13 @@ class TrackingRunner:
                     seg_w.writerow(seg_header)
 
             try:
-                # Snellius streaming (single-mode only); otherwise OpenCV loop
-                if self.snellius_mode:
-                    if bbox_mode and seg_mode:
-                        logger.info(f"[{job_label}] Snellius: bbox+seg enabled -> OpenCV per-frame loop.")
-                        _opencv_loop_from_current_frame()
-                        return
+                # Streaming tracking is the most stable ID lifecycle in Ultralytics.
+                # Use it whenever we're running a single mode (bbox XOR seg), regardless of snellius_mode.
+                use_streaming = bool(bbox_mode) ^ bool(seg_mode)
+
+                # If both bbox+seg are requested, we currently fall back to the OpenCV per-frame loop.
+                # (Keeping both trackers perfectly synchronized in streaming mode would require a different architecture.)  # noqa: E501
+                if use_streaming:
 
                     last_log_t = time.time()
 
@@ -736,7 +755,7 @@ class TrackingRunner:
                                 frame_count += 1
 
                                 boxes = getattr(r, "boxes", None)
-                                if boxes is not None and getattr(boxes, "xywhn", None) is not None and boxes.xywhn.size(0) > 0:
+                                if boxes is not None and getattr(boxes, "xywhn", None) is not None and boxes.xywhn.size(0) > 0:  # noqa: E501
                                     xywhn = boxes.xywhn.cpu().tolist()
                                     cls_list = boxes.cls.int().cpu().tolist()
                                     raw_id_list = (
@@ -750,10 +769,10 @@ class TrackingRunner:
                                         else [math.nan] * len(xywhn)
                                     )
 
-                                    for (x, y, w, h), c, raw_tid, confv in zip(xywhn, cls_list, raw_id_list, conf_list):
+                                    for (x, y, w, h), c, raw_tid, confv in zip(xywhn, cls_list, raw_id_list, conf_list):  # noqa: E501
                                         raw_tid = int(raw_tid) if raw_tid is not None else -1
-                                        tid = _map_id(raw_tid, bbox_id_map, bbox_next) if remap_track_ids_per_segment else raw_tid
-                                        bbox_buf.append([int(c), float(x), float(y), float(w), float(h), int(tid), float(confv), frame_count])
+                                        tid = _map_id(raw_tid, bbox_id_map, bbox_next) if remap_track_ids_per_segment else raw_tid  # noqa: E501
+                                        bbox_buf.append([int(c), float(x), float(y), float(w), float(h), int(tid), float(confv), frame_count])  # noqa: E501
 
                                 # write annotated with trails
                                 _annotate_write_frame_with_trails(r, mode="bbox", fallback_frame=None)
@@ -793,7 +812,7 @@ class TrackingRunner:
                                 boxes = getattr(r, "boxes", None)
                                 masks = getattr(r, "masks", None)
 
-                                if boxes is not None and getattr(boxes, "xywhn", None) is not None and boxes.xywhn.size(0) > 0:
+                                if boxes is not None and getattr(boxes, "xywhn", None) is not None and boxes.xywhn.size(0) > 0:  # noqa: E501
                                     n = int(boxes.xywhn.size(0))
                                     cls_list = boxes.cls.int().cpu().tolist()
                                     raw_id_list = (
@@ -818,8 +837,8 @@ class TrackingRunner:
                                                 flat.append(str(float(y)))
 
                                             raw_tid = int(raw_id_list[i]) if i < len(raw_id_list) else -1
-                                            tid = _map_id(raw_tid, seg_id_map, seg_next) if remap_track_ids_per_segment else raw_tid
-                                            seg_buf.append([int(cls_list[i]), " ".join(flat), int(tid), float(conf_list[i]), frame_count])
+                                            tid = _map_id(raw_tid, seg_id_map, seg_next) if remap_track_ids_per_segment else raw_tid  # noqa: E501
+                                            seg_buf.append([int(cls_list[i]), " ".join(flat), int(tid), float(conf_list[i]), frame_count])  # noqa: E501
 
                                 # write annotated with trails
                                 _annotate_write_frame_with_trails(r, mode="seg", fallback_frame=None)
