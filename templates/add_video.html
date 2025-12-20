@@ -120,6 +120,54 @@
         #currentTime {
             color: red;
         }
+        .input-wrapper {
+            position: relative;     /* needed for city autocomplete */
+            flex: 2;                /* same flex as before */
+            display: flex;
+        }
+
+        .input-wrapper input,
+        .input-wrapper select {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 8px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: #fff;
+        }
+
+        /* Only for city suggestions dropdown */
+        #city-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ccc;
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+            max-height: 250px;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+            display: none;
+        }
+
+        #city-suggestions.has-items {
+            display: block;
+        }
+
+        #city-suggestions div {
+            padding: 10px 12px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        #city-suggestions div:hover {
+            background-color: #f0f8ff;
+        }
+}
     </style>
     <script src="https://www.youtube.com/iframe_api"></script>
     <script>
@@ -281,273 +329,281 @@
             <form method="POST">
                 <div class="form-group">
                     <label for="city">City:</label>
-                    <input type="text" id="city" name="city" value="{{ city }}" required>
+                    <div class="input-wrapper">
+                        <input type="text" id="city" name="city" value="{{ city }}" autocomplete="off">
+                        <div id="city-suggestions"></div>
+                    </div>
                 </div>
 
                 <div class="form-group">
                     <label for="state">State (optional):</label>
-                    <input type="text" id="state" name="state" value="{{ state }}">
+                    <div class="input-wrapper">
+                        <input type="text" id="state" name="state" value="{{ state }}">
+                    </div>
                 </div>
 
                 <div class="form-group">
                     <label for="country">Country:</label>
-                    <!-- <input type="text" id="country" name="country" value="{{ country }}" required> -->
-                    <select id="country" name="country" value="{{ country }}" required name="country">
-                        <option value="">Select a country</option>
-                        <option value="Afghanistan" {{ "selected" if country == "Afghanistan" else "" }}>Afghanistan 🇦🇫</option>
-                        <option value="Albania" {{ "selected" if country == "Albania" else "" }}>Albania 🇦🇱</option>
-                        <option value="Algeria" {{ "selected" if country == "Algeria" else "" }}>Algeria 🇩🇿</option>
-                        <option value="Åland Islands" {{ "selected" if country == "Åland Islands" else "" }}>Aland Islands 🇦🇽</option>
-                        <option value="American Samoa" {{ "selected" if country == "American Samoa" else "" }}>American Samoa 🇦🇸</option>
-                        <option value="Andorra" {{ "selected" if country == "Andorra" else "" }}>Andorra 🇦🇩</option>
-                        <option value="Angola" {{ "selected" if country == "Angola" else "" }}>Angola 🇦🇴</option>
-                        <option value="Anguilla" {{ "selected" if country == "Anguilla" else "" }}>Anguilla 🇦🇮</option>
-                        <option value="Antarctica" {{ "selected" if country == "Antarctica" else "" }}>Antarctica 🇦🇶</option>
-                        <option value="Antigua and Barbuda" {{ "selected" if country == "Antigua and Barbuda" else "" }}>Antigua and Barbuda 🇦🇬</option>
-                        <option value="Argentina" {{ "selected" if country == "Argentina" else "" }}>Argentina 🇦🇷</option>
-                        <option value="Armenia" {{ "selected" if country == "Armenia" else "" }}>Armenia 🇦🇲</option>
-                        <option value="Aruba" {{ "selected" if country == "Aruba" else "" }}>Aruba 🇦🇼</option>
-                        <option value="Australia" {{ "selected" if country == "Australia" else "" }}>Australia 🇦🇺</option>
-                        <option value="Austria" {{ "selected" if country == "Austria" else "" }}>Austria 🇦🇹</option>
-                        <option value="Azerbaijan" {{ "selected" if country == "Azerbaijan" else "" }}>Azerbaijan 🇦🇿</option>
-                        <option value="Bahamas" {{ "selected" if country == "Bahamas" else "" }}>Bahamas 🇧🇸</option>
-                        <option value="Bahrain" {{ "selected" if country == "Bahrain" else "" }}>Bahrain 🇧🇭</option>
-                        <option value="Bangladesh" {{ "selected" if country == "Bangladesh" else "" }}>Bangladesh 🇧🇩</option>
-                        <option value="Barbados" {{ "selected" if country == "Barbados" else "" }}>Barbados 🇧🇧</option>
-                        <option value="Belarus" {{ "selected" if country == "Belarus" else "" }}>Belarus 🇧🇾</option>
-                        <option value="Belgium" {{ "selected" if country == "Belgium" else "" }}>Belgium 🇧🇪</option>
-                        <option value="Belize" {{ "selected" if country == "Belize" else "" }}>Belize 🇧🇿</option>
-                        <option value="Benin" {{ "selected" if country == "Benin" else "" }}>Benin 🇧🇯</option>
-                        <option value="Bermuda" {{ "selected" if country == "Bermuda" else "" }}>Bermuda 🇧🇲</option>
-                        <option value="Bhutan" {{ "selected" if country == "Bhutan" else "" }}>Bhutan 🇧🇹</option>
-                        <option value="Bolivia" {{ "selected" if country == "Bolivia" else "" }}>Bolivia 🇧🇴</option>
-                        <option value="Bonaire, Sint Eustatius and Saba" {{ "selected" if country == "Bonaire, Sint Eustatius and Saba" else "" }}>Bonaire, Sint Eustatius and Saba 🇧🇶</option>
-                        <option value="Bosnia and Herzegovina" {{ "selected" if country == "Bosnia and Herzegovina" else "" }}>Bosnia and Herzegovina 🇧🇦</option>
-                        <option value="Botswana" {{ "selected" if country == "Botswana" else "" }}>Botswana 🇧🇼</option>
-                        <option value="Bouvet Island" {{ "selected" if country == "Bouvet Island" else "" }}>Bouvet Island 🇧🇻</option>
-                        <option value="Brazil" {{ "selected" if country == "Brazil" else "" }}>Brazil 🇧🇷</option>
-                        <option value="British Indian Ocean Territory" {{ "selected" if country == "British Indian Ocean Territory" else "" }}>British Indian Ocean Territory 🇮🇴</option>
-                        <option value="British Virgin Islands" {{ "selected" if country == "British Virgin Islands" else "" }}>British Virgin Islands 🇻🇬</option>
-                        <option value="Brunei" {{ "selected" if country == "Brunei" else "" }}>Brunei 🇧🇳</option>
-                        <option value="Bulgaria" {{ "selected" if country == "Bulgaria" else "" }}>Bulgaria 🇧🇬</option>
-                        <option value="Burkina Faso" {{ "selected" if country == "Burkina Faso" else "" }}>Burkina Faso 🇧🇫</option>
-                        <option value="Burundi" {{ "selected" if country == "Burundi" else "" }}>Burundi 🇧🇮</option>
-                        <option value="Cabo Verde" {{ "selected" if country == "Cabo Verde" else "" }}>Cabo Verde 🇨🇻</option>
-                        <option value="Cambodia" {{ "selected" if country == "Cambodia" else "" }}>Cambodia 🇰🇭</option>
-                        <option value="Cameroon" {{ "selected" if country == "Cameroon" else "" }}>Cameroon 🇨🇲</option>
-                        <option value="Canada" {{ "selected" if country == "Canada" else "" }}>Canada 🇨🇦</option>
-                        <option value="Cayman Islands" {{ "selected" if country == "Cayman Islands" else "" }}>Cayman Islands 🇰🇾</option>
-                        <option value="Central African Republic" {{ "selected" if country == "Central African Republic" else "" }}>Central African Republic 🇨🇫</option>
-                        <option value="Chad" {{ "selected" if country == "Chad" else "" }}>Chad 🇹🇩</option>
-                        <option value="Chile" {{ "selected" if country == "Chile" else "" }}>Chile 🇨🇱</option>
-                        <option value="China" {{ "selected" if country == "China" else "" }}>China 🇨🇳</option>
-                        <option value="Christmas Island" {{ "selected" if country == "Christmas Island" else "" }}>Christmas Island 🇨🇽</option>
-                        <option value="Cocos Islands" {{ "selected" if country == "Cocos Islands" else "" }}>Cocos Islands 🇨🇨</option>
-                        <option value="Colombia" {{ "selected" if country == "Colombia" else "" }}>Colombia 🇨🇴</option>
-                        <option value="Comoros" {{ "selected" if country == "Comoros" else "" }}>Comoros 🇰🇲</option>
-                        <option value="Congo (Congo-Brazzaville)" {{ "selected" if country == "Congo (Congo-Brazzaville)" else "" }}>Congo (Congo-Brazzaville) 🇨🇬</option>
-                        <option value="Congo (Democratic Republic)" {{ "selected" if country == "Congo (Democratic Republic)" else "" }}>Congo (Democratic Republic) 🇨🇩</option>
-                        <option value="Cook Islands" {{ "selected" if country == "Cook Islands" else "" }}>Cook Islands 🇨🇰</option>
-                        <option value="Costa Rica" {{ "selected" if country == "Costa Rica" else "" }}>Costa Rica 🇨🇷</option>
-                        <option value="Côte d'Ivoire" {{ "selected" if country == "Côte d'Ivoire" else "" }}>Côte d'Ivoire 🇨🇮</option>
-                        <option value="Croatia" {{ "selected" if country == "Croatia" else "" }}>Croatia 🇭🇷</option>
-                        <option value="Cuba" {{ "selected" if country == "Cuba" else "" }}>Cuba 🇨🇺</option>
-                        <option value="Curaçao" {{ "selected" if country == "Curaçao" else "" }}>Curaçao 🇨🇼</option>
-                        <option value="Cyprus" {{ "selected" if country == "Cyprus" else "" }}>Cyprus 🇨🇾</option>
-                        <option value="Czechia" {{ "selected" if country == "Czechia" else "" }}>Czechia 🇨🇿</option>
-                        <option value="Denmark" {{ "selected" if country == "Denmark" else "" }}>Denmark 🇩🇰</option>
-                        <option value="Djibouti" {{ "selected" if country == "Djibouti" else "" }}>Djibouti 🇩🇯</option>
-                        <option value="Dominica" {{ "selected" if country == "Dominica" else "" }}>Dominica 🇩🇲</option>
-                        <option value="Dominican Republic" {{ "selected" if country == "Dominican Republic" else "" }}>Dominican Republic 🇩🇴</option>
-                        <option value="Ecuador" {{ "selected" if country == "Ecuador" else "" }}>Ecuador 🇪🇨</option>
-                        <option value="Egypt" {{ "selected" if country == "Egypt" else "" }}>Egypt 🇪🇬</option>
-                        <option value="El Salvador" {{ "selected" if country == "El Salvador" else "" }}>El Salvador 🇸🇻</option>
-                        <option value="Equatorial Guinea" {{ "selected" if country == "Equatorial Guinea" else "" }}>Equatorial Guinea 🇬🇶</option>
-                        <option value="Eritrea" {{ "selected" if country == "Eritrea" else "" }}>Eritrea 🇪🇷</option>
-                        <option value="Estonia" {{ "selected" if country == "Estonia" else "" }}>Estonia 🇪🇪</option>
-                        <option value="Eswatini" {{ "selected" if country == "Eswatini" else "" }}>Eswatini 🇸🇿</option>
-                        <option value="Ethiopia" {{ "selected" if country == "Ethiopia" else "" }}>Ethiopia 🇪🇹</option>
-                        <option value="Falkland Islands" {{ "selected" if country == "Falkland Islands" else "" }}>Falkland Islands 🇫🇰</option>
-                        <option value="Faroe Islands" {{ "selected" if country == "Faroe Islands" else "" }}>Faroe Islands 🇫🇴</option>
-                        <option value="Fiji" {{ "selected" if country == "Fiji" else "" }}>Fiji 🇫🇯</option>
-                        <option value="Finland" {{ "selected" if country == "Finland" else "" }}>Finland 🇫🇮</option>
-                        <option value="France" {{ "selected" if country == "France" else "" }}>France 🇫🇷</option>
-                        <option value="French Guiana" {{ "selected" if country == "French Guiana" else "" }}>French Guiana 🇬🇫</option>
-                        <option value="French Polynesia" {{ "selected" if country == "French Polynesia" else "" }}>French Polynesia 🇵🇫</option>
-                        <option value="Gabon" {{ "selected" if country == "Gabon" else "" }}>Gabon 🇬🇦</option>
-                        <option value="Gambia" {{ "selected" if country == "Gambia" else "" }}>Gambia 🇬🇲</option>
-                        <option value="Georgia" {{ "selected" if country == "Georgia" else "" }}>Georgia 🇬🇪</option>
-                        <option value="Germany" {{ "selected" if country == "Germany" else "" }}>Germany 🇩🇪</option>
-                        <option value="Ghana" {{ "selected" if country == "Ghana" else "" }}>Ghana 🇬🇭</option>
-                        <option value="Gibraltar" {{ "selected" if country == "Gibraltar" else "" }}>Gibraltar 🇬🇮</option>
-                        <option value="Greece" {{ "selected" if country == "Greece" else "" }}>Greece 🇬🇷</option>
-                        <option value="Greenland" {{ "selected" if country == "Greenland" else "" }}>Greenland 🇬🇱</option>
-                        <option value="Grenada" {{ "selected" if country == "Grenada" else "" }}>Grenada 🇬🇩</option>
-                        <option value="Guadeloupe" {{ "selected" if country == "Guadeloupe" else "" }}>Guadeloupe 🇬🇺</option>
-                        <option value="Guam" {{ "selected" if country == "Guam" else "" }}>Guam 🇬🇺</option>
-                        <option value="Guatemala" {{ "selected" if country == "Guatemala" else "" }}>Guatemala 🇬🇹</option>
-                        <option value="Guernsey" {{ "selected" if country == "Guernsey" else "" }}>Guernsey 🇬🇬</option>
-                        <option value="Guinea" {{ "selected" if country == "Guinea" else "" }}>Guinea 🇬🇳</option>
-                        <option value="Guinea-Bissau" {{ "selected" if country == "Guinea-Bissau" else "" }}>Guinea-Bissau 🇬🇼</option>
-                        <option value="Guyana" {{ "selected" if country == "Guyana" else "" }}>Guyana 🇬🇾</option>
-                        <option value="Haiti" {{ "selected" if country == "Haiti" else "" }}>Haiti 🇭🇹</option>
-                        <option value="Heard Island and McDonald Islands" {{ "selected" if country == "Heard Island and McDonald Islands" else "" }}>Heard Island and McDonald Islands 🇭🇲</option>
-                        <option value="Honduras" {{ "selected" if country == "Honduras" else "" }}>Honduras 🇭🇳</option>
-                        <option value="Hong Kong" {{ "selected" if country == "Hong Kong" else "" }}>Hong Kong 🇭🇰</option>
-                        <option value="Hungary" {{ "selected" if country == "Hungary" else "" }}>Hungary 🇭🇺</option>
-                        <option value="Iceland" {{ "selected" if country == "Iceland" else "" }}>Iceland 🇮🇸</option>
-                        <option value="India" {{ "selected" if country == "India" else "" }}>India 🇮🇳</option>
-                        <option value="Indonesia" {{ "selected" if country == "Indonesia" else "" }}>Indonesia 🇮🇩</option>
-                        <option value="Iran" {{ "selected" if country == "Iran" else "" }}>Iran 🇮🇷</option>
-                        <option value="Iraq" {{ "selected" if country == "Iraq" else "" }}>Iraq 🇮🇶</option>
-                        <option value="Ireland" {{ "selected" if country == "Ireland" else "" }}>Ireland 🇮🇪</option>
-                        <option value="Isle of Man" {{ "selected" if country == "Isle of Man" else "" }}>Isle of Man 🇮🇲</option>
-                        <option value="Israel" {{ "selected" if country == "Israel" else "" }}>Israel 🇮🇱</option>
-                        <option value="Italy" {{ "selected" if country == "Italy" else "" }}>Italy 🇮🇹</option>
-                        <option value="Jamaica" {{ "selected" if country == "Jamaica" else "" }}>Jamaica 🇯🇲</option>
-                        <option value="Japan" {{ "selected" if country == "Japan" else "" }}>Japan 🇯🇵</option>
-                        <option value="Jersey" {{ "selected" if country == "Jersey" else "" }}>Jersey 🇯🇪</option>
-                        <option value="Jordan" {{ "selected" if country == "Jordan" else "" }}>Jordan 🇯🇴</option>
-                        <option value="Kazakhstan" {{ "selected" if country == "Kazakhstan" else "" }}>Kazakhstan 🇰🇿</option>
-                        <option value="Kenya" {{ "selected" if country == "Kenya" else "" }}>Kenya 🇰🇪</option>
-                        <option value="Kiribati" {{ "selected" if country == "Kiribati" else "" }}>Kiribati 🇰🇮</option>
-                        <option value="Kosovo" {{ "selected" if country == "Kosovo" else "" }}>Kosovo 🇽🇰</option>
-                        <option value="Kuwait" {{ "selected" if country == "Kuwait" else "" }}>Kuwait 🇰🇼</option>
-                        <option value="Kyrgyzstan" {{ "selected" if country == "Kyrgyzstan" else "" }}>Kyrgyzstan 🇰🇬</option>
-                        <option value="Laos" {{ "selected" if country == "Laos" else "" }}>Laos 🇱🇦</option>
-                        <option value="Latvia" {{ "selected" if country == "Latvia" else "" }}>Latvia 🇱🇻</option>
-                        <option value="Lebanon" {{ "selected" if country == "Lebanon" else "" }}>Lebanon 🇱🇧</option>
-                        <option value="Lesotho" {{ "selected" if country == "Lesotho" else "" }}>Lesotho 🇱🇸</option>
-                        <option value="Liberia" {{ "selected" if country == "Liberia" else "" }}>Liberia 🇱🇷</option>
-                        <option value="Libya" {{ "selected" if country == "Libya" else "" }}>Libya 🇱🇾</option>
-                        <option value="Liechtenstein" {{ "selected" if country == "Liechtenstein" else "" }}>Liechtenstein 🇱🇮</option>
-                        <option value="Lithuania" {{ "selected" if country == "Lithuania" else "" }}>Lithuania 🇱🇹</option>
-                        <option value="Luxembourg" {{ "selected" if country == "Luxembourg" else "" }}>Luxembourg 🇱🇺</option>
-                        <option value="Macau" {{ "selected" if country == "Macau" else "" }}>Macau 🇲🇴</option>
-                        <option value="Madagascar" {{ "selected" if country == "Madagascar" else "" }}>Madagascar 🇲🇬</option>
-                        <option value="Malawi" {{ "selected" if country == "Malawi" else "" }}>Malawi 🇲🇼</option>
-                        <option value="Malaysia" {{ "selected" if country == "Malaysia" else "" }}>Malaysia 🇲🇾</option>
-                        <option value="Maldives" {{ "selected" if country == "Maldives" else "" }}>Maldives 🇲🇻</option>
-                        <option value="Mali" {{ "selected" if country == "Mali" else "" }}>Mali 🇲🇱</option>
-                        <option value="Malta" {{ "selected" if country == "Malta" else "" }}>Malta 🇲🇹</option>
-                        <option value="Marshall Islands" {{ "selected" if country == "Marshall Islands" else "" }}>Marshall Islands 🇲🇭</option>
-                        <option value="Martinique" {{ "selected" if country == "Martinique" else "" }}>Martinique 🇲🇶</option>
-                        <option value="Mauritania" {{ "selected" if country == "Mauritania" else "" }}>Mauritania 🇲🇷</option>
-                        <option value="Mauritius" {{ "selected" if country == "Mauritius" else "" }}>Mauritius 🇲🇺</option>
-                        <option value="Mayotte" {{ "selected" if country == "Mayotte" else "" }}>Mayotte 🇾🇹</option>
-                        <option value="Mexico" {{ "selected" if country == "Mexico" else "" }}>Mexico 🇲🇽</option>
-                        <option value="Micronesia" {{ "selected" if country == "Micronesia" else "" }}>Micronesia 🇫🇲</option>
-                        <option value="Moldova" {{ "selected" if country == "Moldova" else "" }}>Moldova 🇲🇩</option>
-                        <option value="Monaco" {{ "selected" if country == "Monaco" else "" }}>Monaco 🇲🇨</option>
-                        <option value="Mongolia" {{ "selected" if country == "Mongolia" else "" }}>Mongolia 🇲🇳</option>
-                        <option value="Montenegro" {{ "selected" if country == "Montenegro" else "" }}>Montenegro 🇲🇪</option>
-                        <option value="Montserrat" {{ "selected" if country == "Montserrat" else "" }}>Montserrat 🇲🇸</option>
-                        <option value="Morocco" {{ "selected" if country == "Morocco" else "" }}>Morocco 🇲🇦</option>
-                        <option value="Mozambique" {{ "selected" if country == "Mozambique" else "" }}>Mozambique 🇲🇿</option>
-                        <option value="Myanmar" {{ "selected" if country == "Myanmar" else "" }}>Myanmar (Burma) 🇲🇲</option>
-                        <option value="Namibia" {{ "selected" if country == "Namibia" else "" }}>Namibia 🇳🇦</option>
-                        <option value="Nauru" {{ "selected" if country == "Nauru" else "" }}>Nauru 🇳🇷</option>
-                        <option value="Nepal" {{ "selected" if country == "Nepal" else "" }}>Nepal 🇳🇵</option>
-                        <option value="Netherlands" {{ "selected" if country == "Netherlands" else "" }}>Netherlands 🇳🇱</option>
-                        <option value="New Caledonia" {{ "selected" if country == "New Caledonia" else "" }}>New Caledonia 🇳🇨</option>
-                        <option value="New Zealand" {{ "selected" if country == "New Zealand" else "" }}>New Zealand 🇳🇿</option>
-                        <option value="Nicaragua" {{ "selected" if country == "Nicaragua" else "" }}>Nicaragua 🇳🇮</option>
-                        <option value="Niger" {{ "selected" if country == "Niger" else "" }}>Niger 🇳🇪</option>
-                        <option value="Nigeria" {{ "selected" if country == "Nigeria" else "" }}>Nigeria 🇳🇬</option>
-                        <option value="Niue" {{ "selected" if country == "Niue" else "" }}>Niue 🇳🇺</option>
-                        <option value="Norfolk Island" {{ "selected" if country == "Norfolk Island" else "" }}>Norfolk Island 🇳🇫</option>
-                        <option value="North Korea" {{ "selected" if country == "North Korea" else "" }}>North Korea 🇰🇵</option>
-                        <option value="North Macedonia" {{ "selected" if country == "North Macedonia" else "" }}>North Macedonia 🇲🇰</option>
-                        <option value="Northern Mariana Islands" {{ "selected" if country == "Northern Mariana Islands" else "" }}>Northern Mariana Islands 🇲🇵</option>
-                        <option value="Norway" {{ "selected" if country == "Norway" else "" }}>Norway 🇳🇴</option>
-                        <option value="Oman" {{ "selected" if country == "Oman" else "" }}>Oman 🇴🇲</option>
-                        <option value="Pakistan" {{ "selected" if country == "Pakistan" else "" }}>Pakistan 🇵🇰</option>
-                        <option value="Palau" {{ "selected" if country == "Palau" else "" }}>Palau 🇵🇬</option>
-                        <option value="Palestine" {{ "selected" if country == "Palestine" else "" }}>Palestine 🇵🇸</option>
-                        <option value="Panama" {{ "selected" if country == "Panama" else "" }}>Panama 🇵🇦</option>
-                        <option value="Papua New Guinea" {{ "selected" if country == "Papua New Guinea" else "" }}>Papua New Guinea 🇵🇬</option>
-                        <option value="Paraguay" {{ "selected" if country == "Paraguay" else "" }}>Paraguay 🇵🇾</option>
-                        <option value="Peru" {{ "selected" if country == "Peru" else "" }}>Peru 🇵🇪</option>
-                        <option value="Philippines" {{ "selected" if country == "Philippines" else "" }}>Philippines 🇵🇭</option>
-                        <option value="Pitcairn Islands" {{ "selected" if country == "Pitcairn Islands" else "" }}>Pitcairn Islands 🇵🇬</option>
-                        <option value="Poland" {{ "selected" if country == "Poland" else "" }}>Poland 🇵🇱</option>
-                        <option value="Portugal" {{ "selected" if country == "Portugal" else "" }}>Portugal 🇵🇹</option>
-                        <option value="Puerto Rico" {{ "selected" if country == "Puerto Rico" else "" }}>Puerto Rico 🇵🇷</option>
-                        <option value="Qatar" {{ "selected" if country == "Qatar" else "" }}>Qatar 🇶🇦</option>
-                        <option value="Réunion" {{ "selected" if country == "Réunion" else "" }}>Réunion 🇷🇪</option>
-                        <option value="Romania" {{ "selected" if country == "Romania" else "" }}>Romania 🇷🇴</option>
-                        <option value="Russia" {{ "selected" if country == "Russia" else "" }}>Russia 🇷🇺</option>
-                        <option value="Rwanda" {{ "selected" if country == "Rwanda" else "" }}>Rwanda 🇷🇼</option>
-                        <option value="Saint Barthélemy" {{ "selected" if country == "Saint Barthélemy" else "" }}>Saint Barthélemy 🇧🇱</option>
-                        <option value="Saint Helena" {{ "selected" if country == "Saint Helena" else "" }}>Saint Helena 🇸🇭</option>
-                        <option value="Saint Kitts and Nevis" {{ "selected" if country == "Saint Kitts and Nevis" else "" }}>Saint Kitts and Nevis 🇰🇳</option>
-                        <option value="Saint Lucia" {{ "selected" if country == "Saint Lucia" else "" }}>Saint Lucia 🇱🇨</option>
-                        <option value="Saint Martin" {{ "selected" if country == "Saint Martin" else "" }}>Saint Martin 🇲🇶</option>
-                        <option value="Saint Pierre and Miquelon" {{ "selected" if country == "Saint Pierre and Miquelon" else "" }}>Saint Pierre and Miquelon 🇵🇲</option>
-                        <option value="Saint Vincent and the Grenadines" {{ "selected" if country == "Saint Vincent and the Grenadines" else "" }}>Saint Vincent and the Grenadines 🇻🇨</option>
-                        <option value="Samoa" {{ "selected" if country == "Samoa" else "" }}>Samoa 🇼🇸</option>
-                        <option value="San Marino" {{ "selected" if country == "San Marino" else "" }}>San Marino 🇸🇲</option>
-                        <option value="Sao Tome and Principe" {{ "selected" if country == "Sao Tome and Principe" else "" }}>Sao Tome and Principe 🇸🇹</option>
-                        <option value="Saudi Arabia" {{ "selected" if country == "Saudi Arabia" else "" }}>Saudi Arabia 🇸🇦</option>
-                        <option value="Senegal" {{ "selected" if country == "Senegal" else "" }}>Senegal 🇸🇳</option>
-                        <option value="Serbia" {{ "selected" if country == "Serbia" else "" }}>Serbia 🇷🇸</option>
-                        <option value="Seychelles" {{ "selected" if country == "Seychelles" else "" }}>Seychelles 🇸🇨</option>
-                        <option value="Sierra Leone" {{ "selected" if country == "Sierra Leone" else "" }}>Sierra Leone 🇸🇱</option>
-                        <option value="Singapore" {{ "selected" if country == "Singapore" else "" }}>Singapore 🇸🇬</option>
-                        <option value="Sint Maarten" {{ "selected" if country == "Sint Maarten" else "" }}>Sint Maarten 🇸🇽</option>
-                        <option value="Slovakia" {{ "selected" if country == "Slovakia" else "" }}>Slovakia 🇸🇰</option>
-                        <option value="Slovenia" {{ "selected" if country == "Slovenia" else "" }}>Slovenia 🇸🇮</option>
-                        <option value="Solomon Islands" {{ "selected" if country == "Solomon Islands" else "" }}>Solomon Islands 🇸🇧</option>
-                        <option value="Somalia" {{ "selected" if country == "Somalia" else "" }}>Somalia 🇸🇴</option>
-                        <option value="South Africa" {{ "selected" if country == "South Africa" else "" }}>South Africa 🇿🇦</option>
-                        <option value="South Georgia and the South Sandwich Islands" {{ "selected" if country == "South Georgia and the South Sandwich Islands" else "" }}>South Georgia and the South Sandwich Islands 🇬🇸</option>
-                        <option value="South Korea" {{ "selected" if country == "South Korea" else "" }}>South Korea 🇰🇷</option>
-                        <option value="South Sudan" {{ "selected" if country == "South Sudan" else "" }}>South Sudan 🇸🇸</option>
-                        <option value="Spain" {{ "selected" if country == "Spain" else "" }}>Spain 🇪🇸</option>
-                        <option value="Sri Lanka" {{ "selected" if country == "Sri Lanka" else "" }}>Sri Lanka 🇱🇰</option>
-                        <option value="Sudan" {{ "selected" if country == "Sudan" else "" }}>Sudan 🇸🇩</option>
-                        <option value="Suriname" {{ "selected" if country == "Suriname" else "" }}>Suriname 🇸🇷</option>
-                        <option value="Svalbard and Jan Mayen" {{ "selected" if country == "Svalbard and Jan Mayen" else "" }}>Svalbard and Jan Mayen 🇸🇯</option>
-                        <option value="Sweden" {{ "selected" if country == "Sweden" else "" }}>Sweden 🇸🇪</option>
-                        <option value="Switzerland" {{ "selected" if country == "Switzerland" else "" }}>Switzerland 🇨🇭</option>
-                        <option value="Syria" {{ "selected" if country == "Syria" else "" }}>Syria 🇸🇾</option>
-                        <option value="Taiwan" {{ "selected" if country == "Taiwan" else "" }}>Taiwan 🇹🇼</option>
-                        <option value="Tajikistan" {{ "selected" if country == "Tajikistan" else "" }}>Tajikistan 🇹🇯</option>
-                        <option value="Tanzania" {{ "selected" if country == "Tanzania" else "" }}>Tanzania 🇹🇿</option>
-                        <option value="Thailand" {{ "selected" if country == "Thailand" else "" }}>Thailand 🇹🇭</option>
-                        <option value="Timor-Leste" {{ "selected" if country == "Timor-Leste" else "" }}>Timor-Leste 🇹🇱</option>
-                        <option value="Togo" {{ "selected" if country == "Togo" else "" }}>Togo 🇹🇬</option>
-                        <option value="Tokelau" {{ "selected" if country == "Tokelau" else "" }}>Tokelau 🇹🇰</option>
-                        <option value="Tonga" {{ "selected" if country == "Tonga" else "" }}>Tonga 🇹🇴</option>
-                        <option value="Trinidad and Tobago" {{ "selected" if country == "Trinidad and Tobago" else "" }}>Trinidad and Tobago 🇹🇹</option>
-                        <option value="Tunisia" {{ "selected" if country == "Tunisia" else "" }}>Tunisia 🇹🇳</option>
-                        <option value="Türkiye" {{ "selected" if country == "Türkiye" else "" }}>Türkiye 🇹🇷</option>
-                        <option value="Turkmenistan" {{ "selected" if country == "Turkmenistan" else "" }}>Turkmenistan 🇹🇲</option>
-                        <option value="Turks and Caicos Islands" {{ "selected" if country == "Turks and Caicos Islands" else "" }}>Turks and Caicos Islands 🇹🇨</option>
-                        <option value="Tuvalu" {{ "selected" if country == "Tuvalu" else "" }}>Tuvalu 🇹🇻</option>
-                        <option value="Uganda" {{ "selected" if country == "Uganda" else "" }}>Uganda 🇺🇬</option>
-                        <option value="Ukraine" {{ "selected" if country == "Ukraine" else "" }}>Ukraine 🇺🇦</option>
-                        <option value="United Arab Emirates" {{ "selected" if country == "United Arab Emirates" else "" }}>United Arab Emirates 🇦🇪</option>
-                        <option value="United Kingdom" {{ "selected" if country == "United Kingdom" else "" }}>United Kingdom 🇬🇧</option>
-                        <option value="United States" {{ "selected" if country == "United States" else "" }}>United States 🇺🇸</option>
-                        <option value="United States Virgin Islands" {{ "selected" if country == "United States Virgin Islands" else "" }}>United States Virgin Islands 🇻🇮</option>
-                        <option value="Uruguay" {{ "selected" if country == "Uruguay" else "" }}>Uruguay 🇺🇾</option>
-                        <option value="Uzbekistan" {{ "selected" if country == "Uzbekistan" else "" }}>Uzbekistan 🇺🇿</option>
-                        <option value="Vanuatu" {{ "selected" if country == "Vanuatu" else "" }}>Vanuatu 🇻🇺</option>
-                        <option value="Vatican City" {{ "selected" if country == "Vatican City" else "" }}>Vatican City 🇻🇦</option>
-                        <option value="Venezuela" {{ "selected" if country == "Venezuela" else "" }}>Venezuela 🇻🇪</option>
-                        <option value="Vietnam" {{ "selected" if country == "Vietnam" else "" }}>Vietnam 🇻🇳</option>
-                        <option value="Wallis and Futuna" {{ "selected" if country == "Wallis and Futuna" else "" }}>Wallis and Futuna 🇼🇫</option>
-                        <option value="Western Sahara" {{ "selected" if country == "Western Sahara" else "" }}>Western Sahara 🇪🇭</option>
-                        <option value="Yemen" {{ "selected" if country == "Yemen" else "" }}>Yemen 🇾🇪</option>
-                        <option value="Zambia" {{ "selected" if country == "Zambia" else "" }}>Zambia 🇿🇲</option>
-                        <option value="Zimbabwe" {{ "selected" if country == "Zimbabwe" else "" }}>Zimbabwe 🇿🇼</option>
-                    </select>
+                    <div class="input-wrapper">
+                        <select id="country" name="country" required>
+                            <option value="">Select a country</option>
+                            <option value="Afghanistan" {{ "selected" if country == "Afghanistan" else "" }}>Afghanistan 🇦🇫</option>
+                            <option value="Albania" {{ "selected" if country == "Albania" else "" }}>Albania 🇦🇱</option>
+                            <option value="Algeria" {{ "selected" if country == "Algeria" else "" }}>Algeria 🇩🇿</option>
+                            <option value="Åland Islands" {{ "selected" if country == "Åland Islands" else "" }}>Aland Islands 🇦🇽</option>
+                            <option value="American Samoa" {{ "selected" if country == "American Samoa" else "" }}>American Samoa 🇦🇸</option>
+                            <option value="Andorra" {{ "selected" if country == "Andorra" else "" }}>Andorra 🇦🇩</option>
+                            <option value="Angola" {{ "selected" if country == "Angola" else "" }}>Angola 🇦🇴</option>
+                            <option value="Anguilla" {{ "selected" if country == "Anguilla" else "" }}>Anguilla 🇦🇮</option>
+                            <option value="Antarctica" {{ "selected" if country == "Antarctica" else "" }}>Antarctica 🇦🇶</option>
+                            <option value="Antigua and Barbuda" {{ "selected" if country == "Antigua and Barbuda" else "" }}>Antigua and Barbuda 🇦🇬</option>
+                            <option value="Argentina" {{ "selected" if country == "Argentina" else "" }}>Argentina 🇦🇷</option>
+                            <option value="Armenia" {{ "selected" if country == "Armenia" else "" }}>Armenia 🇦🇲</option>
+                            <option value="Aruba" {{ "selected" if country == "Aruba" else "" }}>Aruba 🇦🇼</option>
+                            <option value="Australia" {{ "selected" if country == "Australia" else "" }}>Australia 🇦🇺</option>
+                            <option value="Austria" {{ "selected" if country == "Austria" else "" }}>Austria 🇦🇹</option>
+                            <option value="Azerbaijan" {{ "selected" if country == "Azerbaijan" else "" }}>Azerbaijan 🇦🇿</option>
+                            <option value="Bahamas" {{ "selected" if country == "Bahamas" else "" }}>Bahamas 🇧🇸</option>
+                            <option value="Bahrain" {{ "selected" if country == "Bahrain" else "" }}>Bahrain 🇧🇭</option>
+                            <option value="Bangladesh" {{ "selected" if country == "Bangladesh" else "" }}>Bangladesh 🇧🇩</option>
+                            <option value="Barbados" {{ "selected" if country == "Barbados" else "" }}>Barbados 🇧🇧</option>
+                            <option value="Belarus" {{ "selected" if country == "Belarus" else "" }}>Belarus 🇧🇾</option>
+                            <option value="Belgium" {{ "selected" if country == "Belgium" else "" }}>Belgium 🇧🇪</option>
+                            <option value="Belize" {{ "selected" if country == "Belize" else "" }}>Belize 🇧🇿</option>
+                            <option value="Benin" {{ "selected" if country == "Benin" else "" }}>Benin 🇧🇯</option>
+                            <option value="Bermuda" {{ "selected" if country == "Bermuda" else "" }}>Bermuda 🇧🇲</option>
+                            <option value="Bhutan" {{ "selected" if country == "Bhutan" else "" }}>Bhutan 🇧🇹</option>
+                            <option value="Bolivia" {{ "selected" if country == "Bolivia" else "" }}>Bolivia 🇧🇴</option>
+                            <option value="Bonaire, Sint Eustatius and Saba" {{ "selected" if country == "Bonaire, Sint Eustatius and Saba" else "" }}>Bonaire, Sint Eustatius and Saba 🇧🇶</option>
+                            <option value="Bosnia and Herzegovina" {{ "selected" if country == "Bosnia and Herzegovina" else "" }}>Bosnia and Herzegovina 🇧🇦</option>
+                            <option value="Botswana" {{ "selected" if country == "Botswana" else "" }}>Botswana 🇧🇼</option>
+                            <option value="Bouvet Island" {{ "selected" if country == "Bouvet Island" else "" }}>Bouvet Island 🇧🇻</option>
+                            <option value="Brazil" {{ "selected" if country == "Brazil" else "" }}>Brazil 🇧🇷</option>
+                            <option value="British Indian Ocean Territory" {{ "selected" if country == "British Indian Ocean Territory" else "" }}>British Indian Ocean Territory 🇮🇴</option>
+                            <option value="British Virgin Islands" {{ "selected" if country == "British Virgin Islands" else "" }}>British Virgin Islands 🇻🇬</option>
+                            <option value="Brunei" {{ "selected" if country == "Brunei" else "" }}>Brunei 🇧🇳</option>
+                            <option value="Bulgaria" {{ "selected" if country == "Bulgaria" else "" }}>Bulgaria 🇧🇬</option>
+                            <option value="Burkina Faso" {{ "selected" if country == "Burkina Faso" else "" }}>Burkina Faso 🇧🇫</option>
+                            <option value="Burundi" {{ "selected" if country == "Burundi" else "" }}>Burundi 🇧🇮</option>
+                            <option value="Cabo Verde" {{ "selected" if country == "Cabo Verde" else "" }}>Cabo Verde 🇨🇻</option>
+                            <option value="Cambodia" {{ "selected" if country == "Cambodia" else "" }}>Cambodia 🇰🇭</option>
+                            <option value="Cameroon" {{ "selected" if country == "Cameroon" else "" }}>Cameroon 🇨🇲</option>
+                            <option value="Canada" {{ "selected" if country == "Canada" else "" }}>Canada 🇨🇦</option>
+                            <option value="Cayman Islands" {{ "selected" if country == "Cayman Islands" else "" }}>Cayman Islands 🇰🇾</option>
+                            <option value="Central African Republic" {{ "selected" if country == "Central African Republic" else "" }}>Central African Republic 🇨🇫</option>
+                            <option value="Chad" {{ "selected" if country == "Chad" else "" }}>Chad 🇹🇩</option>
+                            <option value="Chile" {{ "selected" if country == "Chile" else "" }}>Chile 🇨🇱</option>
+                            <option value="China" {{ "selected" if country == "China" else "" }}>China 🇨🇳</option>
+                            <option value="Christmas Island" {{ "selected" if country == "Christmas Island" else "" }}>Christmas Island 🇨🇽</option>
+                            <option value="Cocos Islands" {{ "selected" if country == "Cocos Islands" else "" }}>Cocos Islands 🇨🇨</option>
+                            <option value="Colombia" {{ "selected" if country == "Colombia" else "" }}>Colombia 🇨🇴</option>
+                            <option value="Comoros" {{ "selected" if country == "Comoros" else "" }}>Comoros 🇰🇲</option>
+                            <option value="Congo (Congo-Brazzaville)" {{ "selected" if country == "Congo (Congo-Brazzaville)" else "" }}>Congo (Congo-Brazzaville) 🇨🇬</option>
+                            <option value="Congo (Democratic Republic)" {{ "selected" if country == "Congo (Democratic Republic)" else "" }}>Congo (Democratic Republic) 🇨🇩</option>
+                            <option value="Cook Islands" {{ "selected" if country == "Cook Islands" else "" }}>Cook Islands 🇨🇰</option>
+                            <option value="Costa Rica" {{ "selected" if country == "Costa Rica" else "" }}>Costa Rica 🇨🇷</option>
+                            <option value="Côte d'Ivoire" {{ "selected" if country == "Côte d'Ivoire" else "" }}>Côte d'Ivoire 🇨🇮</option>
+                            <option value="Croatia" {{ "selected" if country == "Croatia" else "" }}>Croatia 🇭🇷</option>
+                            <option value="Cuba" {{ "selected" if country == "Cuba" else "" }}>Cuba 🇨🇺</option>
+                            <option value="Curaçao" {{ "selected" if country == "Curaçao" else "" }}>Curaçao 🇨🇼</option>
+                            <option value="Cyprus" {{ "selected" if country == "Cyprus" else "" }}>Cyprus 🇨🇾</option>
+                            <option value="Czechia" {{ "selected" if country == "Czechia" else "" }}>Czechia 🇨🇿</option>
+                            <option value="Denmark" {{ "selected" if country == "Denmark" else "" }}>Denmark 🇩🇰</option>
+                            <option value="Djibouti" {{ "selected" if country == "Djibouti" else "" }}>Djibouti 🇩🇯</option>
+                            <option value="Dominica" {{ "selected" if country == "Dominica" else "" }}>Dominica 🇩🇲</option>
+                            <option value="Dominican Republic" {{ "selected" if country == "Dominican Republic" else "" }}>Dominican Republic 🇩🇴</option>
+                            <option value="Ecuador" {{ "selected" if country == "Ecuador" else "" }}>Ecuador 🇪🇨</option>
+                            <option value="Egypt" {{ "selected" if country == "Egypt" else "" }}>Egypt 🇪🇬</option>
+                            <option value="El Salvador" {{ "selected" if country == "El Salvador" else "" }}>El Salvador 🇸🇻</option>
+                            <option value="Equatorial Guinea" {{ "selected" if country == "Equatorial Guinea" else "" }}>Equatorial Guinea 🇬🇶</option>
+                            <option value="Eritrea" {{ "selected" if country == "Eritrea" else "" }}>Eritrea 🇪🇷</option>
+                            <option value="Estonia" {{ "selected" if country == "Estonia" else "" }}>Estonia 🇪🇪</option>
+                            <option value="Eswatini" {{ "selected" if country == "Eswatini" else "" }}>Eswatini 🇸🇿</option>
+                            <option value="Ethiopia" {{ "selected" if country == "Ethiopia" else "" }}>Ethiopia 🇪🇹</option>
+                            <option value="Falkland Islands" {{ "selected" if country == "Falkland Islands" else "" }}>Falkland Islands 🇫🇰</option>
+                            <option value="Faroe Islands" {{ "selected" if country == "Faroe Islands" else "" }}>Faroe Islands 🇫🇴</option>
+                            <option value="Fiji" {{ "selected" if country == "Fiji" else "" }}>Fiji 🇫🇯</option>
+                            <option value="Finland" {{ "selected" if country == "Finland" else "" }}>Finland 🇫🇮</option>
+                            <option value="France" {{ "selected" if country == "France" else "" }}>France 🇫🇷</option>
+                            <option value="French Guiana" {{ "selected" if country == "French Guiana" else "" }}>French Guiana 🇬🇫</option>
+                            <option value="French Polynesia" {{ "selected" if country == "French Polynesia" else "" }}>French Polynesia 🇵🇫</option>
+                            <option value="Gabon" {{ "selected" if country == "Gabon" else "" }}>Gabon 🇬🇦</option>
+                            <option value="Gambia" {{ "selected" if country == "Gambia" else "" }}>Gambia 🇬🇲</option>
+                            <option value="Georgia" {{ "selected" if country == "Georgia" else "" }}>Georgia 🇬🇪</option>
+                            <option value="Germany" {{ "selected" if country == "Germany" else "" }}>Germany 🇩🇪</option>
+                            <option value="Ghana" {{ "selected" if country == "Ghana" else "" }}>Ghana 🇬🇭</option>
+                            <option value="Gibraltar" {{ "selected" if country == "Gibraltar" else "" }}>Gibraltar 🇬🇮</option>
+                            <option value="Greece" {{ "selected" if country == "Greece" else "" }}>Greece 🇬🇷</option>
+                            <option value="Greenland" {{ "selected" if country == "Greenland" else "" }}>Greenland 🇬🇱</option>
+                            <option value="Grenada" {{ "selected" if country == "Grenada" else "" }}>Grenada 🇬🇩</option>
+                            <option value="Guadeloupe" {{ "selected" if country == "Guadeloupe" else "" }}>Guadeloupe 🇬🇺</option>
+                            <option value="Guam" {{ "selected" if country == "Guam" else "" }}>Guam 🇬🇺</option>
+                            <option value="Guatemala" {{ "selected" if country == "Guatemala" else "" }}>Guatemala 🇬🇹</option>
+                            <option value="Guernsey" {{ "selected" if country == "Guernsey" else "" }}>Guernsey 🇬🇬</option>
+                            <option value="Guinea" {{ "selected" if country == "Guinea" else "" }}>Guinea 🇬🇳</option>
+                            <option value="Guinea-Bissau" {{ "selected" if country == "Guinea-Bissau" else "" }}>Guinea-Bissau 🇬🇼</option>
+                            <option value="Guyana" {{ "selected" if country == "Guyana" else "" }}>Guyana 🇬🇾</option>
+                            <option value="Haiti" {{ "selected" if country == "Haiti" else "" }}>Haiti 🇭🇹</option>
+                            <option value="Heard Island and McDonald Islands" {{ "selected" if country == "Heard Island and McDonald Islands" else "" }}>Heard Island and McDonald Islands 🇭🇲</option>
+                            <option value="Honduras" {{ "selected" if country == "Honduras" else "" }}>Honduras 🇭🇳</option>
+                            <option value="Hong Kong" {{ "selected" if country == "Hong Kong" else "" }}>Hong Kong 🇭🇰</option>
+                            <option value="Hungary" {{ "selected" if country == "Hungary" else "" }}>Hungary 🇭🇺</option>
+                            <option value="Iceland" {{ "selected" if country == "Iceland" else "" }}>Iceland 🇮🇸</option>
+                            <option value="India" {{ "selected" if country == "India" else "" }}>India 🇮🇳</option>
+                            <option value="Indonesia" {{ "selected" if country == "Indonesia" else "" }}>Indonesia 🇮🇩</option>
+                            <option value="Iran" {{ "selected" if country == "Iran" else "" }}>Iran 🇮🇷</option>
+                            <option value="Iraq" {{ "selected" if country == "Iraq" else "" }}>Iraq 🇮🇶</option>
+                            <option value="Ireland" {{ "selected" if country == "Ireland" else "" }}>Ireland 🇮🇪</option>
+                            <option value="Isle of Man" {{ "selected" if country == "Isle of Man" else "" }}>Isle of Man 🇮🇲</option>
+                            <option value="Israel" {{ "selected" if country == "Israel" else "" }}>Israel 🇮🇱</option>
+                            <option value="Italy" {{ "selected" if country == "Italy" else "" }}>Italy 🇮🇹</option>
+                            <option value="Jamaica" {{ "selected" if country == "Jamaica" else "" }}>Jamaica 🇯🇲</option>
+                            <option value="Japan" {{ "selected" if country == "Japan" else "" }}>Japan 🇯🇵</option>
+                            <option value="Jersey" {{ "selected" if country == "Jersey" else "" }}>Jersey 🇯🇪</option>
+                            <option value="Jordan" {{ "selected" if country == "Jordan" else "" }}>Jordan 🇯🇴</option>
+                            <option value="Kazakhstan" {{ "selected" if country == "Kazakhstan" else "" }}>Kazakhstan 🇰🇿</option>
+                            <option value="Kenya" {{ "selected" if country == "Kenya" else "" }}>Kenya 🇰🇪</option>
+                            <option value="Kiribati" {{ "selected" if country == "Kiribati" else "" }}>Kiribati 🇰🇮</option>
+                            <option value="Kosovo" {{ "selected" if country == "Kosovo" else "" }}>Kosovo 🇽🇰</option>
+                            <option value="Kuwait" {{ "selected" if country == "Kuwait" else "" }}>Kuwait 🇰🇼</option>
+                            <option value="Kyrgyzstan" {{ "selected" if country == "Kyrgyzstan" else "" }}>Kyrgyzstan 🇰🇬</option>
+                            <option value="Laos" {{ "selected" if country == "Laos" else "" }}>Laos 🇱🇦</option>
+                            <option value="Latvia" {{ "selected" if country == "Latvia" else "" }}>Latvia 🇱🇻</option>
+                            <option value="Lebanon" {{ "selected" if country == "Lebanon" else "" }}>Lebanon 🇱🇧</option>
+                            <option value="Lesotho" {{ "selected" if country == "Lesotho" else "" }}>Lesotho 🇱🇸</option>
+                            <option value="Liberia" {{ "selected" if country == "Liberia" else "" }}>Liberia 🇱🇷</option>
+                            <option value="Libya" {{ "selected" if country == "Libya" else "" }}>Libya 🇱🇾</option>
+                            <option value="Liechtenstein" {{ "selected" if country == "Liechtenstein" else "" }}>Liechtenstein 🇱🇮</option>
+                            <option value="Lithuania" {{ "selected" if country == "Lithuania" else "" }}>Lithuania 🇱🇹</option>
+                            <option value="Luxembourg" {{ "selected" if country == "Luxembourg" else "" }}>Luxembourg 🇱🇺</option>
+                            <option value="Macau" {{ "selected" if country == "Macau" else "" }}>Macau 🇲🇴</option>
+                            <option value="Madagascar" {{ "selected" if country == "Madagascar" else "" }}>Madagascar 🇲🇬</option>
+                            <option value="Malawi" {{ "selected" if country == "Malawi" else "" }}>Malawi 🇲🇼</option>
+                            <option value="Malaysia" {{ "selected" if country == "Malaysia" else "" }}>Malaysia 🇲🇾</option>
+                            <option value="Maldives" {{ "selected" if country == "Maldives" else "" }}>Maldives 🇲🇻</option>
+                            <option value="Mali" {{ "selected" if country == "Mali" else "" }}>Mali 🇲🇱</option>
+                            <option value="Malta" {{ "selected" if country == "Malta" else "" }}>Malta 🇲🇹</option>
+                            <option value="Marshall Islands" {{ "selected" if country == "Marshall Islands" else "" }}>Marshall Islands 🇲🇭</option>
+                            <option value="Martinique" {{ "selected" if country == "Martinique" else "" }}>Martinique 🇲🇶</option>
+                            <option value="Mauritania" {{ "selected" if country == "Mauritania" else "" }}>Mauritania 🇲🇷</option>
+                            <option value="Mauritius" {{ "selected" if country == "Mauritius" else "" }}>Mauritius 🇲🇺</option>
+                            <option value="Mayotte" {{ "selected" if country == "Mayotte" else "" }}>Mayotte 🇾🇹</option>
+                            <option value="Mexico" {{ "selected" if country == "Mexico" else "" }}>Mexico 🇲🇽</option>
+                            <option value="Micronesia" {{ "selected" if country == "Micronesia" else "" }}>Micronesia 🇫🇲</option>
+                            <option value="Moldova" {{ "selected" if country == "Moldova" else "" }}>Moldova 🇲🇩</option>
+                            <option value="Monaco" {{ "selected" if country == "Monaco" else "" }}>Monaco 🇲🇨</option>
+                            <option value="Mongolia" {{ "selected" if country == "Mongolia" else "" }}>Mongolia 🇲🇳</option>
+                            <option value="Montenegro" {{ "selected" if country == "Montenegro" else "" }}>Montenegro 🇲🇪</option>
+                            <option value="Montserrat" {{ "selected" if country == "Montserrat" else "" }}>Montserrat 🇲🇸</option>
+                            <option value="Morocco" {{ "selected" if country == "Morocco" else "" }}>Morocco 🇲🇦</option>
+                            <option value="Mozambique" {{ "selected" if country == "Mozambique" else "" }}>Mozambique 🇲🇿</option>
+                            <option value="Myanmar" {{ "selected" if country == "Myanmar" else "" }}>Myanmar (Burma) 🇲🇲</option>
+                            <option value="Namibia" {{ "selected" if country == "Namibia" else "" }}>Namibia 🇳🇦</option>
+                            <option value="Nauru" {{ "selected" if country == "Nauru" else "" }}>Nauru 🇳🇷</option>
+                            <option value="Nepal" {{ "selected" if country == "Nepal" else "" }}>Nepal 🇳🇵</option>
+                            <option value="Netherlands" {{ "selected" if country == "Netherlands" else "" }}>Netherlands 🇳🇱</option>
+                            <option value="New Caledonia" {{ "selected" if country == "New Caledonia" else "" }}>New Caledonia 🇳🇨</option>
+                            <option value="New Zealand" {{ "selected" if country == "New Zealand" else "" }}>New Zealand 🇳🇿</option>
+                            <option value="Nicaragua" {{ "selected" if country == "Nicaragua" else "" }}>Nicaragua 🇳🇮</option>
+                            <option value="Niger" {{ "selected" if country == "Niger" else "" }}>Niger 🇳🇪</option>
+                            <option value="Nigeria" {{ "selected" if country == "Nigeria" else "" }}>Nigeria 🇳🇬</option>
+                            <option value="Niue" {{ "selected" if country == "Niue" else "" }}>Niue 🇳🇺</option>
+                            <option value="Norfolk Island" {{ "selected" if country == "Norfolk Island" else "" }}>Norfolk Island 🇳🇫</option>
+                            <option value="North Korea" {{ "selected" if country == "North Korea" else "" }}>North Korea 🇰🇵</option>
+                            <option value="North Macedonia" {{ "selected" if country == "North Macedonia" else "" }}>North Macedonia 🇲🇰</option>
+                            <option value="Northern Mariana Islands" {{ "selected" if country == "Northern Mariana Islands" else "" }}>Northern Mariana Islands 🇲🇵</option>
+                            <option value="Norway" {{ "selected" if country == "Norway" else "" }}>Norway 🇳🇴</option>
+                            <option value="Oman" {{ "selected" if country == "Oman" else "" }}>Oman 🇴🇲</option>
+                            <option value="Pakistan" {{ "selected" if country == "Pakistan" else "" }}>Pakistan 🇵🇰</option>
+                            <option value="Palau" {{ "selected" if country == "Palau" else "" }}>Palau 🇵🇬</option>
+                            <option value="Palestine" {{ "selected" if country == "Palestine" else "" }}>Palestine 🇵🇸</option>
+                            <option value="Panama" {{ "selected" if country == "Panama" else "" }}>Panama 🇵🇦</option>
+                            <option value="Papua New Guinea" {{ "selected" if country == "Papua New Guinea" else "" }}>Papua New Guinea 🇵🇬</option>
+                            <option value="Paraguay" {{ "selected" if country == "Paraguay" else "" }}>Paraguay 🇵🇾</option>
+                            <option value="Peru" {{ "selected" if country == "Peru" else "" }}>Peru 🇵🇪</option>
+                            <option value="Philippines" {{ "selected" if country == "Philippines" else "" }}>Philippines 🇵🇭</option>
+                            <option value="Pitcairn Islands" {{ "selected" if country == "Pitcairn Islands" else "" }}>Pitcairn Islands 🇵🇬</option>
+                            <option value="Poland" {{ "selected" if country == "Poland" else "" }}>Poland 🇵🇱</option>
+                            <option value="Portugal" {{ "selected" if country == "Portugal" else "" }}>Portugal 🇵🇹</option>
+                            <option value="Puerto Rico" {{ "selected" if country == "Puerto Rico" else "" }}>Puerto Rico 🇵🇷</option>
+                            <option value="Qatar" {{ "selected" if country == "Qatar" else "" }}>Qatar 🇶🇦</option>
+                            <option value="Réunion" {{ "selected" if country == "Réunion" else "" }}>Réunion 🇷🇪</option>
+                            <option value="Romania" {{ "selected" if country == "Romania" else "" }}>Romania 🇷🇴</option>
+                            <option value="Russia" {{ "selected" if country == "Russia" else "" }}>Russia 🇷🇺</option>
+                            <option value="Rwanda" {{ "selected" if country == "Rwanda" else "" }}>Rwanda 🇷🇼</option>
+                            <option value="Saint Barthélemy" {{ "selected" if country == "Saint Barthélemy" else "" }}>Saint Barthélemy 🇧🇱</option>
+                            <option value="Saint Helena" {{ "selected" if country == "Saint Helena" else "" }}>Saint Helena 🇸🇭</option>
+                            <option value="Saint Kitts and Nevis" {{ "selected" if country == "Saint Kitts and Nevis" else "" }}>Saint Kitts and Nevis 🇰🇳</option>
+                            <option value="Saint Lucia" {{ "selected" if country == "Saint Lucia" else "" }}>Saint Lucia 🇱🇨</option>
+                            <option value="Saint Martin" {{ "selected" if country == "Saint Martin" else "" }}>Saint Martin 🇲🇶</option>
+                            <option value="Saint Pierre and Miquelon" {{ "selected" if country == "Saint Pierre and Miquelon" else "" }}>Saint Pierre and Miquelon 🇵🇲</option>
+                            <option value="Saint Vincent and the Grenadines" {{ "selected" if country == "Saint Vincent and the Grenadines" else "" }}>Saint Vincent and the Grenadines 🇻🇨</option>
+                            <option value="Samoa" {{ "selected" if country == "Samoa" else "" }}>Samoa 🇼🇸</option>
+                            <option value="San Marino" {{ "selected" if country == "San Marino" else "" }}>San Marino 🇸🇲</option>
+                            <option value="Sao Tome and Principe" {{ "selected" if country == "Sao Tome and Principe" else "" }}>Sao Tome and Principe 🇸🇹</option>
+                            <option value="Saudi Arabia" {{ "selected" if country == "Saudi Arabia" else "" }}>Saudi Arabia 🇸🇦</option>
+                            <option value="Senegal" {{ "selected" if country == "Senegal" else "" }}>Senegal 🇸🇳</option>
+                            <option value="Serbia" {{ "selected" if country == "Serbia" else "" }}>Serbia 🇷🇸</option>
+                            <option value="Seychelles" {{ "selected" if country == "Seychelles" else "" }}>Seychelles 🇸🇨</option>
+                            <option value="Sierra Leone" {{ "selected" if country == "Sierra Leone" else "" }}>Sierra Leone 🇸🇱</option>
+                            <option value="Singapore" {{ "selected" if country == "Singapore" else "" }}>Singapore 🇸🇬</option>
+                            <option value="Sint Maarten" {{ "selected" if country == "Sint Maarten" else "" }}>Sint Maarten 🇸🇽</option>
+                            <option value="Slovakia" {{ "selected" if country == "Slovakia" else "" }}>Slovakia 🇸🇰</option>
+                            <option value="Slovenia" {{ "selected" if country == "Slovenia" else "" }}>Slovenia 🇸🇮</option>
+                            <option value="Solomon Islands" {{ "selected" if country == "Solomon Islands" else "" }}>Solomon Islands 🇸🇧</option>
+                            <option value="Somalia" {{ "selected" if country == "Somalia" else "" }}>Somalia 🇸🇴</option>
+                            <option value="South Africa" {{ "selected" if country == "South Africa" else "" }}>South Africa 🇿🇦</option>
+                            <option value="South Georgia and the South Sandwich Islands" {{ "selected" if country == "South Georgia and the South Sandwich Islands" else "" }}>South Georgia and the South Sandwich Islands 🇬🇸</option>
+                            <option value="South Korea" {{ "selected" if country == "South Korea" else "" }}>South Korea 🇰🇷</option>
+                            <option value="South Sudan" {{ "selected" if country == "South Sudan" else "" }}>South Sudan 🇸🇸</option>
+                            <option value="Spain" {{ "selected" if country == "Spain" else "" }}>Spain 🇪🇸</option>
+                            <option value="Sri Lanka" {{ "selected" if country == "Sri Lanka" else "" }}>Sri Lanka 🇱🇰</option>
+                            <option value="Sudan" {{ "selected" if country == "Sudan" else "" }}>Sudan 🇸🇩</option>
+                            <option value="Suriname" {{ "selected" if country == "Suriname" else "" }}>Suriname 🇸🇷</option>
+                            <option value="Svalbard and Jan Mayen" {{ "selected" if country == "Svalbard and Jan Mayen" else "" }}>Svalbard and Jan Mayen 🇸🇯</option>
+                            <option value="Sweden" {{ "selected" if country == "Sweden" else "" }}>Sweden 🇸🇪</option>
+                            <option value="Switzerland" {{ "selected" if country == "Switzerland" else "" }}>Switzerland 🇨🇭</option>
+                            <option value="Syria" {{ "selected" if country == "Syria" else "" }}>Syria 🇸🇾</option>
+                            <option value="Taiwan" {{ "selected" if country == "Taiwan" else "" }}>Taiwan 🇹🇼</option>
+                            <option value="Tajikistan" {{ "selected" if country == "Tajikistan" else "" }}>Tajikistan 🇹🇯</option>
+                            <option value="Tanzania" {{ "selected" if country == "Tanzania" else "" }}>Tanzania 🇹🇿</option>
+                            <option value="Thailand" {{ "selected" if country == "Thailand" else "" }}>Thailand 🇹🇭</option>
+                            <option value="Timor-Leste" {{ "selected" if country == "Timor-Leste" else "" }}>Timor-Leste 🇹🇱</option>
+                            <option value="Togo" {{ "selected" if country == "Togo" else "" }}>Togo 🇹🇬</option>
+                            <option value="Tokelau" {{ "selected" if country == "Tokelau" else "" }}>Tokelau 🇹🇰</option>
+                            <option value="Tonga" {{ "selected" if country == "Tonga" else "" }}>Tonga 🇹🇴</option>
+                            <option value="Trinidad and Tobago" {{ "selected" if country == "Trinidad and Tobago" else "" }}>Trinidad and Tobago 🇹🇹</option>
+                            <option value="Tunisia" {{ "selected" if country == "Tunisia" else "" }}>Tunisia 🇹🇳</option>
+                            <option value="Türkiye" {{ "selected" if country == "Türkiye" else "" }}>Türkiye 🇹🇷</option>
+                            <option value="Turkmenistan" {{ "selected" if country == "Turkmenistan" else "" }}>Turkmenistan 🇹🇲</option>
+                            <option value="Turks and Caicos Islands" {{ "selected" if country == "Turks and Caicos Islands" else "" }}>Turks and Caicos Islands 🇹🇨</option>
+                            <option value="Tuvalu" {{ "selected" if country == "Tuvalu" else "" }}>Tuvalu 🇹🇻</option>
+                            <option value="Uganda" {{ "selected" if country == "Uganda" else "" }}>Uganda 🇺🇬</option>
+                            <option value="Ukraine" {{ "selected" if country == "Ukraine" else "" }}>Ukraine 🇺🇦</option>
+                            <option value="United Arab Emirates" {{ "selected" if country == "United Arab Emirates" else "" }}>United Arab Emirates 🇦🇪</option>
+                            <option value="United Kingdom" {{ "selected" if country == "United Kingdom" else "" }}>United Kingdom 🇬🇧</option>
+                            <option value="United States" {{ "selected" if country == "United States" else "" }}>United States 🇺🇸</option>
+                            <option value="United States Virgin Islands" {{ "selected" if country == "United States Virgin Islands" else "" }}>United States Virgin Islands 🇻🇮</option>
+                            <option value="Uruguay" {{ "selected" if country == "Uruguay" else "" }}>Uruguay 🇺🇾</option>
+                            <option value="Uzbekistan" {{ "selected" if country == "Uzbekistan" else "" }}>Uzbekistan 🇺🇿</option>
+                            <option value="Vanuatu" {{ "selected" if country == "Vanuatu" else "" }}>Vanuatu 🇻🇺</option>
+                            <option value="Vatican City" {{ "selected" if country == "Vatican City" else "" }}>Vatican City 🇻🇦</option>
+                            <option value="Venezuela" {{ "selected" if country == "Venezuela" else "" }}>Venezuela 🇻🇪</option>
+                            <option value="Vietnam" {{ "selected" if country == "Vietnam" else "" }}>Vietnam 🇻🇳</option>
+                            <option value="Wallis and Futuna" {{ "selected" if country == "Wallis and Futuna" else "" }}>Wallis and Futuna 🇼🇫</option>
+                            <option value="Western Sahara" {{ "selected" if country == "Western Sahara" else "" }}>Western Sahara 🇪🇭</option>
+                            <option value="Yemen" {{ "selected" if country == "Yemen" else "" }}>Yemen 🇾🇪</option>
+                            <option value="Zambia" {{ "selected" if country == "Zambia" else "" }}>Zambia 🇿🇲</option>
+                            <option value="Zimbabwe" {{ "selected" if country == "Zimbabwe" else "" }}>Zimbabwe 🇿🇼</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div class="form-group">
                     <label for="video_url">YouTube video URL:</label>
-                    <input type="url" id="video_url" name="video_url" value="{{ video_url }}" required>
+                    <div class="input-wrapper">
+                        <input type="url" id="video_url" name="video_url" value="{{ video_url }}" required>
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -704,3 +760,46 @@
     </div>
 </body>
 </html>
+
+<script>
+const input = document.getElementById("city");
+const box = document.getElementById("city-suggestions");
+
+input.addEventListener("input", async () => {
+    const q = input.value.trim();
+    box.innerHTML = "";
+    box.classList.remove("has-items");
+
+    if (q.length < 2) return;
+
+    try {
+        const res = await fetch(`/autocomplete/cities?q=${encodeURIComponent(q)}`);
+        const cities = await res.json();
+
+        if (cities.length === 0) return;
+
+        cities.forEach(city => {
+            const div = document.createElement("div");
+            div.textContent = city;
+            div.onclick = () => {
+                input.value = city;
+                box.innerHTML = "";
+                box.classList.remove("has-items");
+            };
+            box.appendChild(div);
+        });
+
+        box.classList.add("has-items");
+    } catch (err) {
+        console.error("Autocomplete error:", err);
+    }
+});
+
+// Close when clicking outside
+document.addEventListener("click", e => {
+    if (!input.contains(e.target) && !box.contains(e.target)) {
+        box.innerHTML = "";
+        box.classList.remove("has-items");
+    }
+});
+</script>

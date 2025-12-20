@@ -1,6 +1,6 @@
 """Adding new data to the mapping file."""
 # by Pavlo Bazilinskyy <pavlo.bazilinskyy@gmail.com>
-from flask import Flask, request, render_template
+from flask import Flask, request, render_template, jsonify
 import pandas as pd
 import os
 import common
@@ -22,6 +22,110 @@ FILE_PATH = common.get_configs("mapping")     # mapping file
 height_data = pd.read_csv(os.path.join(common.root_dir, 'height_data.csv'))
 # average age data from https://simplemaps.com/data/countries
 age_data = pd.read_csv(os.path.join(common.root_dir, 'countries.csv'))
+
+
+@app.route("/autocomplete/cities")
+def autocomplete_cities():
+    q = request.args.get("q", "").strip().lower()
+    if len(q) < 2:
+        return jsonify([])
+
+    df = pd.read_csv(FILE_PATH)
+
+    results = []
+
+    for _, row in df.iterrows():
+        population = row.get("population_city", 0)
+        try:
+            population = int(population)
+        except Exception:
+            population = 0
+
+        # main city
+        city = str(row.get("city", "")).strip()
+        if city:
+            results.append((city, population))
+
+        # aliases
+        aka = row.get("city_aka")
+        if isinstance(aka, str) and aka.startswith("[") and aka.endswith("]"):
+            for c in aka[1:-1].split(","):
+                c = c.strip()
+                if c:
+                    results.append((c, population))
+
+    scored = []
+    for city, population in results:
+        city_l = city.lower()
+
+        if q not in city_l:
+            continue
+
+        # scoring
+        score = 0
+
+        # exact match
+        if city_l == q:
+            score += 10_000
+
+        # prefix match
+        if city_l.startswith(q):
+            score += 5_000
+
+        # earlier position is better
+        score += max(0, 100 - city_l.find(q))
+
+        # population weight (log-scaled)
+        if population > 0:
+            score += min(3000, int(population ** 0.3))
+
+        scored.append((score, city))
+
+    # sort by score desc, then alphabetically for stability
+    scored.sort(key=lambda x: (-x[0], x[1]))
+
+    # remove duplicates, preserve order
+    seen = set()
+    ordered = []
+    for _, city in scored:
+        if city not in seen:
+            seen.add(city)
+            ordered.append(city)
+
+    return jsonify(ordered[:50])
+
+
+def extract_city_autocomplete(file_path):
+    """
+    Extract unique city names from `city` and `city_aka` columns
+    for autocomplete.
+    """
+    if not os.path.exists(file_path):
+        return []
+
+    df = pd.read_csv(file_path)
+
+    cities = set()
+
+    for _, row in df.iterrows():
+        # Main city
+        city = row.get("city")
+        if isinstance(city, str) and city.strip():
+            cities.add(city.strip())
+
+        # City aliases (may be [], stringified list, malformed)
+        aka = row.get("city_aka")
+        if isinstance(aka, str) and aka.strip():
+            try:
+                parsed = ast.literal_eval(aka)
+                if isinstance(parsed, list):
+                    for name in parsed:
+                        if isinstance(name, str) and name.strip():
+                            cities.add(name.strip())
+            except Exception:
+                pass
+
+    return sorted(cities)
 
 
 def load_csv(file_path):
