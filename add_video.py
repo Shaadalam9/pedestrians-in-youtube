@@ -28,71 +28,62 @@ age_data = pd.read_csv(os.path.join(common.root_dir, 'countries.csv'))
 def autocomplete_cities():
     q = request.args.get("q", "").strip().lower()
     if len(q) < 2:
-        return jsonify([])
+        return []
 
-    df = pd.read_csv(FILE_PATH)
+    df = load_csv(FILE_PATH)
 
     results = []
+    seen = set()
+
+    def normalize(s):
+        return s.strip().lower()
 
     for _, row in df.iterrows():
-        population = row.get("population_city", 0)
-        try:
-            population = int(population)
-        except Exception:
-            population = 0
+        city = row.get("city")
+        country = row.get("country")
+        iso3 = row.get("iso3")
 
-        # main city
-        city = str(row.get("city", "")).strip()
-        if city:
-            results.append((city, population))
-
-        # aliases
-        aka = row.get("city_aka")
-        if isinstance(aka, str) and aka.startswith("[") and aka.endswith("]"):
-            for c in aka[1:-1].split(","):
-                c = c.strip()
-                if c:
-                    results.append((c, population))
-
-    scored = []
-    for city, population in results:
-        city_l = city.lower()
-
-        if q not in city_l:
+        if not all(isinstance(x, str) for x in [city, country]):
             continue
 
-        # scoring
-        score = 0
+        city_norm = normalize(city)
+        key = (city_norm, country, iso3)
 
-        # exact match
-        if city_l == q:
-            score += 10_000
+        if q in city_norm and key not in seen:
+            seen.add(key)
+            results.append({
+                "city": city.strip(),
+                "country": country,
+                "iso3": iso3
+            })
 
-        # prefix match
-        if city_l.startswith(q):
-            score += 5_000
+        aka = row.get("city_aka")
+        if isinstance(aka, str) and aka.startswith("[") and aka.endswith("]"):
+            for item in aka[1:-1].split(","):
+                name = item.strip()
+                if not name:
+                    continue
 
-        # earlier position is better
-        score += max(0, 100 - city_l.find(q))
+                name_norm = normalize(name)
+                key = (name_norm, country, iso3)
 
-        # population weight (log-scaled)
-        if population > 0:
-            score += min(3000, int(population ** 0.3))
+                if q in name_norm and key not in seen:
+                    seen.add(key)
+                    results.append({
+                        "city": name,
+                        "country": country,
+                        "iso3": iso3
+                    })
 
-        scored.append((score, city))
+    # Prefix-first, then alphabetical
+    results.sort(
+        key=lambda x: (
+            not normalize(x["city"]).startswith(q),
+            normalize(x["city"])
+        )
+    )
 
-    # sort by score desc, then alphabetically for stability
-    scored.sort(key=lambda x: (-x[0], x[1]))
-
-    # remove duplicates, preserve order
-    seen = set()
-    ordered = []
-    for _, city in scored:
-        if city not in seen:
-            seen.add(city)
-            ordered.append(city)
-
-    return jsonify(ordered[:50])
+    return results
 
 
 def extract_city_autocomplete(file_path):

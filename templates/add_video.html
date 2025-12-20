@@ -814,14 +814,32 @@ input.addEventListener("input", async () => {
 
         if (cities.length === 0) return;
 
-        cities.forEach(city => {
+        cities.forEach(item => {
             const div = document.createElement("div");
-            div.textContent = city;
+
+            const iso = item.iso3 ? ` (${item.iso3})` : "";
+            // div.textContent = `${item.city} - ${item.country}${iso}`;
+            div.textContent = `${item.city} - ${item.country}`;
+
             div.onclick = () => {
-                input.value = city;
+                // fill city
+                input.value = item.city;
+
+                // auto-select country
+                const countrySelect = document.getElementById("country");
+                if (countrySelect) {
+                    for (const option of countrySelect.options) {
+                        if (option.value === item.country) {
+                            option.selected = true;
+                            break;
+                        }
+                    }
+                }
+
                 box.innerHTML = "";
                 box.classList.remove("has-items");
             };
+
             box.appendChild(div);
         });
 
