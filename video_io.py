@@ -38,6 +38,7 @@ class VideoIO:
                                                                              True if self.snellius_mode else False))
         self.update_package = bool(config_utils._safe_get_config("update_package", False))
         self.need_authentication = bool(config_utils._safe_get_config("need_authentication", False))
+        self.client = config_utils._safe_get_config("client", "WEB")
 
     def set_video_title(self, title: str) -> None:
         self.video_title = title

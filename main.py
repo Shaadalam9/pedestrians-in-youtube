@@ -3,7 +3,7 @@ import ast
 import os
 import threading
 import time
-from concurrent.futures import ThreadPoolExecutor, wait, FIRST_COMPLETED
+from concurrent.futures import ThreadPoolExecutor, wait, FIRST_COMPLETED, as_completed
 from datetime import datetime
 from types import SimpleNamespace
 from typing import Optional, Dict, Any, List, Tuple
@@ -235,8 +235,107 @@ if __name__ == "__main__":
             bbox_mode_cfg = bool(config.tracking_mode)
 
             if not (seg_mode_cfg or bbox_mode_cfg):
-                logger.info("Both tracking_mode and segmentation_mode are disabled; nothing to do.")
-                break
+                if not bool(config.snellius_mode):
+                    logger.info(
+                        "Both tracking_mode and segmentation_mode are disabled; running in download-only prefetch mode."
+                    )
+
+                    # Build the unique set of video IDs from the mapping (respecting countries_analyse filter).
+                    vids_to_prefetch = set()
+                    pbar_rows = tqdm(
+                        mapping.iterrows(),
+                        total=mapping.shape[0],
+                        desc="Collect videos",
+                        dynamic_ncols=True,
+                        position=0,
+                        leave=True,
+                    )
+                    for _, row in pbar_rows:
+                        video_ids = parsingutils_class._parse_bracket_list(str(row.get("videos", "")))
+                        if not video_ids:
+                            continue
+                        
+                        iso3 = str(row.get("iso3", ""))
+                        if countries_analyse and iso3 and iso3 not in countries_analyse:
+                            continue
+                        
+                        for _vid in video_ids:
+                            if _vid is not None:
+                                _vid_s = str(_vid).strip()
+                                if _vid_s:
+                                    vids_to_prefetch.add(_vid_s)
+                    pbar_rows.close()
+
+                    if not vids_to_prefetch:
+                        logger.info("No videos found in mapping to prefetch.")
+                        # Nothing to do this pass; honor sleep/git_pull settings if configured.
+                        if config.sleep_sec and int(config.sleep_sec) > 0:
+                            logger.info(
+                                f"Sleeping for {config.sleep_sec} s before attempting to go over mapping again."
+                            )
+                            time.sleep(config.sleep_sec)
+                            if config.git_pull:
+                                common.git_pull()
+                            continue
+                        break
+                    
+                    # Ensure destination folder exists (downloads go to the last folder in config.videos).
+                    os.makedirs(output_path, exist_ok=True)
+
+                    def _prefetch_one(_vid: str) -> Tuple[str, bool, str]:
+                        try:
+                            base_video_path, _title, resolution, video_fps, ftp_download = videoio_class._ensure_video_available(
+                                vid=_vid,
+                                config=config,
+                                secret=secret,
+                                output_path=output_path,
+                                video_paths=video_paths,
+                            )
+                            src = "FTP" if ftp_download else "cache"
+                            msg = f"{_vid}: ok ({src}) path={base_video_path} fps={video_fps} res={resolution}"
+                            return _vid, True, msg
+                        except Exception as e:
+                            return _vid, False, f"{_vid}: failed prefetch: {e}"
+
+                    ok = 0
+                    fail = 0
+                    vids_sorted = sorted(vids_to_prefetch)
+
+                    max_dl_workers = max(1, int(getattr(config, "download_workers", 1) or 1))
+                    with ThreadPoolExecutor(max_workers=max_dl_workers) as ex:
+                        futures = [ex.submit(_prefetch_one, v) for v in vids_sorted]
+                        for fut in tqdm(
+                            as_completed(futures),
+                            total=len(futures),
+                            desc="Prefetch videos",
+                            dynamic_ncols=True,
+                            position=0,
+                            leave=True,
+                        ):
+                            _vid, success, msg = fut.result()
+                            if success:
+                                ok += 1
+                                logger.info(msg)
+                            else:
+                                fail += 1
+                                logger.warning(msg)
+
+                    logger.info("Prefetch complete: ok=%d failed=%d total=%d", ok, fail, len(vids_sorted))
+
+                    # Prefetch-only pass; honor sleep/git_pull settings if configured.
+                    if config.sleep_sec and int(config.sleep_sec) > 0:
+                        logger.info(
+                            f"Sleeping for {config.sleep_sec} s before attempting to go over mapping again."
+                        )
+                        time.sleep(config.sleep_sec)
+                        if config.git_pull:
+                            common.git_pull()
+                        continue
+                    break
+
+                else:
+                    logger.info("Both tracking_mode and segmentation_mode are disabled; nothing to do.")
+                    break
 
             # Index existing outputs ONCE per pass (skip work + skip downloads)
             existing_idx = outputindex_class._index_existing_outputs(
