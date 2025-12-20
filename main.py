@@ -1,12 +1,37 @@
 # by Shadab Alam <md_shadab_alam@outlook.com> and Pavlo Bazilinskyy <pavlo.bazilinskyy@gmail.com>
+"""Main pipeline runner.
+
+This script orchestrates a multi-stage video processing pipeline that:
+  - Parses a mapping CSV describing videos and segment time ranges.
+  - Discovers/skips already-processed segments by indexing existing outputs once per pass.
+  - Prefetches videos (cache/FTP/YouTube fallback depending on configuration).
+  - Trims video segments and runs tracking/segmentation on each segment.
+  - Optionally writes annotated videos (Ultralytics plot overlays) per segment.
+  - Writes outputs using a write-then-commit strategy to avoid partial final artifacts.
+
+Annotated video behavior:
+  - When config.save_annotated_video is True, the pipeline will create
+    data/annotated/{vid}_{start}_{fps}_ann.mp4 for each segment it processes.
+  - If bbox/seg CSVs already exist but the annotated MP4 is missing, the segment
+    will be scheduled again to (re)run YOLO and produce the annotated MP4, while
+    *not* overwriting existing CSVs.
+
+HPC/Snellius notes:
+  - When snellius_mode is enabled, concurrency is intentionally constrained to avoid
+    oversubscription and to align with Slurm scheduling (one task/process per GPU).
+  - Sharding can be done by video or by segment (config.snellius_shard_mode).
+  - Node-local scratch ($TMPDIR) may be used to stage videos/trims for performance.
+"""
+
 import ast
+import inspect
 import os
 import threading
 import time
-from concurrent.futures import ThreadPoolExecutor, wait, FIRST_COMPLETED, as_completed
+from concurrent.futures import ThreadPoolExecutor, wait, FIRST_COMPLETED
 from datetime import datetime
 from types import SimpleNamespace
-from typing import Optional, Dict, Any, List, Tuple
+from typing import Optional, Dict, Any, List, Tuple, Set
 import pandas as pd
 from tqdm import tqdm
 import common
@@ -26,9 +51,11 @@ from processing.output_index import OutputIndex
 from parsing_utils import ParsingUtils
 
 
+# Initialize global logging configuration early so downstream modules inherit it.
 logs(show_level=common.get_configs("logger_level"), show_color=True)
 logger = CustomLogger(__name__)
 
+# Instantiate helper classes (shared singletons for this run).
 patches_class = Patches()
 configutils_class = ConfigUtils()
 videoio_class = VideoIO()
@@ -40,12 +67,13 @@ datasetenrich_class = DatasetEnrichment()
 outputindex_class = OutputIndex()
 parsingutils_class = ParsingUtils()
 
-# Make tqdm updates thread-safe across worker threads
+# Make tqdm updates thread-safe across worker threads.
 tqdm.set_lock(threading.RLock())
 
 
 @dataclass
 class VideoReq:
+    """Per-video request built from the mapping."""
     vid: str
     segments: List[Tuple[int, int]]
     city: str = ""
@@ -56,6 +84,7 @@ class VideoReq:
 
 @dataclass
 class VideoCtx:
+    """Runtime context for a video currently being processed."""
     vid: str
     base_video_path: str
     fps: int
@@ -68,33 +97,102 @@ class VideoCtx:
     processed_any: bool = False
 
 
+# Segment job tuple:
+# (vid, st, et, base_video_path, do_bbox, do_seg,
+#  bbox_final, seg_final, bbox_tmp, seg_tmp,
+#  ann_final, ann_tmp, fps)
+SegmentJob = Tuple[
+    str, int, int, str, bool, bool,
+    Optional[str], Optional[str], Optional[str], Optional[str],
+    Optional[str], Optional[str], int
+]
+
+
 @dataclass
 class DownloadResult:
+    """Result returned by the download-and-prepare stage."""
     vid: str
     base_video_path: str
     fps: int
     resolution: str
     ftp_download: bool
-    # job tuple:
-    # (vid, st, et, base_video_path, run_bbox, run_seg,
-    #  bbox_final, seg_final, bbox_tmp, seg_tmp, fps)
-    segment_jobs: List[Tuple[str, int, int, str, bool, bool, Optional[str], Optional[str],
-                             Optional[str], Optional[str], int]]
+    segment_jobs: List[SegmentJob]
     elapsed_sec: float
 
 
+def _cleanup_partial_files_any(tmp_dir: str, token: str = ".partial") -> None:
+    """Best-effort cleanup for partial files.
+
+    Unlike OutputPaths._cleanup_stale_partials (which targets '*.partial'),
+    this helper removes any file whose name contains `token` so it also covers
+    partial MP4s like '*.partial.mp4'.
+    """
+    try:
+        with os.scandir(tmp_dir) as it:
+            for entry in it:
+                if not entry.is_file():
+                    continue
+                if token not in entry.name:
+                    continue
+                try:
+                    os.remove(entry.path)
+                except Exception:
+                    pass
+    except Exception:
+        pass
+
+
+def _index_existing_annotated_outputs(data_folders: List[str]) -> Set[Tuple[str, int]]:
+    """Indexes existing annotated MP4 outputs once per pass.
+
+    Expected naming:
+      annotated/{vid}_{start}_{fps}_ann.mp4
+
+    We index by (vid, start) and ignore fps, matching the CSV "DONE" policy.
+    """
+    out: Set[Tuple[str, int]] = set()
+
+    for base in data_folders:
+        d = os.path.join(base, "annotated")
+        if not os.path.isdir(d):
+            continue
+        try:
+            with os.scandir(d) as it:
+                for entry in it:
+                    if not entry.is_file():
+                        continue
+                    name = entry.name
+                    if not name.endswith(".mp4"):
+                        continue
+                    stem = name[:-4]
+                    try:
+                        # rsplit preserves underscores in video_id
+                        vid_part, st_str, _fps_str, tag = stem.rsplit("_", 3)
+                        if tag != "ann":
+                            continue
+                        out.add((vid_part, int(st_str)))
+                    except Exception:
+                        continue
+        except Exception:
+            continue
+
+    return out
+
+
 if __name__ == "__main__":
-    counter_processed = 0  # ensure defined for crash email
+    counter_processed = 0
 
     try:
         patches_class.patch_ultralytics_botsort_numpy_cpu_bug(logger)
+
         # ---------------------------------------------------------------------
         # Load configuration
         # ---------------------------------------------------------------------
-        max_workers = max(1, int(configutils_class._safe_get_config("max_workers", 3)))  # type: ignore[arg-type]
-        download_workers = max(1, int(configutils_class._safe_get_config("download_workers", 1)))  # type: ignore[arg-type] # noqa: E501
+        max_workers = max(1, int(configutils_class._safe_get_config("max_workers", 3)))  # type: ignore
+        download_workers = max(1, int(configutils_class._safe_get_config("download_workers", 1)))  # type: ignore
         max_active_segments_per_video = max(
-            1, int(configutils_class._safe_get_config("max_active_segments_per_video", 1)))  # type: ignore[arg-type]
+            1, int(configutils_class._safe_get_config("max_active_segments_per_video", 1))  # type: ignore
+        )
 
         prefetch_raw = int(configutils_class._safe_get_config("prefetch_videos", 0) or 0)
         prefetch_videos = prefetch_raw if prefetch_raw > 0 else (max_workers + 1)
@@ -104,66 +202,64 @@ if __name__ == "__main__":
             mapping=common.get_configs("mapping"),
             videos=common.get_configs("videos"),
             data=common.get_configs("data"),
+            tracking_model=common.get_configs("tracking_model"),
+            segment_model=common.get_configs("segment_model"),
+            bbox_tracker=common.get_configs("bbox_tracker"),
+            seg_tracker=common.get_configs("seg_tracker"),
             countries_analyse=configutils_class._safe_get_config("countries_analyse", []),
             update_pop_country=configutils_class._safe_get_config("update_pop_country", False),
             update_gini_value=configutils_class._safe_get_config("update_gini_value", False),
             segmentation_mode=configutils_class._safe_get_config("segmentation_mode", False),
             tracking_mode=configutils_class._safe_get_config("tracking_mode", False),
             delete_youtube_video=configutils_class._safe_get_config("delete_youtube_video", False),
-            compress_youtube_video=configutils_class._safe_get_config("compress_youtube_video", False),
             external_ssd=configutils_class._safe_get_config("external_ssd", False),
-            ftp_server=configutils_class._safe_get_config("ftp_server", None),
-            tracking_model=configutils_class._safe_get_config("tracking_model", ""),
-            segment_model=configutils_class._safe_get_config("segment_model", ""),
-            bbox_tracker=configutils_class._safe_get_config("bbox_tracker", ""),
-            seg_tracker=configutils_class._safe_get_config("seg_tracker", ""),
             track_buffer_sec=configutils_class._safe_get_config("track_buffer_sec", 1),
-            save_annotated_video=configutils_class._safe_get_config("save_annotated_video", False),
+            save_annotated_video=bool(configutils_class._safe_get_config("save_annotated_video", False)),
             sleep_sec=configutils_class._safe_get_config("sleep_sec", 0),
             git_pull=configutils_class._safe_get_config("git_pull", False),
             machine_name=configutils_class._safe_get_config("machine_name", "unknown"),
             email_send=configutils_class._safe_get_config("email_send", False),
             email_sender=configutils_class._safe_get_config("email_sender", ""),
             email_recipients=configutils_class._safe_get_config("email_recipients", []),
+            ftp_server=common.get_configs("ftp_server"),
             max_workers=int(max_workers),
             download_workers=int(download_workers),
             prefetch_videos=int(prefetch_videos),
             max_active_segments_per_video=int(max_active_segments_per_video),
-            # Snellius/HPC master flag (default False so local behavior is unchanged)
             snellius_mode=bool(configutils_class._safe_get_config("snellius_mode", False)),
-            # Snellius/HPC additional controls
             snellius_shard_mode=str(configutils_class._safe_get_config("snellius_shard_mode", "video") or "video").strip().lower(),  # noqa: E501
             snellius_tmp_root=str(configutils_class._safe_get_config("snellius_tmp_root", "") or ""),
             snellius_disable_youtube_fallback=bool(configutils_class._safe_get_config("snellius_disable_youtube_fallback", False)),  # noqa: E501
         )
 
+        # Check TrackingRunner support for annotated_video_out
+        _sig = inspect.signature(tracckingrunner_class.tracking_mode_threadsafe)
+        _supports_annot = ("annotated_video_out" in _sig.parameters)
+        if bool(config.save_annotated_video) and not _supports_annot:
+            raise RuntimeError(
+                "save_annotated_video=True but TrackingRunner.tracking_mode_threadsafe(...) "
+                "does not accept parameter 'annotated_video_out'. "
+                "Update tracking_runner.py to add annotated video writing."
+            )
+
         # ---------------------------------------------------------------------
-        # Snellius/Slurm context + runtime overrides (only when snellius_mode=True)
+        # Snellius/Slurm context + runtime overrides
         # ---------------------------------------------------------------------
         config.slurm_task_id, config.slurm_task_count = hpc_class._snellius_task_identity()
         config.tmpdir = hpc_class._resolve_tmp_root(config)
 
         if bool(config.snellius_mode):
-            # One process == one GPU. Scale via Slurm tasks/arrays, not threads.
             config.max_workers = 1
             config.download_workers = 1
             config.max_active_segments_per_video = 1
             config.prefetch_videos = max(2, int(config.prefetch_videos or 2))
 
-            # Avoid idle looping/auto-updating in batch jobs
             config.sleep_sec = 0
             config.git_pull = False
-
-            # Generally undesirable in batch jobs (can be re-enabled if you want)
             config.email_send = False
-
-            # Avoid accidental deletion of shared /projects videos
             config.delete_youtube_video = False
-
-            # TMPDIR is our fast work area; do not engage "SSD refresh" semantics.
             config.external_ssd = False
 
-            # Optional GPU binding assist
             hpc_class._maybe_bind_gpu_from_slurm_localid(config)
 
         # ---------------------------------------------------------------------
@@ -180,7 +276,6 @@ if __name__ == "__main__":
         hpc_class._log_run_banner(config)
 
         pass_index = 0
-
         while True:
             pass_index += 1
             pass_start_ts = time.time()
@@ -196,7 +291,6 @@ if __name__ == "__main__":
                 internal_ssd = None
                 output_path = config.videos[-1]
 
-            # Snellius: stage videos + trims to node-local scratch when available
             scratch_videos_dir: Optional[str] = None
             if bool(config.snellius_mode) and getattr(config, "tmpdir", ""):
                 scratch_videos_dir = os.path.join(str(config.tmpdir), "videos")
@@ -207,11 +301,19 @@ if __name__ == "__main__":
             countries_analyse = config.countries_analyse or []
             counter_processed = 0
 
+            bbox_mode_cfg = bool(config.tracking_mode)
+            seg_mode_cfg = bool(config.segmentation_mode)
+            ann_mode_cfg = bool(config.save_annotated_video)
+
+            # If the user wants annotated videos, we must run YOLO in at least one mode.
+            # If both bbox/seg are disabled, we still run bbox tracking solely for annotation.
+            need_any_processing = bool(bbox_mode_cfg or seg_mode_cfg or ann_mode_cfg)
+
             logger.info(
                 f"=== Pass {pass_index} started === rows={mapping.shape[0]} "
                 f"max_workers={config.max_workers} prefetch_videos={config.prefetch_videos} "
-                f"download_workers={config.download_workers} active_threads_now={threading.active_count()} "
-                f"tracking_mode={bool(config.tracking_mode)} seg_mode={bool(config.segmentation_mode)} "
+                f"download_workers={config.download_workers} "
+                f"tracking_mode={bbox_mode_cfg} seg_mode={seg_mode_cfg} save_annotated_video={ann_mode_cfg} "
                 f"shard_mode={getattr(config, 'snellius_shard_mode', 'video')}"
             )
 
@@ -226,118 +328,25 @@ if __name__ == "__main__":
             maintenance_class.delete_folder(folder_path="runs")
             outputpath_class._ensure_dirs(data_path)
 
-            # temp output dirs (write-then-commit)
+            # Ensure additional dirs for annotated output
+            annot_dir = os.path.join(data_path, "annotated")
+            os.makedirs(annot_dir, exist_ok=True)
+
             tmp_bbox_dir, tmp_seg_dir = outputpath_class._ensure_tmp_dirs(data_path)
             outputpath_class._cleanup_stale_partials(tmp_bbox_dir)
             outputpath_class._cleanup_stale_partials(tmp_seg_dir)
 
-            seg_mode_cfg = bool(config.segmentation_mode)
-            bbox_mode_cfg = bool(config.tracking_mode)
+            tmp_annot_dir = os.path.join(data_path, "__tmp__", "annotated")
+            os.makedirs(tmp_annot_dir, exist_ok=True)
+            _cleanup_partial_files_any(tmp_annot_dir)
 
-            if not (seg_mode_cfg or bbox_mode_cfg):
-                if not bool(config.snellius_mode):
-                    logger.info(
-                        "Both tracking_mode and segmentation_mode are disabled; running in download-only prefetch mode."
-                    )
+            if not need_any_processing:
+                logger.info("tracking_mode, segmentation_mode and save_annotated_video are all disabled; nothing to do.")  # noqa: E501
+                break
 
-                    # Build the unique set of video IDs from the mapping (respecting countries_analyse filter).
-                    vids_to_prefetch = set()
-                    pbar_rows = tqdm(
-                        mapping.iterrows(),
-                        total=mapping.shape[0],
-                        desc="Collect videos",
-                        dynamic_ncols=True,
-                        position=0,
-                        leave=True,
-                    )
-                    for _, row in pbar_rows:
-                        video_ids = parsingutils_class._parse_bracket_list(str(row.get("videos", "")))
-                        if not video_ids:
-                            continue
-                        
-                        iso3 = str(row.get("iso3", ""))
-                        if countries_analyse and iso3 and iso3 not in countries_analyse:
-                            continue
-                        
-                        for _vid in video_ids:
-                            if _vid is not None:
-                                _vid_s = str(_vid).strip()
-                                if _vid_s:
-                                    vids_to_prefetch.add(_vid_s)
-                    pbar_rows.close()
-
-                    if not vids_to_prefetch:
-                        logger.info("No videos found in mapping to prefetch.")
-                        # Nothing to do this pass; honor sleep/git_pull settings if configured.
-                        if config.sleep_sec and int(config.sleep_sec) > 0:
-                            logger.info(
-                                f"Sleeping for {config.sleep_sec} s before attempting to go over mapping again."
-                            )
-                            time.sleep(config.sleep_sec)
-                            if config.git_pull:
-                                common.git_pull()
-                            continue
-                        break
-                    
-                    # Ensure destination folder exists (downloads go to the last folder in config.videos).
-                    os.makedirs(output_path, exist_ok=True)
-
-                    def _prefetch_one(_vid: str) -> Tuple[str, bool, str]:
-                        try:
-                            base_video_path, _title, resolution, video_fps, ftp_download = videoio_class._ensure_video_available(
-                                vid=_vid,
-                                config=config,
-                                secret=secret,
-                                output_path=output_path,
-                                video_paths=video_paths,
-                            )
-                            src = "FTP" if ftp_download else "cache"
-                            msg = f"{_vid}: ok ({src}) path={base_video_path} fps={video_fps} res={resolution}"
-                            return _vid, True, msg
-                        except Exception as e:
-                            return _vid, False, f"{_vid}: failed prefetch: {e}"
-
-                    ok = 0
-                    fail = 0
-                    vids_sorted = sorted(vids_to_prefetch)
-
-                    max_dl_workers = max(1, int(getattr(config, "download_workers", 1) or 1))
-                    with ThreadPoolExecutor(max_workers=max_dl_workers) as ex:
-                        futures = [ex.submit(_prefetch_one, v) for v in vids_sorted]
-                        for fut in tqdm(
-                            as_completed(futures),
-                            total=len(futures),
-                            desc="Prefetch videos",
-                            dynamic_ncols=True,
-                            position=0,
-                            leave=True,
-                        ):
-                            _vid, success, msg = fut.result()
-                            if success:
-                                ok += 1
-                                logger.info(msg)
-                            else:
-                                fail += 1
-                                logger.warning(msg)
-
-                    logger.info("Prefetch complete: ok=%d failed=%d total=%d", ok, fail, len(vids_sorted))
-
-                    # Prefetch-only pass; honor sleep/git_pull settings if configured.
-                    if config.sleep_sec and int(config.sleep_sec) > 0:
-                        logger.info(
-                            f"Sleeping for {config.sleep_sec} s before attempting to go over mapping again."
-                        )
-                        time.sleep(config.sleep_sec)
-                        if config.git_pull:
-                            common.git_pull()
-                        continue
-                    break
-
-                else:
-                    logger.info("Both tracking_mode and segmentation_mode are disabled; nothing to do.")
-                    break
-
+            # -----------------------------------------------------------------
             # Index existing outputs ONCE per pass (skip work + skip downloads)
+            # -----------------------------------------------------------------
             existing_idx = outputindex_class._index_existing_outputs(
                 data_folders=data_folders,
                 want_bbox=bbox_mode_cfg,
@@ -346,11 +355,15 @@ if __name__ == "__main__":
             bbox_done_start = existing_idx["bbox_start"]
             seg_done_start = existing_idx["seg_start"]
 
-            done_lock = threading.Lock()  # protects bbox_done_start/seg_done_start updates by workers
+            ann_done_start: Set[Tuple[str, int]] = set()
+            if ann_mode_cfg:
+                ann_done_start = _index_existing_annotated_outputs(data_folders)
+
+            done_lock = threading.Lock()
 
             logger.info(
                 f"Existing outputs indexed: bbox_start={len(bbox_done_start)} seg_start={len(seg_done_start)} "
-                f"(done by (vid,start) ignoring fps)"
+                f"ann_start={len(ann_done_start)} (done by (vid,start) ignoring fps)"
             )
 
             # -----------------------------------------------------------------
@@ -403,15 +416,14 @@ if __name__ == "__main__":
                         st_i = int(st)
                         et_i = int(et)
 
-                        # DONE logic ignores FPS (per your requirement)
                         bbox_done = (not bbox_mode_cfg) or ((vid, st_i) in bbox_done_start)
                         seg_done = (not seg_mode_cfg) or ((vid, st_i) in seg_done_start)
-                        if bbox_done and seg_done:
+                        ann_done = (not ann_mode_cfg) or ((vid, st_i) in ann_done_start)
+
+                        # Schedule if ANY required artifact is missing.
+                        if bbox_done and seg_done and ann_done:
                             continue
 
-                        # Snellius sharding:
-                        # - shard_mode="segment": assign each (vid,start) to exactly one task
-                        # - shard_mode="video": handled AFTER we build the per-video list
                         if use_sharding and shard_mode == "segment":
                             owner = hpc_class._shard_to_task(f"{vid}:{st_i}", int(config.slurm_task_count))
                             if owner != int(config.slurm_task_id):
@@ -428,7 +440,7 @@ if __name__ == "__main__":
                             )
 
                         seg = (st_i, et_i)
-                        if seg not in set(req_by_vid[vid].segments):
+                        if seg not in req_by_vid[vid].segments:
                             req_by_vid[vid].segments.append(seg)
 
             pbar_rows.close()
@@ -436,7 +448,6 @@ if __name__ == "__main__":
             video_reqs = list(req_by_vid.values())
             logger.info(f"Pass {pass_index}: videos needing work={len(video_reqs)} (after done-index pre-check).")
 
-            # Snellius: shard by VIDEO across Slurm tasks (only if shard_mode=="video")
             if use_sharding and shard_mode == "video":
                 task_id = int(getattr(config, "slurm_task_id", 0))
                 task_count = int(getattr(config, "slurm_task_count", 1))
@@ -455,30 +466,21 @@ if __name__ == "__main__":
             ctx_lock = threading.Lock()
             ctx_by_vid: Dict[str, VideoCtx] = {}
 
-            ready_jobs_by_vid: Dict[
-                str,
-                List[Tuple[str, int, int, str, bool, bool, Optional[str], Optional[str],
-                           Optional[str], Optional[str], int,]]] = {}
+            ready_jobs_by_vid: Dict[str, List[SegmentJob]] = {}
             active_segments_by_vid: Dict[str, int] = {}
             rr_vids: List[str] = []
             rr_state = {"idx": 0}
 
-            pbar_segs = tqdm(
-                total=0,
-                desc="Segments completed",
-                unit="seg",
-                dynamic_ncols=True,
-                position=1,
-                leave=True,
-            )
+            pbar_segs = tqdm(total=0, desc="Segments completed", unit="seg",
+                             dynamic_ncols=True, position=1, leave=True)
 
-            def _maybe_add_rr_vid(vid: str):
+            def _maybe_add_rr_vid(vid: str) -> None:
                 if vid in rr_vids:
                     return
                 if ready_jobs_by_vid.get(vid):
                     rr_vids.append(vid)
 
-            def _maybe_remove_rr_vid(vid: str):
+            def _maybe_remove_rr_vid(vid: str) -> None:
                 if vid not in rr_vids:
                     return
                 try:
@@ -486,10 +488,7 @@ if __name__ == "__main__":
                 except ValueError:
                     return
                 rr_vids.pop(idx)
-                if rr_vids:
-                    rr_state["idx"] %= len(rr_vids)
-                else:
-                    rr_state["idx"] = 0
+                rr_state["idx"] = (rr_state["idx"] % len(rr_vids)) if rr_vids else 0
 
             def _get_or_create_ctx(vid: str, base_video_path: str, fps: int, resolution: str,
                                    ftp_download: bool) -> VideoCtx:
@@ -502,8 +501,6 @@ if __name__ == "__main__":
                             resolution=resolution,
                             ftp_download=bool(ftp_download),
                             output_path=output_path,
-                            # On Snellius, base_video_path may be staged into TMPDIR;
-                            # treat it like an SSD work copy so it gets cleaned.
                             external_ssd=bool(
                                 config.external_ssd or (bool(config.snellius_mode) and bool(scratch_videos_dir))
                             ),
@@ -523,7 +520,7 @@ if __name__ == "__main__":
                 with ctx_lock:
                     return len(inflight_downloads) + len(ctx_by_vid)
 
-            def _finalize_video_if_done(vid: str):
+            def _finalize_video_if_done(vid: str) -> None:
                 with ctx_lock:
                     ctx = ctx_by_vid.get(vid)
                     if not ctx:
@@ -575,13 +572,6 @@ if __name__ == "__main__":
                         logger.warning(f"{vid}: failed delete_youtube_video cleanup: {e}")
 
             def _download_and_prepare(req: VideoReq) -> DownloadResult:
-                """
-                Download/locate the video, compute fps-specific output filenames,
-                and return only the segment jobs that are still needed.
-
-                NOTE: Uses bbox_done_start/seg_done_start (done by (vid,start) ignoring fps),
-                so we do NOT download/redo segments already completed.
-                """
                 t0 = time.time()
                 vid = req.vid
 
@@ -593,7 +583,6 @@ if __name__ == "__main__":
                     video_paths=video_paths,
                 )
 
-                # Snellius: stage to node-local scratch (preferred)
                 if bool(config.snellius_mode) and scratch_videos_dir:
                     base_video_path = videoio_class._copy_to_ssd_if_needed(base_video_path, scratch_videos_dir, vid)
                 elif config.external_ssd and internal_ssd:
@@ -601,31 +590,48 @@ if __name__ == "__main__":
 
                 fps_i = int(video_fps)
 
-                segment_jobs: List[Tuple[str, int, int, str, bool, bool, Optional[str],
-                                         Optional[str], Optional[str], Optional[str], int]] = []
+                segment_jobs: List[SegmentJob] = []
 
                 for (st, et) in req.segments:
                     st_i = int(st)
                     et_i = int(et)
 
-                    run_bbox = bool(bbox_mode_cfg and ((vid, st_i) not in bbox_done_start))
-                    run_seg = bool(seg_mode_cfg and ((vid, st_i) not in seg_done_start))
+                    need_bbox_csv = bool(bbox_mode_cfg and ((vid, st_i) not in bbox_done_start))
+                    need_seg_csv = bool(seg_mode_cfg and ((vid, st_i) not in seg_done_start))
+                    need_ann = bool(ann_mode_cfg and ((vid, st_i) not in ann_done_start))
 
-                    if not run_bbox and not run_seg:
+                    if not (need_bbox_csv or need_seg_csv or need_ann):
                         continue
+
+                    do_seg = bool(seg_mode_cfg and (need_seg_csv or need_ann))
+                    do_bbox = bool(
+                        (bbox_mode_cfg and (need_bbox_csv or (need_ann and not do_seg)))
+                        or ((not bbox_mode_cfg and not seg_mode_cfg) and need_ann)
+                    )
+
+                    if need_ann and not (do_bbox or do_seg):
+                        do_bbox = True
 
                     segment_csv = f"{vid}_{st_i}_{fps_i}.csv"
 
-                    # Final paths (only commit at end)
-                    bbox_final = os.path.join(data_path, "bbox", segment_csv) if run_bbox else None
-                    seg_final = os.path.join(data_path, "seg", segment_csv) if run_seg else None
+                    bbox_final = os.path.join(data_path, "bbox", segment_csv) if need_bbox_csv else None
+                    seg_final = os.path.join(data_path, "seg", segment_csv) if need_seg_csv else None
 
-                    # Temp paths (written during processing)
-                    bbox_tmp = os.path.join(tmp_bbox_dir, segment_csv + ".partial") if run_bbox else None
-                    seg_tmp = os.path.join(tmp_seg_dir, segment_csv + ".partial") if run_seg else None
+                    bbox_tmp = os.path.join(tmp_bbox_dir, segment_csv + ".partial") if need_bbox_csv else None
+                    seg_tmp = os.path.join(tmp_seg_dir, segment_csv + ".partial") if need_seg_csv else None
 
-                    segment_jobs.append((vid, st_i, et_i, base_video_path, run_bbox, run_seg,
-                                         bbox_final, seg_final, bbox_tmp, seg_tmp, fps_i))
+                    ann_final = None
+                    ann_tmp = None
+                    if need_ann:
+                        ann_name = f"{vid}_{st_i}_{fps_i}_ann.mp4"
+                        ann_final = os.path.join(annot_dir, ann_name)
+                        ann_tmp = os.path.join(tmp_annot_dir, f"{vid}_{st_i}_{fps_i}_ann.partial.mp4")
+
+                    segment_jobs.append((
+                        vid, st_i, et_i, base_video_path, do_bbox, do_seg,
+                        bbox_final, seg_final, bbox_tmp, seg_tmp,
+                        ann_final, ann_tmp, fps_i
+                    ))
 
                 dt = time.time() - t0
                 return DownloadResult(
@@ -638,9 +644,8 @@ if __name__ == "__main__":
                     elapsed_sec=dt,
                 )
 
-            def _segment_worker(job: Tuple[str, int, int, str, bool, bool, Optional[str],
-                                           Optional[str], Optional[str], Optional[str], int]) -> str:
-                vid, st, et, base_path, do_bbox, do_seg, bbox_final, seg_final, bbox_tmp, seg_tmp, fps = job
+            def _segment_worker(job: SegmentJob) -> str:
+                vid, st, et, base_path, do_bbox, do_seg, bbox_final, seg_final, bbox_tmp, seg_tmp, ann_final, ann_tmp, fps = job  # noqa: E501
                 th = threading.current_thread().name
                 t0 = time.time()
 
@@ -653,7 +658,6 @@ if __name__ == "__main__":
                     worker_idx = 0
                 tqdm_pos = 2 + (worker_idx % max(1, int(config.max_workers)))
 
-                # Snellius: do trims in TMPDIR as well (fast local disk)
                 if bool(config.snellius_mode) and scratch_videos_dir:
                     work_dir = scratch_videos_dir
                 else:
@@ -665,24 +669,20 @@ if __name__ == "__main__":
                     f"[worker-start] thread={th} job={job_label} fps={int(fps)} "
                     f"trimmed={os.path.basename(trimmed_path)} "
                     f"bbox_final={os.path.basename(bbox_final) if bbox_final else None} "
-                    f"seg_final={os.path.basename(seg_final) if seg_final else None}"
+                    f"seg_final={os.path.basename(seg_final) if seg_final else None} "
+                    f"ann_final={os.path.basename(ann_final) if ann_final else None}"
                 )
 
-                if bbox_tmp:
-                    os.makedirs(os.path.dirname(bbox_tmp), exist_ok=True)
-                if seg_tmp:
-                    os.makedirs(os.path.dirname(seg_tmp), exist_ok=True)
-
-                # Best-effort cleanup of temp partials from previous attempts of same segment
-                for p in (bbox_tmp, seg_tmp):
-                    if p and os.path.exists(p):
-                        try:
-                            os.remove(p)
-                        except Exception:
-                            pass
+                for p in (bbox_tmp, seg_tmp, ann_tmp):
+                    if p:
+                        os.makedirs(os.path.dirname(p) or ".", exist_ok=True)
+                        if os.path.exists(p):
+                            try:
+                                os.remove(p)
+                            except Exception:
+                                pass
 
                 try:
-                    # Trim with progress bar
                     logger.info(f"[trim-start] thread={th} job={job_label}")
                     end_time_adj = max(st, et - 1)
 
@@ -696,50 +696,49 @@ if __name__ == "__main__":
                     )
                     logger.info(f"[trim-done] thread={th} job={job_label}")
 
-                    # Track (per-frame tqdm is inside helper)
                     logger.info(f"[track-start] thread={th} job={job_label} fps={int(fps)} input={trimmed_path}")
+
                     tracckingrunner_class.tracking_mode_threadsafe(
                         input_video_path=trimmed_path,
                         video_fps=int(fps),
-                        bbox_mode=do_bbox,
-                        seg_mode=do_seg,
-                        bbox_csv_out=bbox_tmp,  # write temp
-                        seg_csv_out=seg_tmp,    # write temp
+                        bbox_mode=bool(do_bbox),
+                        seg_mode=bool(do_seg),
+                        bbox_csv_out=bbox_tmp,
+                        seg_csv_out=seg_tmp,
+                        annotated_video_out=ann_tmp,
                         job_label=job_label,
-                        tqdm_position=tqdm_pos,  # reuse worker line
+                        tqdm_position=tqdm_pos,
                         show_frame_pbar=(False if bool(config.snellius_mode) else True),
                         postfix_every_n=30,
                     )
+
                     logger.info(f"[track-done] thread={th} job={job_label}")
 
-                    # Commit temp -> final only AFTER tracking succeeds
-                    if do_bbox and bbox_tmp and bbox_final:
-                        if os.path.exists(bbox_tmp):
-                            os.makedirs(os.path.dirname(bbox_final), exist_ok=True)
-                            os.replace(bbox_tmp, bbox_final)  # atomic on same filesystem
-                            logger.info(f"[commit] job={job_label} bbox -> {bbox_final}")
-                            with done_lock:
-                                bbox_done_start.add((vid, st))  # keep in-memory done set updated
+                    if bbox_tmp and bbox_final and os.path.exists(bbox_tmp):
+                        os.makedirs(os.path.dirname(bbox_final), exist_ok=True)
+                        os.replace(bbox_tmp, bbox_final)
+                        logger.info(f"[commit] job={job_label} bbox -> {bbox_final}")
+                        with done_lock:
+                            bbox_done_start.add((vid, st))
 
-                    if do_seg and seg_tmp and seg_final:
-                        if os.path.exists(seg_tmp):
-                            os.makedirs(os.path.dirname(seg_final), exist_ok=True)
-                            os.replace(seg_tmp, seg_final)
-                            logger.info(f"[commit] job={job_label} seg -> {seg_final}")
-                            with done_lock:
-                                seg_done_start.add((vid, st))  # keep in-memory done set updated
+                    if seg_tmp and seg_final and os.path.exists(seg_tmp):
+                        os.makedirs(os.path.dirname(seg_final), exist_ok=True)
+                        os.replace(seg_tmp, seg_final)
+                        logger.info(f"[commit] job={job_label} seg -> {seg_final}")
+                        with done_lock:
+                            seg_done_start.add((vid, st))
 
-                    # Optional log sizes
-                    if bbox_final and os.path.exists(bbox_final):
-                        logger.info(f"[csv] job={job_label} bbox_bytes={os.path.getsize(bbox_final)}")
-                    if seg_final and os.path.exists(seg_final):
-                        logger.info(f"[csv] job={job_label} seg_bytes={os.path.getsize(seg_final)}")
+                    if ann_tmp and ann_final and os.path.exists(ann_tmp):
+                        os.makedirs(os.path.dirname(ann_final), exist_ok=True)
+                        os.replace(ann_tmp, ann_final)
+                        logger.info(f"[commit] job={job_label} ann -> {ann_final}")
+                        with done_lock:
+                            ann_done_start.add((vid, st))
 
                     return vid
 
                 except Exception:
-                    # Do NOT commit partials; remove temp outputs on failure
-                    for p in (bbox_tmp, seg_tmp):
+                    for p in (bbox_tmp, seg_tmp, ann_tmp):
                         if p and os.path.exists(p):
                             try:
                                 os.remove(p)
@@ -755,7 +754,7 @@ if __name__ == "__main__":
                     dt = time.time() - t0
                     logger.info(f"[worker-done] thread={th} job={job_label} elapsed_sec={dt:.2f}")
 
-            def _dispatch_segments(inflight_process: Dict[Any, str], process_pool: ThreadPoolExecutor):
+            def _dispatch_segments(inflight_process: Dict[Any, str], process_pool: ThreadPoolExecutor) -> None:
                 free_slots = int(config.max_workers) - len(inflight_process)
                 if free_slots <= 0:
                     return
@@ -767,7 +766,6 @@ if __name__ == "__main__":
 
                     tried = 0
                     picked_vid = None
-
                     while tried < len(rr_vids):
                         idx = rr_state["idx"] % len(rr_vids)
                         vid = rr_vids[idx]
@@ -815,7 +813,7 @@ if __name__ == "__main__":
             try:
                 req_iter = iter(video_reqs)
 
-                def _submit_downloads_up_to_prefetch():
+                def _submit_downloads_up_to_prefetch() -> None:
                     target_inflight = int(config.prefetch_videos)
                     with state_lock:
                         while (
@@ -853,16 +851,15 @@ if __name__ == "__main__":
                     done, _ = wait(wait_set, return_when=FIRST_COMPLETED)
 
                     for fut in done:
-                        # Download finished
                         if fut in inflight_downloads:
                             req = inflight_downloads.pop(fut)
                             try:
                                 dr = fut.result()
 
                                 logger.info(
-                                    f"{dr.vid}: download+prepare done "
-                                    f"fps={dr.fps} res={dr.resolution} ftp_download={dr.ftp_download} "
-                                    f"segment_jobs={len(dr.segment_jobs)} elapsed_sec={dr.elapsed_sec:.2f}"
+                                    f"{dr.vid}: download+prepare done fps={dr.fps} res={dr.resolution} "
+                                    f"ftp_download={dr.ftp_download} segment_jobs={len(dr.segment_jobs)} "
+                                    f"elapsed_sec={dr.elapsed_sec:.2f}"
                                 )
 
                                 if not dr.segment_jobs:
@@ -888,7 +885,6 @@ if __name__ == "__main__":
                                 logger.error(f"Download/prepare failed for {req.vid}: {e!r}")
                                 break
 
-                        # Segment finished
                         elif fut in inflight_process:
                             vid_done = inflight_process.pop(fut)
                             try:
@@ -935,7 +931,6 @@ if __name__ == "__main__":
                     pbar_segs.close()
                 except Exception:
                     pass
-
                 try:
                     download_pool.shutdown(wait=True, cancel_futures=False)
                 except Exception:
@@ -973,7 +968,6 @@ if __name__ == "__main__":
             if config.git_pull:
                 common.git_pull()
 
-            # If no sleep configured, do one pass and exit.
             break
 
     except Exception as e:

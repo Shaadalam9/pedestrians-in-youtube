@@ -35,6 +35,10 @@ class OutputPaths:
     The __tmp__ staging area is used to implement write-then-commit semantics:
       - Write output to __tmp__/.../*.partial
       - Atomically move into bbox/ or seg/ via os.replace()
+
+    Notes:
+        - All methods are designed to be idempotent and safe to call repeatedly.
+        - Cleanup is best-effort: it must never prevent the pipeline from running.
     """
 
     def __init__(self) -> None:
@@ -42,11 +46,11 @@ class OutputPaths:
 
         This class is stateless; it only provides filesystem helpers.
         """
-        # Nothing to initialize.
+        # Nothing to initialize; present for future extension and interface symmetry.
         pass
 
     def _ensure_dirs(self, data_path: str) -> None:
-        """Ensures that the main output directories exist.
+        """Ensure that the main output directories exist.
 
         This method creates:
           - data_path/
@@ -54,20 +58,21 @@ class OutputPaths:
           - data_path/seg/
 
         Args:
-          data_path: Base output directory.
+            data_path: Base output directory.
 
         Returns:
-          None.
+            None.
         """
-        # Create the base folder first so the subfolder creation is reliable.
+        # Create the base folder first so subfolder creation is reliable.
+        # exist_ok=True makes directory creation idempotent.
         os.makedirs(data_path, exist_ok=True)
 
-        # Create per-mode output directories. These are stable conventions.
+        # Create per-mode output directories; these are stable conventions.
         os.makedirs(os.path.join(data_path, "bbox"), exist_ok=True)
         os.makedirs(os.path.join(data_path, "seg"), exist_ok=True)
 
     def _ensure_tmp_dirs(self, data_path: str) -> Tuple[str, str]:
-        """Creates temp dirs used for "write-then-commit" outputs.
+        """Create temp dirs used for "write-then-commit" output staging.
 
         The pipeline stages files under __tmp__/ to ensure "all-or-nothing"
         visibility:
@@ -75,12 +80,13 @@ class OutputPaths:
           - Final output folders contain only completed CSVs.
 
         Args:
-          data_path: Base output directory.
+            data_path: Base output directory.
 
         Returns:
-          Tuple (tmp_bbox_dir, tmp_seg_dir).
+            Tuple (tmp_bbox_dir, tmp_seg_dir) representing the per-mode staging paths.
         """
-        # Keep temp paths inside the data directory so cleanup is straightforward.
+        # Keep temp paths inside the data directory so cleanup is straightforward
+        # and does not require tracking separate OS temp locations.
         tmp_root = os.path.join(data_path, "__tmp__")
 
         # Separate directories per mode avoid collisions and simplify cleanup.
@@ -106,14 +112,15 @@ class OutputPaths:
           - Cleanup must never crash the pipeline.
 
         Args:
-          tmp_dir: Temp directory to scan for *.partial files.
+            tmp_dir: Temp directory to scan for *.partial files.
 
         Returns:
-          None.
+            None.
         """
         # Guard glob operations: unusual filesystem states should not be fatal.
         try:
-            # Only target "*.partial" files. We do not remove any other files.
+            # Only target "*.partial" files. We do not remove any other files to
+            # avoid accidentally deleting debugging artifacts or completed outputs.
             pattern = os.path.join(tmp_dir, "*.partial")
 
             # Iterate over any partial files and try to remove them.
@@ -121,9 +128,9 @@ class OutputPaths:
                 try:
                     os.remove(path)
                 except Exception:
-                    # Ignore individual file failures (e.g., concurrent removal).
+                    # Ignore individual file failures (e.g., concurrent removal, permission issues).
                     pass
 
         except Exception:
-            # Ignore unexpected failures (e.g., directory disappeared).
+            # Ignore unexpected failures (e.g., directory disappeared, glob errors).
             pass

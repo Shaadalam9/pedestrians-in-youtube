@@ -22,6 +22,11 @@ class OutputIndex:
     Important:
       - video_id may contain underscores, so parsing must split from the right.
       - fps is intentionally ignored in the "DONE" decision.
+
+    Design intent:
+      - Perform a single scan over output directories per pipeline pass.
+      - Store results in in-memory sets for O(1) membership checks.
+      - Be tolerant of unexpected files and race conditions in shared filesystems.
     """
 
     def __init__(self) -> None:
@@ -36,32 +41,38 @@ class OutputIndex:
 
     def _index_existing_outputs(self, data_folders: List[str], want_bbox: bool,
                                 want_seg: bool) -> Dict[str, Set[Tuple[str, int]]]:
-        """Indexes existing outputs once per pass.
+        """Index existing bbox/seg outputs once per pipeline pass.
 
         Why this exists:
-          Repeated globbing for each segment is expensive, especially when
-          `mapping.csv` is large. This function scans output folders once and
-          stores results in sets for O(1) membership checks.
+            Repeated globbing for each segment is expensive, especially when
+            `mapping.csv` is large. This function scans output folders once and
+            stores results in sets for O(1) membership checks.
 
         "DONE" definition:
-          We index by (video_id, start_time) and intentionally ignore FPS.
-          If any file matches:
-            data/*/bbox/{video_id}_{start}_*.csv
-          then that (video_id, start) is treated as done for bbox mode
-          (and similarly for seg mode).
+            We index by (video_id, start_time) and intentionally ignore FPS.
+            If any file matches:
+              data/*/bbox/{video_id}_{start}_*.csv
+            then that (video_id, start) is treated as done for bbox mode
+            (and similarly for seg mode).
 
         Args:
-          data_folders: List of base output folders (e.g., ["data1", "data2"]).
-            Each folder may contain "bbox/" and/or "seg/" subfolders.
-          want_bbox: Whether to scan bbox outputs.
-          want_seg: Whether to scan segmentation outputs.
+            data_folders: List of base output folders (e.g., ["data1", "data2"]).
+                Each folder may contain "bbox/" and/or "seg/" subfolders.
+            want_bbox: Whether to scan bbox outputs.
+            want_seg: Whether to scan segmentation outputs.
 
         Returns:
-          Dictionary with two sets:
-            {
-              "bbox_start": set([(video_id, start_int), ...]),
-              "seg_start":  set([(video_id, start_int), ...]),
-            }
+            Dictionary with two sets:
+              {
+                "bbox_start": set([(video_id, start_int), ...]),
+                "seg_start":  set([(video_id, start_int), ...]),
+              }
+
+        Notes:
+            - This method is private by convention; it returns a ready-to-use
+              index structure for downstream membership tests.
+            - The function is resilient to unexpected filenames and transient
+              directory disappearance (common on networked filesystems).
         """
         # Use sets for fast membership checks and to deduplicate entries.
         # Tuple values are hashable and compact for indexing.
@@ -69,7 +80,7 @@ class OutputIndex:
         seg_start: Set[Tuple[str, int]] = set()
 
         def _scan_dir(base_folder: str, sub: str, out_set: Set[Tuple[str, int]]) -> None:
-            """Scans one subdirectory ("bbox" or "seg") and populates `out_set`.
+            """Scan one subdirectory ("bbox" or "seg") and populate `out_set`.
 
             Parsing is intentionally tolerant:
               - Non-CSV files are ignored.
@@ -77,12 +88,12 @@ class OutputIndex:
               - Underscores in video_id are supported via rsplit.
 
             Args:
-              base_folder: Base output folder, already absolute.
-              sub: Subfolder to scan ("bbox" or "seg").
-              out_set: Set to populate with (video_id, start_time_int).
+                base_folder: Base output folder, already absolute.
+                sub: Subfolder to scan ("bbox" or "seg").
+                out_set: Set to populate with (video_id, start_time_int).
 
             Returns:
-              None.
+                None.
             """
             # Build the folder path we want to inspect.
             d = os.path.join(base_folder, sub)
@@ -96,6 +107,7 @@ class OutputIndex:
                 with os.scandir(d) as it:
                     for entry in it:
                         # We only index files (skip dirs/symlinks).
+                        # Note: entry.is_file() may follow symlinks depending on OS defaults.
                         if not entry.is_file():
                             continue
 
