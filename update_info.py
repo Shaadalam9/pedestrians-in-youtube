@@ -133,8 +133,8 @@ if __name__ == "__main__":
 
         # detect missing data
         critical_cols = ["title", "upload_date", "channel", "views"]
-        failed_mask = existing_df[critical_cols].applymap(is_missing).any(axis=1)
-        failed_ids = set(existing_df.loc[failed_mask, "video"].astype(str).tolist())
+        failed_mask = existing_df[critical_cols].applymap(is_missing).any(axis=1)  # type: ignore
+        failed_ids = set(existing_df.loc[failed_mask, "video"].astype(str).tolist())  # type: ignore
 
         logger.info(f"🔁 found {len(failed_ids)} videos with missing metadata")
 

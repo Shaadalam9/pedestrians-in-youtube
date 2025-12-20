@@ -143,11 +143,7 @@ Configuration of the project needs to be defined in `config`. Please use the `de
 - **`confidence`**: Sets the confidence threshold parameter for YOLO.
 - **`update_ISO_code`**: Updates the ISO code of the country in the mapping file during analysis.
 - **`update_pop_country`**: Updates the country’s population in the mapping file during analysis.
-- **`update_continent`**: Updates the continent information in the mapping file during analysis.
-- **`update_mortality_rate`**: Updates the mortality rate of the country in the mapping file during analysis.
 - **`update_gini_value`**: Updates the GINI value of the country in the mapping file during analysis.
-- **`update_upload_date`**: Updates the upload date of videos in the mapping file during analysis.
-- **`update_fps_list`**: Updates the FPS (frames per second) information for videos in the mapping file during analysis.
 - **`update_pytubefix`**: Updates the `pytubefix` library each time analysis starts.
 - **`font_family`**: Specifies the font family to be used in outputs.
 - **`font_size`**: Specifies the font size to be used in outputs.
@@ -158,6 +154,12 @@ Configuration of the project needs to be defined in `config`. Please use the `de
 - **`email_send`**: Send email about completion of the job in the end of the loop in `main.py`. See the following paragraph for the additional parameters in the `secret` file.
 - **`email_sender`**: Email address of the the "sender" of the email.
 - **`email_recipients`**: List of emails for sending the message.
+- **`max_workers`**: Specifies the maximum number of segment-processing worker threads (i.e., how many segments can be analysed in parallel). Increasing this increases concurrent segment processing, subject to GPU/CPU and I/O limits.
+- **`download_workers`**: Specifies the maximum number of concurrent video download/prepare workers. Increasing this allows multiple videos to be downloaded/prepared in parallel (useful when network/FTP is the bottleneck).
+- **`max_active_segments_per_video`**: Specifies the maximum number of segments from the *same video* that are allowed to be processed concurrently.  
+  - If set to **1**, the scheduler tends to distribute workers across **different videos** (e.g., with `max_workers=3`, it will try to process 3 different videos at once).  
+  - If set to **2+**, multiple workers may process segments from the **same video** simultaneously, which can improve throughput when one video has many segments but reduces “video diversity” across workers.
+
 
 For working with external APIs of [VideoFiles](https://files.mobility-squad.com/), [GeoNames](https://www.geonames.org), [BEA](https://apps.bea.gov/api/signup), [TomTom](https://developer.tomtom.com/user/register), [Trafikab](https://www.trafiklab.se/api/trafiklab-apis), and [Numbeo](https://www.numbeo.com/common/api.jsp) (paid), the API keys need to be placed in file `secret` (no extension) in the root of the project. The file needs to be formatted as `default.secret`. The email SMTP server, account and password need to be also set here. This is optional for just running the analysis on the dataset. For running the the `main.py` script at least an empty `secret` file directly copies from the template is required.
 

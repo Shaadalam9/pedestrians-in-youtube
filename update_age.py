@@ -38,7 +38,7 @@ if __name__ == "__main__":
             if pd.notnull(iso3):
                 median_age = get_country_median_age(iso2)
                 if median_age is not None:
-                    df.at[idx, 'med_age'] = median_age
+                    df.at[idx, 'med_age'] = median_age  # type: ignore
                     logger.info(f"✅ Fetched age for {iso3}: {median_age}")
                 else:
                     logger.warning(f"⚠️ No data for {iso3}")
