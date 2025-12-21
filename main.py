@@ -184,6 +184,7 @@ if __name__ == "__main__":
 
     try:
         patches_class.patch_ultralytics_botsort_numpy_cpu_bug(logger)
+        patches_class.patch_scipy_cdist_accept_1d(logger)
 
         # ---------------------------------------------------------------------
         # Load configuration
