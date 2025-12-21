@@ -395,6 +395,14 @@ Form understands that there is no entry for Delft, Netherlands in the mapping fi
 ![Form with existing city](readme/form_existing_city.jpg)
 If the city already exists in data, the form extends the entry for that city with the new video. In this example, a new video is added to Kyiv, Ukraine 💙💛. The values in `Start time` and `End time` under the embedded video also indicate that one or multiple segments for this video are already present in the `mapping` file; in this case a new segment would be added to the video.
 
+## Shortcuts and click events
+The form accepts the following shortcuts and click events:
+1. **A**: pasting current timestamp in video to the "Start time (seconds)" field.
+2. **S**: pasting current timestamp in video to the "End time (seconds)" field.
+3. **Q**: selecting "Day" value for "Time of day" field.
+4. **W**: selecting "Night" value for "Time of day" field.
+5. Clicking on the value of "Current time" (red value under embedded video) sets "Start time (seconds)" field as 0 and "End time (seconds)" field as the value of the "Current time".
+
 ## Contact
 If you have any questions or suggestions, feel free to reach out to md_shadab_alam@outlook.com or pavlo.bazilinskyy@gmail.com.
 

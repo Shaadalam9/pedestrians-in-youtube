@@ -856,4 +856,70 @@ document.addEventListener("click", e => {
         box.classList.remove("has-items");
     }
 });
+
+
+document.addEventListener("keydown", function (e) {
+    // Ignore if user is typing in a form field
+    const tag = document.activeElement.tagName.toLowerCase();
+    if (["input", "textarea", "select"].includes(tag)) return;
+
+    const currentTimeEl = document.getElementById("currentTime");
+    if (!currentTimeEl) return;
+
+    const currentTime = parseInt(currentTimeEl.textContent, 10);
+    if (isNaN(currentTime)) return;
+
+    if (e.key === "a") {
+        const start = document.getElementById("start_time");
+        if (start) {
+            start.value = currentTime;
+            start.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+    }
+
+    if (e.key === "s") {
+        const end = document.getElementById("end_time");
+        if (end) {
+            end.value = currentTime;
+            end.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+    }
+});
+
+document.addEventListener("keydown", function (e) {
+    // Do not interfere with typing
+    if (["INPUT", "TEXTAREA"].includes(document.activeElement.tagName)) {
+        return;
+    }
+
+    const key = e.key.toLowerCase();
+
+    if (key === "q") {
+        const day = document.querySelector(
+            'input[type="radio"][name="time_of_day"][value="0"]'
+        );
+        if (day) {
+            day.checked = true;
+            day.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+    }
+
+    if (key === "w") {
+        const night = document.querySelector(
+            'input[type="radio"][name="time_of_day"][value="1"]'
+        );
+        if (night) {
+            night.checked = true;
+            night.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+    }
+});
+
+document.addEventListener("click", function () {
+    if (document.activeElement.tagName === "IFRAME") {
+        document.activeElement.blur();
+        document.body.focus();
+    }
+});
+
 </script>
