@@ -8,7 +8,10 @@ Guiding principles:
   - Patches must be idempotent (safe to apply multiple times).
   - Patches must preserve behavior except for the specific bug fix.
 """
-
+import sys
+import numpy as np
+import scipy.spatial.distance as ssd
+from functools import wraps
 from custom_logger import CustomLogger
 
 logger = CustomLogger(__name__)
@@ -148,3 +151,55 @@ class Patches:
                 logger.warning(f"BoT-SORT patch not applied (continuing): {e!r}")
             else:
                 print(f"BoT-SORT patch not applied (continuing): {e!r}")
+
+    def patch_scipy_cdist_accept_1d(self, logger):
+        """
+        Patch scipy.spatial.distance.cdist to accept 1D inputs by reshaping to (1, -1).
+        Also handles empty inputs by returning an empty distance matrix.
+        """
+        try:
+
+            # Idempotent
+            if getattr(ssd.cdist, "__patched_accept_1d__", False):
+                return
+
+            orig_cdist = ssd.cdist
+
+            @wraps(orig_cdist)
+            def cdist_safe(XA, XB, *args, **kwargs):
+                XA = np.asarray(XA)
+                XB = np.asarray(XB)
+
+                # Empty cases -> return empty distance matrix (avoids dimension errors)
+                if XA.size == 0 or XB.size == 0:
+                    na = 0 if XA.size == 0 else (1 if XA.ndim == 1 else XA.shape[0])
+                    nb = 0 if XB.size == 0 else (1 if XB.ndim == 1 else XB.shape[0])
+                    return np.empty((na, nb), dtype=np.float32)
+
+                # Single-vector case -> reshape to 2D
+                if XA.ndim == 1:
+                    XA = XA.reshape(1, -1)
+                if XB.ndim == 1:
+                    XB = XB.reshape(1, -1)
+
+                return orig_cdist(XA, XB, *args, **kwargs)
+
+            cdist_safe.__patched_accept_1d__ = True  # type: ignore # marker
+
+            # Patch scipy itself
+            ssd.cdist = cdist_safe
+
+            # Patch any already-imported references: `from scipy.spatial.distance import cdist`
+            for m in list(sys.modules.values()):
+                if m is None:
+                    continue
+                try:
+                    if getattr(m, "cdist", None) is orig_cdist:
+                        setattr(m, "cdist", cdist_safe)
+                except Exception:
+                    pass
+
+            logger.info("Patched scipy.spatial.distance.cdist to accept 1D inputs (BoT-SORT stability fix).")
+
+        except Exception as e:
+            logger.warning(f"Failed to patch scipy cdist accept-1d: {e!r}")
