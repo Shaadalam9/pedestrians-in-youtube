@@ -154,8 +154,10 @@ class Patches:
 
     def patch_scipy_cdist_accept_1d(self, logger):
         """
-        Patch scipy.spatial.distance.cdist to accept 1D inputs by reshaping to (1, -1).
-        Also handles empty inputs by returning an empty distance matrix.
+        Fix BoT-SORT / SciPy cdist edge-case:
+        SciPy's cdist requires XA and XB to be 2D. BoT-SORT sometimes passes a 1D embedding.
+        This patch reshapes 1D -> (1, -1) and handles empty inputs.
+        Also patches any already-imported Ultralytics aliases of cdist.
         """
         try:
 
@@ -170,13 +172,13 @@ class Patches:
                 XA = np.asarray(XA)
                 XB = np.asarray(XB)
 
-                # Empty cases -> return empty distance matrix (avoids dimension errors)
+                # Empty -> return empty distance matrix
                 if XA.size == 0 or XB.size == 0:
                     na = 0 if XA.size == 0 else (1 if XA.ndim == 1 else XA.shape[0])
                     nb = 0 if XB.size == 0 else (1 if XB.ndim == 1 else XB.shape[0])
                     return np.empty((na, nb), dtype=np.float32)
 
-                # Single-vector case -> reshape to 2D
+                # 1D -> 2D
                 if XA.ndim == 1:
                     XA = XA.reshape(1, -1)
                 if XB.ndim == 1:
@@ -184,22 +186,27 @@ class Patches:
 
                 return orig_cdist(XA, XB, *args, **kwargs)
 
-            cdist_safe.__patched_accept_1d__ = True  # type: ignore # marker
+            cdist_safe.__patched_accept_1d__ = True  # type: ignore
 
-            # Patch scipy itself
+            # Patch SciPy canonical entrypoint
             ssd.cdist = cdist_safe
 
-            # Patch any already-imported references: `from scipy.spatial.distance import cdist`
+            # Patch any module-level aliases (Ultralytics often does: from scipy.spatial.distance import cdist)
             for m in list(sys.modules.values()):
                 if m is None:
                     continue
                 try:
-                    if getattr(m, "cdist", None) is orig_cdist:
-                        setattr(m, "cdist", cdist_safe)
+                    d = vars(m)
                 except Exception:
-                    pass
+                    continue
+                for name, val in list(d.items()):
+                    if val is orig_cdist:
+                        try:
+                            setattr(m, name, cdist_safe)
+                        except Exception:
+                            pass
 
-            logger.info("Patched scipy.spatial.distance.cdist to accept 1D inputs (BoT-SORT stability fix).")
+            logger.info("Patched SciPy/Ultralytics cdist to accept 1D embeddings (BoT-SORT XB 2D fix).")
 
         except Exception as e:
-            logger.warning(f"Failed to patch scipy cdist accept-1d: {e!r}")
+            logger.warning(f"Failed to patch SciPy cdist accept-1d: {e!r}")
