@@ -282,8 +282,8 @@ class TrackingRunner:
         bbox_csv_out: Optional[str] = None,
         seg_csv_out: Optional[str] = None,
         annotated_video_out: Optional[str] = None,
-        bbox_model: YOLO | None = None,
-        seg_model: YOLO | None = None,
+        bbox_model: YOLO | None = None,  # type: ignore
+        seg_model: YOLO | None = None,  # type: ignore
         flush_every_n_frames: int = 3000,
         job_label: str = "",
         show_frame_pbar: bool = True,
@@ -519,6 +519,14 @@ class TrackingRunner:
                         break
 
                     frame_count += 1
+                    # Workaround for Ultralytics per-frame track path on some stacks:
+                    # it may do an in-place divide on uint8 frames, which triggers:
+                    # "Cannot cast ufunc 'divide' output ... to dtype('uint8')"
+                    # Use float32 for model input; keep original `frame` (uint8) for annotation fallback.
+                    frame_yolo = frame
+                    if isinstance(frame, np.ndarray) and frame.dtype == np.uint8:
+                        frame_yolo = frame.astype(np.float32)
+
                     persist_flag = True  # noqa
 
                     # Prefer seg annotated output if available; otherwise bbox.
@@ -540,10 +548,7 @@ class TrackingRunner:
                             )
                             if not seg_tracker_passed:
                                 seg_kwargs["tracker"] = seg_tracker_eff  # type: ignore
-                            seg_results = seg_model.track(  # type: ignore
-                                frame,
-                                **seg_kwargs,
-                            )
+                            seg_results = seg_model.track(frame_yolo, **seg_kwargs)  # type: ignore
                             seg_tracker_passed = True
                         except Exception as e:
                             msg = "LinAlgError" if _is_linalg_error(e) else "error"
@@ -552,7 +557,7 @@ class TrackingRunner:
                             try:
                                 seg_tracker_passed = False
                                 seg_results = seg_model.track(  # type: ignore
-                                    frame,
+                                    frame_yolo,
                                     tracker=seg_tracker_eff,
                                     persist=True,
                                     conf=self.confidence,
@@ -618,10 +623,8 @@ class TrackingRunner:
                             )
                             if not bbox_tracker_passed:
                                 bbox_kwargs["tracker"] = bbox_tracker_eff  # type: ignore
-                            bbox_results = bbox_model.track(  # type: ignore
-                                frame,
-                                **bbox_kwargs,
-                            )
+                            bbox_results = bbox_model.track(frame_yolo, **bbox_kwargs)  # type: ignore
+
                             bbox_tracker_passed = True
                         except Exception as e:
                             msg = "LinAlgError" if _is_linalg_error(e) else "error"
@@ -630,7 +633,7 @@ class TrackingRunner:
                             try:
                                 bbox_tracker_passed = False
                                 bbox_results = bbox_model.track(  # type: ignore
-                                    frame,
+                                    frame_yolo,
                                     tracker=bbox_tracker_eff,
                                     persist=True,
                                     conf=self.confidence,
