@@ -289,7 +289,7 @@ class TrackingRunner:
         show_frame_pbar: bool = True,
         tqdm_position: int = 1,
         postfix_every_n: int = 30,
-        remap_track_ids_per_segment: bool = True,
+        remap_track_ids_per_segment: bool = False,
     ) -> None:
         if bbox_mode and bbox_csv_out is None:
             raise ValueError("bbox_mode=True requires bbox_csv_out")
