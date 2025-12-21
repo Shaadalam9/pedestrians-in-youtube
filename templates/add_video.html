@@ -857,42 +857,51 @@ document.addEventListener("click", e => {
     }
 });
 
-
 document.addEventListener("keydown", function (e) {
-    // Ignore if user is typing in a form field
+    // Do not interfere with typing in form fields
     const tag = document.activeElement.tagName.toLowerCase();
     if (["input", "textarea", "select"].includes(tag)) return;
 
-    const currentTimeEl = document.getElementById("currentTime");
-    if (!currentTimeEl) return;
-
-    const currentTime = parseInt(currentTimeEl.textContent, 10);
-    if (isNaN(currentTime)) return;
-
-    if (e.key === "a") {
-        const start = document.getElementById("start_time");
-        if (start) {
-            start.value = currentTime;
-            start.dispatchEvent(new Event("change", { bubbles: true }));
-        }
-    }
-
-    if (e.key === "s") {
-        const end = document.getElementById("end_time");
-        if (end) {
-            end.value = currentTime;
-            end.dispatchEvent(new Event("change", { bubbles: true }));
-        }
-    }
-});
-
-document.addEventListener("keydown", function (e) {
-    // Do not interfere with typing
-    if (["INPUT", "TEXTAREA"].includes(document.activeElement.tagName)) {
-        return;
-    }
-
     const key = e.key.toLowerCase();
+
+    const start = document.getElementById("start_time");
+    const end = document.getElementById("end_time");
+
+    /* ---------- TIME COPYING (A / S / D) ---------- */
+
+    const currentTimeEl = document.getElementById("currentTime");
+    const lastSecondEl = document.getElementById("lastSecond");
+
+    const currentTime = currentTimeEl
+        ? parseInt(currentTimeEl.textContent, 10)
+        : NaN;
+
+    const lastSecond = lastSecondEl
+        ? parseInt(lastSecondEl.textContent, 10)
+        : NaN;
+
+    // A → current time → start
+    if (key === "a" && start && !isNaN(currentTime)) {
+        start.value = currentTime;
+        start.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+
+    // S → current time → end
+    if (key === "s" && end && !isNaN(currentTime)) {
+        end.value = currentTime;
+        end.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+
+    // D → start = 0, end = TOTAL video duration
+    if (key === "d" && start && end && !isNaN(lastSecond)) {
+        start.value = 0;
+        end.value = lastSecond;
+
+        start.dispatchEvent(new Event("change", { bubbles: true }));
+        end.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+
+    /* ---------- TIME OF DAY (Q / W) ---------- */
 
     if (key === "q") {
         const day = document.querySelector(
@@ -912,13 +921,6 @@ document.addEventListener("keydown", function (e) {
             night.checked = true;
             night.dispatchEvent(new Event("change", { bubbles: true }));
         }
-    }
-});
-
-document.addEventListener("click", function () {
-    if (document.activeElement.tagName === "IFRAME") {
-        document.activeElement.blur();
-        document.body.focus();
     }
 });
 

@@ -399,9 +399,9 @@ If the city already exists in data, the form extends the entry for that city wit
 The form accepts the following shortcuts and click events:
 1. **A**: pasting current timestamp in video to the "Start time (seconds)" field.
 2. **S**: pasting current timestamp in video to the "End time (seconds)" field.
-3. **Q**: selecting "Day" value for "Time of day" field.
-4. **W**: selecting "Night" value for "Time of day" field.
-5. Clicking on the value of "Current time" (red value under embedded video) sets "Start time (seconds)" field as 0 and "End time (seconds)" field as the value of the "Current time".
+3. **D**: pasting the value of "Last second" (red value under embedded video) to the "End time (seconds)" field and setting "Start time (seconds)" field as 0. Clicking on "Current time" results in the same behaviour.
+4. **Q**: selecting "Day" value for "Time of day" field.
+5. **W**: selecting "Night" value for "Time of day" field.
 
 ## Contact
 If you have any questions or suggestions, feel free to reach out to md_shadab_alam@outlook.com or pavlo.bazilinskyy@gmail.com.
