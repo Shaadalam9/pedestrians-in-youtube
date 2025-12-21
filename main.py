@@ -617,8 +617,8 @@ if __name__ == "__main__":
                     bbox_final = os.path.join(data_path, "bbox", segment_csv) if need_bbox_csv else None
                     seg_final = os.path.join(data_path, "seg", segment_csv) if need_seg_csv else None
 
-                    bbox_tmp = os.path.join(tmp_bbox_dir, segment_csv + ".partial") if need_bbox_csv else None
-                    seg_tmp = os.path.join(tmp_seg_dir, segment_csv + ".partial") if need_seg_csv else None
+                    bbox_tmp = os.path.join(tmp_bbox_dir, segment_csv + ".partial") if do_bbox else None
+                    seg_tmp = os.path.join(tmp_seg_dir, segment_csv + ".partial") if do_seg else None
 
                     ann_final = None
                     ann_tmp = None
@@ -713,6 +713,19 @@ if __name__ == "__main__":
                     )
 
                     logger.info(f"[track-done] thread={th} job={job_label}")
+
+                    # If bbox/seg CSVs were not requested as final artifacts, remove their tmp files.
+                    if bbox_tmp and not bbox_final and os.path.exists(bbox_tmp):
+                        try:
+                            os.remove(bbox_tmp)
+                        except Exception:
+                            pass
+
+                    if seg_tmp and not seg_final and os.path.exists(seg_tmp):
+                        try:
+                            os.remove(seg_tmp)
+                        except Exception:
+                            pass
 
                     if bbox_tmp and bbox_final and os.path.exists(bbox_tmp):
                         os.makedirs(os.path.dirname(bbox_final), exist_ok=True)
