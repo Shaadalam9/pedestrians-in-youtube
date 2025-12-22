@@ -45,26 +45,26 @@ UPGRADE_LOG_FILE = "upgrade_log.json"
 
 
 class Youtube_Helper:
-    """ A helper class for managing YouTube video downloads, processing, and analytics. 
-    Features: 
-              - Downloads videos via pytube or yt_dlp with resolution preference. 
-              - Handles video compression, trimming, and FPS extraction. 
-              - Applies object detection and tracking using YOLO models. 
-              - Updates and maintains CSV datasets with video metadata. 
+    """ A helper class for managing YouTube video downloads, processing, and analytics.
+    Features:
+              - Downloads videos via pytube or yt_dlp with resolution preference.
+              - Handles video compression, trimming, and FPS extraction.
+              - Applies object detection and tracking using YOLO models.
+              - Updates and maintains CSV datasets with video metadata.
               - Interfaces with World Bank data to supplement mapping files.
 
-    Attributes: 
-        model (str): Path or identifier for the YOLO model to use. 
-        resolution (str): Target resolution for downloaded videos. 
-        video_title (str): Title of the currently processed video. 
+    Attributes:
+        model (str): Path or identifier for the YOLO model to use.
+        resolution (str): Target resolution for downloaded videos.
+        video_title (str): Title of the currently processed video.
         """
 
     def __init__(self, video_title=None):
-        """ Initialises a new instance of the class. 
-        Parameters: 
-        video_title (str, optional): The title of the video. Defaults to None. 
+        """ Initialises a new instance of the class.
+        Parameters:
+        video_title (str, optional): The title of the video. Defaults to None.
         Instance Variables: self.model (str): The model configuration loaded from common.get_configs("model").
-        self.resolution (str): The video resolution. Initialised as None and set later when needed. 
+        self.resolution (str): The video resolution. Initialised as None and set later when needed.
         self.video_title (str): The title of the video.
         """
         self.tracking_model = common.get_configs("tracking_model")
@@ -106,7 +106,8 @@ class Youtube_Helper:
             logger.error(f"Error: Folder '{new_name}' already exists.")
 
     def load_upgrade_log(self):
-        """ Load package upgrade attempt log from file. Returns: dict: Dictionary with package names and last upgrade date. """
+        """ Load package upgrade attempt log from file.
+        Returns: dict: Dictionary with package names and last upgrade date. """
         if not os.path.exists(UPGRADE_LOG_FILE):
             return {}
         try:
@@ -116,21 +117,26 @@ class Youtube_Helper:
             return {}
 
     def save_upgrade_log(self, log_data):
-        """ Save package upgrade log to a JSON file. Parameters: log_data (dict): Dictionary of package upgrade dates. """
+        """ Save package upgrade log to a JSON file.
+        Parameters: log_data (dict): Dictionary of package upgrade dates.
+        """
         with open(UPGRADE_LOG_FILE, "w") as file:
             json.dump(log_data, file)
 
     def was_upgraded_today(self, package_name):
-        """ Check whether the given package was already upgraded today. 
-        Parameters: 
-                package_name (str): Name of the package. 
+        """ Check whether the given package was already upgraded today.
+        Parameters:
+                package_name (str): Name of the package.
         Returns: bool: True if upgraded today, False otherwise. """
         log_data = self.load_upgrade_log()
         today = datetime.date.today().isoformat()
         return log_data.get(package_name) == today
 
     def mark_as_upgraded(self, package_name):
-        """ Mark a package as upgraded by saving today's date in the log. Parameters: package_name (str): Name of the package. """
+        """
+        Mark a package as upgraded by saving today's date in the log.
+        Parameters: package_name (str): Name of the package.
+        """
         log_data = self.load_upgrade_log()
         log_data[package_name] = datetime.date.today().isoformat()
         self.save_upgrade_log(log_data)
@@ -315,7 +321,7 @@ class Youtube_Helper:
 
         logger.info(f"Starting download for '{filename_with_ext}'")
         logger.debug(
-            f"Base URL: {base} | Auth: {'Basic' if username and password else 'None'} | Token: {'Yes' if token else 'No'}"
+            f"Base URL: {base} | Auth: {'Basic' if username and password else 'None'} | Token: {'Yes' if token else 'No'}"  # noqa:E501
         )  # noqa: E501
 
         # ---------- Session ----------
@@ -504,10 +510,11 @@ class Youtube_Helper:
     def download_video_with_resolution(self, vid, resolutions=["720p", "480p", "360p", "144p"], output_path="."):
         """ Downloads a YouTube video in one of the specified resolutions and returns video details.
         This function attempts to download the video using the pytubefix/YouTube method.
-        Parameters: vid (str): The YouTube video ID. 
+        Parameters: vid (str): The YouTube video ID.
         resolutions (list of str, optional): A list of preferred video resolutions.
         output_path (str, optional): The directory where the video will be downloaded.
-        Returns: tuple or None: A tuple (video_file_path, vid, resolution, fps) if successful, or None if methods fail. """
+        Returns: tuple or None: A tuple (video_file_path, vid, resolution, fps) if successful, or None if methods fail.
+        """
         try:
             # Optionally upgrade pytubefix (if configured and it is Monday)
             if self.update_package and datetime.datetime.today().weekday() == 0:
@@ -579,7 +586,7 @@ class Youtube_Helper:
                     'skip_download': True,
                     'quiet': True,
                 }
-                with yt_dlp.YoutubeDL(extract_opts) as ydl:
+                with yt_dlp.YoutubeDL(extract_opts) as ydl:  # type: ignore
                     # pyright: ignore[reportArgumentType]
                     info_dict = ydl.extract_info(youtube_url, download=False)
 
@@ -690,7 +697,7 @@ class Youtube_Helper:
         """Return the resolution label (e.g., '720p', '1080p') for a given video file.
         This method inspects the video file to determine its frame height and then maps
         it to a common resolution label. If the resolution does not match a well-known
-        standard, it falls back to returning <height>p. 
+        standard, it falls back to returning <height>p.
         Args: video_path (str): Path to the video file.
         Returns: str: Resolution label (e.g., "720p", "1080p", "2160p").
         Falls back to "<height>p" if no predefined label exists.
@@ -729,7 +736,7 @@ class Youtube_Helper:
         Parameters: input_path (str): The file path to the original video.
         output_path (str): The destination file path where the trimmed video will be saved.
         start_time (float or str): The start time for the trimmed segment.
-        This can be specified in seconds or in a time format recognised by MoviePy. 
+        This can be specified in seconds or in a time format recognised by MoviePy.
         nd_time (float or str): The end time for the trimmed segment.
         Similar to start_time, it can be in seconds or another supported time format.
         Returns: None The function performs the following steps:
@@ -763,7 +770,7 @@ class Youtube_Helper:
         fps (float): Frames per second for the output video.
         video_path (str): Path to the input video file.
         output_path (str): Path to save the annotated output video.
-        
+
         Raises: IOError: If the input video cannot be opened.
         """
         # Ensure the output directory exists
@@ -828,7 +835,9 @@ class Youtube_Helper:
         out.release()
 
     def detect_gpu(self):
-        """ Detects whether an NVIDIA or Intel GPU is available and returns the appropriate FFmpeg encoder. Returns: str: 'hevc_nvenc' for NVIDIA, 'hevc_qsv' for Intel, or None if no compatible GPU is found. """
+        """ Detects whether an NVIDIA or Intel GPU is available and returns the appropriate FFmpeg encoder.
+        Returns: str: 'hevc_nvenc' for NVIDIA, 'hevc_qsv' for Intel, or None if no compatible GPU is found.
+        """
         try:
             # Check for NVIDIA GPU
             nvidia_check = subprocess.run(["nvidia-smi"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
@@ -846,15 +855,26 @@ class Youtube_Helper:
         return None  # No compatible GPU found
 
     def extract_youtube_id(self, file_path):
-        """ Extracts the YouTube video ID from a given file path. Args: file_path (str): The full path of the video file. Returns: str: The extracted YouTube ID. Raises: ValueError: If no valid YouTube ID is found. """
+        """ Extracts the YouTube video ID from a given file path.
+        Args: file_path (str): The full path of the video file.
+        Returns: str: The extracted YouTube ID.
+        Raises: ValueError: If no valid YouTube ID is found. """
         filename = os.path.basename(file_path)  # Get only the filename
         youtube_id, ext = os.path.splitext(filename)  # Remove the file extension
         if not youtube_id or len(youtube_id) < 5:  # Basic validation
             raise ValueError("Invalid YouTube ID extracted.")
         return youtube_id
 
-    def create_video_from_images(self, image_folder, output_path, video_title, seg_mode=False, bbox_mode=False, frame_rate=30):
-        """ Creates a video file from a sequence of image frames. The output filename will reflect the mode used. Parameters: image_folder (str): Folder containing frame images. output_path (str): Directory where the output video will be saved. video_title (str): Base title for the video. seg_mode (bool): Whether segmentation mode is used. bbox_mode (bool): Whether bounding box mode is used. frame_rate (int or float): Frame rate for the video. """
+    def create_video_from_images(self, image_folder, output_path,
+                                 video_title, seg_mode=False, bbox_mode=False, frame_rate=30):
+        """ Creates a video file from a sequence of image frames. The output filename will reflect the mode used.
+        Parameters: image_folder (str): Folder containing frame images.
+        output_path (str): Directory where the output video will be saved.
+        video_title (str): Base title for the video.
+        seg_mode (bool): Whether segmentation mode is used.
+        bbox_mode (bool): Whether bounding box mode is used.
+        frame_rate (int or float): Frame rate for the video.
+        """
         # Decide on the output filename based on mode
         if bbox_mode:
             output_filename = f"{video_title}_mod_bbox.mp4"
@@ -900,7 +920,10 @@ class Youtube_Helper:
         return output_video_path
 
     def merge_txt_to_csv_dynamically_bbox(self, txt_location, output_csv, frame_count):
-        """ Merges YOLO-format label data from a .txt file into a CSV, frame by frame. Parameters: txt_location (str): Directory containing label .txt files. output_csv (str): Path to the CSV file to update. frame_count (int): Frame number being processed (used for naming). """
+        """ Merges YOLO-format label data from a .txt file into a CSV, frame by frame.
+        Parameters: txt_location (str): Directory containing label .txt files.
+        output_csv (str): Path to the CSV file to update.
+        frame_count (int): Frame number being processed (used for naming). """
         # Define the path for the new text file
         new_txt_file_name = os.path.join(txt_location, f"label_{frame_count}.txt")
 
@@ -928,7 +951,8 @@ class Youtube_Helper:
             df.to_csv(output_csv, index=False, mode='a', header=False)  # If it exists, append without header
 
     def merge_txt_to_csv_dynamically_seg(self, txt_location, output_csv, frame_count):
-        """ Merges YOLO-format segmentation+tracking label data from a .txt file into a CSV, frame by frame. Handles possible formatting issues gracefully. """
+        """ Merges YOLO-format segmentation+tracking label data from a .txt file into a CSV,
+        frame by frame. Handles possible formatting issues gracefully. """
         new_txt_file_name = os.path.join(txt_location, f"label_{frame_count}.txt")
         if not os.path.isfile(new_txt_file_name) or os.stat(new_txt_file_name).st_size == 0:
             return  # No labels for this frame
@@ -962,7 +986,9 @@ class Youtube_Helper:
             df.to_csv(output_csv, index=False, mode='a', header=False)
 
     def delete_folder(self, folder_path):
-        """ Deletes the folder and all its contents recursively. Parameters: folder_path (str): The path of the folder to delete. Returns: bool: True if the folder was successfully deleted, False otherwise. """
+        """ Deletes the folder and all its contents recursively.
+        Parameters: folder_path (str): The path of the folder to delete.
+        Returns: bool: True if the folder was successfully deleted, False otherwise. """
         if os.path.exists(folder_path) and os.path.isdir(folder_path):
             try:
                 shutil.rmtree(folder_path)
@@ -976,7 +1002,9 @@ class Youtube_Helper:
             return False
 
     def delete_youtube_mod_videos(self, folders):
-        """ Deletes files of the form {youtube_id}_mod.mp4 from the given list of folders. Args: folders (list): List of folder paths to scan. """
+        """ Deletes files of the form {youtube_id}_mod.mp4 from the given list of folders.
+        Args: folders (list): List of folder paths to scan.
+        """
         pattern = re.compile(r"^[A-Za-z0-9_-]{11}_mod\.mp4$")
         for folder in folders:
             if not os.path.exists(folder):
@@ -992,7 +1020,11 @@ class Youtube_Helper:
                         logger.info(f"Failed to delete {file_path}: {e}")
 
     def get_iso_alpha_3(self, country_name, existing_iso):
-        """ Converts a country name to ISO 3166-1 alpha-3 format. Parameters: country_name (str): Full country name. existing_iso (str): Existing ISO code as fallback. Returns: str or None: ISO 3166-1 alpha-3 code or fallback value. """
+        """ Converts a country name to ISO 3166-1 alpha-3 format.
+        Parameters: country_name (str): Full country name.
+        existing_iso (str): Existing ISO code as fallback.
+        Returns: str or None: ISO 3166-1 alpha-3 code or fallback value.
+        """
         try:
             return pycountry.countries.lookup(country_name).alpha_3
         except LookupError:
@@ -1001,7 +1033,10 @@ class Youtube_Helper:
             return existing_iso if existing_iso else None
 
     def get_latest_population(self):
-        """ Fetches the latest available population data from World Bank. Returns: pd.DataFrame: Population data with columns ['iso3', 'Year', 'Population']. """
+        """
+        Fetches the latest available population data from World Bank.
+        Returns: pd.DataFrame: Population data with columns ['iso3', 'Year', 'Population'].
+        """
         # Search for the population indicator
         indicator = 'SP.POP.TOTL'  # Total Population (World Bank indicator code)
 
@@ -1013,9 +1048,9 @@ class Youtube_Helper:
 
         # Rename columns appropriately
         population_df = population_df.rename(columns={
-            population_df.columns[0]: 'iso3',
-            population_df.columns[2]: 'Year',
-            population_df.columns[3]: 'Population'
+            population_df.columns[0]: 'iso3',  # type: ignore
+            population_df.columns[2]: 'Year',  # type: ignore
+            population_df.columns[3]: 'Population'  # type: ignore
         })
 
         # Divide population by 1000
@@ -1023,7 +1058,10 @@ class Youtube_Helper:
         return population_df
 
     def update_population_in_csv(self, data):
-        """ Updates the mapping DataFrame with the latest country population data. Parameters: data (pd.DataFrame): The mapping DataFrame to update. """
+        """
+        Updates the mapping DataFrame with the latest country population data.
+        Parameters: data (pd.DataFrame): The mapping DataFrame to update.
+        """
         # Ensure the required columns exist in the CSV
         if "iso3" not in data.columns:
             raise KeyError("The CSV file does not have a 'iso3' column.")
@@ -1071,7 +1109,10 @@ class Youtube_Helper:
             return "Unknown"
 
     def get_latest_gini_values(self):
-        """ Fetch the latest GINI index data from the World Bank. Returns: pd.DataFrame: DataFrame with iso3 and the latest GINI index values. """
+        """
+        Fetch the latest GINI index data from the World Bank.
+        Returns: pd.DataFrame: DataFrame with iso3 and the latest GINI index values.
+        """
         # World Bank indicator for GINI index
         indicator = 'SI.POV.GINI'  # GINI index
 
@@ -1083,9 +1124,9 @@ class Youtube_Helper:
 
         # Rename columns appropriately
         geni_df = geni_df.rename(columns={
-            geni_df.columns[0]: 'iso3',
-            geni_df.columns[2]: 'Year',
-            geni_df.columns[3]: 'gini'
+            geni_df.columns[0]: 'iso3',  # type: ignore
+            geni_df.columns[2]: 'Year',  # type: ignore
+            geni_df.columns[3]: 'gini'  # type: ignore
         })
 
         # Keep only the latest value for each country
@@ -1093,7 +1134,10 @@ class Youtube_Helper:
         return geni_df[['iso3', 'gini']]
 
     def fill_gini_data(self, df):
-        """ Fill the GINI index column in a CSV file using World Bank data. Args: file_path (str): Path to the input CSV file. """
+        """
+        Fill the GINI index column in a CSV file using World Bank data.
+        Args: file_path (str): Path to the input CSV file.
+        """
         try:
             # Ensure the required column exists
             if 'gini' not in df.columns:
@@ -1134,7 +1178,8 @@ class Youtube_Helper:
         with open(yaml_path, 'w') as f:
             yaml.dump(config, f, default_flow_style=False)
 
-    def tracking_mode(self, input_video_path, output_video_path, video_title, video_fps, seg_mode, bbox_mode, flag=0, run_root='runs'):
+    def tracking_mode(self, input_video_path, output_video_path, video_title,
+                      video_fps, seg_mode, bbox_mode, flag=0, run_root='runs'):
         """ Performs object tracking on a video using YOLO models and saves results. (docstring as in your code) """
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -1284,7 +1329,7 @@ class Youtube_Helper:
                             if hasattr(seg_boxes_obj, "id") and seg_boxes_obj.id is not None  # type: ignore
                             else []
                         )
-                        seg_confidences = (
+                        seg_confidences = (  # noqa: F841
                             seg_boxes_obj.conf.cpu().tolist()  # type: ignore
                             if hasattr(seg_boxes_obj, "conf") and seg_boxes_obj.conf is not None  # type: ignore
                             else []
@@ -1338,7 +1383,7 @@ class Youtube_Helper:
                             if hasattr(bbox_boxes_obj, "id") and bbox_boxes_obj.id is not None  # type: ignore
                             else []
                         )
-                        bbox_confidences = (
+                        bbox_confidences = (  # noqa: F841
                             bbox_boxes_obj.conf.cpu().tolist()  # type: ignore
                             if hasattr(bbox_boxes_obj, "conf") and bbox_boxes_obj.conf is not None  # type: ignore
                             else []
@@ -1373,7 +1418,7 @@ class Youtube_Helper:
                 # Write labels directly from model outputs (avoid Ultralytics save_txt I/O)
                 new_txt_file_name_seg = os.path.join(segment_root, "labels", f"label_{frame_count}.txt")
                 try:
-                    seg_cls = seg_boxes_obj.cls.int().cpu().tolist() if hasattr(seg_boxes_obj, "cls") and seg_boxes_obj.cls is not None else []
+                    seg_cls = seg_boxes_obj.cls.int().cpu().tolist() if hasattr(seg_boxes_obj, "cls") and seg_boxes_obj.cls is not None else []  # type: ignore # noqa: E501
                     seg_ids = (
                         seg_boxes_obj.id.int().cpu().tolist()  # type: ignore
                         if hasattr(seg_boxes_obj, "id") and seg_boxes_obj.id is not None  # type: ignore
@@ -1413,7 +1458,7 @@ class Youtube_Helper:
                 # Write labels directly from model outputs (avoid Ultralytics save_txt I/O)
                 new_txt_file_name_bbox = os.path.join(detect_root, "labels", f"label_{frame_count}.txt")
                 try:
-                    bbox_cls = bbox_boxes_obj.cls.int().cpu().tolist() if hasattr(bbox_boxes_obj, "cls") and bbox_boxes_obj.cls is not None else []
+                    bbox_cls = bbox_boxes_obj.cls.int().cpu().tolist() if hasattr(bbox_boxes_obj, "cls") and bbox_boxes_obj.cls is not None else []  # type: ignore # noqa: E501
                     bbox_ids = (
                         bbox_boxes_obj.id.int().cpu().tolist()  # type: ignore
                         if hasattr(bbox_boxes_obj, "id") and bbox_boxes_obj.id is not None  # type: ignore
@@ -1426,10 +1471,10 @@ class Youtube_Helper:
                     )
 
                     # Normalized xywh; fall back to manual normalization if needed
-                    if hasattr(bbox_boxes_obj, "xywhn") and bbox_boxes_obj.xywhn is not None:
-                        xywhn = bbox_boxes_obj.xywhn.cpu().tolist()
+                    if hasattr(bbox_boxes_obj, "xywhn") and bbox_boxes_obj.xywhn is not None:  # type: ignore
+                        xywhn = bbox_boxes_obj.xywhn.cpu().tolist()  # type: ignore
                     else:
-                        xywh = bbox_boxes_obj.xywh.cpu().tolist() if hasattr(bbox_boxes_obj, "xywh") and bbox_boxes_obj.xywh is not None else []
+                        xywh = bbox_boxes_obj.xywh.cpu().tolist() if hasattr(bbox_boxes_obj, "xywh") and bbox_boxes_obj.xywh is not None else []  # type: ignore # noqa: E501
                         xywhn = []
                         for (x, y, w, h) in xywh:
                             xywhn.append([x / frame_width, y / frame_height, w / frame_width, h / frame_height])
@@ -1437,7 +1482,7 @@ class Youtube_Helper:
                     with open(new_txt_file_name_bbox, "w") as f:
                         for cls_i, box_i, tid_i, conf_i in zip(bbox_cls, xywhn, bbox_ids, bbox_confs):
                             x, y, w, h = box_i
-                            f.write(f"{int(cls_i)} {float(x):.6f} {float(y):.6f} {float(w):.6f} {float(h):.6f} {int(tid_i)} {float(conf_i):.6f}\n")
+                            f.write(f"{int(cls_i)} {float(x):.6f} {float(y):.6f} {float(w):.6f} {float(h):.6f} {int(tid_i)} {float(conf_i):.6f}\n")  # noqa: E501
                 except Exception as e:
                     logger.warning(f"[Frame {frame_count}] BBox label write failed: {e}")
                     open(new_txt_file_name_bbox, "a").close()
@@ -1476,7 +1521,8 @@ class Youtube_Helper:
                         if len(track) > 30:
                             track.pop(0)
                         points = np.hstack(track).astype(np.int32).reshape((-1, 1, 2))
-                        cv2.polylines(seg_annotated_frame, [points], isClosed=False, color=(230, 230, 230), thickness=LINE_THICKNESS * 5)
+                        cv2.polylines(seg_annotated_frame, [points], isClosed=False,
+                                      color=(230, 230, 230), thickness=LINE_THICKNESS * 5)
 
                 if bbox_mode and not bbox_failed and bbox_boxes_xywh is not None and bbox_boxes_xywh.size(0) > 0:
                     for box, track_id in zip(bbox_boxes_xywh, bbox_track_ids):
@@ -1486,7 +1532,8 @@ class Youtube_Helper:
                         if len(track) > 30:
                             track.pop(0)
                         points = np.hstack(track).astype(np.int32).reshape((-1, 1, 2))
-                        cv2.polylines(bbox_annotated_frame, [points], isClosed=False, color=(230, 230, 230), thickness=LINE_THICKNESS * 5)
+                        cv2.polylines(bbox_annotated_frame, [points], isClosed=False,
+                                      color=(230, 230, 230), thickness=LINE_THICKNESS * 5)
             except Exception:
                 pass
 
@@ -1502,10 +1549,10 @@ class Youtube_Helper:
             # Save the tracked frame here
             if self.save_tracked_img:
                 if seg_mode:
-                    seg_frame_filename = os.path.join(seg_tracked_frame_output_path, f"frame_tracked_{frame_count}.jpg")
+                    seg_frame_filename = os.path.join(seg_tracked_frame_output_path, f"frame_tracked_{frame_count}.jpg")  # noqa: E501
                     cv2.imwrite(seg_frame_filename, seg_annotated_frame)
                 if bbox_mode:
-                    bbox_frame_filename = os.path.join(bbox_tracked_frame_output_path, f"frame_tracked_{frame_count}.jpg")
+                    bbox_frame_filename = os.path.join(bbox_tracked_frame_output_path, f"frame_tracked_{frame_count}.jpg")  # noqa: E501
                     cv2.imwrite(bbox_frame_filename, bbox_annotated_frame)
 
             # Break the loop if 'q' is pressed

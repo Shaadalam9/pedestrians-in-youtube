@@ -17,7 +17,6 @@ import os
 import threading
 import uuid
 import hashlib
-import math
 import glob  # checks for "do we already have CSVs?" without knowing FPS
 from datetime import datetime
 from helper_script import Youtube_Helper         # download/trim/track utilities
@@ -26,7 +25,6 @@ from custom_logger import CustomLogger           # structured logging
 from logmod import logs                          # log level/color setup
 import ast                                       # safe string->python list parsing
 import common                                    # configs, secrets, email, git utils
-from tqdm import tqdm                            # progress bar for mapping loop
 import time                                      # sleep between passes
 from types import SimpleNamespace                # lightweight config container
 from collections import OrderedDict, defaultdict, deque
@@ -41,6 +39,7 @@ helper = Youtube_Helper()
 # ---------------------------------------------------------------------------
 _worker_local = threading.local()
 
+
 def _get_worker_helper() -> Youtube_Helper:
     """Return a per-thread helper instance (avoids shared mutable state)."""
     h = getattr(_worker_local, "helper", None)
@@ -49,6 +48,7 @@ def _get_worker_helper() -> Youtube_Helper:
         _worker_local.helper = h
     return h
 
+
 def _cfg(key: str, default=None):
     """Backwards-compatible config lookup: returns default if key missing."""
     try:
@@ -56,6 +56,7 @@ def _cfg(key: str, default=None):
         return default if v is None else v
     except Exception:
         return default
+
 
 def _slurm_task_info():
     """Return (global_rank, world_size, local_rank) for a Slurm job step.
@@ -163,7 +164,7 @@ def process_mapping_concurrently(mapping, config, secret, logger) -> int:
 
         video_plan = sharded_plan
         logger.info(
-            f"[Snellius shard {rank}/{world_size}] Assigned {assigned_segments} segments across {len(video_plan)} videos."
+            f"[Snellius shard {rank}/{world_size}] Assigned {assigned_segments} segments across {len(video_plan)} videos."  # noqa: E501
         )
 
     if not video_plan:
@@ -224,7 +225,7 @@ def process_mapping_concurrently(mapping, config, secret, logger) -> int:
                 existing_path = candidate
                 break
 
-        output_path = internal_ssd if getattr(config, "external_ssd", False) else (video_paths[0] if video_paths else ".")
+        output_path = internal_ssd if getattr(config, "external_ssd", False) else (video_paths[0] if video_paths else ".")   # noqa: E501
         os.makedirs(output_path, exist_ok=True)
 
         ftp_download = False
@@ -234,7 +235,7 @@ def process_mapping_concurrently(mapping, config, secret, logger) -> int:
         base_video_path = existing_path
 
         # Refresh from FTP if requested and file already on SSD
-        if existing_path and getattr(config, "external_ssd", False) and existing_path.startswith(internal_ssd) and getattr(config, "ftp_server", None):
+        if existing_path and getattr(config, "external_ssd", False) and existing_path.startswith(internal_ssd) and getattr(config, "ftp_server", None):  # noqa: E501
             try:
                 tmp_dir = os.path.join(internal_ssd, ".ftp_refresh_tmp")
                 os.makedirs(tmp_dir, exist_ok=True)
@@ -304,12 +305,11 @@ def process_mapping_concurrently(mapping, config, secret, logger) -> int:
                 base_video_path, video_title, resolution, fps = yt
                 video_fps = float(fps or 0.0)
 
-
             h.set_video_title(video_title)
         # Ensure we have FPS
         if not video_fps or video_fps <= 0:
             try:
-                video_fps = float(h.get_video_fps(base_video_path))
+                video_fps = float(h.get_video_fps(base_video_path))  # type: ignore
             except Exception:
                 video_fps = 0.0
 
@@ -334,7 +334,7 @@ def process_mapping_concurrently(mapping, config, secret, logger) -> int:
     # ------------------------------------------------------------------
     # Segment processing worker
     # ------------------------------------------------------------------
-    def _process_segment(vid: str, base_video_path: str, output_path: str, video_fps: float, st: int, et: int, tod: str, run_bbox: bool, run_seg: bool) -> int:
+    def _process_segment(vid: str, base_video_path: str, output_path: str, video_fps: float, st: int, et: int, tod: str, run_bbox: bool, run_seg: bool) -> int:  # noqa: E501
         h = _get_worker_helper()
         h.set_video_title(vid)
 
@@ -409,7 +409,6 @@ def process_mapping_concurrently(mapping, config, secret, logger) -> int:
 
         return processed
 
-    
     # ------------------------------------------------------------------
     # Run pipeline with a bounded "video buffer".
     #
@@ -485,7 +484,6 @@ def process_mapping_concurrently(mapping, config, secret, logger) -> int:
         warmup_ready_target = min(len(vids_to_handle), 2 * max_workers)
         warmup_phase = warmup_ready_target > 0
 
-
     try:
         while True:
             # ----------------------------------------------------------
@@ -517,10 +515,10 @@ def process_mapping_concurrently(mapping, config, secret, logger) -> int:
 
                 for (st, et, tod) in video_plan[v]["segments"]:
                     segment_csv = f"{v}_{st}_{int(fps)}.csv"
-                    has_bbox = any(os.path.isfile(os.path.join(folder, "bbox", segment_csv)) for folder in data_folders)
+                    has_bbox = any(os.path.isfile(os.path.join(folder, "bbox", segment_csv)) for folder in data_folders)  # noqa: E501
                     has_seg = any(os.path.isfile(os.path.join(folder, "seg",  segment_csv)) for folder in data_folders)
                     run_bbox = bool(bbox_mode_cfg and not has_bbox)
-                    run_seg  = bool(seg_mode_cfg and not has_seg)
+                    run_seg = bool(seg_mode_cfg and not has_seg)
                     if run_bbox or run_seg:
                         pending[v].append((int(st), int(et), str(tod), run_bbox, run_seg))
 
@@ -528,7 +526,7 @@ def process_mapping_concurrently(mapping, config, secret, logger) -> int:
                 if not pending.get(v):
                     _finalize_video(v)
 
-                        # Submit additional downloads if buffer has room
+            # Submit additional downloads if buffer has room
             _maybe_submit_downloads()
 
             # Snellius: ensure we have a backlog of prepared videos before consuming GPU slots.
@@ -618,6 +616,7 @@ def process_mapping_concurrently(mapping, config, secret, logger) -> int:
         download_pool.shutdown(wait=True, cancel_futures=False)
         segment_pool.shutdown(wait=True, cancel_futures=False)
 
+
 # Guard to avoid duplicate crash emails (kept for compatibility with some runners)
 email_already_sent = False
 
@@ -652,11 +651,10 @@ if __name__ == "__main__":
             snellius_mode=_cfg("snellius_mode", False),
             snellius_shard_mode=_cfg("snellius_shard_mode", True),
 
-max_workers=_cfg("max_workers", 1),
-download_workers=_cfg("download_workers", 2),
-max_active_segments_per_video=_cfg("max_active_segments_per_video", 1),
-runs_root=_cfg("runs_root", "runs"),
-
+            max_workers=_cfg("max_workers", 1),
+            download_workers=_cfg("download_workers", 2),
+            max_active_segments_per_video=_cfg("max_active_segments_per_video", 1),
+            runs_root=_cfg("runs_root", "runs"),
         )
 
         # ---------------------------------------------------------------------
@@ -735,10 +733,10 @@ runs_root=_cfg("runs_root", "runs"),
             # =========================================================================
             counter_processed = process_mapping_concurrently(mapping, config, secret, logger)
 
-# -----------------------------------------------------------------
+            # -----------------------------------------------------------------
             # Email success summary (only if anything was processed)
             # -----------------------------------------------------------------
-            if config.email_send and counter_processed and (not getattr(config, "snellius_mode", False) or getattr(config, "snellius_rank", 0) == 0):
+            if config.email_send and counter_processed and (not getattr(config, "snellius_mode", False) or getattr(config, "snellius_rank", 0) == 0):  # noqa: E501
                 time_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 common.send_email(
                     subject=f"✅ Processing job finished on machine {config.machine_name}",
@@ -766,7 +764,7 @@ runs_root=_cfg("runs_root", "runs"),
     # =============================================================================
     except Exception as e:
         try:
-            if config.email_send and (not getattr(config, "snellius_mode", False) or getattr(config, "snellius_rank", 0) == 0):
+            if config.email_send and (not getattr(config, "snellius_mode", False) or getattr(config, "snellius_rank", 0) == 0):  # noqa: E501
                 time_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 # kept from original (fun image): fine to send as plain link or ignore
                 image_url = "https://i.pinimg.com/474x/20/82/0f/20820fd73c946d3e1d2e6efe23e1b2f3.jpg"
