@@ -210,3 +210,89 @@ class Patches:
 
         except Exception as e:
             logger.warning(f"Failed to patch SciPy cdist accept-1d: {e!r}")
+
+def patch_scipy_cho_factor_jitter(self, logger, eps_list=None):
+    """
+    Fix Ultralytics Kalman filter numerical crash:
+      numpy.linalg.LinAlgError: '<k>-th leading minor ... is not positive definite'
+
+    Root cause:
+      Ultralytics' Kalman filter uses scipy.linalg.cho_factor() on a covariance
+      matrix that can occasionally become non positive definite due to numerical
+      error or extreme measurements.
+
+    Patch:
+      Monkey-patch scipy.linalg.cho_factor (and the internal implementation module)
+      to, on LinAlgError, symmetrize the matrix and add a small diagonal jitter
+      (eps * I), retrying a few eps values.
+
+    This patch is narrowly scoped (only affects cho_factor) and idempotent.
+
+    Args:
+      logger: logger instance
+      eps_list: optional iterable of eps values to try (default progressive)
+    """
+    try:
+        import sys
+        import numpy as np
+        import scipy.linalg as sla
+
+        if getattr(sla.cho_factor, "__patched_jitter__", False):
+            return
+
+        orig_cho_factor = sla.cho_factor
+        if eps_list is None:
+            eps_list = (1e-9, 1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2)
+
+        def cho_factor_safe(a, lower=False, overwrite_a=False, check_finite=True):
+            try:
+                return orig_cho_factor(a, lower=lower, overwrite_a=overwrite_a, check_finite=check_finite)
+            except np.linalg.LinAlgError:
+                A = np.asarray(a)
+                # Only attempt jitter for square 2D matrices
+                if A.ndim != 2 or A.shape[0] != A.shape[1]:
+                    raise
+                # Symmetrize to reduce numerical asymmetry
+                A2 = (A + A.T) * 0.5
+                n = A2.shape[0]
+                I = np.eye(n, dtype=A2.dtype)
+                last_err = None
+                for eps in eps_list:
+                    try:
+                        return orig_cho_factor(A2 + (eps * I), lower=lower, overwrite_a=False, check_finite=check_finite)
+                    except np.linalg.LinAlgError as e:
+                        last_err = e
+                        continue
+                # Give up with original error context
+                raise (last_err if last_err is not None else np.linalg.LinAlgError('cho_factor failed after jitter retries'))
+
+        cho_factor_safe.__patched_jitter__ = True  # type: ignore
+
+        # Patch canonical entrypoint
+        sla.cho_factor = cho_factor_safe  # type: ignore
+
+        # Patch internal module reference (where traceback points)
+        try:
+            import scipy.linalg._decomp_cholesky as _dc  # type: ignore
+            _dc.cho_factor = cho_factor_safe  # type: ignore
+        except Exception:
+            pass
+
+        # Patch any module-level aliases (defensive)
+        for m in list(sys.modules.values()):
+            if m is None:
+                continue
+            try:
+                d = vars(m)
+            except Exception:
+                continue
+            for name, val in list(d.items()):
+                if val is orig_cho_factor:
+                    try:
+                        setattr(m, name, cho_factor_safe)
+                    except Exception:
+                        pass
+
+        logger.info("Patched SciPy cho_factor with diagonal jitter to avoid Kalman PD LinAlgError.")
+    except Exception as e:
+        logger.warning(f"Failed to patch SciPy cho_factor jitter: {e!r}")

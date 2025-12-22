@@ -1,37 +1,59 @@
 """
 Thread-safe tracking runner for bbox and segmentation modes.
 
-Adds optional annotated video output WITH motion trails in the same style/logic
-as the user's known-good reference implementation:
-  - Track history is maintained per raw track_id (no remap for trails).
-  - For each frame, trails are drawn ONLY for tracks present in that frame.
-  - Style: fixed grey polyline (default color=(230,230,230)), thickness configurable.
+Key design goal (bbox mode):
+- Stable tracker IDs *within a clip/segment*.
+- Avoid per-frame tracker re-initialization (which causes IDs to restart 1..N every frame)
+  by preferring Ultralytics streaming mode on a video path.
+
+This version:
+- Applies the SciPy cdist patch *before* importing Ultralytics.
+- Uses YOLO.track(source=<video>, stream=True, persist=True, tracker=...) for bbox-only runs.
+- Writes bbox CSV and (optional) annotated video.
+- Falls back to a simple OpenCV per-frame DETECTION-only loop if streaming tracking crashes,
+  to avoid missing frames (IDs will be -1 in fallback, because tracking is unavailable).
 """
+
+from __future__ import annotations
 
 import os
 import csv
+import math
+import time
+import shutil
+import tempfile
 import threading
-from typing import Optional, Any
+import subprocess
 from collections import defaultdict
+from typing import Optional, Any, Iterable
+
+import cv2
+import numpy as np
+import torch
+from tqdm import tqdm
 
 import common
-import tempfile
-import shutil
-import subprocess
-import torch
-import cv2
-import time
-import math
-import numpy as np
-from tqdm import tqdm
-from ultralytics import YOLO
 from custom_logger import CustomLogger
 from config_utils import ConfigUtils
+from patches import Patches
+
+# -----------------------------------------------------------------------------
+# Early patches (import-order sensitive)
+# -----------------------------------------------------------------------------
+logger = CustomLogger(__name__)
+try:
+    _patches = Patches()
+    _patches.patch_ultralytics_botsort_numpy_cpu_bug(logger)
+    _patches.patch_scipy_cdist_accept_1d(logger)
+except Exception as _e:
+    # Must never be fatal
+    logger.warning(f"Patches could not be applied (continuing): {_e!r}")
+
+from ultralytics import YOLO  # noqa: E402  (after patches)
 
 
 _TLS = threading.local()
 config_utils = ConfigUtils()
-logger = CustomLogger(__name__)
 
 
 class _AnnotatedVideoWriter:
@@ -44,8 +66,8 @@ class _AnnotatedVideoWriter:
         self.job_label = job_label or "annot"
         self._w = None
         self._ff = None
-        self._size = None  # (w, h)
-        self._mode = None  # "opencv" | "ffmpeg" | None
+        self._size: Optional[tuple[int, int]] = None  # (w, h)
+        self._mode: Optional[str] = None  # "opencv" | "ffmpeg"
 
     def _try_open_opencv(self, w: int, h: int) -> bool:
         candidates = ["mp4v", "avc1", "H264", "XVID", "MJPG"]
@@ -62,7 +84,7 @@ class _AnnotatedVideoWriter:
                     )
                     return True
             except Exception:
-                pass
+                continue
         return False
 
     def _try_open_ffmpeg(self, w: int, h: int) -> bool:
@@ -111,11 +133,9 @@ class _AnnotatedVideoWriter:
                     except Exception:
                         pass
                     continue
-
                 time.sleep(0.05)
                 if p.poll() is not None:
                     continue
-
                 self._ff = p
                 self._mode = "ffmpeg"
                 self.logger.info(
@@ -124,7 +144,6 @@ class _AnnotatedVideoWriter:
                 return True
             except Exception:
                 continue
-
         return False
 
     def _ensure_open(self, frame_bgr: np.ndarray) -> None:
@@ -138,7 +157,6 @@ class _AnnotatedVideoWriter:
             return
         if self._try_open_ffmpeg(w, h):
             return
-
         raise RuntimeError(f"[{self.job_label}] Unable to open annotated video writer for {self.out_path}")
 
     def write(self, frame_bgr: np.ndarray) -> None:
@@ -160,10 +178,7 @@ class _AnnotatedVideoWriter:
             return
 
         if self._mode == "ffmpeg" and self._ff is not None and self._ff.stdin is not None:
-            try:
-                self._ff.stdin.write(frame_bgr.tobytes())
-            except BrokenPipeError:
-                raise RuntimeError(f"[{self.job_label}] ffmpeg pipe broke while writing {self.out_path}")
+            self._ff.stdin.write(frame_bgr.tobytes())
             return
 
     def close(self) -> None:
@@ -194,6 +209,19 @@ class _AnnotatedVideoWriter:
 
 
 class TrackingRunner:
+    """
+    Thread-safe tracker runner.
+
+    Important behavior:
+    - Models are cached per thread (`_TLS`) for performance.
+    - Stable IDs within a segment are obtained via streaming mode on the segment video file.
+    """
+
+    # Global ID allocator (optional)
+    _id_lock = threading.Lock()
+    _bbox_next_global = 1
+    _seg_next_global = 1
+
     def __init__(self) -> None:
         self.snellius_mode = bool(config_utils._safe_get_config("snellius_mode", False))
         self.segment_model = common.get_configs("segment_model")
@@ -211,24 +239,18 @@ class TrackingRunner:
         except Exception:
             self.confidence = 0.0
 
-    def _reset_ultralytics_tracker(self, model) -> None:
-        try:
-            if model is None:
-                return
-            pred = getattr(model, "predictor", None)
-            try:
-                ds = getattr(pred, "dataset", None)
-                cap = getattr(ds, "cap", None)
-                if cap is not None:
-                    cap.release()
-            except Exception:
-                pass
-            try:
-                model.predictor = None
-            except Exception:
-                pass
-        except Exception:
-            pass
+    @classmethod
+    def _alloc_global_ids(cls, n: int, kind: str) -> list[int]:
+        if n <= 0:
+            return []
+        with cls._id_lock:
+            if kind == "seg":
+                start = cls._seg_next_global
+                cls._seg_next_global += n
+            else:
+                start = cls._bbox_next_global
+                cls._bbox_next_global += n
+        return list(range(start, start + n))
 
     def get_thread_models(self, bbox_mode: bool, seg_mode: bool) -> tuple[Optional[YOLO], Optional[YOLO]]:
         if bbox_mode:
@@ -246,6 +268,7 @@ class TrackingRunner:
         return _TLS.bbox_model, _TLS.seg_model
 
     def make_tracker_config(self, tracker_path: str, video_fps: int) -> str:
+        """Adjust track_buffer dynamically for bbox_custom_tracker.yaml / seg_custom_tracker.yaml."""
         if not (isinstance(tracker_path, str) and tracker_path.endswith(".yaml") and os.path.isfile(tracker_path)):
             return tracker_path
 
@@ -264,14 +287,23 @@ class TrackingRunner:
         except Exception:
             return tracker_path
 
+        # Convert seconds -> frames
         cfg["track_buffer"] = float(self.track_buffer_sec) * float(video_fps)
 
         tmp_dir = tempfile.mkdtemp(prefix="tracker_cfg_")
         tmp_path = os.path.join(tmp_dir, base)
         with open(tmp_path, "w", encoding="utf-8") as f:
             yaml.safe_dump(cfg, f, sort_keys=False)
-
         return tmp_path
+
+    @staticmethod
+    def _iter_results(it: Iterable[Any]) -> Iterable[Any]:
+        """Ultralytics sometimes yields [Results]; normalize to Results."""
+        for rr in it:
+            if isinstance(rr, (list, tuple)):
+                yield (rr[0] if rr else None)
+            else:
+                yield rr
 
     def tracking_mode_threadsafe(
         self,
@@ -291,12 +323,17 @@ class TrackingRunner:
         postfix_every_n: int = 30,
         remap_track_ids_per_segment: bool = False,
     ) -> None:
+        # Validate
         if bbox_mode and bbox_csv_out is None:
             raise ValueError("bbox_mode=True requires bbox_csv_out")
         if seg_mode and seg_csv_out is None:
             raise ValueError("seg_mode=True requires seg_csv_out")
 
-        flush_every_n_frames = int(config_utils._safe_get_config("flush_every_n_frames", flush_every_n_frames))  # type: ignore # noqa: E501
+        # This runner focuses on bbox-only stability. seg_mode is left supported but not rewritten here.
+        if seg_mode:
+            logger.warning(f"[{job_label}] seg_mode=True requested; this runner prioritizes bbox-only stability.")
+
+        flush_every_n_frames = int(config_utils._safe_get_config("flush_every_n_frames", flush_every_n_frames))  # type: ignore
         progress_log_every_sec = float(config_utils._safe_get_config("progress_log_every_sec", 5.0))  # type: ignore
 
         if bbox_model is None or (seg_mode and seg_model is None):
@@ -313,48 +350,40 @@ class TrackingRunner:
 
         device: Any = 0 if torch.cuda.is_available() else "cpu"
 
-        bbox_tracker_eff = self.make_tracker_config(self.bbox_tracker, video_fps) if bbox_mode else self.bbox_tracker
-        seg_tracker_eff = self.make_tracker_config(self.seg_tracker, video_fps) if seg_mode else self.seg_tracker
+        bbox_tracker_eff = self.make_tracker_config(self.bbox_tracker, int(video_fps)) if bbox_mode else self.bbox_tracker
+        seg_tracker_eff = self.make_tracker_config(self.seg_tracker, int(video_fps)) if seg_mode else self.seg_tracker
 
         bbox_header = ["yolo-id", "x-center", "y-center", "width", "height", "unique-id", "confidence", "frame-count"]
         seg_header = ["yolo-id", "mask-polygon", "unique-id", "confidence", "frame-count"]
 
-        bbox_buf: list[list] = []
-        seg_buf: list[list] = []
+        bbox_buf: list[list[Any]] = []
+        seg_buf: list[list[Any]] = []
         frame_count = 0
 
-        bbox_id_map: dict[int, int] = {}
-        seg_id_map: dict[int, int] = {}
-        bbox_next = [1]
-        seg_next = [1]
+        # ID remap (optional)
+        bbox_local_map: dict[int, int] = {}
+        bbox_local_next = 1
 
-        # --- Trail settings to match your old behavior ---
-        # Fixed length history in frames (default 30 as in your code)
-        trail_len = int(config_utils._safe_get_config("trail_len", 30))  # type: ignore
-        trail_len = max(2, trail_len)
-
-        # Fixed grey and thick line (default matches your (230,230,230) and LINE_THICKNESS*5 feel)
-        trail_color = tuple(config_utils._safe_get_config("trail_color_bgr", (230, 230, 230)))  # type: ignore
-        trail_thickness = int(config_utils._safe_get_config("trail_thickness", 10))  # type: ignore
-
-        # Separate histories for seg and bbox, keyed by RAW track_id (as in your code)
-        seg_track_history = defaultdict(list)   # track_id -> [(x,y), ...]
-        bbox_track_history = defaultdict(list)  # track_id -> [(x,y), ...]
-
-        def _map_id(raw_id: int, id_map: dict[int, int], next_id_holder: list[int]) -> int:
+        def map_id(raw_id: int) -> int:
+            nonlocal bbox_local_next
             if raw_id is None or raw_id < 0:
                 return -1
-            if raw_id in id_map:
-                return id_map[raw_id]
-            nid = next_id_holder[0]
-            id_map[raw_id] = nid
-            next_id_holder[0] += 1
-            return nid
+            if not remap_track_ids_per_segment:
+                return int(raw_id)
+            if raw_id not in bbox_local_map:
+                bbox_local_map[raw_id] = bbox_local_next
+                bbox_local_next += 1
+            return bbox_local_map[raw_id]
 
-        def _is_linalg_error(e: BaseException) -> bool:
-            return isinstance(e, np.linalg.LinAlgError) or (e.__class__.__name__ == "LinAlgError")
+        # Trails (optional)
+        draw_trails = bool(config_utils._safe_get_config("annotated_video_draw_trails", True))
+        trail_len = int(config_utils._safe_get_config("trail_len", 30) or 30)
+        trail_len = max(2, trail_len)
+        trail_color = tuple(config_utils._safe_get_config("trail_color_bgr", (230, 230, 230)) or (230, 230, 230))
+        trail_thickness = int(config_utils._safe_get_config("trail_thickness", 10) or 10)
+        trail_hist: dict[int, list[tuple[float, float]]] = defaultdict(list)
 
-        # progress bar total
+        # Progress bar total
         total_frames: Optional[int] = None
         if show_frame_pbar:
             try:
@@ -384,10 +413,9 @@ class TrackingRunner:
 
         annot_writer: Optional[_AnnotatedVideoWriter] = None
         if annotated_video_out:
-            os.makedirs(os.path.dirname(annotated_video_out) or ".", exist_ok=True)
             annot_writer = _AnnotatedVideoWriter(annotated_video_out, float(video_fps), logger, job_label=job_label)
 
-        def _flush_buffers() -> None:
+        def flush_buffers() -> None:
             nonlocal bbox_buf, seg_buf
             if bbox_w and bbox_buf:
                 bbox_w.writerows(bbox_buf)
@@ -400,309 +428,38 @@ class TrackingRunner:
                 if seg_f:
                     seg_f.flush()
 
-        def _log_progress_periodic(last_log_t: float) -> float:
+        def log_progress_periodic(last_t: float) -> float:
             now = time.time()
-            if progress_log_every_sec > 0 and (now - last_log_t) >= progress_log_every_sec:
+            if progress_log_every_sec > 0 and (now - last_t) >= progress_log_every_sec:
                 logger.info(f"[{job_label}] progress: processed_frames={frame_count}")
                 return now
-            return last_log_t
+            return last_t
 
-        def _draw_trails_like_reference(
-            annotated_frame: np.ndarray,
-            boxes_xywh_px: Optional[np.ndarray],
-            track_ids: list[int],
-            history: dict,
-        ) -> None:
-            """Reproduces your old trail code: update + draw only for tracks present in this frame."""
-            if annotated_frame is None or boxes_xywh_px is None:
+        def draw_trails_on(img: np.ndarray, boxes_xywh_px: np.ndarray, ids_out: list[int]) -> None:
+            if not draw_trails:
                 return
-            if boxes_xywh_px.size == 0 or not track_ids:
+            if img is None or boxes_xywh_px is None or boxes_xywh_px.size == 0:
                 return
-
-            # Ensure shape (N,4)
-            if len(boxes_xywh_px.shape) != 2 or boxes_xywh_px.shape[1] < 2:
+            if len(ids_out) == 0:
                 return
-
-            # Iterate per detection in THIS frame only
-            for box, tid in zip(boxes_xywh_px, track_ids):
+            if boxes_xywh_px.ndim != 2 or boxes_xywh_px.shape[1] < 2:
+                return
+            for box, tid in zip(boxes_xywh_px, ids_out):
+                if tid is None or tid < 0:
+                    continue
+                x = float(box[0]); y = float(box[1])
+                hist = trail_hist[tid]
+                hist.append((x, y))
+                if len(hist) > trail_len:
+                    del hist[0:len(hist) - trail_len]
                 try:
-                    x = float(box[0])  # center x in pixels
-                    y = float(box[1])  # center y in pixels
-                    track = history[tid]
-                    track.append((x, y))
-                    if len(track) > trail_len:
-                        track.pop(0)
-
-                    # Same approach as your code
-                    points = np.hstack(track).astype(np.int32).reshape((-1, 1, 2))
-                    cv2.polylines(
-                        annotated_frame,
-                        [points],
-                        isClosed=False,
-                        color=trail_color,           # (230,230,230)
-                        thickness=trail_thickness,   # e.g., LINE_THICKNESS*5
-                        lineType=cv2.LINE_AA,
-                    )
+                    pts = np.array(hist, dtype=np.int32).reshape((-1, 1, 2))
+                    cv2.polylines(img, [pts], False, trail_color, trail_thickness, lineType=cv2.LINE_AA)
                 except Exception:
-                    pass
+                    continue
 
-        def _annotate_write_frame_with_trails(
-            r: Any,
-            mode: str,
-            fallback_frame: Optional[np.ndarray] = None,
-        ) -> None:
-            """Write annotated MP4 frame, adding trails in the same style as the reference."""
-            if annot_writer is None:
-                return
-
-            # base annotated image
-            img = None
-            if r is not None:
-                try:
-                    img = r.plot()
-                except Exception:
-                    img = None
-            if img is None and fallback_frame is not None:
-                try:
-                    img = fallback_frame.copy()
-                except Exception:
-                    img = None
-            if img is None:
-                return
-
-            # Extract current-frame xywh (pixel) + raw track ids
-            try:
-                boxes = getattr(r, "boxes", None) if r is not None else None
-                if boxes is not None and getattr(boxes, "xywh", None) is not None and getattr(boxes, "id", None) is not None:  # noqa: E501
-                    xywh_px = boxes.xywh.detach().cpu().numpy()  # pixel xywh
-                    raw_ids = boxes.id.int().detach().cpu().tolist()
-                else:
-                    xywh_px = None
-                    raw_ids = []
-            except Exception:
-                xywh_px = None
-                raw_ids = []
-
-            # Draw trails only for tracks detected in this frame, like your code
-            if mode == "seg":
-                _draw_trails_like_reference(img, xywh_px, raw_ids, seg_track_history)
-            else:
-                _draw_trails_like_reference(img, xywh_px, raw_ids, bbox_track_history)
-
-            try:
-                annot_writer.write(img)
-            except Exception as e:
-                logger.warning(f"[{job_label}] annotated write failed at frame={frame_count}: {e}")
-
-        def _opencv_loop_from_current_frame() -> None:
-            nonlocal frame_count, bbox_buf, seg_buf
-            last_log_t = time.time()
-            # Keep Ultralytics tracker instances alive across frames.
-            # Passing tracker YAML on every frame can re-initialize the tracker and scramble IDs.
-            bbox_tracker_passed = False
-            seg_tracker_passed = False
-
-            cap = cv2.VideoCapture(input_video_path)
-            if not cap.isOpened():
-                raise RuntimeError(f"Failed to open video: {input_video_path}")
-
-            if frame_count > 0:
-                try:
-                    cap.set(cv2.CAP_PROP_POS_FRAMES, float(frame_count))
-                except Exception:
-                    pass
-
-            try:
-                while True:
-                    ok, frame = cap.read()
-                    if not ok:
-                        break
-
-                    frame_count += 1
-                    # Workaround for Ultralytics per-frame track path on some stacks:
-                    # it may do an in-place divide on uint8 frames, which triggers:
-                    # "Cannot cast ufunc 'divide' output ... to dtype('uint8')"
-                    # Use float32 for model input; keep original `frame` (uint8) for annotation fallback.
-                    frame_yolo = frame
-                    if isinstance(frame, np.ndarray) and frame.dtype == np.uint8:
-                        frame_yolo = frame.astype(np.float32)
-
-                    persist_flag = True  # noqa
-
-                    # Prefer seg annotated output if available; otherwise bbox.
-                    annot_r = None
-                    annot_mode = "bbox"
-
-                    # --- SEG ---
-                    if seg_mode:
-                        seg_results = None
-                        try:
-                            seg_kwargs = dict(
-                                persist=True,
-                                conf=self.confidence,
-                                verbose=False,
-                                device=device,
-                                save=False,
-                                save_txt=False,
-                                show=False,
-                            )
-                            if not seg_tracker_passed:
-                                seg_kwargs["tracker"] = seg_tracker_eff  # type: ignore
-                            seg_results = seg_model.track(frame_yolo, **seg_kwargs)  # type: ignore
-                            seg_tracker_passed = True
-                        except Exception as e:
-                            msg = "LinAlgError" if _is_linalg_error(e) else "error"
-                            logger.warning(f"[{job_label}][Frame {frame_count}] SEG {msg}; reset+retry. err={e}")
-                            self._reset_ultralytics_tracker(seg_model)  # type: ignore
-                            try:
-                                seg_tracker_passed = False
-                                seg_results = seg_model.track(  # type: ignore
-                                    frame_yolo,
-                                    tracker=seg_tracker_eff,
-                                    persist=True,
-                                    conf=self.confidence,
-                                    verbose=False,
-                                    device=device,
-                                    save=False,
-                                    save_txt=False,
-                                    show=False,
-                                )
-                                seg_tracker_passed = True
-                            except Exception as e2:
-                                logger.warning(f"[{job_label}][Frame {frame_count}] SEG retry failed; skipping seg parse. err={e2}")  # noqa: E501
-                                seg_results = None
-
-                        if seg_results is not None:
-                            r = seg_results[0]
-                            annot_r = r
-                            annot_mode = "seg"
-
-                            boxes = getattr(r, "boxes", None)
-                            masks = getattr(r, "masks", None)
-
-                            if boxes is not None and getattr(boxes, "xywhn", None) is not None and boxes.xywhn.size(0) > 0:  # noqa: E501
-                                n = int(boxes.xywhn.size(0))
-                                cls_list = boxes.cls.int().cpu().tolist()
-                                raw_id_list = (
-                                    boxes.id.int().cpu().tolist()
-                                    if getattr(boxes, "id", None) is not None
-                                    else [-1] * n
-                                )
-                                conf_list = (
-                                    boxes.conf.cpu().tolist()
-                                    if getattr(boxes, "conf", None) is not None
-                                    else [math.nan] * n
-                                )
-
-                                if masks is not None and getattr(masks, "xyn", None) is not None:
-                                    polys = masks.xyn
-                                    m = min(len(polys), n)
-                                    for i in range(m):
-                                        poly = polys[i]
-                                        flat = []
-                                        for x, y in poly:
-                                            flat.append(str(float(x)))
-                                            flat.append(str(float(y)))
-
-                                        raw_tid = int(raw_id_list[i]) if i < len(raw_id_list) else -1
-                                        tid = _map_id(raw_tid, seg_id_map, seg_next) if remap_track_ids_per_segment else raw_tid  # noqa: E501
-                                        seg_buf.append([int(cls_list[i]), " ".join(flat), int(tid), float(conf_list[i]), frame_count])  # noqa: E501
-
-                    # --- BBOX ---
-                    if bbox_mode:
-                        bbox_results = None
-                        try:
-                            bbox_kwargs = dict(
-                                persist=True,
-                                conf=self.confidence,
-                                verbose=False,
-                                device=device,
-                                save=False,
-                                save_txt=False,
-                                show=False,
-                            )
-                            if not bbox_tracker_passed:
-                                bbox_kwargs["tracker"] = bbox_tracker_eff  # type: ignore
-                            bbox_results = bbox_model.track(frame_yolo, **bbox_kwargs)  # type: ignore
-
-                            bbox_tracker_passed = True
-                        except Exception as e:
-                            msg = "LinAlgError" if _is_linalg_error(e) else "error"
-                            logger.warning(f"[{job_label}][Frame {frame_count}] BBOX {msg}; reset+retry. err={e}")
-                            self._reset_ultralytics_tracker(bbox_model)  # type: ignore
-                            try:
-                                bbox_tracker_passed = False
-                                bbox_results = bbox_model.track(  # type: ignore
-                                    frame_yolo,
-                                    tracker=bbox_tracker_eff,
-                                    persist=True,
-                                    conf=self.confidence,
-                                    verbose=False,
-                                    device=device,
-                                    save=False,
-                                    save_txt=False,
-                                    show=False,
-                                )
-                                bbox_tracker_passed = True
-                            except Exception as e2:
-                                logger.warning(f"[{job_label}][Frame {frame_count}] BBOX retry failed; skipping bbox parse. err={e2}")  # noqa: E501
-                                bbox_results = None
-
-                        if bbox_results is not None:
-                            r = bbox_results[0]
-                            if annot_r is None:
-                                annot_r = r
-                                annot_mode = "bbox"
-
-                            boxes = getattr(r, "boxes", None)
-                            if boxes is not None and getattr(boxes, "xywhn", None) is not None and boxes.xywhn.size(0) > 0:  # noqa: E501
-                                xywhn = boxes.xywhn.cpu().tolist()
-                                cls_list = boxes.cls.int().cpu().tolist()
-                                raw_id_list = (
-                                    boxes.id.int().cpu().tolist()
-                                    if getattr(boxes, "id", None) is not None
-                                    else [-1] * len(xywhn)
-                                )
-                                conf_list = (
-                                    boxes.conf.cpu().tolist()
-                                    if getattr(boxes, "conf", None) is not None
-                                    else [math.nan] * len(xywhn)
-                                )
-
-                                for (x, y, w, h), c, raw_tid, confv in zip(xywhn, cls_list, raw_id_list, conf_list):
-                                    raw_tid = int(raw_tid) if raw_tid is not None else -1
-                                    tid = _map_id(raw_tid, bbox_id_map, bbox_next) if remap_track_ids_per_segment else raw_tid  # noqa: E501
-                                    bbox_buf.append([int(c), float(x), float(y), float(w), float(h), int(tid), float(confv), frame_count])  # noqa: E501
-
-                    # Annotated MP4: draw trails like reference and write
-                    if annot_r is not None:
-                        _annotate_write_frame_with_trails(annot_r, mode=annot_mode, fallback_frame=frame)
-                    else:
-                        # No detections; write original frame if annotation requested
-                        if annot_writer is not None:
-                            annot_writer.write(frame)
-
-                    if frame_count % flush_every_n_frames == 0:
-                        _flush_buffers()
-
-                    if pbar is not None:
-                        pbar.update(1)
-                        if postfix_every_n and (frame_count % postfix_every_n == 0):
-                            pbar.set_postfix({
-                                "f": frame_count,
-                                "bbox_buf": (0 if not bbox_mode else len(bbox_buf)),
-                                "seg_buf": (0 if not seg_mode else len(seg_buf)),
-                            })
-
-                    last_log_t = _log_progress_periodic(last_log_t)
-
-                _flush_buffers()
-
-            finally:
-                cap.release()
-
+        # Open CSV outputs
         try:
-            # Open CSV outputs
             if bbox_mode and bbox_csv_out:
                 os.makedirs(os.path.dirname(bbox_csv_out) or ".", exist_ok=True)
                 bbox_new = not os.path.exists(bbox_csv_out)
@@ -719,186 +476,172 @@ class TrackingRunner:
                 if seg_new:
                     seg_w.writerow(seg_header)
 
-            try:
-                # Streaming mode (single-mode only) gives the most stable tracker lifecycle/IDs.
-                # Use it whenever exactly one mode is enabled; otherwise use the OpenCV per-frame loop.
-                use_streaming = bool(bbox_mode) ^ bool(seg_mode)
-                if use_streaming:
-                    if bbox_mode and seg_mode:
-                        logger.info(f"[{job_label}] bbox+seg enabled -> OpenCV per-frame loop.")
-                        _opencv_loop_from_current_frame()
-                        return
+            last_log_t = time.time()
 
-                    last_log_t = time.time()
+            # -----------------------------------------------------------------
+            # Preferred: bbox-only streaming tracking (stable IDs)
+            # -----------------------------------------------------------------
+            if bbox_mode and not seg_mode:
+                assert bbox_model is not None
 
-                    def _iter_results(it):
-                        for rr in it:
-                            if isinstance(rr, (list, tuple)):
-                                yield (rr[0] if rr else None)
-                            else:
-                                yield rr
+                try:
+                    bbox_iter = bbox_model.track(  # type: ignore
+                        source=input_video_path,
+                        stream=True,
+                        persist=True,
+                        tracker=bbox_tracker_eff,
+                        conf=self.confidence,
+                        verbose=False,
+                        device=device,
+                        save=False,
+                        save_txt=False,
+                        show=False,
+                    )
+
+                    for r in self._iter_results(bbox_iter):
+                        if r is None:
+                            continue
+                        frame_count += 1
+
+                        boxes = getattr(r, "boxes", None)
+                        if boxes is not None and getattr(boxes, "xywhn", None) is not None and boxes.xywhn.size(0) > 0:
+                            xywhn = boxes.xywhn.detach().cpu().tolist()
+                            cls_list = boxes.cls.int().detach().cpu().tolist()
+                            raw_id_list = (
+                                boxes.id.int().detach().cpu().tolist()
+                                if getattr(boxes, "id", None) is not None
+                                else [-1] * len(xywhn)
+                            )
+                            conf_list = (
+                                boxes.conf.detach().cpu().tolist()
+                                if getattr(boxes, "conf", None) is not None
+                                else [math.nan] * len(xywhn)
+                            )
+
+                            # Map IDs
+                            out_ids = [map_id(int(x)) for x in raw_id_list]
+
+                            for (x, y, w, h), c, tid, confv in zip(xywhn, cls_list, out_ids, conf_list):
+                                bbox_buf.append([int(c), float(x), float(y), float(w), float(h), int(tid), float(confv), frame_count])
+
+                            # Annotated frame
+                            if annot_writer is not None:
+                                try:
+                                    img = r.plot()
+                                    # Trails use pixel xywh
+                                    try:
+                                        xywh_px = boxes.xywh.detach().cpu().numpy() if getattr(boxes, "xywh", None) is not None else None
+                                    except Exception:
+                                        xywh_px = None
+                                    if xywh_px is not None:
+                                        draw_trails_on(img, xywh_px, out_ids)
+                                    annot_writer.write(img)
+                                except Exception as e:
+                                    logger.warning(f"[{job_label}] annotated write failed at frame={frame_count}: {e}")
+
+                        else:
+                            # No detections; still write plain frame if requested
+                            if annot_writer is not None:
+                                try:
+                                    img = r.orig_img if getattr(r, "orig_img", None) is not None else None
+                                    if img is not None:
+                                        annot_writer.write(img)
+                                except Exception:
+                                    pass
+
+                        if frame_count % flush_every_n_frames == 0:
+                            flush_buffers()
+
+                        if pbar is not None:
+                            pbar.update(1)
+                            if postfix_every_n and (frame_count % postfix_every_n == 0):
+                                pbar.set_postfix({"f": frame_count, "bbox_buf": len(bbox_buf)})
+
+                        last_log_t = log_progress_periodic(last_log_t)
+
+                    flush_buffers()
+                    return
+
+                except Exception as e:
+                    # Streaming tracking crashed; fall back to detection-only per frame to avoid missing frames.
+                    flush_buffers()
+                    logger.warning(
+                        f"[{job_label}] Streaming bbox tracking crashed at processed_frames={frame_count}. "
+                        f"Falling back to OpenCV detection-only loop. err={e}"
+                    )
+
+                    # -----------------------------------------------------------------
+                    # Fallback: OpenCV per-frame detection-only (no tracking, IDs=-1)
+                    # -----------------------------------------------------------------
+                    cap = cv2.VideoCapture(input_video_path)
+                    if not cap.isOpened():
+                        raise RuntimeError(f"Failed to open video: {input_video_path}")
 
                     try:
-                        if bbox_mode:
-                            bbox_iter = bbox_model.track(  # type: ignore
-                                source=input_video_path,
-                                stream=True,
-                                persist=True,
-                                tracker=bbox_tracker_eff,
+                        while True:
+                            ok, frame = cap.read()
+                            if not ok:
+                                break
+                            frame_count += 1
+                            det = bbox_model.predict(  # type: ignore
+                                frame,
                                 conf=self.confidence,
                                 verbose=False,
                                 device=device,
-                                save=False,
-                                save_txt=False,
-                                show=False,
                             )
+                            r0 = det[0] if isinstance(det, (list, tuple)) and det else det
+                            boxes = getattr(r0, "boxes", None) if r0 is not None else None
+                            if boxes is not None and getattr(boxes, "xywhn", None) is not None and boxes.xywhn.size(0) > 0:
+                                xywhn = boxes.xywhn.detach().cpu().tolist()
+                                cls_list = boxes.cls.int().detach().cpu().tolist()
+                                conf_list = boxes.conf.detach().cpu().tolist() if getattr(boxes, "conf", None) is not None else [math.nan] * len(xywhn)
+                                for (x, y, w, h), c, confv in zip(xywhn, cls_list, conf_list):
+                                    bbox_buf.append([int(c), float(x), float(y), float(w), float(h), -1, float(confv), frame_count])
 
-                            for r in _iter_results(bbox_iter):
-                                if r is None:
-                                    continue
-                                frame_count += 1
+                            if annot_writer is not None:
+                                try:
+                                    img = r0.plot() if r0 is not None else frame
+                                    annot_writer.write(img)
+                                except Exception:
+                                    try:
+                                        annot_writer.write(frame)
+                                    except Exception:
+                                        pass
 
-                                boxes = getattr(r, "boxes", None)
-                                if boxes is not None and getattr(boxes, "xywhn", None) is not None and boxes.xywhn.size(0) > 0:  # noqa: E501
-                                    xywhn = boxes.xywhn.cpu().tolist()
-                                    cls_list = boxes.cls.int().cpu().tolist()
-                                    raw_id_list = (
-                                        boxes.id.int().cpu().tolist()
-                                        if getattr(boxes, "id", None) is not None
-                                        else [-1] * len(xywhn)
-                                    )
-                                    conf_list = (
-                                        boxes.conf.cpu().tolist()
-                                        if getattr(boxes, "conf", None) is not None
-                                        else [math.nan] * len(xywhn)
-                                    )
+                            if frame_count % flush_every_n_frames == 0:
+                                flush_buffers()
+                            if pbar is not None:
+                                pbar.update(1)
 
-                                    for (x, y, w, h), c, raw_tid, confv in zip(xywhn, cls_list, raw_id_list, conf_list):  # noqa: E501
-                                        raw_tid = int(raw_tid) if raw_tid is not None else -1
-                                        tid = _map_id(raw_tid, bbox_id_map, bbox_next) if remap_track_ids_per_segment else raw_tid  # noqa: E501
-                                        bbox_buf.append([int(c), float(x), float(y), float(w), float(h), int(tid), float(confv), frame_count])  # noqa: E501
+                            last_log_t = log_progress_periodic(last_log_t)
 
-                                # write annotated with trails
-                                _annotate_write_frame_with_trails(r, mode="bbox", fallback_frame=None)
-
-                                if frame_count % flush_every_n_frames == 0:
-                                    _flush_buffers()
-
-                                if pbar is not None:
-                                    pbar.update(1)
-                                    if postfix_every_n and (frame_count % postfix_every_n == 0):
-                                        pbar.set_postfix({"f": frame_count, "bbox_buf": len(bbox_buf)})
-
-                                last_log_t = _log_progress_periodic(last_log_t)
-
-                            _flush_buffers()
-                            return
-
-                        if seg_mode:
-                            seg_iter = seg_model.track(  # type: ignore
-                                source=input_video_path,
-                                stream=True,
-                                persist=True,
-                                tracker=seg_tracker_eff,
-                                conf=self.confidence,
-                                verbose=False,
-                                device=device,
-                                save=False,
-                                save_txt=False,
-                                show=False,
-                            )
-
-                            for r in _iter_results(seg_iter):
-                                if r is None:
-                                    continue
-                                frame_count += 1
-
-                                boxes = getattr(r, "boxes", None)
-                                masks = getattr(r, "masks", None)
-
-                                if boxes is not None and getattr(boxes, "xywhn", None) is not None and boxes.xywhn.size(0) > 0:  # noqa: E501
-                                    n = int(boxes.xywhn.size(0))
-                                    cls_list = boxes.cls.int().cpu().tolist()
-                                    raw_id_list = (
-                                        boxes.id.int().cpu().tolist()
-                                        if getattr(boxes, "id", None) is not None
-                                        else [-1] * n
-                                    )
-                                    conf_list = (
-                                        boxes.conf.cpu().tolist()
-                                        if getattr(boxes, "conf", None) is not None
-                                        else [math.nan] * n
-                                    )
-
-                                    if masks is not None and getattr(masks, "xyn", None) is not None:
-                                        polys = masks.xyn
-                                        m = min(len(polys), n)
-                                        for i in range(m):
-                                            poly = polys[i]
-                                            flat = []
-                                            for x, y in poly:
-                                                flat.append(str(float(x)))
-                                                flat.append(str(float(y)))
-
-                                            raw_tid = int(raw_id_list[i]) if i < len(raw_id_list) else -1
-                                            tid = _map_id(raw_tid, seg_id_map, seg_next) if remap_track_ids_per_segment else raw_tid  # noqa: E501
-                                            seg_buf.append([int(cls_list[i]), " ".join(flat), int(tid), float(conf_list[i]), frame_count])  # noqa: E501
-
-                                # write annotated with trails
-                                _annotate_write_frame_with_trails(r, mode="seg", fallback_frame=None)
-
-                                if frame_count % flush_every_n_frames == 0:
-                                    _flush_buffers()
-
-                                if pbar is not None:
-                                    pbar.update(1)
-                                    if postfix_every_n and (frame_count % postfix_every_n == 0):
-                                        pbar.set_postfix({"f": frame_count, "seg_buf": len(seg_buf)})
-
-                                last_log_t = _log_progress_periodic(last_log_t)
-
-                            _flush_buffers()
-                            return
-
+                        flush_buffers()
                         return
 
-                    except Exception as e:
-                        _flush_buffers()
-                        msg = "LinAlgError" if _is_linalg_error(e) else "error"
-                        logger.warning(
-                            f"[{job_label}] Streaming mode crashed with {msg} at processed_frames={frame_count}. "
-                            f"Reset + fallback to OpenCV. err={e}"
-                        )
+                    finally:
+                        cap.release()
 
-                        try:
-                            if bbox_mode and bbox_model is not None:
-                                self._reset_ultralytics_tracker(bbox_model)
-                        except Exception:
-                            pass
-                        try:
-                            if seg_mode and seg_model is not None:
-                                self._reset_ultralytics_tracker(seg_model)
-                        except Exception:
-                            pass
-
-                        _opencv_loop_from_current_frame()
-                        return
-
-                _opencv_loop_from_current_frame()
-                return
-
-            finally:
-                if pbar is not None:
-                    pbar.close()
-
-                for p in (bbox_tracker_eff, seg_tracker_eff):
-                    if isinstance(p, str) and "tracker_cfg_" in p:
-                        try:
-                            shutil.rmtree(os.path.dirname(p), ignore_errors=True)
-                        except Exception:
-                            pass
+            # -----------------------------------------------------------------
+            # If seg_mode or bbox+seg are requested, use the existing behavior:
+            # (OpenCV loop calling track per frame). This can be extended later.
+            # -----------------------------------------------------------------
+            raise NotImplementedError("This rewritten runner currently supports stable bbox-only mode. Enable only bbox_mode.")
 
         finally:
+            try:
+                if pbar is not None:
+                    pbar.close()
+            except Exception:
+                pass
+
+            # Clean temp tracker configs
+            for p in (bbox_tracker_eff, seg_tracker_eff):
+                if isinstance(p, str) and "tracker_cfg_" in p:
+                    try:
+                        shutil.rmtree(os.path.dirname(p), ignore_errors=True)
+                    except Exception:
+                        pass
+
             try:
                 if bbox_f:
                     bbox_f.close()
