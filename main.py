@@ -16,6 +16,7 @@ import shutil
 import os
 import threading
 import uuid
+import hashlib
 import math
 import glob  # checks for "do we already have CSVs?" without knowing FPS
 from datetime import datetime
@@ -56,6 +57,49 @@ def _cfg(key: str, default=None):
     except Exception:
         return default
 
+def _slurm_task_info():
+    """Return (global_rank, world_size, local_rank) for a Slurm job step.
+
+    Falls back to (0, 1, 0) when not running under Slurm.
+    """
+    try:
+        rank = int(os.environ.get("SLURM_PROCID", "0"))
+    except Exception:
+        rank = 0
+
+    try:
+        world_size = int(os.environ.get("SLURM_NTASKS", "1"))
+    except Exception:
+        world_size = 1
+
+    try:
+        local_rank = int(os.environ.get("SLURM_LOCALID", str(rank)))
+    except Exception:
+        local_rank = rank
+
+    if world_size <= 0:
+        world_size = 1
+    if rank < 0:
+        rank = 0
+    if local_rank < 0:
+        local_rank = 0
+
+    return rank, world_size, local_rank
+
+
+def _segment_to_shard(vid: str, st: int, et: int, world_size: int) -> int:
+    """Deterministically assign a segment to a shard in [0, world_size).
+
+    Uses MD5 to avoid Python hash randomization across processes.
+    """
+    if world_size <= 1:
+        return 0
+
+    payload = f"{vid}|{int(st)}|{int(et)}".encode("utf-8", errors="ignore")
+    digest = hashlib.md5(payload).digest()
+    return int.from_bytes(digest[:4], "little") % world_size
+
+
 def process_mapping_concurrently(mapping, config, secret, logger) -> int:
     """Concurrent video download + segment processing with fairness constraints."""
 
@@ -64,6 +108,13 @@ def process_mapping_concurrently(mapping, config, secret, logger) -> int:
     video_paths = list(config.videos)
     internal_ssd = video_paths[-1] if video_paths else "."
     os.makedirs(internal_ssd, exist_ok=True)
+
+    # Snellius multi-task sharding (1 task == 1 GPU)
+    snellius_mode = bool(getattr(config, "snellius_mode", False))
+    shard_mode = bool(getattr(config, "snellius_shard_mode", False))
+    rank, world_size, local_rank = (0, 1, 0)
+    if snellius_mode:
+        rank, world_size, local_rank = _slurm_task_info()
 
     # ------------------------------------------------------------------
     # Build a per-video segment plan (deduplicated).
@@ -93,6 +144,27 @@ def process_mapping_concurrently(mapping, config, secret, logger) -> int:
         except Exception as e:
             logger.warning(f"Skipping malformed mapping row due to parse error: {e!r}")
             continue
+
+    # ------------------------------------------------------------------
+    # Snellius sharding: each Slurm task processes a disjoint subset of segments.
+    # This is intentionally deterministic (MD5) so all tasks agree on ownership.
+    # ------------------------------------------------------------------
+    if snellius_mode and shard_mode and world_size > 1:
+        sharded_plan = OrderedDict()
+        assigned_segments = 0
+        for vid, info in video_plan.items():
+            segs = [
+                seg for seg in info["segments"]
+                if _segment_to_shard(vid, seg[0], seg[1], world_size) == rank
+            ]
+            if segs:
+                sharded_plan[vid] = {"segments": segs, "seen": set(segs)}
+                assigned_segments += len(segs)
+
+        video_plan = sharded_plan
+        logger.info(
+            f"[Snellius shard {rank}/{world_size}] Assigned {assigned_segments} segments across {len(video_plan)} videos."
+        )
 
     if not video_plan:
         logger.info("No videos found after filtering; nothing to do.")
@@ -193,6 +265,9 @@ def process_mapping_concurrently(mapping, config, secret, logger) -> int:
 
         # If still no base file, download (FTP then YouTube fallback)
         if base_video_path is None:
+            ftp_only = bool(getattr(config, "snellius_mode", False))
+
+            tmp = None
             if getattr(config, "ftp_server", None):
                 try:
                     tmp = h.download_videos_from_ftp(
@@ -204,19 +279,31 @@ def process_mapping_concurrently(mapping, config, secret, logger) -> int:
                         token=getattr(secret, "ftp_token", None),
                         debug=False,
                     )
-                    if tmp is not None:
-                        base_video_path, video_title, resolution, fps = tmp
-                        ftp_download = True
-                        video_fps = float(fps or 0.0)
                 except Exception as e:
+                    if ftp_only:
+                        logger.warning(f"{vid}: FTP download failed ({e!r}); skipping (Snellius ftp-only).")
+                        return None
                     logger.warning(f"{vid}: FTP download failed ({e!r}); falling back to YouTube.")
 
-            if base_video_path is None:
+                if tmp is not None:
+                    base_video_path, video_title, resolution, fps = tmp
+                    ftp_download = True
+                    video_fps = float(fps or 0.0)
+                elif ftp_only:
+                    logger.info(f"{vid}: not available on FTP; skipping (Snellius ftp-only).")
+                    return None
+
+            elif ftp_only:
+                logger.warning(f"{vid}: ftp_server not configured; skipping (Snellius ftp-only).")
+                return None
+
+            if (not ftp_only) and base_video_path is None:
                 yt = h.download_video_with_resolution(vid, output_path=output_path)
                 if yt is None:
                     raise RuntimeError(f"{vid}: could not download video via FTP or YouTube.")
                 base_video_path, video_title, resolution, fps = yt
                 video_fps = float(fps or 0.0)
+
 
             h.set_video_title(video_title)
         # Ensure we have FPS
@@ -390,6 +477,15 @@ def process_mapping_concurrently(mapping, config, secret, logger) -> int:
     # Prime the download buffer
     _maybe_submit_downloads()
 
+    # Snellius: warm up downloads so segment workers do not stall on I/O.
+    # Target: keep at least 2×max_workers videos prepared (downloaded + queued) before starting segment work.
+    warmup_ready_target = 0
+    warmup_phase = False
+    if snellius_mode and max_workers > 0:
+        warmup_ready_target = min(len(vids_to_handle), 2 * max_workers)
+        warmup_phase = warmup_ready_target > 0
+
+
     try:
         while True:
             # ----------------------------------------------------------
@@ -405,6 +501,10 @@ def process_mapping_concurrently(mapping, config, secret, logger) -> int:
                     info = fut.result()
                 except Exception as e:
                     logger.error(f"{v}: download/prepare failed: {e!r}")
+                    continue
+
+                if info is None:
+                    logger.info(f"{v}: skipped (not available via FTP).")
                     continue
 
                 video_info[v] = info
@@ -428,8 +528,17 @@ def process_mapping_concurrently(mapping, config, secret, logger) -> int:
                 if not pending.get(v):
                     _finalize_video(v)
 
-            # Submit additional downloads if buffer has room
+                        # Submit additional downloads if buffer has room
             _maybe_submit_downloads()
+
+            # Snellius: ensure we have a backlog of prepared videos before consuming GPU slots.
+            if warmup_phase:
+                ready_now = sum(1 for vv in video_info.keys() if pending.get(vv))
+                if ready_now < warmup_ready_target and (vid_queue or download_futures):
+                    if download_futures:
+                        wait(set(download_futures.values()), return_when=FIRST_COMPLETED, timeout=0.5)
+                    continue
+                warmup_phase = False
 
             # ----------------------------------------------------------
             # 2) Schedule segment jobs (fair round-robin across videos)
@@ -540,11 +649,13 @@ if __name__ == "__main__":
             email_recipients=common.get_configs("email_recipients"),
             external_ssd=common.get_configs("external_ssd"),       # True => prefer SSD target
             ftp_server=common.get_configs("ftp_server"),
+            snellius_mode=_cfg("snellius_mode", False),
+            snellius_shard_mode=_cfg("snellius_shard_mode", True),
 
-            max_workers=_cfg("max_workers", 1),
-            download_workers=_cfg("download_workers", 2),
-            max_active_segments_per_video=_cfg("max_active_segments_per_video", 1),
-            runs_root=_cfg("runs_root", "runs"),
+max_workers=_cfg("max_workers", 1),
+download_workers=_cfg("download_workers", 2),
+max_active_segments_per_video=_cfg("max_active_segments_per_video", 1),
+runs_root=_cfg("runs_root", "runs"),
 
         )
 
@@ -558,6 +669,24 @@ if __name__ == "__main__":
             ftp_username=common.get_secrets("ftp_username"),
             ftp_password=common.get_secrets("ftp_password"),
         )
+
+        # ---------------------------------------------------------------------
+        # Snellius: derive task rank information (for multi-task GPU runs)
+        # ---------------------------------------------------------------------
+        if bool(getattr(config, "snellius_mode", False)):
+            r, w, lr = _slurm_task_info()
+            config.snellius_rank = r
+            config.snellius_world_size = w
+            config.snellius_local_rank = lr
+
+            # Ensure each task uses the intended GPU when multiple GPUs are visible.
+            try:
+                import torch
+                if torch.cuda.is_available():
+                    torch.cuda.set_device(lr)
+                    logger.info(f"[Snellius] Using CUDA device local_rank={lr} (rank={r}/{w}).")
+            except Exception as e:
+                logger.warning(f"[Snellius] Unable to set CUDA device for local_rank={lr}: {e!r}")
 
         # =========================================================================
         # Endless loop: process mapping; sleep; repeat
@@ -609,7 +738,7 @@ if __name__ == "__main__":
 # -----------------------------------------------------------------
             # Email success summary (only if anything was processed)
             # -----------------------------------------------------------------
-            if config.email_send and counter_processed:
+            if config.email_send and counter_processed and (not getattr(config, "snellius_mode", False) or getattr(config, "snellius_rank", 0) == 0):
                 time_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 common.send_email(
                     subject=f"✅ Processing job finished on machine {config.machine_name}",
@@ -637,7 +766,7 @@ if __name__ == "__main__":
     # =============================================================================
     except Exception as e:
         try:
-            if config.email_send:
+            if config.email_send and (not getattr(config, "snellius_mode", False) or getattr(config, "snellius_rank", 0) == 0):
                 time_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 # kept from original (fun image): fine to send as plain link or ignore
                 image_url = "https://i.pinimg.com/474x/20/82/0f/20820fd73c946d3e1d2e6efe23e1b2f3.jpg"
