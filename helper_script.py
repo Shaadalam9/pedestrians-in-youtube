@@ -45,10 +45,28 @@ UPGRADE_LOG_FILE = "upgrade_log.json"
 
 
 class Youtube_Helper:
-    """ A helper class for managing YouTube video downloads, processing, and analytics. Features: - Downloads videos via pytube or yt_dlp with resolution preference. - Handles video compression, trimming, and FPS extraction. - Applies object detection and tracking using YOLO models. - Updates and maintains CSV datasets with video metadata. - Interfaces with World Bank data to supplement mapping files. Attributes: model (str): Path or identifier for the YOLO model to use. resolution (str): Target resolution for downloaded videos. video_title (str): Title of the currently processed video. """
+    """ A helper class for managing YouTube video downloads, processing, and analytics. 
+    Features: 
+              - Downloads videos via pytube or yt_dlp with resolution preference. 
+              - Handles video compression, trimming, and FPS extraction. 
+              - Applies object detection and tracking using YOLO models. 
+              - Updates and maintains CSV datasets with video metadata. 
+              - Interfaces with World Bank data to supplement mapping files.
+
+    Attributes: 
+        model (str): Path or identifier for the YOLO model to use. 
+        resolution (str): Target resolution for downloaded videos. 
+        video_title (str): Title of the currently processed video. 
+        """
 
     def __init__(self, video_title=None):
-        """ Initialises a new instance of the class. Parameters: video_title (str, optional): The title of the video. Defaults to None. Instance Variables: self.model (str): The model configuration loaded from common.get_configs("model"). self.resolution (str): The video resolution. Initialised as None and set later when needed. self.video_title (str): The title of the video. """
+        """ Initialises a new instance of the class. 
+        Parameters: 
+        video_title (str, optional): The title of the video. Defaults to None. 
+        Instance Variables: self.model (str): The model configuration loaded from common.get_configs("model").
+        self.resolution (str): The video resolution. Initialised as None and set later when needed. 
+        self.video_title (str): The title of the video.
+        """
         self.tracking_model = common.get_configs("tracking_model")
         self.segment_model = common.get_configs("segment_model")
         self.bbox_tracker = common.get_configs("bbox_tracker")
@@ -68,11 +86,18 @@ class Youtube_Helper:
         self.client = common.get_configs("client")
 
     def set_video_title(self, title):
-        """ Sets the video title for the instance. Parameters: title (str): The new title for the video. """
+        """ Sets the video title for the instance.
+        Parameters: title (str): The new title for the video.
+        """
         self.video_title = title
 
     def rename_folder(self, old_name, new_name):
-        """ Renames a folder from old_name to new_name. Parameters: old_name (str): The current name (or path) of the folder. new_name (str): The new name (or path) to assign to the folder. Error Handling: - Logs an error if the folder with old_name is not found. - Logs an error if a folder with new_name already exists. """
+        """ Renames a folder from old_name to new_name.
+        Parameters: old_name (str): The current name (or path) of the folder.
+        new_name (str): The new name (or path) to assign to the folder.
+        Error Handling: - Logs an error if the folder with old_name is not found.
+        - Logs an error if a folder with new_name already exists.
+        """
         try:
             os.rename(old_name, new_name)
         except FileNotFoundError:
@@ -96,7 +121,10 @@ class Youtube_Helper:
             json.dump(log_data, file)
 
     def was_upgraded_today(self, package_name):
-        """ Check whether the given package was already upgraded today. Parameters: package_name (str): Name of the package. Returns: bool: True if upgraded today, False otherwise. """
+        """ Check whether the given package was already upgraded today. 
+        Parameters: 
+                package_name (str): Name of the package. 
+        Returns: bool: True if upgraded today, False otherwise. """
         log_data = self.load_upgrade_log()
         today = datetime.date.today().isoformat()
         return log_data.get(package_name) == today
@@ -108,7 +136,8 @@ class Youtube_Helper:
         self.save_upgrade_log(log_data)
 
     def upgrade_package_if_needed(self, package_name):
-        """ Upgrades a given Python package using pip if it hasn't been attempted today. Parameters: package_name (str): The name of the package to upgrade. """
+        """ Upgrades a given Python package using pip if it hasn't been attempted today.
+        Parameters: package_name (str): The name of the package to upgrade. """
         if self.was_upgraded_today(package_name):
             logging.debug(f"{package_name} upgrade already attempted today. Skipping.")
             return
@@ -124,7 +153,8 @@ class Youtube_Helper:
 
     @staticmethod
     def _wait_for_stable_file(src, checks=2, interval=0.5, timeout=30):
-        """ Wait until src exists and its size is unchanged for checks consecutive checks. Returns True if stable within timeout, else False. """
+        """ Wait until src exists and its size is unchanged for checks consecutive checks.
+        Returns True if stable within timeout, else False. """
         deadline = time.time() + timeout
         last = -1
         stable = 0
@@ -150,7 +180,9 @@ class Youtube_Helper:
         return False
 
     def copy_video_safe(self, base_video_path, internal_ssd, vid, max_attempts=5, backoff=0.6):
-        """ Copies base_video_path -> os.path.join(internal_ssd, f"{vid}.mp4") - Ensures dest dir exists - Waits for source file to be stable - Copies to temp, then atomic replace - Verifies size - Retries on transient OS errors """
+        """ Copies base_video_path -> os.path.join(internal_ssd, f"{vid}.mp4")
+        - Ensures dest dir exists - Waits for source file to be stable
+        - Copies to temp, then atomic replace - Verifies size - Retries on transient OS errors """
         if not vid or str(vid).strip() == "":
             raise ValueError("vid must be a non-empty string")
 
@@ -227,8 +259,29 @@ class Youtube_Helper:
         debug: bool = True,  # <--- new: turn verbose logging on/off
         max_pages: int = 500,  # safety limit for crawling
     ) -> Optional[tuple[str, str, str, float]]:
-        """ Search and download a specific .mp4 file from a multi-directory FastAPI-based HTTP file server (e.g., files.mobility-squad.com). This function attempts direct download from known /files/ paths (tue1/tue2/tue3), and if not found, recursively crawls the /browse pages to locate the video file. Progress is shown with tqdm. Args: filename (str): Target file name (with or without .mp4 extension). base_url (str, optional): Base URL of the file server. Must include protocol, e.g. "https://files.mobility-squad.com/". out_dir (str, optional): Local output directory to save the video. Defaults to current directory ".". username (str, optional): Username for HTTP Basic Auth. password (str, optional): Password for HTTP Basic Auth. token (str, optional): Token string for token-based authentication. Sent as a query parameter ?token=.... timeout (int, optional): Request timeout in seconds. Default is 20. max_pages (int, optional): Safety limit for crawl depth/pages. Default is 500. Returns: Optional[Tuple[str, str, str, float]]: Returns a tuple (local_path, filename, resolution_label, fps) if the download succeeds, or None if the file is not found or download fails. Logging: - logger.info: start, success summaries. - logger.debug: HTTP requests, crawl steps, file matches. - logger.warning: non-fatal issues (metadata failures, skipped pages). - logger.error: fatal errors (network/IO exceptions). Example:
-python
+        """ Search and download a specific .mp4 file from a multi-directory FastAPI-based
+        HTTP file server (e.g., files.mobility-squad.com). This function attempts direct
+        download from known /files/ paths (tue1/tue2/tue3), and if not found, recursively
+        crawls the /browse pages to locate the video file. Progress is shown with tqdm.
+        Args: filename (str): Target file name (with or without .mp4 extension).
+        base_url (str, optional): Base URL of the file server.
+        Must include protocol, e.g. "https://files.mobility-squad.com/".
+        out_dir (str, optional): Local output directory to save the video.
+        Defaults to current directory ".".
+        username (str, optional): Username for HTTP Basic Auth.
+        password (str, optional): Password for HTTP Basic Auth.
+        token (str, optional): Token string for token-based authentication.
+        Sent as a query parameter ?token=.... timeout (int, optional):
+        Request timeout in seconds. Default is 20. max_pages (int, optional):
+        Safety limit for crawl depth/pages. Default is 500.
+        Returns: Optional[Tuple[str, str, str, float]]: Returns a tuple
+        (local_path, filename, resolution_label, fps) if the download succeeds,
+        or None if the file is not found or download fails.
+        Logging: - logger.info: start, success summaries.
+        - logger.debug: HTTP requests, crawl steps, file matches.
+        - logger.warning: non-fatal issues (metadata failures, skipped pages).
+        - logger.error: fatal errors (network/IO exceptions). Example:
+
             result = self.download_videos_from_http_fileserver(
                 filename="3ai7SUaPoHM",
                 base_url="https://files.mobility-squad.com/",
@@ -241,7 +294,7 @@ python
                 print(f"Downloaded {name} ({res}, {fps} fps) to {path}")
             else:
                 print("File not found or failed.")
-"""
+        """
         # -------------------- Input Preparation --------------------
         if not base_url:
             logger.error("Base URL is missing.")
@@ -449,7 +502,12 @@ python
             return None
 
     def download_video_with_resolution(self, vid, resolutions=["720p", "480p", "360p", "144p"], output_path="."):
-        """ Downloads a YouTube video in one of the specified resolutions and returns video details. This function attempts to download the video using the pytubefix/YouTube method. Parameters: vid (str): The YouTube video ID. resolutions (list of str, optional): A list of preferred video resolutions. output_path (str, optional): The directory where the video will be downloaded. Returns: tuple or None: A tuple (video_file_path, vid, resolution, fps) if successful, or None if methods fail. """
+        """ Downloads a YouTube video in one of the specified resolutions and returns video details.
+        This function attempts to download the video using the pytubefix/YouTube method.
+        Parameters: vid (str): The YouTube video ID. 
+        resolutions (list of str, optional): A list of preferred video resolutions.
+        output_path (str, optional): The directory where the video will be downloaded.
+        Returns: tuple or None: A tuple (video_file_path, vid, resolution, fps) if successful, or None if methods fail. """
         try:
             # Optionally upgrade pytubefix (if configured and it is Monday)
             if self.update_package and datetime.datetime.today().weekday() == 0:
@@ -600,7 +658,16 @@ python
                 return None
 
     def get_video_fps(self, video_file_path):
-        """ Retrieves the frames per second (FPS) of a video file using OpenCV. Parameters: video_file_path (str): The file path to the video whose FPS is to be determined. Returns: int or None: The rounded FPS value of the video if successful; otherwise, returns None if an error occurs. The function performs the following steps: 1. Opens the video file using OpenCV's VideoCapture. 2. Retrieves the FPS using the CAP_PROP_FPS property. 3. Rounds the FPS value to the nearest integer. 4. Releases the video resource. 5. Returns the rounded FPS value, or None if an exception is encountered. """
+        """ Retrieves the frames per second (FPS) of a video file using OpenCV.
+        Parameters: video_file_path (str): The file path to the video whose FPS is to be determined.
+        Returns: int or None: The rounded FPS value of the video if successful;
+        otherwise, returns None if an error occurs.
+        The function performs the following steps:
+        1. Opens the video file using OpenCV's VideoCapture.
+        2. Retrieves the FPS using the CAP_PROP_FPS property.
+        3. Rounds the FPS value to the nearest integer.
+        4. Releases the video resource.
+        5. Returns the rounded FPS value, or None if an exception is encountered. """
         try:
             # Open the video file using OpenCV
             video = cv2.VideoCapture(video_file_path)
@@ -620,7 +687,15 @@ python
 
     @staticmethod
     def get_video_resolution_label(video_path: str) -> str:
-        """Return the resolution label (e.g., '720p', '1080p') for a given video file. This method inspects the video file to determine its frame height and then maps it to a common resolution label. If the resolution does not match a well-known standard, it falls back to returning <height>p. Args: video_path (str): Path to the video file. Returns: str: Resolution label (e.g., "720p", "1080p", "2160p"). Falls back to "<height>p" if no predefined label exists. Raises: FileNotFoundError: If the provided video path does not exist. RuntimeError: If the video file cannot be opened with OpenCV. """
+        """Return the resolution label (e.g., '720p', '1080p') for a given video file.
+        This method inspects the video file to determine its frame height and then maps
+        it to a common resolution label. If the resolution does not match a well-known
+        standard, it falls back to returning <height>p. 
+        Args: video_path (str): Path to the video file.
+        Returns: str: Resolution label (e.g., "720p", "1080p", "2160p").
+        Falls back to "<height>p" if no predefined label exists.
+        Raises: FileNotFoundError: If the provided video path does not exist.
+        RuntimeError: If the video file cannot be opened with OpenCV. """
         # Ensure the video file exists
         if not os.path.exists(video_path):
             raise FileNotFoundError(f"Video not found: {video_path}")
@@ -650,7 +725,18 @@ python
         return labels.get(height, f"{height}p")
 
     def trim_video(self, input_path, output_path, start_time, end_time):
-        """ Trims a segment from a video and saves the result to a specified file. Parameters: input_path (str): The file path to the original video. output_path (str): The destination file path where the trimmed video will be saved. start_time (float or str): The start time for the trimmed segment. This can be specified in seconds or in a time format recognised by MoviePy. end_time (float or str): The end time for the trimmed segment. Similar to start_time, it can be in seconds or another supported time format. Returns: None The function performs the following steps: 1. Loads the original video using MoviePy's VideoFileClip. 2. Creates a subclip from the original video based on the provided start_time and end_time. 3. Writes the subclip to the output_path using the H.264 video codec and AAC audio codec. 4. Closes the video file to free up resources. """
+        """ Trims a segment from a video and saves the result to a specified file.
+        Parameters: input_path (str): The file path to the original video.
+        output_path (str): The destination file path where the trimmed video will be saved.
+        start_time (float or str): The start time for the trimmed segment.
+        This can be specified in seconds or in a time format recognised by MoviePy. 
+        nd_time (float or str): The end time for the trimmed segment.
+        Similar to start_time, it can be in seconds or another supported time format.
+        Returns: None The function performs the following steps:
+        1. Loads the original video using MoviePy's VideoFileClip.
+        2. Creates a subclip from the original video based on the provided start_time and end_time.
+        3. Writes the subclip to the output_path using the H.264 video codec and AAC audio codec.
+        4. Closes the video file to free up resources. """
         # Load the video and create a subclip using the provided start and end times.
         video_clip = VideoFileClip(input_path).subclip(start_time, end_time)
 
