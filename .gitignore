@@ -1,5 +1,6 @@
 # Runs and output folders
 runs/
+runs_mt
 _output/
 check_videos_report.json
 corrupt_files.txt
