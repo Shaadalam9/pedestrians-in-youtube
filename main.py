@@ -541,10 +541,10 @@ if __name__ == "__main__":
             external_ssd=common.get_configs("external_ssd"),       # True => prefer SSD target
             ftp_server=common.get_configs("ftp_server"),
 
-max_workers=_cfg("max_workers", 1),
-download_workers=_cfg("download_workers", 2),
-max_active_segments_per_video=_cfg("max_active_segments_per_video", 1),
-runs_root=_cfg("runs_root", "runs"),
+            max_workers=_cfg("max_workers", 1),
+            download_workers=_cfg("download_workers", 2),
+            max_active_segments_per_video=_cfg("max_active_segments_per_video", 1),
+            runs_root=_cfg("runs_root", "runs"),
 
         )
 

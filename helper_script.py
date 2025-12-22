@@ -750,7 +750,22 @@ class Youtube_Helper:
         video_clip.close()
 
     def draw_yolo_boxes_on_video(self, df, fps, video_path, output_path):
-        """ Draw YOLO-style bounding boxes on a video and save the annotated output. This method takes a DataFrame containing normalised bounding box coordinates (in YOLO format), matches them frame-by-frame to the input video, draws the corresponding boxes and labels, and writes the resulting video to disk. Args: df (pd.DataFrame): DataFrame containing at least the following columns: - 'frame-count': Original frame indices in the source video. - 'X-center', 'Y-center': Normalised center coordinates (0 to 1). - 'width', 'Height': Normalised width and height (0 to 1). - 'unique-id': Identifier to display in the label. fps (float): Frames per second for the output video. video_path (str): Path to the input video file. output_path (str): Path to save the annotated output video. Raises: IOError: If the input video cannot be opened. """
+        """
+        Draw YOLO-style bounding boxes on a video and save the annotated output.
+        This method takes a DataFrame containing normalised bounding box coordinates
+        (in YOLO format), matches them frame-by-frame to the input video,
+        draws the corresponding boxes and labels, and writes the resulting video to disk.
+        Args: df (pd.DataFrame): DataFrame containing at least the following columns:
+        - 'frame-count': Original frame indices in the source video.
+        - 'X-center', 'Y-center': Normalised center coordinates (0 to 1).
+        - 'width', 'Height': Normalised width and height (0 to 1).
+        - 'unique-id': Identifier to display in the label.
+        fps (float): Frames per second for the output video.
+        video_path (str): Path to the input video file.
+        output_path (str): Path to save the annotated output video.
+        
+        Raises: IOError: If the input video cannot be opened.
+        """
         # Ensure the output directory exists
         output_dir = os.path.dirname(output_path)
         if output_dir and not os.path.exists(output_dir):

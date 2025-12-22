@@ -3,7 +3,7 @@ runs/
 runs_mt
 _output/
 check_videos_report.json
-corrupt_files.txt
+corrupt_videos.txt
 
 # Video and data folders
 video/
@@ -18,6 +18,9 @@ saved_snaps
 yolov8x.pt
 yolo11x.pt
 yolo11x-seg.pt
+yolo11n-cls.pt
+yolo11x_img640_fp16.engine
+yolo11x.onnx
 
 # Python environment files
 .vscode/
