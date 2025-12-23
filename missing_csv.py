@@ -1,223 +1,281 @@
-import os
-import pandas as pd
+#!/usr/bin/env python3
+"""
+Create mapping_remaining.csv from mapping_queue.csv by removing *segments* that
+already have bbox CSV outputs.
+
+Segment is considered processed if a file exists matching:
+    <bbox_dir>/{video_id}_{start_time}_*.csv
+
+Row is removed entirely if, after segment removal, there are no videos left in that row.
+"""
+
+from __future__ import annotations
+
 import ast
-import common
-from custom_logger import CustomLogger
-from logmod import logs
+import csv
+from pathlib import Path
+from typing import Any, Dict, List, Set, Tuple
 
-# Initialize logging according to config
-logs(show_level=common.get_configs("logger_level"), show_color=True)
-logger = CustomLogger(__name__)
-
-# Directory containing per-frame CSV data files
-DATA_FOLDER = common.get_configs("data")
-MAPPING_PATH = common.get_configs("mapping")
+import pandas as pd
 
 
-def parse_flat_string_list(s):
-    """Parse string representing a flat list without quotes into a Python list.
+# =========================
+# EDIT THESE PATHS
+# =========================
 
-    Supports strings like '[a,b,c]', '[abc]', or '[]'. If already a list, returns as is.
+INPUT_CSV = "mapping.csv"
+OUTPUT_CSV = "mapping_remaining.csv"
 
-    Args:
-        s: The input, which may be a string or a list.
+# Put ALL bbox output directories you want to check here.
+BBOX_OUTPUT_DIRS = [
+    Path("/Volumes/Alam/pedestrians_in-youtube/data/bbox"),
+]
 
-    Returns:
-        List containing the parsed items.
-    """
-    if isinstance(s, list):
-        return s
-    if not isinstance(s, str):
+
+# =========================
+# Parsing helpers
+# =========================
+
+def parse_bracketed_str_list(value: Any) -> List[str]:
+    """Parse '[a,b,c]' (items not quoted) -> ['a','b','c']."""
+    if value is None:
         return []
+    s = str(value).strip()
+    if not s or s.lower() == "nan":
+        return []
+    if s.startswith("[") and s.endswith("]"):
+        s = s[1:-1]
     s = s.strip()
-    if s.startswith('[') and s.endswith(']'):
-        inner = s[1:-1].strip()
-        if not inner:
-            return []
-        return [v.strip() for v in inner.split(',')]
-    if s == '':
+    if not s:
         return []
-    return [s]
+    return [x.strip() for x in s.split(",") if x.strip()]
 
 
-def parse_list(s):
-    """Parse a string representing a (possibly nested) Python list.
-
-    Args:
-        s: String containing a valid Python literal list, or a list.
-
-    Returns:
-        The evaluated list, or [] if not valid.
-    """
-    if isinstance(s, list):
-        return s
-    if not isinstance(s, str):
+def parse_bracketed_int_list(value: Any) -> List[int]:
+    """Parse '[1,2,3]' -> [1,2,3]."""
+    if value is None:
         return []
-    s = s.strip()
-    if s == "":
+    s = str(value).strip()
+    if not s or s.lower() == "nan":
         return []
     try:
-        return ast.literal_eval(s)
+        obj = ast.literal_eval(s)
+        if isinstance(obj, list):
+            return [int(x) for x in obj]
+    except Exception:
+        pass
+    out: List[int] = []
+    for it in parse_bracketed_str_list(s):
+        try:
+            out.append(int(it))
+        except Exception:
+            out.append(0)
+    return out
+
+
+def parse_list_of_lists(value: Any) -> List[List[int]]:
+    """Parse '[[1,2],[3]]' -> [[1,2],[3]]."""
+    if value is None:
+        return []
+    s = str(value).strip()
+    if not s or s.lower() == "nan":
+        return []
+    try:
+        obj = ast.literal_eval(s)
     except Exception:
         return []
+    if not isinstance(obj, list):
+        return []
+    out: List[List[int]] = []
+    for item in obj:
+        if isinstance(item, list):
+            try:
+                out.append([int(x) for x in item])
+            except Exception:
+                out.append([])
+        else:
+            try:
+                out.append([int(item)])
+            except Exception:
+                out.append([])
+    return out
 
 
-def format_flat_list(lst):
-    """Format a flat list as '[a,b,c]' (no quotes).
+def normalize_len(lst: List[Any], n: int, pad: Any) -> List[Any]:
+    """Pad or truncate list to length n."""
+    if len(lst) >= n:
+        return lst[:n]
+    return lst + [pad] * (n - len(lst))
 
-    Args:
-        lst: List of elements to stringify.
 
-    Returns:
-        String representation without quotes.
+# =========================
+# Formatting helpers
+# =========================
+
+def format_str_list_no_quotes(items: List[str]) -> str:
+    return "[" + ",".join(items) + "]"
+
+
+def format_int_list(items: List[int]) -> str:
+    return "[" + ",".join(str(x) for x in items) + "]"
+
+
+def format_list_of_lists(lol: List[List[int]]) -> str:
+    inner = []
+    for lst in lol:
+        inner.append("[" + ",".join(str(x) for x in lst) + "]")
+    return "[" + ",".join(inner) + "]"
+
+
+# =========================
+# Bbox presence indexing
+# =========================
+
+def index_existing_bbox_segments(bbox_dirs: List[Path]) -> Set[Tuple[str, int]]:
     """
-    return '[' + ','.join(str(x) for x in lst) + ']'
+    Build a set of (video_id, start_time) from bbox files.
 
-
-def format_nested_list(lst):
-    """Format a nested list as '[[a,b],[c]]' (no quotes).
-
-    Args:
-        lst: List of lists to stringify.
-
-    Returns:
-        String representation without quotes.
+    Expected bbox filename: {video_id}_{start}_{fps}.csv
+    video_id may contain underscores, so parse from the right:
+        parts[-2] = start_time
+        parts[:-2] join back to video_id
     """
-    return '[' + ','.join('[' + ','.join(str(x) for x in inner) + ']' for inner in lst) + ']'
+    found: Set[Tuple[str, int]] = set()
+    for d in bbox_dirs:
+        if not d.exists() or not d.is_dir():
+            continue
+        for p in d.glob("*.csv"):
+            stem = p.stem
+            parts = stem.split("_")
+            if len(parts) < 3:
+                continue
+            st_str = parts[-2]
+            if not st_str.lstrip("-").isdigit():
+                continue
+            vid = "_".join(parts[:-2])
+            found.add((vid, int(st_str)))
+    return found
 
 
-def find_files_to_delete(data_folder):
-    """Determine which (video_id, start_time) pairs correspond to CSV files to delete.
+# =========================
+# Main transformation
+# =========================
 
-    Args:
-        data_folder: Directory containing CSV files.
+def build_remaining() -> None:
+    bbox_present = index_existing_bbox_segments(BBOX_OUTPUT_DIRS)
 
-    Returns:
-        Set of tuples (video_id, start_time) to be deleted.
-    """
-    files = [f for f in os.listdir(data_folder) if f.endswith('.csv')]
-    to_delete = set()
-    for file in files:
-        key = file.replace('.csv', '')
-        try:
-            video_id, start_time, fps = key.rsplit("_", 2)
-            to_delete.add((video_id, int(start_time)))
-        except Exception as e:
-            logger.warning(f"Skipping file {file}: {e}")
-    logger.debug("These video_id, start_time pairs will be removed: %s", to_delete)
-    return to_delete
+    df = pd.read_csv(INPUT_CSV, dtype=str, keep_default_na=False)
 
+    required_cols = ["videos", "start_time", "end_time", "time_of_day"]
+    for c in required_cols:
+        if c not in df.columns:
+            raise ValueError(f"Missing required column: {c}")
 
-def remove_entry(row, to_delete):
-    """Remove video/start_time entries from a row if they're in the to_delete set.
+    has_vehicle = "vehicle_type" in df.columns
+    has_upload = "upload_date" in df.columns
+    has_channel = "channel" in df.columns
 
-    Args:
-        row: DataFrame row.
-        to_delete: Set of (video_id, start_time) tuples to remove.
+    kept_rows: List[Dict[str, Any]] = []
+    removed_segments = 0
+    kept_segments = 0
+    dropped_rows = 0
 
-    Returns:
-        The updated row with unwanted entries removed.
-    """
-    # Parse fields from row (strings/lists)
-    videos = parse_flat_string_list(row['videos'])
-    time_of_day = parse_list(row['time_of_day'])
-    start_times = parse_list(row['start_time'])
-    end_times = parse_list(row['end_time'])
-    vehicle_type = parse_flat_string_list(row['vehicle_type'])
-    upload_date = parse_flat_string_list(row['upload_date'])
-    channel = parse_flat_string_list(row['channel'])
+    for _, row in df.iterrows():
+        videos = parse_bracketed_str_list(row.get("videos", ""))
+        n = len(videos)
+        if n == 0:
+            dropped_rows += 1
+            continue
 
-    # Check consistency for multi-item fields
-    if not (len(videos) == len(start_times) == len(end_times) == len(time_of_day)):
-        logger.debug("Warning: mismatch in multi fields in row %s", row.get('id', 'unknown'))
-        logger.debug("videos: %s", videos)
-        logger.debug("start_times: %s", start_times)
-        logger.debug("end_times: %s", end_times)
-        logger.debug("time_of_day: %s", time_of_day)
-        return row
-    if not (len(videos) == len(vehicle_type) == len(upload_date) == len(channel)):
-        logger.debug("Warning: mismatch in single fields in row %s", row.get('id', 'unknown'))
-        logger.debug("videos: %s", videos)
-        logger.debug("vehicle_type: %s", vehicle_type)
-        logger.debug("upload_date: %s", upload_date)
-        logger.debug("channel: %s", channel)
-        return row
+        st_ll = normalize_len(parse_list_of_lists(row.get("start_time", "")), n, [])
+        et_ll = normalize_len(parse_list_of_lists(row.get("end_time", "")), n, [])
+        tod_ll = normalize_len(parse_list_of_lists(row.get("time_of_day", "")), n, [])
 
-    # Build new lists for each field, skipping videos/start_times to be deleted
-    keep_video_indices = []
-    new_time_of_day, new_start_times, new_end_times = [], [], []
-    new_vehicle_type, new_upload_date, new_channel = [], [], []
+        vehicle = normalize_len(parse_bracketed_int_list(row.get("vehicle_type", "[]")), n, 0) if has_vehicle else []
+        upload = normalize_len(parse_bracketed_int_list(row.get("upload_date", "[]")), n, 0) if has_upload else []
+        channel = normalize_len(parse_bracketed_str_list(row.get("channel", "[]")), n, "") if has_channel else []
 
-    for i, vid in enumerate(videos):
-        these_start_times = start_times[i]
-        these_time_of_day = time_of_day[i]
-        these_end_times = end_times[i]
-        kept_starts, kept_timeofday, kept_end = [], [], []
+        new_videos: List[str] = []
+        new_st_ll: List[List[int]] = []
+        new_et_ll: List[List[int]] = []
+        new_tod_ll: List[List[int]] = []
+        new_vehicle: List[int] = []
+        new_upload: List[int] = []
+        new_channel: List[str] = []
 
-        for j, st in enumerate(these_start_times):
-            if (vid, int(st)) not in to_delete:
-                kept_starts.append(these_start_times[j])
-                kept_timeofday.append(these_time_of_day[j])
-                kept_end.append(these_end_times[j])
+        for i, vid in enumerate(videos):
+            st_list = st_ll[i] if isinstance(st_ll[i], list) else []
+            et_list = et_ll[i] if isinstance(et_ll[i], list) else []
+            tod_list = tod_ll[i] if isinstance(tod_ll[i], list) else []
 
-        if kept_starts:
-            keep_video_indices.append(i)
-            new_time_of_day.append(kept_timeofday)
-            new_start_times.append(kept_starts)
-            new_end_times.append(kept_end)
+            kept_st: List[int] = []
+            kept_et: List[int] = []
+            kept_tod: List[int] = []
 
-    # Filter the single-list fields to match remaining videos
-    for i in keep_video_indices:
-        new_vehicle_type.append(vehicle_type[i])
-        new_upload_date.append(upload_date[i])
-        new_channel.append(channel[i])
+            # Segment-level pruning (not video-level)
+            for st, et, tod in zip(st_list, et_list, tod_list):
+                try:
+                    st_i = int(st)
+                except Exception:
+                    # Malformed start_time: keep it (safer than dropping incorrectly)
+                    kept_st.append(st)
+                    kept_et.append(et)
+                    kept_tod.append(tod)
+                    kept_segments += 1
+                    continue
 
-    # Filter videos as well
-    new_videos = [videos[i] for i in keep_video_indices]
+                if (vid, st_i) in bbox_present:
+                    removed_segments += 1
+                    continue
 
-    # Update row with reformatted lists (as strings for CSV compatibility)
-    row['videos'] = format_flat_list(new_videos)
-    row['time_of_day'] = format_nested_list(new_time_of_day)
-    row['start_time'] = format_nested_list(new_start_times)
-    row['end_time'] = format_nested_list(new_end_times)
-    row['vehicle_type'] = format_flat_list(new_vehicle_type)
-    row['upload_date'] = format_flat_list(new_upload_date)
-    row['channel'] = format_flat_list(new_channel)
-    return row
+                kept_st.append(int(st))
+                kept_et.append(int(et) if str(et).lstrip("-").isdigit() else et)
+                kept_tod.append(int(tod) if str(tod).lstrip("-").isdigit() else tod)
+                kept_segments += 1
 
+            # Keep this video only if it still has at least one remaining segment
+            if kept_st:
+                new_videos.append(vid)
+                new_st_ll.append(kept_st)
+                new_et_ll.append(kept_et)
+                new_tod_ll.append(kept_tod)
+                if has_vehicle:
+                    new_vehicle.append(vehicle[i])
+                if has_upload:
+                    new_upload.append(upload[i])
+                if has_channel:
+                    new_channel.append(channel[i])
 
-def has_any_video(row):
-    """Check if the row has any videos left after filtering.
+        # DROP THE WHOLE ROW if all videos are already processed (i.e., nothing remains)
+        if not new_videos:
+            dropped_rows += 1
+            continue
 
-    Args:
-        row: DataFrame row.
+        out_row = dict(row)
+        out_row["videos"] = format_str_list_no_quotes(new_videos)
+        out_row["start_time"] = format_list_of_lists(new_st_ll)
+        out_row["end_time"] = format_list_of_lists(new_et_ll)
+        out_row["time_of_day"] = format_list_of_lists(new_tod_ll)
 
-    Returns:
-        True if videos list is non-empty, else False.
-    """
-    videos = parse_flat_string_list(row['videos'])
-    return len(videos) > 0
+        if has_vehicle:
+            out_row["vehicle_type"] = format_int_list(new_vehicle)
+        if has_upload:
+            out_row["upload_date"] = format_int_list(new_upload)
+        if has_channel:
+            out_row["channel"] = format_str_list_no_quotes(new_channel)
 
+        kept_rows.append(out_row)
 
-def main():
-    """Main pipeline: Remove specified video/start_times from mapping.csv and save result."""
-    # Find which (video_id, start_time) pairs to remove based on CSV files present
-    to_delete = find_files_to_delete(DATA_FOLDER)
+    out_df = pd.DataFrame(kept_rows, columns=df.columns)
+    Path(OUTPUT_CSV).parent.mkdir(parents=True, exist_ok=True)
+    out_df.to_csv(OUTPUT_CSV, index=False, quoting=csv.QUOTE_MINIMAL)
 
-    # Load mapping.csv as DataFrame
-    df = pd.read_csv(MAPPING_PATH)
-
-    # Apply row-wise filtering to remove deleted video/start_times
-    df = df.apply(lambda row: remove_entry(row, to_delete), axis=1)
-
-    # Remove rows with no videos remaining
-    df = df[df.apply(has_any_video, axis=1)]
-
-    # Save filtered mapping
-    filtered_path = "mapping_missing.csv"
-    df.to_csv(filtered_path, index=False)
-    logger.info(f"Filtered mapping saved to {filtered_path}")
+    print(f"Wrote: {OUTPUT_CSV}")
+    print(f"Segments removed (bbox exists): {removed_segments}")
+    print(f"Segments remaining: {kept_segments}")
+    print(f"Rows dropped (fully processed): {dropped_rows}")
+    print(f"Rows kept: {len(out_df)} / {len(df)}")
 
 
 if __name__ == "__main__":
-    main()
+    build_remaining()
