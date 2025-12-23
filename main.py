@@ -678,13 +678,13 @@ if __name__ == "__main__":
             config.snellius_local_rank = lr
 
             # Ensure each task uses the intended GPU when multiple GPUs are visible.
-            try:
-                import torch
-                if torch.cuda.is_available():
-                    torch.cuda.set_device(lr)
-                    logger.info(f"[Snellius] Using CUDA device local_rank={lr} (rank={r}/{w}).")
-            except Exception as e:
-                logger.warning(f"[Snellius] Unable to set CUDA device for local_rank={lr}: {e!r}")
+            # try:
+            #     import torch
+            #     if torch.cuda.is_available():
+            #         torch.cuda.set_device(lr)
+            #         logger.info(f"[Snellius] Using CUDA device local_rank={lr} (rank={r}/{w}).")
+            # except Exception as e:
+            #     logger.warning(f"[Snellius] Unable to set CUDA device for local_rank={lr}: {e!r}")
 
         # =========================================================================
         # Endless loop: process mapping; sleep; repeat
