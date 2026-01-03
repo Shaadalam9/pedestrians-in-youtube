@@ -53,7 +53,15 @@ jobs:
           VALIDATE_ALL_CODEBASE: false
           DEFAULT_BRANCH: main
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
           FILTER_REGEX_INCLUDE: .*
           FILTER_REGEX_EXCLUDE: README\.md  # This line excludes README.md
+
           VALIDATE_PYTHON_BLACK: false
           VALIDATE_PYTHON_ISORT: false
+
+          # Ensure Super-Linter uses configs from .github/linters
+          LINTER_RULES_PATH: .github/linters
+
+          # Ensure JSCPD reads this config filename from LINTER_RULES_PATH
+          JSCPD_CONFIG_FILE: .jscpd.json

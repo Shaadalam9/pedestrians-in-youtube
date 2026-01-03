@@ -1768,4 +1768,3 @@ class Crossings:
                                           scale=C.SCALE,
                                           save_eps=False,
                                           save_final=True)
-
