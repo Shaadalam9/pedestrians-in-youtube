@@ -1,154 +1,14 @@
-import common
-from custom_logger import CustomLogger
-from logmod import logs
-import warnings
 import ast
 import pandas as pd
 import math
+from utils.core.metadata import MetaData
 
-# Suppress the specific FutureWarning
-warnings.filterwarnings("ignore", category=FutureWarning, module="plotly")
-
-logs(show_level=common.get_configs("logger_level"), show_color=True)
-logger = CustomLogger(__name__)  # use custom logger
+metadata_class = MetaData()
 
 
-class Values():
+class Dataset_Stats:
     def __init__(self) -> None:
         pass
-
-    def find_values_with_video_id(self, df, key):
-        """Extracts relevant data from a DataFrame based on a given key.
-
-        Args:
-            df (DataFrame): The DataFrame containing the data.
-            key (str): The key to search for in the DataFrame.
-
-        Returns:
-            tuple: A tuple containing information related to the key, including:
-                - Video ID
-                - Start time
-                - End time
-                - Time of day
-                - City
-                - State
-                - Latitude
-                - Longitude
-                - Country
-                - GDP per capita
-                - Population
-                - Population of the country
-                - Traffic mortality
-                - Continent
-                - Literacy rate
-                - Average height
-                - ISO-3 code for country
-                - Fps of the video
-                - Type of vehicle
-        """
-        id, start_, fps = key.rsplit("_", 2)  # Splitting the key into video ID and start time
-
-        # Iterate through each row in the DataFrame
-        for index, row in df.iterrows():
-            # Extracting data from the DataFrame row
-            video_ids = [id.strip() for id in row["videos"].strip("[]").split(',')]
-            start_times = ast.literal_eval(row["start_time"])
-            end_times = ast.literal_eval(row["end_time"])
-            time_of_day = ast.literal_eval(row["time_of_day"])
-            city = row["city"]
-            state = row['state'] if not pd.isna(row['state']) else "unknown"
-            latitude = row["lat"]
-            longitude = row["lon"]
-            country = row["country"]
-            gdp = row["gmp"]
-            population = row["population_city"]
-            population_country = row["population_country"]
-            traffic_mortality = row["traffic_mortality"]
-            continent = row["continent"]
-            literacy_rate = row["literacy_rate"]
-            avg_height = row["avg_height"]
-            iso3 = row["iso3"]
-            vehicle_type = ast.literal_eval(row["vehicle_type"])
-
-            # Iterate through each video, start time, end time, and time of day
-            for video, start, end, time_of_day_, vehicle_type, in zip(video_ids, start_times, end_times, time_of_day, vehicle_type):  # noqa: E501
-                # Check if the current video matches the specified ID
-                if video == id:
-                    logger.debug(f"Finding values for {video} start={start}, end={end}")
-                    counter = 0
-                    # Iterate through each start time
-                    for s in start:
-                        # Check if the start time matches the specified start time
-                        if int(start_) == s:
-                            # Calculate gpd per capita to avoid division by zero
-                            if int(population) > 0:
-                                gpd_capita = int(gdp)/int(population)
-                            else:
-                                gpd_capita = 0
-                            # Return relevant information once found
-                            return (video,                      # 0
-                                    s,                          # 1
-                                    end[counter],               # 2
-                                    time_of_day_[counter],      # 3
-                                    city,                       # 4
-                                    state,                      # 5
-                                    latitude,                   # 6
-                                    longitude,                  # 7
-                                    country,                    # 8
-                                    gpd_capita,                 # 9
-                                    population,                 # 10
-                                    population_country,         # 11
-                                    traffic_mortality,          # 12
-                                    continent,                  # 13
-                                    literacy_rate,              # 14
-                                    avg_height,                 # 15
-                                    iso3,                       # 16
-                                    int(fps),                   # 17
-                                    vehicle_type)               # 18
-                        counter += 1
-
-    def get_value(self, df, column_name1, column_value1, column_name2, column_value2, target_column):
-        """
-        Retrieves a value from the target_column based on the condition
-        that both column_name1 matches column_value1 and column_name2 matches column_value2.
-
-        Parameters:
-        df (pandas.DataFrame): The DataFrame containing the mapping file.
-        column_name1 (str): The first column to search for the matching value.
-        column_value1 (str): The value to search for in column_name1.
-        column_name2 (str): The second column to search for the matching value.
-        column_value2 (str): The value to search for in column_name2. If "unknown", the value is treated as NaN.
-        target_column (str): The column from which to retrieve the corresponding value.
-
-        Returns:
-        Any: The value from target_column that corresponds to the matching values in both
-             column_name1 and column_name2.
-        """
-        if column_name2 is None or column_value2 is None:
-            result = df[df[column_name1] == column_value1][target_column]
-            if not result.empty:
-                return result.iloc[0]
-            else:
-                return None
-
-        else:
-            # Treat column_value2 as NaN if it is "unknown"
-            if column_value2 == "unknown":
-                column_value2 = float('nan')
-
-            # Filter the DataFrame where both conditions are met
-            if pd.isna(column_value2):
-                result = df[(df[column_name1] == column_value1) & (df[column_name2].isna())][target_column]
-            else:
-                result = df[(df[column_name1] == column_value1) & (df[column_name2] == column_value2)][target_column]
-
-            # Check if the result is not empty (i.e., if there is a match)
-            if not result.empty:
-                # Return the first matched value
-                return result.values[0]
-            else:
-                # Return None if no matching value is found
-                return None
 
     def calculate_total_seconds_for_city(self, df, city_name, state_name):
         """Calculates the total number of seconds of video for a given city and state.
@@ -202,6 +62,42 @@ class Values():
                 total_seconds += (int(e) - int(s))
 
         return total_seconds
+
+    def calculate_total_seconds(self, df):
+        """Calculates the total video duration (in seconds) from a mapping DataFrame.
+
+        This method reads `start_time` and `end_time` columns, which contain string
+        representations of nested lists of timestamps. It iterates through all rows,
+        summing the total video duration across the dataset.
+
+        Args:
+            df (pd.DataFrame): DataFrame containing at least `start_time` and `end_time` columns.
+
+        Returns:
+            int: The total number of seconds across all start/end pairs in the DataFrame.
+
+        Example:
+            >>> df = pd.DataFrame({
+            ...     'start_time': ["[[0, 10]]", "[[20, 30]]"],
+            ...     'end_time': ["[[5, 15]]", "[[25, 35]]"]
+            ... })
+            >>> calculate_total_seconds(df)
+            20
+        """
+        grand_total_seconds = 0
+
+        # Iterate through each row in the DataFrame
+        for _, row in df.iterrows():
+            # Convert string representation into Python list
+            start_times = ast.literal_eval(row["start_time"])
+            end_times = ast.literal_eval(row["end_time"])
+
+            # Sum duration for each start/end timestamp pair
+            for start, end in zip(start_times, end_times):
+                for s, e in zip(start, end):
+                    grand_total_seconds += (int(e) - int(s))
+
+        return grand_total_seconds
 
     def remove_columns_below_threshold(self, df, threshold):
         """Removes `start_time`/`end_time` column pairs where total recorded time is below a threshold.
@@ -263,42 +159,6 @@ class Values():
         df_modified = df.drop(columns=cols_to_remove)
 
         return df_modified
-
-    def calculate_total_seconds(self, df):
-        """Calculates the total video duration (in seconds) from a mapping DataFrame.
-
-        This method reads `start_time` and `end_time` columns, which contain string
-        representations of nested lists of timestamps. It iterates through all rows,
-        summing the total video duration across the dataset.
-
-        Args:
-            df (pd.DataFrame): DataFrame containing at least `start_time` and `end_time` columns.
-
-        Returns:
-            int: The total number of seconds across all start/end pairs in the DataFrame.
-
-        Example:
-            >>> df = pd.DataFrame({
-            ...     'start_time': ["[[0, 10]]", "[[20, 30]]"],
-            ...     'end_time': ["[[5, 15]]", "[[25, 35]]"]
-            ... })
-            >>> calculate_total_seconds(df)
-            20
-        """
-        grand_total_seconds = 0
-
-        # Iterate through each row in the DataFrame
-        for _, row in df.iterrows():
-            # Convert string representation into Python list
-            start_times = ast.literal_eval(row["start_time"])
-            end_times = ast.literal_eval(row["end_time"])
-
-            # Sum duration for each start/end timestamp pair
-            for start, end in zip(start_times, end_times):
-                for s, e in zip(start, end):
-                    grand_total_seconds += (int(e) - int(s))
-
-        return grand_total_seconds
 
     def calculate_total_videos(self, df):
         """Counts the total number of unique videos from a mapping DataFrame.
@@ -368,7 +228,7 @@ class Values():
 
         # Step 2: Map each video to its city and condition
         for key, total_events in count.items():
-            result = self.find_values_with_video_id(df_mapping, key)
+            result = metadata_class.find_values_with_video_id(df_mapping, key)
 
             if result is not None:
                 condition = result[3]
@@ -422,7 +282,7 @@ class Values():
             city, lat, _, cond = city_lat_long_cond.split("_")
 
             # Look up the country for this city-lat combination
-            country = self.get_value(df_mapping, "city", city, "lat", float(lat), "country")
+            country = metadata_class.get_value(df_mapping, "city", city, "lat", float(lat), "country")
 
             # Aggregate counts by country-condition
             country_key = f"{country}_{cond}"

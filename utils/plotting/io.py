@@ -1,0 +1,59 @@
+import os
+import common
+import plotly as py
+import shutil
+from custom_logger import CustomLogger
+
+logger = CustomLogger(__name__)  # use custom logger
+
+
+class IO:
+    def __init__(self) -> None:
+        pass
+
+    def save_plotly_figure(self, fig, filename, width=1600, height=900, scale=1, save_final=True, save_png=True,
+                           save_eps=True):
+        """
+        Saves a Plotly figure as HTML, PNG, SVG, and EPS formats.
+
+        Args:
+            fig (plotly.graph_objs.Figure): Plotly figure object.
+            filename (str): Name of the file (without extension) to save.
+            width (int, optional): width of the PNG and EPS images in pixels. Defaults to 1600.
+            height (int, optional): height of the PNG and EPS images in pixels. Defaults to 900.
+            scale (int, optional): Scaling factor for the PNG image. Defaults to 3.
+            save_final (bool, optional): whether to save the "good" final figure.
+        """
+        # Create directory if it doesn't exist
+        output_final = os.path.join(common.root_dir, 'figures')
+        os.makedirs(common.output_dir, exist_ok=True)
+        os.makedirs(output_final, exist_ok=True)
+
+        # Save as HTML
+        logger.info(f"Saving html file for {filename}.")
+        py.offline.plot(fig, filename=os.path.join(common.output_dir, filename + ".html"))
+        # also save the final figure
+        if save_final:
+            py.offline.plot(fig, filename=os.path.join(output_final, filename + ".html"),  auto_open=False)
+
+        try:
+            # Save as PNG
+            if save_png:
+                logger.info(f"Saving png file for {filename}.")
+                fig.write_image(os.path.join(common.output_dir, filename + ".png"), width=width, height=height,
+                                scale=scale)
+                # also save the final figure
+                if save_final:
+                    shutil.copy(os.path.join(common.output_dir, filename + ".png"),
+                                os.path.join(output_final, filename + ".png"))
+
+            # Save as EPS
+            if save_eps:
+                logger.info(f"Saving eps file for {filename}.")
+                fig.write_image(os.path.join(common.output_dir, filename + ".eps"), width=width, height=height)
+                # also save the final figure
+                if save_final:
+                    shutil.copy(os.path.join(common.output_dir, filename + ".eps"),
+                                os.path.join(output_final, filename + ".eps"))
+        except ValueError as e:
+            logger.error(f"Value error raised when attempted to save image {filename}: {e}")
