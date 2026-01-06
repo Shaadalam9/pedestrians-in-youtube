@@ -1,80 +1,90 @@
-# by Shadab Alam <md_shadab_alam@outlook.com> and Pavlo Bazilinskyy <pavlo.bazilinskyy@gmail.com>
+"""
+Project module setup.
+
+Authors:
+- Shadab Alam <md_shadab_alam@outlook.com>
+- Pavlo Bazilinskyy <pavlo.bazilinskyy@gmail.com>
+"""
+
+from __future__ import annotations
+
+import ast
 import math
-import pandas as pd
-import numpy as np
 import os
+import pickle
+import re
+import warnings
+from typing import Set, Optional, Dict
+
+import numpy as np
+import pandas as pd
+from tqdm import tqdm
+
 import common
 from custom_logger import CustomLogger
 from logmod import logs
-import ast
-import pickle
-from tqdm import tqdm
-import re
-import warnings
-from typing import Dict, Optional, Set
-from helper_script import Youtube_Helper
-from utils.core.tools import Tools
-from utils.plotting.maps import Maps
-from utils.plotting.bivariate import Bivariate
-from utils.plotting.stacked import Stacked
-from utils.plotting.distributions import Distributions
-from utils.core.dataset_stats import Dataset_Stats
-from utils.analytics.metrics_cache import Metrics_cache
-from utils.analytics.io import IO
+from utils.analytics.aggregation import Aggregation
 from utils.analytics.durations import Duration
+from utils.analytics.events import Events
+from utils.analytics.geo import Geo
+from utils.analytics.io import IO
 from utils.analytics.mapping_enrichment import Mapping_Enrich
+from utils.analytics.metrics_cache import Metrics_cache
+from utils.core.dataset_stats import Dataset_Stats
+from utils.core.tools import Tools
 from utils.crossing.detection import Detection
 from utils.crossing.metrics import Metrics
-from utils.analytics.events import Events
-from utils.plotting.crossings import Crossings
-from utils.analytics.geo import Geo
+from utils.plotting.bivariate import Bivariate
 from utils.plotting.correlations import Correlations
-from utils.analytics.aggregation import Aggregation
+from utils.plotting.crossings import Crossings
+from utils.plotting.distributions import Distributions
+from utils.plotting.maps import Maps
+from utils.plotting.stacked import Stacked
 
+# ---------------------------------------------------------------------
+# Global configuration
+# ---------------------------------------------------------------------
 
-# Suppress the specific FutureWarning
+# Suppress a specific FutureWarning emitted by plotly.
 warnings.filterwarnings("ignore", category=FutureWarning, module="plotly")
 
 logs(show_level=common.get_configs("logger_level"), show_color=True)
 logger = CustomLogger(__name__)  # use custom logger
 
-helper = Youtube_Helper()
-tools_class = Tools()
-maps_class = Maps()
-bivariate_class = Bivariate()
-stacked_class = Stacked()
-distribution_class = Distributions()
-dataset_stats_class = Dataset_Stats()
-metrics_cache_class = Metrics_cache()
+# ---------------------------------------------------------------------
+# Class instances (singletons for this module)
+# ---------------------------------------------------------------------
+
+tools = Tools()
+maps = Maps()
+bivariate = Bivariate()
+stacked = Stacked()
+distribution = Distributions()
+
+dataset_stats = Dataset_Stats()
+metrics_cache = Metrics_cache()
 analytics_IO = IO()
-duration_class = Duration()
-mapping_enrich_class = Mapping_Enrich()
-detection_class = Detection()
-metrics_class = Metrics()
-events_class = Events()
-crossing_class = Crossings()
-geo_class = Geo()
-correlation_class = Correlations()
-aggregation_class = Aggregation()
+duration = Duration()
+mapping_enrich = Mapping_Enrich()
+detection = Detection()
+metrics = Metrics()
+events = Events()
+crossing = Crossings()
+geo = Geo()
+correlation = Correlations()
+aggregation = Aggregation()
 
-# set template for plotly output
-template = common.get_configs('plotly_template')
+# ---------------------------------------------------------------------
+# Constants
+# ---------------------------------------------------------------------
 
-# File to store the city coordinates
-file_results = 'results.pickle'
-
-# Colours in graphs
-bar_colour_1 = 'rgb(251, 180, 174)'
-bar_colour_2 = 'rgb(179, 205, 227)'
-bar_colour_3 = 'rgb(204, 235, 197)'
-bar_colour_4 = 'rgb(222, 203, 228)'
-
-# Consts
-BASE_HEIGHT_PER_ROW = 20  # Adjust as needed
-SCALE = 1  # scale=3 hangs often
+# File to store the city coordinates.
+file_results: str = "results.pickle"
 
 video_paths = common.get_configs("videos")
-misc_files: set[str] = {"DS_Store", "seg", "bbox"}  # define once
+
+# Common junk files/folders to ignore.
+MISC_FILES: Set[str] = {"DS_Store", "seg", "bbox"}
 
 
 class Analysis():
@@ -458,30 +468,30 @@ if __name__ == "__main__":
         # Sort by continent and city, both in ascending order
         df = df.sort_values(by=["continent", "country"], ascending=[True, True])
         # map with all cities
-        maps_class.mapbox_map(df=df, hover_data=hover_data, hover_name="flag_city", file_name='mapbox_map_all')
+        maps.mapbox_map(df=df, hover_data=hover_data, hover_name="flag_city", file_name='mapbox_map_all')
         # Sort by continent and city, both in ascending order
         df = df.sort_values(by=["country", "city"], ascending=[True, True])
 
         # scatter plot for cities with number of videos over total time
-        bivariate_class.scatter(df=df,
-                                x="total_time",
-                                y="video_count",
-                                color="flag_country",
-                                text="flag_city",
-                                xaxis_title='Total time of footage (s)',
-                                yaxis_title='Number of videos',
-                                pretty_text=False,
-                                marker_size=10,
-                                save_file=True,
-                                hover_data=hover_data,
-                                hover_name="flag_city",
-                                legend_title="",
-                                # legend_x=0.01,
-                                # legend_y=1.0,
-                                label_distance_factor=5.0,
-                                marginal_x=None,  # type: ignore
-                                marginal_y=None,  # type: ignore
-                                file_name='scatter_all_total_time-video_count')  # type: ignore
+        bivariate.scatter(df=df,
+                          x="total_time",
+                          y="video_count",
+                          color="flag_country",
+                          text="flag_city",
+                          xaxis_title='Total time of footage (s)',
+                          yaxis_title='Number of videos',
+                          pretty_text=False,
+                          marker_size=10,
+                          save_file=True,
+                          hover_data=hover_data,
+                          hover_name="flag_city",
+                          legend_title="",
+                          # legend_x=0.01,
+                          # legend_y=1.0,
+                          label_distance_factor=5.0,
+                          marginal_x=None,  # type: ignore
+                          marginal_y=None,  # type: ignore
+                          file_name='scatter_all_total_time-video_count')  # type: ignore
         # scatter plot for countries with number of videos over total time
 
         # compute total time per city first
@@ -523,52 +533,52 @@ if __name__ == "__main__":
         df_country = df_country.sort_values(by=["continent", "country"], ascending=[True, True])
         # define hover data
         hover_data = ["country", "continent", "total_time", "video_count"]
-        bivariate_class.scatter(df=df_country,
-                                x="total_time",
-                                y="video_count",
-                                color="continent",
-                                text="flag_country",
-                                xaxis_title="Total time of footage (s)",
-                                yaxis_title="Number of videos",
-                                pretty_text=False,
-                                marker_size=12,
-                                save_file=True,
-                                hover_data=hover_data,
-                                hover_name="flag_country",
-                                legend_title="",
-                                label_distance_factor=0.1,
-                                marginal_x=None,  # type: ignore
-                                marginal_y=None,  # type: ignore
-                                file_name="scatter_all_country_total_time-video_count")
+        bivariate.scatter(df=df_country,
+                          x="total_time",
+                          y="video_count",
+                          color="continent",
+                          text="flag_country",
+                          xaxis_title="Total time of footage (s)",
+                          yaxis_title="Number of videos",
+                          pretty_text=False,
+                          marker_size=12,
+                          save_file=True,
+                          hover_data=hover_data,
+                          hover_name="flag_country",
+                          legend_title="",
+                          label_distance_factor=0.1,
+                          marginal_x=None,  # type: ignore
+                          marginal_y=None,  # type: ignore
+                          file_name="scatter_all_country_total_time-video_count")
 
         # histogram of dates of videos
-        distribution_class.video_histogram_by_month(df=df,
-                                                    video_count_col='video_count',
-                                                    upload_date_col='upload_date',
-                                                    xaxis_title='Upload month (year-month)',
-                                                    yaxis_title='Number of videos',
-                                                    save_file=True)
+        distribution.video_histogram_by_month(df=df,
+                                              video_count_col='video_count',
+                                              upload_date_col='upload_date',
+                                              xaxis_title='Upload month (year-month)',
+                                              yaxis_title='Number of videos',
+                                              save_file=True)
 
         # maps with all cities and population heatmap
-        maps_class.mapbox_map(df=df,
-                              hover_data=hover_data,
-                              density_col='population_city',
-                              density_radius=10,
-                              file_name='mapbox_map_all_pop')
+        maps.mapbox_map(df=df,
+                        hover_data=hover_data,
+                        density_col='population_city',
+                        density_radius=10,
+                        file_name='mapbox_map_all_pop')
 
         # maps with all cities and video count heatmap
-        maps_class.mapbox_map(df=df,
-                              hover_data=hover_data,
-                              density_col='video_count',
-                              density_radius=10,
-                              file_name='mapbox_map_all_videos')
+        maps.mapbox_map(df=df,
+                        hover_data=hover_data,
+                        density_col='video_count',
+                        density_radius=10,
+                        file_name='mapbox_map_all_videos')
 
         # maps with all cities and total time heatmap
-        maps_class.mapbox_map(df=df,
-                              hover_data=hover_data,
-                              density_col='total_time',
-                              density_radius=10,
-                              file_name='mapbox_map_all_time')
+        maps.mapbox_map(df=df,
+                        hover_data=hover_data,
+                        density_col='total_time',
+                        density_radius=10,
+                        file_name='mapbox_map_all_time')
 
         # Type of vehicle over time of day
         df = df_mapping.copy()  # copy df to manipulate for output
@@ -619,7 +629,7 @@ if __name__ == "__main__":
         df_pivot = df_pivot.sort_values("vehicle_type_name")
 
         # --- plot ---
-        distribution_class.bar(
+        distribution.bar(
             df=df_pivot,
             x=df_pivot["vehicle_type_name"],
             y=[col for col in ["Day", "Night"] if col in df_pivot.columns],
@@ -673,7 +683,7 @@ if __name__ == "__main__":
         # ensure only expected columns
         time_columns = [col for col in ["Day", "Night"] if col in df_pivot.columns]
         # --- plot ---
-        distribution_class.bar(
+        distribution.bar(
             df=df_pivot,
             x=df_pivot["continent"],
             y=time_columns,
@@ -689,7 +699,7 @@ if __name__ == "__main__":
             name_file="bar_continent_time_of_day"
         )
 
-        total_duration = dataset_stats_class.calculate_total_seconds(df_mapping)
+        total_duration = dataset_stats.calculate_total_seconds(df_mapping)
 
         # Displays values before applying filters
         logger.info(
@@ -703,12 +713,12 @@ if __name__ == "__main__":
             f"before filtering."
         )
         logger.info("Total number of videos before filtering: {}.",
-                    dataset_stats_class.calculate_total_videos(df_mapping))
+                    dataset_stats.calculate_total_videos(df_mapping))
 
-        country, number = metrics_cache_class.get_unique_values(df_mapping, "iso3")
+        country, number = metrics_cache.get_unique_values(df_mapping, "iso3")
         logger.info("Total number of countries and territories before filtering: {}.", number)
 
-        city, number = metrics_cache_class.get_unique_values(df_mapping, "city")
+        city, number = metrics_cache.get_unique_values(df_mapping, "city")
         logger.info("Total number of cities before filtering: {}.", number)
 
         # Limit countries if required
@@ -808,7 +818,7 @@ if __name__ == "__main__":
                     # Ensure "file" is always a string
                     file_str: str = os.fspath(filtered)  # converts PathLike to str safely
 
-                    if file_str in misc_files:
+                    if file_str in MISC_FILES:
                         continue
 
                     filename_no_ext = os.path.splitext(file_str)[0]
@@ -821,7 +831,7 @@ if __name__ == "__main__":
                     df = df[df["confidence"] >= common.get_configs("min_confidence")]
 
                     # After reading the file, clean up the filename
-                    base_name = tools_class.clean_csv_filename(file_str)
+                    base_name = tools.clean_csv_filename(file_str)
                     filename_no_ext = os.path.splitext(base_name)[0]  # Remove extension
 
                     try:
@@ -830,7 +840,7 @@ if __name__ == "__main__":
                         logger.warning(f"Unexpected filename format: {filename_no_ext}")
                         continue
 
-                    video_city_id = geo_class.find_city_id(df_mapping, video_id, int(start_index))
+                    video_city_id = geo.find_city_id(df_mapping, video_id, int(start_index))
                     video_city = df_mapping.loc[df_mapping["id"] == video_city_id, "city"].values[0]  # type: ignore # noqa: E501
                     video_state = df_mapping.loc[df_mapping["id"] == video_city_id, "state"].values[0]  # type: ignore # noqa: E501
                     video_country = df_mapping.loc[df_mapping["id"] == video_city_id, "country"].values[0]  # type: ignore # noqa: E501
@@ -839,22 +849,22 @@ if __name__ == "__main__":
                     # Get the number of number and unique id of the object crossing the road
                     # ids give the unique of the person who cross the road after applying the filter, while
                     # all_ids gives every unique_id of the person who crosses the road
-                    ids, all_ids = detection_class.pedestrian_crossing(df,
-                                                                       filename_no_ext,
-                                                                       df_mapping,
-                                                                       common.get_configs("boundary_left"),
-                                                                       common.get_configs("boundary_right"),
-                                                                       person_id=0)
+                    ids, all_ids = detection.pedestrian_crossing(df,
+                                                                 filename_no_ext,
+                                                                 df_mapping,
+                                                                 common.get_configs("boundary_left"),
+                                                                 common.get_configs("boundary_right"),
+                                                                 person_id=0)
 
                     # Saving it in a dictionary in: {video-id_time: count, ids}
                     pedestrian_crossing_count[filename_no_ext] = {"ids": ids}
                     pedestrian_crossing_count_all[filename_no_ext] = {"ids": all_ids}
 
                     # Saves the time to cross in form {name_time: {id(s): time(s)}}
-                    temp_data = metrics_class.time_to_cross(df,
-                                                            pedestrian_crossing_count[filename_no_ext]["ids"],
-                                                            filename_no_ext,
-                                                            df_mapping)
+                    temp_data = metrics.time_to_cross(df,
+                                                      pedestrian_crossing_count[filename_no_ext]["ids"],
+                                                      filename_no_ext,
+                                                      df_mapping)
                     data[filename_no_ext] = temp_data
                     # List of all 80 class names in COCO order
                     coco_classes = ['person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck',
@@ -889,25 +899,25 @@ if __name__ == "__main__":
                         df_mapping.loc[df_mapping["id"] == video_city_id, class_name] += counters[class_name]  # type: ignore  # noqa: E501
 
                     # Add duration of segment
-                    time_video = duration_class.get_duration(df_mapping, video_id, int(start_index))
+                    time_video = duration.get_duration(df_mapping, video_id, int(start_index))
                     df_mapping.loc[df_mapping["id"] == video_city_id, "total_time"] += time_video  # type: ignore
 
                     # Add total crossing detected
                     df_mapping.loc[df_mapping["id"] == video_city_id, "total_crossing_detect"] += len(ids)  # type: ignore  # noqa: E501
 
                     # Aggregated values
-                    speed_value = metrics_class.calculate_speed_of_crossing(df_mapping,
-                                                                            df,
-                                                                            {filename_no_ext: temp_data})
+                    speed_value = metrics.calculate_speed_of_crossing(df_mapping,
+                                                                      df,
+                                                                      {filename_no_ext: temp_data})
                     if speed_value is not None:
                         for outer_key, inner_dict in speed_value.items():
                             if outer_key not in all_speed:
                                 all_speed[outer_key] = inner_dict
                             else:
                                 all_speed[outer_key].update(inner_dict)
-                    time_value = metrics_class.time_to_start_cross(df_mapping,
-                                                                   df,
-                                                                   {filename_no_ext: temp_data})
+                    time_value = metrics.time_to_start_cross(df_mapping,
+                                                             df,
+                                                             {filename_no_ext: temp_data})
                     if time_value is not None:
                         for outer_key, inner_dict in time_value.items():
                             if outer_key not in all_time:
@@ -926,14 +936,14 @@ if __name__ == "__main__":
         stop_sign_counter = df_mapping['stop_sign'].sum()
 
         # Record the average speed and time of crossing on country basis
-        avg_speed_country, all_speed_country = metrics_class.avg_speed_of_crossing_country(df_mapping, all_speed)
+        avg_speed_country, all_speed_country = metrics.avg_speed_of_crossing_country(df_mapping, all_speed)
 
         # Output in real world seconds
-        avg_time_country, all_time_country = metrics_class.avg_time_to_start_cross_country(df_mapping, all_time)
+        avg_time_country, all_time_country = metrics.avg_time_to_start_cross_country(df_mapping, all_time)
 
         # Record the average speed and time of crossing on city basis
-        avg_speed_city, all_speed_city = metrics_class.avg_speed_of_crossing_city(df_mapping, all_speed)
-        avg_time_city, all_time_city = metrics_class.avg_time_to_start_cross_city(df_mapping, all_time)
+        avg_speed_city, all_speed_city = metrics.avg_speed_of_crossing_city(df_mapping, all_speed)
+        avg_time_city, all_time_city = metrics.avg_time_to_start_cross_city(df_mapping, all_time)
 
         # Kill the program if there is no data to analyse
         if len(avg_time_city) == 0 or len(avg_speed_city) == 0:
@@ -941,51 +951,51 @@ if __name__ == "__main__":
             exit()
 
         logger.info("Calculating counts of detected traffic signs.")
-        traffic_sign_city = metrics_cache_class.calculate_traffic_signs(df_mapping)
+        traffic_sign_city = metrics_cache.calculate_traffic_signs(df_mapping)
 
         logger.info("Calculating counts of detected mobile phones.")
-        cellphone_city = metrics_cache_class.calculate_cellphones(df_mapping)
+        cellphone_city = metrics_cache.calculate_cellphones(df_mapping)
 
         logger.info("Calculating counts of detected vehicles.")
-        vehicle_city = metrics_cache_class.calculate_traffic(df_mapping, motorcycle=1, car=1, bus=1, truck=1)
+        vehicle_city = metrics_cache.calculate_traffic(df_mapping, motorcycle=1, car=1, bus=1, truck=1)
 
         logger.info("Calculating counts of detected bicycles.")
-        bicycle_city = metrics_cache_class.calculate_traffic(df_mapping, bicycle=1)
+        bicycle_city = metrics_cache.calculate_traffic(df_mapping, bicycle=1)
 
         logger.info("Calculating counts of detected cars (subset of vehicles).")
-        car_city = metrics_cache_class.calculate_traffic(df_mapping, car=1)
+        car_city = metrics_cache.calculate_traffic(df_mapping, car=1)
 
         logger.info("Calculating counts of detected motorcycles (subset of vehicles).")
-        motorcycle_city = metrics_cache_class.calculate_traffic(df_mapping, motorcycle=1)
+        motorcycle_city = metrics_cache.calculate_traffic(df_mapping, motorcycle=1)
 
         logger.info("Calculating counts of detected buses (subset of vehicles).")
-        bus_city = metrics_cache_class.calculate_traffic(df_mapping, bus=1)
+        bus_city = metrics_cache.calculate_traffic(df_mapping, bus=1)
 
         logger.info("Calculating counts of detected trucks (subset of vehicles).")
-        truck_city = metrics_cache_class.calculate_traffic(df_mapping, truck=1)
+        truck_city = metrics_cache.calculate_traffic(df_mapping, truck=1)
 
         logger.info("Calculating counts of detected persons.")
-        person_city = metrics_cache_class.calculate_traffic(df_mapping, person=1)
+        person_city = metrics_cache.calculate_traffic(df_mapping, person=1)
 
         logger.info("Calculating counts of detected crossing events with traffic lights.")
-        cross_evnt_city = events_class.crossing_event_wt_traffic_light(df_mapping, data)
+        cross_evnt_city = events.crossing_event_wt_traffic_light(df_mapping, data)
 
         logger.info("Calculating counts of crossing events in cities.")
-        pedestrian_cross_city = dataset_stats_class.pedestrian_cross_per_city(pedestrian_crossing_count, df_mapping)
-        pedestrian_cross_city_all = dataset_stats_class.pedestrian_cross_per_city(pedestrian_crossing_count_all,
-                                                                                  df_mapping)
+        pedestrian_cross_city = dataset_stats.pedestrian_cross_per_city(pedestrian_crossing_count, df_mapping)
+        pedestrian_cross_city_all = dataset_stats.pedestrian_cross_per_city(pedestrian_crossing_count_all,
+                                                                            df_mapping)
 
         logger.info("Calculating counts of crossing events in countries.")
-        pedestrian_cross_country = dataset_stats_class.pedestrian_cross_per_country(pedestrian_cross_city, df_mapping)
-        pedestrian_cross_country_all = dataset_stats_class.pedestrian_cross_per_country(pedestrian_cross_city_all,
-                                                                                        df_mapping)
+        pedestrian_cross_country = dataset_stats.pedestrian_cross_per_country(pedestrian_cross_city, df_mapping)
+        pedestrian_cross_country_all = dataset_stats.pedestrian_cross_per_country(pedestrian_cross_city_all,
+                                                                                  df_mapping)
 
         # Jaywalking data
         logger.info("Calculating parameters for detection of jaywalking.")
 
         (crossings_with_traffic_equipment_city, crossings_without_traffic_equipment_city,
          total_duration_by_city, crossings_with_traffic_equipment_country, crossings_without_traffic_equipment_country,
-         total_duration_by_country) = events_class.crossing_event_with_traffic_equipment(df_mapping, data)
+         total_duration_by_country) = events.crossing_event_with_traffic_equipment(df_mapping, data)
 
         # ----------------------------------------------------------------------
         # Add city-level crossing counts for with and without traffic equipment
@@ -1154,9 +1164,10 @@ if __name__ == "__main__":
         logger.info("Fetching lat and lon coordinates for cities.")
         for index, row in tqdm(df_mapping.iterrows(), total=len(df_mapping)):
             if pd.isna(row["lat"]) or pd.isna(row["lon"]):
-                lat, lon = geo_class.get_coordinates(row["city"],
-                                                     row["state"],
-                                                     common.correct_country(row["country"]))  # type: ignore
+                lat, lon = geo.get_coordinates(row["city"],
+                                               row["state"],
+                                               common.correct_country(row["country"]))  # type: ignore
+
                 df_mapping.at[index, 'lat'] = lat  # type: ignore
                 df_mapping.at[index, 'lon'] = lon  # type: ignore
 
@@ -1168,7 +1179,7 @@ if __name__ == "__main__":
                              'time_of_day', 'start_time', 'end_time', 'vehicle_type', 'upload_date',
                              ], axis=1, inplace=True)
 
-        df_mapping_raw['channel'] = df_mapping_raw['channel'].apply(tools_class.count_unique_channels)
+        df_mapping_raw['channel'] = df_mapping_raw['channel'].apply(tools.count_unique_channels)
         df_mapping_raw.to_csv(os.path.join(common.output_dir, "mapping_city_raw.csv"))
 
         # Get the population threshold from the configuration
@@ -1189,15 +1200,14 @@ if __name__ == "__main__":
         ]
 
         # Remove the rows of the cities where the footage recorded is less than threshold
-        df_mapping = dataset_stats_class.remove_columns_below_threshold(df_mapping,
-                                                                        common.get_configs("footage_threshold"))
+        df_mapping = dataset_stats.remove_columns_below_threshold(df_mapping, common.get_configs("footage_threshold"))
 
         # Limit countries if required
         countries_include = common.get_configs("countries_analyse")
         if countries_include:
             df_mapping = df_mapping[df_mapping["iso3"].isin(common.get_configs("countries_analyse"))]
 
-        total_duration = dataset_stats_class.calculate_total_seconds(df_mapping)
+        total_duration = dataset_stats.calculate_total_seconds(df_mapping)
 
         # Displays values after applying filters
         logger.info(f"Duration of videos in seconds after filtering: {total_duration}, in" +
@@ -1205,24 +1215,24 @@ if __name__ == "__main__":
                     f"hours: {total_duration/60/60:.2f}.")
 
         logger.info("Total number of videos after filtering: {}.",
-                    dataset_stats_class.calculate_total_videos(df_mapping))
+                    dataset_stats.calculate_total_videos(df_mapping))
 
-        country, number = metrics_cache_class.get_unique_values(df_mapping, "iso3")
+        country, number = metrics_cache.get_unique_values(df_mapping, "iso3")
         logger.info("Total number of countries and territories after filtering: {}.", number)
 
-        city, number = metrics_cache_class.get_unique_values(df_mapping, "city")
+        city, number = metrics_cache.get_unique_values(df_mapping, "city")
         logger.info("Total number of cities after filtering: {}.", number)
 
-        df_mapping = mapping_enrich_class.add_speed_and_time_to_mapping(df_mapping=df_mapping,
-                                                                        avg_speed_city=avg_speed_city,
-                                                                        avg_speed_country=avg_speed_country,
-                                                                        avg_time_city=avg_time_city,
-                                                                        avg_time_country=avg_time_country,
-                                                                        pedestrian_cross_city=pedestrian_cross_city,
-                                                                        pedestrian_cross_country=pedestrian_cross_country)  # noqa: E501
+        df_mapping = mapping_enrich.add_speed_and_time_to_mapping(df_mapping=df_mapping,
+                                                                  avg_speed_city=avg_speed_city,
+                                                                  avg_speed_country=avg_speed_country,
+                                                                  avg_time_city=avg_time_city,
+                                                                  avg_time_country=avg_time_country,
+                                                                  pedestrian_cross_city=pedestrian_cross_city,
+                                                                  pedestrian_cross_country=pedestrian_cross_country)
 
-        min_max_speed = duration_class.get_duration_segment(all_speed, df_mapping, name="speed", duration=None)
-        min_max_time = duration_class.get_duration_segment(all_time, df_mapping, name="time", duration=None)
+        min_max_speed = duration.get_duration_segment(all_speed, df_mapping, name="speed", duration=None)
+        min_max_time = duration.get_duration_segment(all_time, df_mapping, name="time", duration=None)
 
         # Save the results to a pickle file
         logger.info("Saving results to a pickle file {}.", file_results)
@@ -1280,12 +1290,12 @@ if __name__ == "__main__":
     # --- Check if reanalysis of speed is required ---
     if common.get_configs("reanalyse_speed"):
         # Compute average speed for each country using mapping and speed data
-        avg_speed_country = metrics_class.avg_speed_of_crossing_country(df_mapping, all_speed)
+        avg_speed_country = metrics.avg_speed_of_crossing_country(df_mapping, all_speed)
         # Compute average speed for each city using speed data
-        avg_speed_city = metrics_class.avg_speed_of_crossing_city(df_mapping, all_speed)
+        avg_speed_city = metrics.avg_speed_of_crossing_city(df_mapping, all_speed)
 
         # Add computed speed values to the main mapping dataframe
-        df_mapping = mapping_enrich_class.add_speed_and_time_to_mapping(
+        df_mapping = mapping_enrich.add_speed_and_time_to_mapping(
             df_mapping=df_mapping,
             avg_speed_city=avg_speed_city,
             avg_time_city=None,
@@ -1311,12 +1321,12 @@ if __name__ == "__main__":
     # --- Check if reanalysis of waiting time is required ---
     if common.get_configs("reanalyse_waiting_time"):
         # Compute average waiting time to start crossing for each country
-        avg_time_country = metrics_class.avg_time_to_start_cross_country(df_mapping, all_speed)
+        avg_time_country = metrics.avg_time_to_start_cross_country(df_mapping, all_speed)
         # Compute average waiting time to start crossing for each city
-        avg_time_city = metrics_class.avg_time_to_start_cross_city(df_mapping, all_time)
+        avg_time_city = metrics.avg_time_to_start_cross_city(df_mapping, all_time)
 
         # Add computed time values to the main mapping dataframe
-        df_mapping = mapping_enrich_class.add_speed_and_time_to_mapping(
+        df_mapping = mapping_enrich.add_speed_and_time_to_mapping(
             df_mapping=df_mapping,
             avg_time_city=avg_time_city,
             avg_speed_city=avg_speed_city,
@@ -1411,626 +1421,628 @@ if __name__ == "__main__":
     df['state'] = df['state'].fillna('NA')  # Set state to NA
 
     # Maps with filtered data
-    maps_class.mapbox_map(df=df, hover_data=hover_data, file_name='mapbox_map')
+    maps.mapbox_map(df=df, hover_data=hover_data, file_name='mapbox_map')
 
-    maps_class.mapbox_map(df=df,
-                          hover_data=hover_data,
-                          density_col='total_time',
-                          density_radius=10,
-                          file_name='mapbox_map_time')
+    maps.mapbox_map(df=df,
+                    hover_data=hover_data,
+                    density_col='total_time',
+                    density_radius=10,
+                    file_name='mapbox_map_time')
 
-    maps_class.world_map(df_mapping=df)  # map with countries
+    maps.world_map(df_mapping=df)  # map with countries
 
-    distribution_class.violin_plot(data_index=22, name="speed", min_threshold=common.get_configs("min_speed_limit"),
-                                   max_threshold=common.get_configs("max_speed_limit"), df_mapping=df_mapping,
-                                   save_file=True, data_file=file_results)
+    distribution.violin_plot(data_index=22,
+                             name="speed",
+                             min_threshold=common.get_configs("min_speed_limit"),
+                             max_threshold=common.get_configs("max_speed_limit"), df_mapping=df_mapping,
+                             save_file=True, data_file=file_results)
 
     # ------------All values----------------- #
-    distribution_class.hist(data_index=22,
-                            name="speed",
-                            marginal="violin",
-                            nbins=100,
-                            raw=True,
-                            min_threshold=common.get_configs("min_speed_limit"),
-                            max_threshold=common.get_configs("max_speed_limit"),
-                            font_size=common.get_configs("font_size") + 4,
-                            fig_save_height=650,
-                            save_file=True,
-                            data_file=file_results)
+    distribution.hist(data_index=22,
+                      name="speed",
+                      marginal="violin",
+                      nbins=100,
+                      raw=True,
+                      min_threshold=common.get_configs("min_speed_limit"),
+                      max_threshold=common.get_configs("max_speed_limit"),
+                      font_size=common.get_configs("font_size") + 4,
+                      fig_save_height=650,
+                      save_file=True,
+                      data_file=file_results)
 
-    distribution_class.hist(data_index=39,
-                            name="time",
-                            marginal="violin",
-                            # nbins=100,
-                            raw=True,
-                            min_threshold=None,
-                            max_threshold=None,
-                            font_size=common.get_configs("font_size") + 4,
-                            fig_save_height=650,
-                            save_file=True,
-                            data_file=file_results)
+    distribution.hist(data_index=39,
+                      name="time",
+                      marginal="violin",
+                      # nbins=100,
+                      raw=True,
+                      min_threshold=None,
+                      max_threshold=None,
+                      font_size=common.get_configs("font_size") + 4,
+                      fig_save_height=650,
+                      save_file=True,
+                      data_file=file_results)
 
     # ------------Filtered values----------------- #
-    distribution_class.hist(data_index=38,
-                            name="speed_filtered",
-                            marginal="violin",
-                            nbins=100,
-                            raw=False,
-                            min_threshold=common.get_configs("min_speed_limit"),
-                            max_threshold=common.get_configs("max_speed_limit"),
-                            font_size=common.get_configs("font_size") + 4,
-                            fig_save_height=650,
-                            save_file=True,
-                            data_file=file_results)
+    distribution.hist(data_index=38,
+                      name="speed_filtered",
+                      marginal="violin",
+                      nbins=100,
+                      raw=False,
+                      min_threshold=common.get_configs("min_speed_limit"),
+                      max_threshold=common.get_configs("max_speed_limit"),
+                      font_size=common.get_configs("font_size") + 4,
+                      fig_save_height=650,
+                      save_file=True,
+                      data_file=file_results)
 
-    distribution_class.hist(data_index=37,
-                            name="time_filtered",
-                            marginal="violin",
-                            # nbins=100,
-                            raw=False,
-                            min_threshold=None,
-                            max_threshold=None,
-                            font_size=common.get_configs("font_size") + 4,
-                            df_mapping=df_mapping,
-                            fig_save_height=650,
-                            save_file=True,
-                            data_file=file_results)
+    distribution.hist(data_index=37,
+                      name="time_filtered",
+                      marginal="violin",
+                      # nbins=100,
+                      raw=False,
+                      min_threshold=None,
+                      max_threshold=None,
+                      font_size=common.get_configs("font_size") + 4,
+                      df_mapping=df_mapping,
+                      fig_save_height=650,
+                      save_file=True,
+                      data_file=file_results)
 
     if common.get_configs("analysis_level") == "city":
 
         # Amount of footage
-        bivariate_class.scatter(df=df,
-                                x="total_time",
-                                y="person",
-                                color="continent",
-                                text="city",
-                                xaxis_title='Total time of footage (s)',
-                                yaxis_title='Number of detected pedestrians',
-                                pretty_text=False,
-                                marker_size=10,
-                                save_file=True,
-                                hover_data=hover_data,
-                                hover_name="city",
-                                legend_title="",
-                                legend_x=0.01,
-                                legend_y=1.0,
-                                label_distance_factor=5.0,
-                                marginal_x=None,  # type: ignore
-                                marginal_y=None)  # type: ignore
+        bivariate.scatter(df=df,
+                          x="total_time",
+                          y="person",
+                          color="continent",
+                          text="city",
+                          xaxis_title='Total time of footage (s)',
+                          yaxis_title='Number of detected pedestrians',
+                          pretty_text=False,
+                          marker_size=10,
+                          save_file=True,
+                          hover_data=hover_data,
+                          hover_name="city",
+                          legend_title="",
+                          legend_x=0.01,
+                          legend_y=1.0,
+                          label_distance_factor=5.0,
+                          marginal_x=None,  # type: ignore
+                          marginal_y=None)  # type: ignore
 
         # todo: ISO-3 codes next to figures shift. need to correct once "final" dataset is online
-        crossing_class.speed_and_time_to_start_cross(df_mapping,
-                                                     x_axis_title_height=110,
-                                                     font_size_captions=common.get_configs("font_size") + 8,
-                                                     legend_x=0.9,
-                                                     legend_y=0.01,
-                                                     legend_spacing=0.0026)
+        crossing.speed_and_time_to_start_cross(df_mapping,
+                                               x_axis_title_height=110,
+                                               font_size_captions=common.get_configs("font_size") + 8,
+                                               legend_x=0.9,
+                                               legend_y=0.01,
+                                               legend_spacing=0.0026)
 
-        stacked_class.stack_plot(df,
-                                 order_by="alphabetical",
-                                 metric="time",
-                                 data_view="combined",
-                                 title_text="Crossing initiation time (s)",
-                                 filename="time_crossing_alphabetical",
-                                 font_size_captions=common.get_configs("font_size") + 8,
-                                 left_margin=80,
-                                 right_margin=80
-                                 )
+        stacked.stack_plot(df,
+                           order_by="alphabetical",
+                           metric="time",
+                           data_view="combined",
+                           title_text="Crossing initiation time (s)",
+                           filename="time_crossing_alphabetical",
+                           font_size_captions=common.get_configs("font_size") + 8,
+                           left_margin=80,
+                           right_margin=80
+                           )
 
-        stacked_class.stack_plot(df,
-                                 order_by="alphabetical",
-                                 metric="time",
-                                 data_view="day",
-                                 title_text="Crossing initiation time (s)",
-                                 filename="time_crossing_alphabetical_day",
-                                 font_size_captions=common.get_configs("font_size") + 8,
-                                 left_margin=80,
-                                 right_margin=80
-                                 )
+        stacked.stack_plot(df,
+                           order_by="alphabetical",
+                           metric="time",
+                           data_view="day",
+                           title_text="Crossing initiation time (s)",
+                           filename="time_crossing_alphabetical_day",
+                           font_size_captions=common.get_configs("font_size") + 8,
+                           left_margin=80,
+                           right_margin=80
+                           )
 
-        stacked_class.stack_plot(df,
-                                 order_by="alphabetical",
-                                 metric="time",
-                                 data_view="night",
-                                 title_text="Crossing initiation time (s)",
-                                 filename="time_crossing_alphabetical_night",
-                                 font_size_captions=common.get_configs("font_size") + 8,
-                                 left_margin=80,
-                                 right_margin=80
-                                 )
+        stacked.stack_plot(df,
+                           order_by="alphabetical",
+                           metric="time",
+                           data_view="night",
+                           title_text="Crossing initiation time (s)",
+                           filename="time_crossing_alphabetical_night",
+                           font_size_captions=common.get_configs("font_size") + 8,
+                           left_margin=80,
+                           right_margin=80
+                           )
 
-        stacked_class.stack_plot(df,
-                                 order_by="average",
-                                 metric="time",
-                                 data_view="combined",
-                                 title_text="Crossing initiation time (s)",
-                                 filename="time_crossing_avg",
-                                 font_size_captions=common.get_configs("font_size") + 8,
-                                 left_margin=10,
-                                 right_margin=10
-                                 )
+        stacked.stack_plot(df,
+                           order_by="average",
+                           metric="time",
+                           data_view="combined",
+                           title_text="Crossing initiation time (s)",
+                           filename="time_crossing_avg",
+                           font_size_captions=common.get_configs("font_size") + 8,
+                           left_margin=10,
+                           right_margin=10
+                           )
 
-        stacked_class.stack_plot(df,
-                                 order_by="average",
-                                 metric="time",
-                                 data_view="day",
-                                 title_text="Crossing initiation time (s)",
-                                 filename="time_crossing_avg_day",
-                                 font_size_captions=common.get_configs("font_size") + 8,
-                                 left_margin=10,
-                                 right_margin=10
-                                 )
+        stacked.stack_plot(df,
+                           order_by="average",
+                           metric="time",
+                           data_view="day",
+                           title_text="Crossing initiation time (s)",
+                           filename="time_crossing_avg_day",
+                           font_size_captions=common.get_configs("font_size") + 8,
+                           left_margin=10,
+                           right_margin=10
+                           )
 
-        stacked_class.stack_plot(df,
-                                 order_by="average",
-                                 metric="time",
-                                 data_view="night",
-                                 title_text="Crossing initiation time (s)",
-                                 filename="time_crossing_avg_night",
-                                 font_size_captions=common.get_configs("font_size") + 8,
-                                 left_margin=10,
-                                 right_margin=10
-                                 )
+        stacked.stack_plot(df,
+                           order_by="average",
+                           metric="time",
+                           data_view="night",
+                           title_text="Crossing initiation time (s)",
+                           filename="time_crossing_avg_night",
+                           font_size_captions=common.get_configs("font_size") + 8,
+                           left_margin=10,
+                           right_margin=10
+                           )
 
-        stacked_class.stack_plot(df,
-                                 order_by="alphabetical",
-                                 metric="speed",
-                                 data_view="combined",
-                                 title_text="Mean speed of crossing (in m/s)",
-                                 filename="speed_crossing_alphabetical",
-                                 font_size_captions=common.get_configs("font_size") + 8,
-                                 left_margin=80,
-                                 right_margin=80
-                                 )
+        stacked.stack_plot(df,
+                           order_by="alphabetical",
+                           metric="speed",
+                           data_view="combined",
+                           title_text="Mean speed of crossing (in m/s)",
+                           filename="speed_crossing_alphabetical",
+                           font_size_captions=common.get_configs("font_size") + 8,
+                           left_margin=80,
+                           right_margin=80
+                           )
 
-        stacked_class.stack_plot(df,
-                                 order_by="alphabetical",
-                                 metric="speed",
-                                 data_view="day",
-                                 title_text="Mean speed of crossing (in m/s)",
-                                 filename="speed_crossing_alphabetical_day",
-                                 font_size_captions=common.get_configs("font_size") + 8,
-                                 left_margin=80,
-                                 right_margin=80
-                                 )
+        stacked.stack_plot(df,
+                           order_by="alphabetical",
+                           metric="speed",
+                           data_view="day",
+                           title_text="Mean speed of crossing (in m/s)",
+                           filename="speed_crossing_alphabetical_day",
+                           font_size_captions=common.get_configs("font_size") + 8,
+                           left_margin=80,
+                           right_margin=80
+                           )
 
-        stacked_class.stack_plot(df,
-                                 order_by="alphabetical",
-                                 metric="speed",
-                                 data_view="night",
-                                 title_text="Mean speed of crossing (in m/s)",
-                                 filename="speed_crossing_alphabetical_night",
-                                 font_size_captions=common.get_configs("font_size") + 8,
-                                 left_margin=80,
-                                 right_margin=80
-                                 )
+        stacked.stack_plot(df,
+                           order_by="alphabetical",
+                           metric="speed",
+                           data_view="night",
+                           title_text="Mean speed of crossing (in m/s)",
+                           filename="speed_crossing_alphabetical_night",
+                           font_size_captions=common.get_configs("font_size") + 8,
+                           left_margin=80,
+                           right_margin=80
+                           )
 
-        stacked_class.stack_plot(df,
-                                 order_by="average",
-                                 metric="speed",
-                                 data_view="combined",
-                                 title_text="Mean speed of crossing (in m/s)",
-                                 filename="speed_crossing_avg",
-                                 font_size_captions=common.get_configs("font_size") + 8,
-                                 left_margin=10,
-                                 right_margin=10
-                                 )
+        stacked.stack_plot(df,
+                           order_by="average",
+                           metric="speed",
+                           data_view="combined",
+                           title_text="Mean speed of crossing (in m/s)",
+                           filename="speed_crossing_avg",
+                           font_size_captions=common.get_configs("font_size") + 8,
+                           left_margin=10,
+                           right_margin=10
+                           )
 
-        stacked_class.stack_plot(df,
-                                 order_by="average",
-                                 metric="speed",
-                                 data_view="day",
-                                 title_text="Mean speed of crossing (in m/s)",
-                                 filename="speed_crossing_avg_day",
-                                 font_size_captions=common.get_configs("font_size") + 8,
-                                 left_margin=10,
-                                 right_margin=10
-                                 )
+        stacked.stack_plot(df,
+                           order_by="average",
+                           metric="speed",
+                           data_view="day",
+                           title_text="Mean speed of crossing (in m/s)",
+                           filename="speed_crossing_avg_day",
+                           font_size_captions=common.get_configs("font_size") + 8,
+                           left_margin=10,
+                           right_margin=10
+                           )
 
-        stacked_class.stack_plot(df,
-                                 order_by="average",
-                                 metric="speed",
-                                 data_view="night",
-                                 title_text="Mean speed of crossing (in m/s)",
-                                 filename="speed_crossing_avg_night",
-                                 font_size_captions=common.get_configs("font_size") + 8,
-                                 left_margin=10,
-                                 right_margin=10
-                                 )
+        stacked.stack_plot(df,
+                           order_by="average",
+                           metric="speed",
+                           data_view="night",
+                           title_text="Mean speed of crossing (in m/s)",
+                           filename="speed_crossing_avg_night",
+                           font_size_captions=common.get_configs("font_size") + 8,
+                           left_margin=10,
+                           right_margin=10
+                           )
 
-        correlation_class.correlation_matrix(df_mapping, pedestrian_cross_city, person_city, bicycle_city,
-                                             car_city, motorcycle_city, bus_city, truck_city, cross_evnt_city,
-                                             vehicle_city, cellphone_city, traffic_sign_city, all_speed, all_time,
-                                             avg_time_city, avg_speed_city)
+        correlation.correlation_matrix(df_mapping, pedestrian_cross_city, person_city, bicycle_city,
+                                       car_city, motorcycle_city, bus_city, truck_city, cross_evnt_city,
+                                       vehicle_city, cellphone_city, traffic_sign_city, all_speed, all_time,
+                                       avg_time_city, avg_speed_city)
 
         # Speed of crossing vs time to start crossing
         df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
         df = df[df["time_crossing"] != 0]
         df['state'] = df['state'].fillna('NA')
-        bivariate_class.scatter(df=df,
-                                x="speed_crossing",
-                                y="time_crossing",
-                                color="continent",
-                                text="city",
-                                xaxis_title='Speed of crossing (in m/s)',
-                                yaxis_title='Crossing initiation time (in s)',
-                                pretty_text=False,
-                                marker_size=10,
-                                save_file=True,
-                                hover_data=hover_data,
-                                hover_name="city",
-                                legend_title="",
-                                legend_x=0.01,
-                                legend_y=1.0,
-                                label_distance_factor=3.0,
-                                marginal_x=None,  # type: ignore
-                                marginal_y=None)  # type: ignore
+        bivariate.scatter(df=df,
+                          x="speed_crossing",
+                          y="time_crossing",
+                          color="continent",
+                          text="city",
+                          xaxis_title='Speed of crossing (in m/s)',
+                          yaxis_title='Crossing initiation time (in s)',
+                          pretty_text=False,
+                          marker_size=10,
+                          save_file=True,
+                          hover_data=hover_data,
+                          hover_name="city",
+                          legend_title="",
+                          legend_x=0.01,
+                          legend_y=1.0,
+                          label_distance_factor=3.0,
+                          marginal_x=None,  # type: ignore
+                          marginal_y=None)  # type: ignore
 
         # Speed of crossing during daytime vs time to start crossing during daytime
         df = df_mapping[df_mapping["speed_crossing_day"] != 0].copy()
         df = df[df["time_crossing_day"] != 0]
         df['state'] = df['state'].fillna('NA')
 
-        bivariate_class.scatter(df=df,
-                                x="speed_crossing_day",
-                                y="time_crossing_day",
-                                color="continent",
-                                text="city",
-                                xaxis_title='Crossing speed during daytime (in m/s)',
-                                yaxis_title='Crossing initiation time during daytime (in s)',
-                                pretty_text=False,
-                                marker_size=10,
-                                save_file=True,
-                                hover_data=hover_data,
-                                hover_name="city",
-                                legend_title="",
-                                legend_x=0.01,
-                                legend_y=1.0,
-                                label_distance_factor=3.0,
-                                marginal_x=None,  # type: ignore
-                                marginal_y=None)  # type: ignore
+        bivariate.scatter(df=df,
+                          x="speed_crossing_day",
+                          y="time_crossing_day",
+                          color="continent",
+                          text="city",
+                          xaxis_title='Crossing speed during daytime (in m/s)',
+                          yaxis_title='Crossing initiation time during daytime (in s)',
+                          pretty_text=False,
+                          marker_size=10,
+                          save_file=True,
+                          hover_data=hover_data,
+                          hover_name="city",
+                          legend_title="",
+                          legend_x=0.01,
+                          legend_y=1.0,
+                          label_distance_factor=3.0,
+                          marginal_x=None,  # type: ignore
+                          marginal_y=None)  # type: ignore
 
         # Speed of crossing during night time vs time to start crossing during night time
         df = df_mapping[df_mapping["speed_crossing_night"] != 0].copy()
         df = df[df["time_crossing_night"] != 0]
         df['state'] = df['state'].fillna('NA')
-        bivariate_class.scatter(df=df,
-                                x="speed_crossing_night",
-                                y="time_crossing_night",
-                                color="continent",
-                                text="city",
-                                xaxis_title='Crossing speed during night time (in m/s)',
-                                yaxis_title='Crossing initiation time during night time (in s)',
-                                pretty_text=False,
-                                marker_size=10,
-                                save_file=True,
-                                hover_data=hover_data,
-                                hover_name="city",
-                                legend_title="",
-                                legend_x=0.87,
-                                legend_y=1.0,
-                                label_distance_factor=0.8,
-                                marginal_x=None,  # type: ignore
-                                marginal_y=None)  # type: ignore
+        bivariate.scatter(df=df,
+                          x="speed_crossing_night",
+                          y="time_crossing_night",
+                          color="continent",
+                          text="city",
+                          xaxis_title='Crossing speed during night time (in m/s)',
+                          yaxis_title='Crossing initiation time during night time (in s)',
+                          pretty_text=False,
+                          marker_size=10,
+                          save_file=True,
+                          hover_data=hover_data,
+                          hover_name="city",
+                          legend_title="",
+                          legend_x=0.87,
+                          legend_y=1.0,
+                          label_distance_factor=0.8,
+                          marginal_x=None,  # type: ignore
+                          marginal_y=None)  # type: ignore
 
         # Time to start crossing vs population of city
         df = df_mapping[df_mapping["time_crossing"] != 0].copy()
         df = df[(df["population_city"].notna()) & (df["population_city"] != 0)]
         df['state'] = df['state'].fillna('NA')
-        bivariate_class.scatter(df=df,
-                                x="time_crossing",
-                                y="population_city",
-                                color="continent",
-                                text="city",
-                                xaxis_title='Crossing initiation time (in s)',
-                                yaxis_title='Population of city',
-                                pretty_text=False,
-                                marker_size=10,
-                                save_file=True,
-                                hover_data=hover_data,
-                                hover_name="city",
-                                legend_title="",
-                                legend_x=0.87,
-                                legend_y=1.0,
-                                label_distance_factor=2.0,
-                                marginal_x=None,  # type: ignore
-                                marginal_y=None)  # type: ignore
+        bivariate.scatter(df=df,
+                          x="time_crossing",
+                          y="population_city",
+                          color="continent",
+                          text="city",
+                          xaxis_title='Crossing initiation time (in s)',
+                          yaxis_title='Population of city',
+                          pretty_text=False,
+                          marker_size=10,
+                          save_file=True,
+                          hover_data=hover_data,
+                          hover_name="city",
+                          legend_title="",
+                          legend_x=0.87,
+                          legend_y=1.0,
+                          label_distance_factor=2.0,
+                          marginal_x=None,  # type: ignore
+                          marginal_y=None)  # type: ignore
 
         # Speed of crossing vs population of city
         df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
         df = df[(df["population_city"].notna()) & (df["population_city"] != 0)]
         df['state'] = df['state'].fillna('NA')
-        bivariate_class.scatter(df=df,
-                                x="speed_crossing",
-                                y="population_city",
-                                color="continent",
-                                text="city",
-                                xaxis_title='Mean speed of crossing (in m/s)',
-                                yaxis_title='Population of city',
-                                pretty_text=False,
-                                marker_size=10,
-                                save_file=True,
-                                hover_data=hover_data,
-                                hover_name="city",
-                                legend_title="",
-                                legend_x=0.87,
-                                legend_y=1.0,
-                                label_distance_factor=3.0,
-                                marginal_x=None,  # type: ignore
-                                marginal_y=None)  # type: ignore
+        bivariate.scatter(df=df,
+                          x="speed_crossing",
+                          y="population_city",
+                          color="continent",
+                          text="city",
+                          xaxis_title='Mean speed of crossing (in m/s)',
+                          yaxis_title='Population of city',
+                          pretty_text=False,
+                          marker_size=10,
+                          save_file=True,
+                          hover_data=hover_data,
+                          hover_name="city",
+                          legend_title="",
+                          legend_x=0.87,
+                          legend_y=1.0,
+                          label_distance_factor=3.0,
+                          marginal_x=None,  # type: ignore
+                          marginal_y=None)  # type: ignore
 
         # Time to start crossing vs population of city
         df = df_mapping[df_mapping["time_crossing"] != 0].copy()
         df = df[(df["traffic_mortality"].notna()) & (df["traffic_mortality"] != 0)]
         df['state'] = df['state'].fillna('NA')
-        bivariate_class.scatter(df=df,
-                                x="time_crossing",
-                                y="traffic_mortality",
-                                color="continent",
-                                text="city",
-                                xaxis_title='Crossing initiation time (in s)',
-                                yaxis_title='National traffic mortality rate (per 100,000 of population)',
-                                pretty_text=False,
-                                marker_size=10,
-                                save_file=True,
-                                hover_data=hover_data,
-                                hover_name="city",
-                                legend_title="",
-                                legend_x=0.87,
-                                legend_y=1.0,
-                                label_distance_factor=3.0,
-                                marginal_x=None,  # type: ignore
-                                marginal_y=None)  # type: ignore
+        bivariate.scatter(df=df,
+                          x="time_crossing",
+                          y="traffic_mortality",
+                          color="continent",
+                          text="city",
+                          xaxis_title='Crossing initiation time (in s)',
+                          yaxis_title='National traffic mortality rate (per 100,000 of population)',
+                          pretty_text=False,
+                          marker_size=10,
+                          save_file=True,
+                          hover_data=hover_data,
+                          hover_name="city",
+                          legend_title="",
+                          legend_x=0.87,
+                          legend_y=1.0,
+                          label_distance_factor=3.0,
+                          marginal_x=None,  # type: ignore
+                          marginal_y=None)  # type: ignore
 
         # Speed of crossing vs population of city
         df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
         df = df[(df["traffic_mortality"].notna()) & (df["traffic_mortality"] != 0)]
         df['state'] = df['state'].fillna('NA')
-        bivariate_class.scatter(df=df,
-                                x="speed_crossing",
-                                y="traffic_mortality",
-                                color="continent",
-                                text="city",
-                                xaxis_title='Mean speed of crossing (in m/s)',
-                                yaxis_title='National traffic mortality rate (per 100,000 of population)',
-                                pretty_text=False,
-                                marker_size=10,
-                                save_file=True,
-                                hover_data=hover_data,
-                                hover_name="city",
-                                legend_title="",
-                                legend_x=0.87,
-                                legend_y=1.0,
-                                label_distance_factor=2.0,
-                                marginal_x=None,  # type: ignore
-                                marginal_y=None)  # type: ignore
+        bivariate.scatter(df=df,
+                          x="speed_crossing",
+                          y="traffic_mortality",
+                          color="continent",
+                          text="city",
+                          xaxis_title='Mean speed of crossing (in m/s)',
+                          yaxis_title='National traffic mortality rate (per 100,000 of population)',
+                          pretty_text=False,
+                          marker_size=10,
+                          save_file=True,
+                          hover_data=hover_data,
+                          hover_name="city",
+                          legend_title="",
+                          legend_x=0.87,
+                          legend_y=1.0,
+                          label_distance_factor=2.0,
+                          marginal_x=None,  # type: ignore
+                          marginal_y=None)  # type: ignore
 
         # Time to start crossing vs population of city
         df = df_mapping[df_mapping["time_crossing"] != 0].copy()
         df = df[(df["literacy_rate"].notna()) & (df["literacy_rate"] != 0)]
         df['state'] = df['state'].fillna('NA')
-        bivariate_class.scatter(df=df,
-                                x="time_crossing",
-                                y="literacy_rate",
-                                color="continent",
-                                text="city",
-                                xaxis_title='Crossing initiation time (in s)',
-                                yaxis_title='Literacy rate',
-                                pretty_text=False,
-                                marker_size=10,
-                                save_file=True,
-                                hover_data=hover_data,
-                                hover_name="city",
-                                legend_title="",
-                                legend_x=0.87,
-                                legend_y=0.01,
-                                label_distance_factor=3.0,
-                                marginal_x=None,  # type: ignore
-                                marginal_y=None)  # type: ignore
+        bivariate.scatter(df=df,
+                          x="time_crossing",
+                          y="literacy_rate",
+                          color="continent",
+                          text="city",
+                          xaxis_title='Crossing initiation time (in s)',
+                          yaxis_title='Literacy rate',
+                          pretty_text=False,
+                          marker_size=10,
+                          save_file=True,
+                          hover_data=hover_data,
+                          hover_name="city",
+                          legend_title="",
+                          legend_x=0.87,
+                          legend_y=0.01,
+                          label_distance_factor=3.0,
+                          marginal_x=None,  # type: ignore
+                          marginal_y=None)  # type: ignore
 
         # Speed of crossing vs population of city
         df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
         df = df[(df["literacy_rate"].notna()) & (df["literacy_rate"] != 0)]
         df['state'] = df['state'].fillna('NA')
-        bivariate_class.scatter(df=df,
-                                x="speed_crossing",
-                                y="literacy_rate",
-                                color="continent",
-                                text="city",
-                                xaxis_title='Mean speed of crossing (in m/s)',
-                                yaxis_title='Literacy rate',
-                                pretty_text=False,
-                                marker_size=10,
-                                save_file=True,
-                                hover_data=hover_data,
-                                hover_name="city",
-                                legend_title="",
-                                legend_x=0.87,
-                                legend_y=0.01,
-                                label_distance_factor=3.0,
-                                marginal_x=None,  # type: ignore
-                                marginal_y=None)  # type: ignore
+        bivariate.scatter(df=df,
+                          x="speed_crossing",
+                          y="literacy_rate",
+                          color="continent",
+                          text="city",
+                          xaxis_title='Mean speed of crossing (in m/s)',
+                          yaxis_title='Literacy rate',
+                          pretty_text=False,
+                          marker_size=10,
+                          save_file=True,
+                          hover_data=hover_data,
+                          hover_name="city",
+                          legend_title="",
+                          legend_x=0.87,
+                          legend_y=0.01,
+                          label_distance_factor=3.0,
+                          marginal_x=None,  # type: ignore
+                          marginal_y=None)  # type: ignore
 
         # Time to start crossing vs population of city
         df = df_mapping[df_mapping["time_crossing"] != 0].copy()
         df = df[(df["gini"].notna()) & (df["gini"] != 0)]
         df['state'] = df['state'].fillna('NA')
-        bivariate_class.scatter(df=df,
-                                x="time_crossing",
-                                y="gini",
-                                color="continent",
-                                text="city",
-                                xaxis_title='Crossing initiation time (in s)',
-                                yaxis_title='Gini coefficient',
-                                pretty_text=False,
-                                marker_size=10,
-                                save_file=True,
-                                hover_data=hover_data,
-                                hover_name="city",
-                                legend_title="",
-                                legend_x=0.87,
-                                legend_y=1.0,
-                                label_distance_factor=3.0,
-                                marginal_x=None,  # type: ignore
-                                marginal_y=None)  # type: ignore
+        bivariate.scatter(df=df,
+                          x="time_crossing",
+                          y="gini",
+                          color="continent",
+                          text="city",
+                          xaxis_title='Crossing initiation time (in s)',
+                          yaxis_title='Gini coefficient',
+                          pretty_text=False,
+                          marker_size=10,
+                          save_file=True,
+                          hover_data=hover_data,
+                          hover_name="city",
+                          legend_title="",
+                          legend_x=0.87,
+                          legend_y=1.0,
+                          label_distance_factor=3.0,
+                          marginal_x=None,  # type: ignore
+                          marginal_y=None)  # type: ignore
 
         # Speed of crossing vs population of city
         df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
         df = df[(df["gini"].notna()) & (df["gini"] != 0)]
         df['state'] = df['state'].fillna('NA')
-        bivariate_class.scatter(df=df,
-                                x="speed_crossing",
-                                y="gini",
-                                color="continent",
-                                text="city",
-                                xaxis_title='Mean speed of crossing (in m/s)',
-                                yaxis_title='Gini coefficient',
-                                pretty_text=False,
-                                marker_size=10,
-                                save_file=True,
-                                hover_data=hover_data,
-                                hover_name="city",
-                                legend_title="",
-                                legend_x=0.87,
-                                legend_y=1.0,
-                                label_distance_factor=2.0,
-                                marginal_x=None,  # type: ignore
-                                marginal_y=None)  # type: ignore
+        bivariate.scatter(df=df,
+                          x="speed_crossing",
+                          y="gini",
+                          color="continent",
+                          text="city",
+                          xaxis_title='Mean speed of crossing (in m/s)',
+                          yaxis_title='Gini coefficient',
+                          pretty_text=False,
+                          marker_size=10,
+                          save_file=True,
+                          hover_data=hover_data,
+                          hover_name="city",
+                          legend_title="",
+                          legend_x=0.87,
+                          legend_y=1.0,
+                          label_distance_factor=2.0,
+                          marginal_x=None,  # type: ignore
+                          marginal_y=None)  # type: ignore
 
         # Time to start crossing vs population of city
         df = df_mapping[df_mapping["time_crossing"] != 0].copy()
         df = df[(df["traffic_index"].notna()) & (df["traffic_index"] != 0)]
         df['state'] = df['state'].fillna('NA')
-        bivariate_class.scatter(df=df,
-                                x="time_crossing",
-                                y="traffic_index",
-                                color="continent",
-                                text="city",
-                                # size="gmp",
-                                xaxis_title='Crossing initiation time (in s)',
-                                yaxis_title='Traffic index',
-                                pretty_text=False,
-                                marker_size=10,
-                                save_file=True,
-                                hover_data=hover_data,
-                                hover_name="city",
-                                legend_title="",
-                                legend_x=0.87,
-                                legend_y=1.0,
-                                label_distance_factor=2.0,
-                                marginal_x=None,  # type: ignore
-                                marginal_y=None)  # type: ignore
+        bivariate.scatter(df=df,
+                          x="time_crossing",
+                          y="traffic_index",
+                          color="continent",
+                          text="city",
+                          # size="gmp",
+                          xaxis_title='Crossing initiation time (in s)',
+                          yaxis_title='Traffic index',
+                          pretty_text=False,
+                          marker_size=10,
+                          save_file=True,
+                          hover_data=hover_data,
+                          hover_name="city",
+                          legend_title="",
+                          legend_x=0.87,
+                          legend_y=1.0,
+                          label_distance_factor=2.0,
+                          marginal_x=None,  # type: ignore
+                          marginal_y=None)  # type: ignore
 
         # Speed of crossing vs population of city
         df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
         df = df[df["traffic_index"] != 0]
         df['state'] = df['state'].fillna('NA')
-        bivariate_class.scatter(df=df,
-                                x="speed_crossing",
-                                y="traffic_index",
-                                color="continent",
-                                text="city",
-                                xaxis_title='Mean speed of crossing (in m/s)',
-                                yaxis_title='Traffic index',
-                                pretty_text=False,
-                                marker_size=10,
-                                save_file=True,
-                                hover_data=hover_data,
-                                hover_name="city",
-                                legend_title="",
-                                legend_x=0.87,
-                                legend_y=1.0,
-                                label_distance_factor=2.0,
-                                marginal_x=None,  # type: ignore
-                                marginal_y=None)  # type: ignore
+        bivariate.scatter(df=df,
+                          x="speed_crossing",
+                          y="traffic_index",
+                          color="continent",
+                          text="city",
+                          xaxis_title='Mean speed of crossing (in m/s)',
+                          yaxis_title='Traffic index',
+                          pretty_text=False,
+                          marker_size=10,
+                          save_file=True,
+                          hover_data=hover_data,
+                          hover_name="city",
+                          legend_title="",
+                          legend_x=0.87,
+                          legend_y=1.0,
+                          label_distance_factor=2.0,
+                          marginal_x=None,  # type: ignore
+                          marginal_y=None)  # type: ignore
 
         # Speed of crossing vs detected mobile phones
         df = df_mapping[df_mapping["time_crossing"] != 0].copy()
         df['state'] = df['state'].fillna('NA')
         df['cellphone_normalised'] = df['cellphone'] / df['total_time']
-        bivariate_class.scatter(df=df,
-                                x="time_crossing",
-                                y="cellphone_normalised",
-                                color="continent",
-                                text="city",
-                                xaxis_title='Crossing initiation time (in s)',
-                                yaxis_title='Mobile phones detected (normalised over time)',
-                                pretty_text=False,
-                                marker_size=10,
-                                save_file=True,
-                                hover_data=hover_data,
-                                hover_name="city",
-                                legend_title="",
-                                legend_x=0.87,
-                                legend_y=1.0,
-                                label_distance_factor=3.0,
-                                marginal_x=None,  # type: ignore
-                                marginal_y=None)  # type: ignore
+        bivariate.scatter(df=df,
+                          x="time_crossing",
+                          y="cellphone_normalised",
+                          color="continent",
+                          text="city",
+                          xaxis_title='Crossing initiation time (in s)',
+                          yaxis_title='Mobile phones detected (normalised over time)',
+                          pretty_text=False,
+                          marker_size=10,
+                          save_file=True,
+                          hover_data=hover_data,
+                          hover_name="city",
+                          legend_title="",
+                          legend_x=0.87,
+                          legend_y=1.0,
+                          label_distance_factor=3.0,
+                          marginal_x=None,  # type: ignore
+                          marginal_y=None)  # type: ignore
 
         # Speed of crossing vs detected mobile phones
         df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
         df['state'] = df['state'].fillna('NA')
         df['cellphone_normalised'] = df['cellphone'] / df['total_time']
-        bivariate_class.scatter(df=df,
-                                x="speed_crossing",
-                                y="cellphone_normalised",
-                                color="continent",
-                                text="city",
-                                xaxis_title='Mean speed of crossing (in m/s)',
-                                yaxis_title='Mobile phones detected (normalised over time)',
-                                pretty_text=False,
-                                marker_size=10,
-                                save_file=True,
-                                hover_data=hover_data,
-                                hover_name="city",
-                                legend_title="",
-                                legend_x=0.87,
-                                legend_y=1.0,
-                                label_distance_factor=3.0,
-                                marginal_x=None,  # type: ignore
-                                marginal_y=None)  # type: ignore
+        bivariate.scatter(df=df,
+                          x="speed_crossing",
+                          y="cellphone_normalised",
+                          color="continent",
+                          text="city",
+                          xaxis_title='Mean speed of crossing (in m/s)',
+                          yaxis_title='Mobile phones detected (normalised over time)',
+                          pretty_text=False,
+                          marker_size=10,
+                          save_file=True,
+                          hover_data=hover_data,
+                          hover_name="city",
+                          legend_title="",
+                          legend_x=0.87,
+                          legend_y=1.0,
+                          label_distance_factor=3.0,
+                          marginal_x=None,  # type: ignore
+                          marginal_y=None)  # type: ignore
 
         # Jaywalking
-        crossing_class.plot_crossing_without_traffic_light(df_mapping,
-                                                           x_axis_title_height=60,
-                                                           font_size_captions=common.get_configs("font_size"),
-                                                           legend_x=0.97,
-                                                           legend_y=1.0,
-                                                           legend_spacing=0.004)
-        crossing_class.plot_crossing_with_traffic_light(df_mapping,
-                                                        x_axis_title_height=60,
-                                                        font_size_captions=common.get_configs("font_size"),
-                                                        legend_x=0.97,
-                                                        legend_y=1.0,
-                                                        legend_spacing=0.004)
+        crossing.plot_crossing_without_traffic_light(df_mapping,
+                                                     x_axis_title_height=60,
+                                                     font_size_captions=common.get_configs("font_size"),
+                                                     legend_x=0.97,
+                                                     legend_y=1.0,
+                                                     legend_spacing=0.004)
+        crossing.plot_crossing_with_traffic_light(df_mapping,
+                                                  x_axis_title_height=60,
+                                                  font_size_captions=common.get_configs("font_size"),
+                                                  legend_x=0.97,
+                                                  legend_y=1.0,
+                                                  legend_spacing=0.004)
 
         # Crossing with and without traffic lights
         df = df_mapping.copy()
         df['state'] = df['state'].fillna('NA')
         df['with_trf_light_norm'] = (df['with_trf_light_day'] + df['with_trf_light_night']) / df['total_time'] / df['population_city']  # noqa: E501
         df['without_trf_light_norm'] = (df['without_trf_light_day'] + df['without_trf_light_night']) / df['total_time'] / df['population_city']  # noqa: E501
-        bivariate_class.scatter(df=df,
-                                x="with_trf_light_norm",
-                                y="without_trf_light_norm",
-                                color="continent",
-                                text="city",
-                                xaxis_title='Crossing events with traffic lights (normalised)',
-                                yaxis_title='Crossing events without traffic lights (normalised)',
-                                pretty_text=False,
-                                marker_size=10,
-                                save_file=True,
-                                hover_data=hover_data,
-                                hover_name="city",
-                                legend_title="",
-                                legend_x=0.87,
-                                legend_y=1.0,
-                                label_distance_factor=3.0,
-                                marginal_x=None,  # type: ignore
-                                marginal_y=None)  # type: ignore
+        bivariate.scatter(df=df,
+                          x="with_trf_light_norm",
+                          y="without_trf_light_norm",
+                          color="continent",
+                          text="city",
+                          xaxis_title='Crossing events with traffic lights (normalised)',
+                          yaxis_title='Crossing events without traffic lights (normalised)',
+                          pretty_text=False,
+                          marker_size=10,
+                          save_file=True,
+                          hover_data=hover_data,
+                          hover_name="city",
+                          legend_title="",
+                          legend_x=0.87,
+                          legend_y=1.0,
+                          label_distance_factor=3.0,
+                          marginal_x=None,  # type: ignore
+                          marginal_y=None)  # type: ignore
 
     if common.get_configs("analysis_level") == "country":
-        df_countries = aggregation_class.aggregate_by_iso3(df_mapping)
-        df_countries_raw = aggregation_class.aggregate_by_iso3(df_mapping_raw)
+        df_countries = aggregation.aggregate_by_iso3(df_mapping)
+        df_countries_raw = aggregation.aggregate_by_iso3(df_mapping_raw)
 
         columns_remove = ['videos', 'time_of_day', 'start_time', 'end_time', 'upload_date', 'fps_list', 'vehicle_type']
         hover_data = list(set(df_countries.columns) - set(columns_remove))
@@ -2042,29 +2054,29 @@ if __name__ == "__main__":
         df_countries.to_csv(os.path.join(common.output_dir, "mapping_countries.csv"))
 
         # Map with images. currently works on a 13" MacBook air screen in chrome, as things are hardcoded...
-        maps_class.map_world(df=df_countries_raw,
-                             color="continent",                # same default as map_political
-                             show_cities=True,
-                             df_cities=df_mapping,
-                             show_images=True,
-                             hover_data=hover_data_raw,
-                             save_file=True,
-                             save_final=False,
-                             file_name="raw_map")
+        maps.map_world(df=df_countries_raw,
+                       color="continent",                # same default as map_political
+                       show_cities=True,
+                       df_cities=df_mapping,
+                       show_images=True,
+                       hover_data=hover_data_raw,
+                       save_file=True,
+                       save_final=False,
+                       file_name="raw_map")
 
         # Map with screenshots and countries colours by continent
-        maps_class.map_world(df=df_countries,
-                             color="continent",
-                             show_cities=True,
-                             df_cities=df_mapping,
-                             show_images=True,
-                             hover_data=hover_data,
-                             save_file=False,
-                             save_final=False,
-                             file_name="map_screenshots",
-                             show_colorbar=True,
-                             colorbar_title="Continent",
-                             colorbar_kwargs=dict(y=0.035, len=0.55, bgcolor="rgba(255,255,255,0.9)"))
+        maps.map_world(df=df_countries,
+                       color="continent",
+                       show_cities=True,
+                       df_cities=df_mapping,
+                       show_images=True,
+                       hover_data=hover_data,
+                       save_file=False,
+                       save_final=False,
+                       file_name="map_screenshots",
+                       show_colorbar=True,
+                       colorbar_title="Continent",
+                       colorbar_kwargs=dict(y=0.035, len=0.55, bgcolor="rgba(255,255,255,0.9)"))
 
         # Map with screenshots and countries colours by amount of footage
         hover_data = list(set(df_countries_raw.columns) - set(columns_remove))
@@ -2079,17 +2091,17 @@ if __name__ == "__main__":
         # Sort by continent and city, both in ascending order
         df = df.sort_values(by=["continent", "city"], ascending=[True, True])
 
-        maps_class.map_world(df=df_countries_raw,
-                             color="log_total_time",
-                             show_cities=True,
-                             df_cities=df_mapping,             # fixed from df to df_mapping
-                             show_images=True,
-                             hover_data=hover_data,
-                             show_colorbar=True,
-                             colorbar_title="Footage (log)",
-                             save_file=True,
-                             save_final=False,
-                             file_name="map_screenshots_total_time")
+        maps.map_world(df=df_countries_raw,
+                       color="log_total_time",
+                       show_cities=True,
+                       df_cities=df_mapping,             # fixed from df to df_mapping
+                       show_images=True,
+                       hover_data=hover_data,
+                       show_colorbar=True,
+                       colorbar_title="Footage (log)",
+                       save_file=True,
+                       save_final=False,
+                       file_name="map_screenshots_total_time")
 
         df_countries_raw.drop(['speed_crossing_day_country', 'speed_crossing_night_country',
                                'speed_crossing_day_night_country_avg',
@@ -2099,612 +2111,612 @@ if __name__ == "__main__":
         df_countries_raw.to_csv(os.path.join(common.output_dir, "mapping_countries_raw.csv"))
 
         # Amount of footage
-        bivariate_class.scatter(df=df_countries,
-                                x="total_time",
-                                y="person",
-                                extension=common.get_configs("analysis_level"),
-                                color="continent",
-                                text="iso3",
-                                xaxis_title='Total time of footage (s)',
-                                yaxis_title='Number of detected pedestrians',
-                                pretty_text=False,
-                                marker_size=10,
-                                save_file=True,
-                                hover_data=hover_data,
-                                hover_name="country",
-                                legend_title="",
-                                legend_x=0.01,
-                                legend_y=1.0,
-                                label_distance_factor=0.5,
-                                marginal_x=None,  # type: ignore
-                                marginal_y=None)  # type: ignore
+        bivariate.scatter(df=df_countries,
+                          x="total_time",
+                          y="person",
+                          extension=common.get_configs("analysis_level"),
+                          color="continent",
+                          text="iso3",
+                          xaxis_title='Total time of footage (s)',
+                          yaxis_title='Number of detected pedestrians',
+                          pretty_text=False,
+                          marker_size=10,
+                          save_file=True,
+                          hover_data=hover_data,
+                          hover_name="country",
+                          legend_title="",
+                          legend_x=0.01,
+                          legend_y=1.0,
+                          label_distance_factor=0.5,
+                          marginal_x=None,  # type: ignore
+                          marginal_y=None)  # type: ignore
 
         # Amount of bicycle footage normalised
         df = df_countries[df_countries["person"] != 0].copy()
         df['person_norm'] = df['person'] / df['total_time']
-        bivariate_class.scatter(df=df,
-                                x="total_time",
-                                y="person_norm",
-                                color="continent",
-                                text="iso3",
-                                xaxis_title='Total time of footage (s)',
-                                yaxis_title='Number of detected pedestrians (normalised over amount of footage)',
-                                pretty_text=False,
-                                marker_size=10,
-                                save_file=True,
-                                hover_data=hover_data,
-                                hover_name="country",
-                                legend_title="",
-                                legend_x=0.94,
-                                legend_y=1.0,
-                                marginal_x=None,  # type: ignore
-                                marginal_y=None)  # type: ignore
+        bivariate.scatter(df=df,
+                          x="total_time",
+                          y="person_norm",
+                          color="continent",
+                          text="iso3",
+                          xaxis_title='Total time of footage (s)',
+                          yaxis_title='Number of detected pedestrians (normalised over amount of footage)',
+                          pretty_text=False,
+                          marker_size=10,
+                          save_file=True,
+                          hover_data=hover_data,
+                          hover_name="country",
+                          legend_title="",
+                          legend_x=0.94,
+                          legend_y=1.0,
+                          marginal_x=None,  # type: ignore
+                          marginal_y=None)  # type: ignore
 
         # Amount of bicycle footage normalised
         df = df_countries[df_countries["bicycle"] != 0].copy()
         df['bicycle_norm'] = df['bicycle'] / df['total_time']
-        bivariate_class.scatter(df=df,
-                                x="total_time",
-                                y="bicycle_norm",
-                                color="continent",
-                                text="iso3",
-                                xaxis_title='Total time of footage (s)',
-                                yaxis_title='Number of detected bicycle (normalised over amount of footage)',
-                                pretty_text=False,
-                                marker_size=10,
-                                save_file=True,
-                                hover_data=hover_data,
-                                hover_name="country",
-                                legend_title="",
-                                legend_x=0.94,
-                                legend_y=1.0,
-                                marginal_x=None,  # type: ignore
-                                marginal_y=None)  # type: ignore
+        bivariate.scatter(df=df,
+                          x="total_time",
+                          y="bicycle_norm",
+                          color="continent",
+                          text="iso3",
+                          xaxis_title='Total time of footage (s)',
+                          yaxis_title='Number of detected bicycle (normalised over amount of footage)',
+                          pretty_text=False,
+                          marker_size=10,
+                          save_file=True,
+                          hover_data=hover_data,
+                          hover_name="country",
+                          legend_title="",
+                          legend_x=0.94,
+                          legend_y=1.0,
+                          marginal_x=None,  # type: ignore
+                          marginal_y=None)  # type: ignore
 
-        stacked_class.stack_plot_country(df_countries,
-                                         order_by="average",
-                                         metric="time",
-                                         data_view="combined",
-                                         title_text="Crossing initiation time (s)",
-                                         filename="time_crossing_avg_country",
-                                         font_size_captions=common.get_configs("font_size") + 8,
-                                         legend_x=0.95,
-                                         legend_y=0.04,
-                                         legend_spacing=0.02,
-                                         top_margin=100)
+        stacked.stack_plot_country(df_countries,
+                                   order_by="average",
+                                   metric="time",
+                                   data_view="combined",
+                                   title_text="Crossing initiation time (s)",
+                                   filename="time_crossing_avg_country",
+                                   font_size_captions=common.get_configs("font_size") + 8,
+                                   legend_x=0.95,
+                                   legend_y=0.04,
+                                   legend_spacing=0.02,
+                                   top_margin=100)
 
-        stacked_class.stack_plot_country(df_countries,
-                                         order_by="condition",
-                                         metric="speed",
-                                         data_view="combined",
-                                         title_text="Mean speed of crossing (in m/s)",
-                                         filename="crossing_speed_combined_country",
-                                         font_size_captions=common.get_configs("font_size") + 28,
-                                         legend_x=0.92,
-                                         legend_y=0.04,
-                                         legend_spacing=0.02,
-                                         top_margin=150,
-                                         height=2450,
-                                         width=2480)
+        stacked.stack_plot_country(df_countries,
+                                   order_by="condition",
+                                   metric="speed",
+                                   data_view="combined",
+                                   title_text="Mean speed of crossing (in m/s)",
+                                   filename="crossing_speed_combined_country",
+                                   font_size_captions=common.get_configs("font_size") + 28,
+                                   legend_x=0.92,
+                                   legend_y=0.04,
+                                   legend_spacing=0.02,
+                                   top_margin=150,
+                                   height=2450,
+                                   width=2480)
 
-        stacked_class.stack_plot_country(df_countries,
-                                         order_by="condition",
-                                         metric="time",
-                                         data_view="combined",
-                                         title_text="Mean crossing initiation time (in s)",
-                                         filename="time_crossing_combined_country",
-                                         font_size_captions=common.get_configs("font_size") + 28,
-                                         legend_x=0.92,
-                                         legend_y=0.04,
-                                         legend_spacing=0.02,
-                                         top_margin=150,
-                                         height=2400,
-                                         width=2480)
+        stacked.stack_plot_country(df_countries,
+                                   order_by="condition",
+                                   metric="time",
+                                   data_view="combined",
+                                   title_text="Mean crossing initiation time (in s)",
+                                   filename="time_crossing_combined_country",
+                                   font_size_captions=common.get_configs("font_size") + 28,
+                                   legend_x=0.92,
+                                   legend_y=0.04,
+                                   legend_spacing=0.02,
+                                   top_margin=150,
+                                   height=2400,
+                                   width=2480)
 
-        stacked_class.stack_plot_country(df_countries_raw,
-                                         order_by="condition",
-                                         metric="speed",
-                                         data_view="combined",
-                                         title_text="Mean speed of crossing (in m/s)",
-                                         filename="crossing_speed_combined_country_raw",
-                                         font_size_captions=common.get_configs("font_size") + 28,
-                                         raw=True,
-                                         legend_x=0.92,
-                                         legend_y=0.04,
-                                         legend_spacing=0.02,
-                                         top_margin=150,
-                                         height=2400,
-                                         width=2480)
+        stacked.stack_plot_country(df_countries_raw,
+                                   order_by="condition",
+                                   metric="speed",
+                                   data_view="combined",
+                                   title_text="Mean speed of crossing (in m/s)",
+                                   filename="crossing_speed_combined_country_raw",
+                                   font_size_captions=common.get_configs("font_size") + 28,
+                                   raw=True,
+                                   legend_x=0.92,
+                                   legend_y=0.04,
+                                   legend_spacing=0.02,
+                                   top_margin=150,
+                                   height=2400,
+                                   width=2480)
 
-        stacked_class.stack_plot_country(df_countries_raw,
-                                         order_by="condition",
-                                         metric="time",
-                                         data_view="combined",
-                                         title_text="Crossing initiation time (s)",
-                                         filename="time_crossing_combined_country_raw",
-                                         font_size_captions=common.get_configs("font_size") + 28,
-                                         raw=True,
-                                         legend_x=0.92,
-                                         legend_y=0.04,
-                                         legend_spacing=0.02,
-                                         top_margin=150,
-                                         height=2400,
-                                         width=2480)
+        stacked.stack_plot_country(df_countries_raw,
+                                   order_by="condition",
+                                   metric="time",
+                                   data_view="combined",
+                                   title_text="Crossing initiation time (s)",
+                                   filename="time_crossing_combined_country_raw",
+                                   font_size_captions=common.get_configs("font_size") + 28,
+                                   raw=True,
+                                   legend_x=0.92,
+                                   legend_y=0.04,
+                                   legend_spacing=0.02,
+                                   top_margin=150,
+                                   height=2400,
+                                   width=2480)
 
-        stacked_class.stack_plot_country(df_countries,
-                                         order_by="alphabetical",
-                                         metric="time",
-                                         data_view="combined",
-                                         title_text="Crossing initiation time (s)",
-                                         filename="time_crossing_alphabetical_country",
-                                         font_size_captions=common.get_configs("font_size"),
-                                         legend_x=0.94,
-                                         legend_y=0.03,
-                                         legend_spacing=0.02,
-                                         top_margin=100)
+        stacked.stack_plot_country(df_countries,
+                                   order_by="alphabetical",
+                                   metric="time",
+                                   data_view="combined",
+                                   title_text="Crossing initiation time (s)",
+                                   filename="time_crossing_alphabetical_country",
+                                   font_size_captions=common.get_configs("font_size"),
+                                   legend_x=0.94,
+                                   legend_y=0.03,
+                                   legend_spacing=0.02,
+                                   top_margin=100)
 
-        stacked_class.stack_plot_country(df_countries,
-                                         order_by="average",
-                                         metric="speed",
-                                         data_view="combined",
-                                         title_text="Mean speed of crossing (in m/s)",
-                                         filename="crossing_speed_avg_country",
-                                         font_size_captions=common.get_configs("font_size") + 8,
-                                         legend_x=0.87,
-                                         legend_y=0.04,
-                                         legend_spacing=0.02,
-                                         top_margin=100)
+        stacked.stack_plot_country(df_countries,
+                                   order_by="average",
+                                   metric="speed",
+                                   data_view="combined",
+                                   title_text="Mean speed of crossing (in m/s)",
+                                   filename="crossing_speed_avg_country",
+                                   font_size_captions=common.get_configs("font_size") + 8,
+                                   legend_x=0.87,
+                                   legend_y=0.04,
+                                   legend_spacing=0.02,
+                                   top_margin=100)
 
-        stacked_class.stack_plot_country(df_countries,
-                                         order_by="alphabetical",
-                                         metric="speed",
-                                         data_view="combined",
-                                         title_text="Mean speed of crossing (in m/s)",
-                                         filename="crossing_speed_alphabetical_country",
-                                         font_size_captions=common.get_configs("font_size"),
-                                         legend_x=0.94,
-                                         legend_y=0.03,
-                                         legend_spacing=0.02,
-                                         top_margin=100)
+        stacked.stack_plot_country(df_countries,
+                                   order_by="alphabetical",
+                                   metric="speed",
+                                   data_view="combined",
+                                   title_text="Mean speed of crossing (in m/s)",
+                                   filename="crossing_speed_alphabetical_country",
+                                   font_size_captions=common.get_configs("font_size"),
+                                   legend_x=0.94,
+                                   legend_y=0.03,
+                                   legend_spacing=0.02,
+                                   top_margin=100)
 
         # Plotting stacked plot during day
-        stacked_class.stack_plot_country(df_countries,
-                                         order_by="average",
-                                         metric="time",
-                                         data_view="day",
-                                         title_text="Crossing initiation time (s)",
-                                         filename="time_crossing_avg_day_country",
-                                         font_size_captions=common.get_configs("font_size"),
-                                         top_margin=100)
+        stacked.stack_plot_country(df_countries,
+                                   order_by="average",
+                                   metric="time",
+                                   data_view="day",
+                                   title_text="Crossing initiation time (s)",
+                                   filename="time_crossing_avg_day_country",
+                                   font_size_captions=common.get_configs("font_size"),
+                                   top_margin=100)
 
-        stacked_class.stack_plot_country(df_countries,
-                                         order_by="alphabetical",
-                                         metric="time",
-                                         data_view="day",
-                                         title_text="Crossing initiation time (s)",
-                                         filename="time_crossing_alphabetical_day_country",
-                                         font_size_captions=common.get_configs("font_size"),
-                                         top_margin=100)
+        stacked.stack_plot_country(df_countries,
+                                   order_by="alphabetical",
+                                   metric="time",
+                                   data_view="day",
+                                   title_text="Crossing initiation time (s)",
+                                   filename="time_crossing_alphabetical_day_country",
+                                   font_size_captions=common.get_configs("font_size"),
+                                   top_margin=100)
 
-        stacked_class.stack_plot_country(df_countries,
-                                         order_by="average",
-                                         metric="speed",
-                                         data_view="day",
-                                         title_text="Mean speed of crossing (in m/s)",
-                                         filename="crossing_speed_avg_day_country",
-                                         font_size_captions=common.get_configs("font_size"),
-                                         top_margin=100)
+        stacked.stack_plot_country(df_countries,
+                                   order_by="average",
+                                   metric="speed",
+                                   data_view="day",
+                                   title_text="Mean speed of crossing (in m/s)",
+                                   filename="crossing_speed_avg_day_country",
+                                   font_size_captions=common.get_configs("font_size"),
+                                   top_margin=100)
 
-        stacked_class.stack_plot_country(df_countries,
-                                         order_by="alphabetical",
-                                         metric="speed",
-                                         data_view="day",
-                                         title_text="Mean speed of crossing (in m/s)",
-                                         filename="crossing_speed_alphabetical_day_country",
-                                         font_size_captions=common.get_configs("font_size"),
-                                         top_margin=100)
+        stacked.stack_plot_country(df_countries,
+                                   order_by="alphabetical",
+                                   metric="speed",
+                                   data_view="day",
+                                   title_text="Mean speed of crossing (in m/s)",
+                                   filename="crossing_speed_alphabetical_day_country",
+                                   font_size_captions=common.get_configs("font_size"),
+                                   top_margin=100)
 
         # Plotting stacked plot during night
-        stacked_class.stack_plot_country(df_countries,
-                                         order_by="average",
-                                         metric="time",
-                                         data_view="night",
-                                         title_text="Crossing initiation time (s)",
-                                         filename="time_crossing_avg_night_country",
-                                         font_size_captions=common.get_configs("font_size"))
+        stacked.stack_plot_country(df_countries,
+                                   order_by="average",
+                                   metric="time",
+                                   data_view="night",
+                                   title_text="Crossing initiation time (s)",
+                                   filename="time_crossing_avg_night_country",
+                                   font_size_captions=common.get_configs("font_size"))
 
-        stacked_class.stack_plot_country(df_countries,
-                                         order_by="alphabetical",
-                                         metric="time",
-                                         data_view="night",
-                                         title_text="Crossing initiation time (s)",
-                                         filename="time_crossing_alphabetical_night_country",
-                                         font_size_captions=common.get_configs("font_size"),
-                                         top_margin=100)
+        stacked.stack_plot_country(df_countries,
+                                   order_by="alphabetical",
+                                   metric="time",
+                                   data_view="night",
+                                   title_text="Crossing initiation time (s)",
+                                   filename="time_crossing_alphabetical_night_country",
+                                   font_size_captions=common.get_configs("font_size"),
+                                   top_margin=100)
 
-        stacked_class.stack_plot_country(df_countries,
-                                         order_by="average",
-                                         metric="speed",
-                                         data_view="night",
-                                         title_text="Mean speed of crossing (in m/s)",
-                                         filename="crossing_speed_avg_night_country",
-                                         font_size_captions=common.get_configs("font_size"),
-                                         top_margin=100)
+        stacked.stack_plot_country(df_countries,
+                                   order_by="average",
+                                   metric="speed",
+                                   data_view="night",
+                                   title_text="Mean speed of crossing (in m/s)",
+                                   filename="crossing_speed_avg_night_country",
+                                   font_size_captions=common.get_configs("font_size"),
+                                   top_margin=100)
 
-        stacked_class.stack_plot_country(df_countries,
-                                         order_by="alphabetical",
-                                         metric="speed",
-                                         data_view="night",
-                                         title_text="Mean speed of crossing (in m/s)",
-                                         filename="crossing_speed_alphabetical_night_country",
-                                         font_size_captions=common.get_configs("font_size"),
-                                         top_margin=100)
+        stacked.stack_plot_country(df_countries,
+                                   order_by="alphabetical",
+                                   metric="speed",
+                                   data_view="night",
+                                   title_text="Mean speed of crossing (in m/s)",
+                                   filename="crossing_speed_alphabetical_night_country",
+                                   font_size_captions=common.get_configs("font_size"),
+                                   top_margin=100)
 
-        crossing_class.speed_and_time_to_start_cross_country(df_countries,
-                                                             x_axis_title_height=110,
-                                                             font_size_captions=common.get_configs("font_size") + 8,
-                                                             legend_x=0.87,
-                                                             legend_y=0.04,
-                                                             legend_spacing=0.01)
+        crossing.speed_and_time_to_start_cross_country(df_countries,
+                                                       x_axis_title_height=110,
+                                                       font_size_captions=common.get_configs("font_size") + 8,
+                                                       legend_x=0.87,
+                                                       legend_y=0.04,
+                                                       legend_spacing=0.01)
 
-        correlation_class.correlation_matrix_country(df_mapping, df_countries, pedestrian_cross_city, person_city,
-                                                     bicycle_city, car_city, motorcycle_city, bus_city, truck_city,
-                                                     cross_evnt_city, vehicle_city, cellphone_city, traffic_sign_city,
-                                                     avg_speed_country, avg_time_country,
-                                                     crossings_without_traffic_equipment_country)
+        correlation.correlation_matrix_country(df_mapping, df_countries, pedestrian_cross_city, person_city,
+                                               bicycle_city, car_city, motorcycle_city, bus_city, truck_city,
+                                               cross_evnt_city, vehicle_city, cellphone_city, traffic_sign_city,
+                                               avg_speed_country, avg_time_country,
+                                               crossings_without_traffic_equipment_country)
 
         # Speed of crossing vs Crossing initiation time
         df = df_countries[df_countries["speed_crossing_day_night_country_avg"] != 0].copy()
         df = df[df["time_crossing_day_night_country_avg"] != 0]
-        bivariate_class.scatter(df=df,
-                                x="speed_crossing_day_night_country_avg",
-                                y="time_crossing_day_night_country_avg",
-                                color="continent",
-                                text="iso3",
-                                xaxis_title='Mean speed of crossing (in m/s)',
-                                yaxis_title='Crossing initiation time (s)',
-                                pretty_text=False,
-                                marker_size=10,
-                                save_file=True,
-                                hover_data=hover_data,
-                                hover_name="country",
-                                legend_title="",
-                                legend_x=0.87,
-                                legend_y=1.0,
-                                label_distance_factor=0.5,
-                                marginal_x=None,  # type: ignore
-                                marginal_y=None)  # type: ignore
+        bivariate.scatter(df=df,
+                          x="speed_crossing_day_night_country_avg",
+                          y="time_crossing_day_night_country_avg",
+                          color="continent",
+                          text="iso3",
+                          xaxis_title='Mean speed of crossing (in m/s)',
+                          yaxis_title='Crossing initiation time (s)',
+                          pretty_text=False,
+                          marker_size=10,
+                          save_file=True,
+                          hover_data=hover_data,
+                          hover_name="country",
+                          legend_title="",
+                          legend_x=0.87,
+                          legend_y=1.0,
+                          label_distance_factor=0.5,
+                          marginal_x=None,  # type: ignore
+                          marginal_y=None)  # type: ignore
 
         # Speed of crossing during daytime vs time to start crossing during daytime
         df = df_countries[df_countries["speed_crossing_day_country"] != 0].copy()
         df = df[df["time_crossing_day_country"] != 0]
-        bivariate_class.scatter(df=df,
-                                x="speed_crossing_day_country",
-                                y="time_crossing_day_country",
-                                color="continent",
-                                text="iso3",
-                                xaxis_title='Crossing speed during daytime (in m/s)',
-                                yaxis_title='Crossing initiation time during daytime (in s)',
-                                pretty_text=False,
-                                marker_size=10,
-                                save_file=True,
-                                hover_data=hover_data,
-                                hover_name="country",
-                                legend_title="",
-                                legend_x=0.87,
-                                legend_y=1.0,
-                                label_distance_factor=0.5,
-                                marginal_x=None,  # type: ignore
-                                marginal_y=None)  # type: ignore
+        bivariate.scatter(df=df,
+                          x="speed_crossing_day_country",
+                          y="time_crossing_day_country",
+                          color="continent",
+                          text="iso3",
+                          xaxis_title='Crossing speed during daytime (in m/s)',
+                          yaxis_title='Crossing initiation time during daytime (in s)',
+                          pretty_text=False,
+                          marker_size=10,
+                          save_file=True,
+                          hover_data=hover_data,
+                          hover_name="country",
+                          legend_title="",
+                          legend_x=0.87,
+                          legend_y=1.0,
+                          label_distance_factor=0.5,
+                          marginal_x=None,  # type: ignore
+                          marginal_y=None)  # type: ignore
 
         # Speed of crossing during night time vs time to start crossing during night time
         df = df_countries[df_countries["speed_crossing_night_country"] != 0].copy()
         df = df[df["time_crossing_night_country"] != 0]
-        bivariate_class.scatter(df=df,
-                                x="speed_crossing_night_country",
-                                y="time_crossing_night_country",
-                                color="continent",
-                                text="iso3",
-                                xaxis_title='Crossing speed during night time (in m/s)',
-                                yaxis_title='Crossing initiation time during night time (in s)',
-                                pretty_text=False,
-                                marker_size=10,
-                                save_file=True,
-                                hover_data=hover_data,
-                                hover_name="country",
-                                legend_title="",
-                                legend_x=0.87,
-                                legend_y=1.0,
-                                label_distance_factor=0.5,
-                                marginal_x=None,  # type: ignore
-                                marginal_y=None)  # type: ignore
+        bivariate.scatter(df=df,
+                          x="speed_crossing_night_country",
+                          y="time_crossing_night_country",
+                          color="continent",
+                          text="iso3",
+                          xaxis_title='Crossing speed during night time (in m/s)',
+                          yaxis_title='Crossing initiation time during night time (in s)',
+                          pretty_text=False,
+                          marker_size=10,
+                          save_file=True,
+                          hover_data=hover_data,
+                          hover_name="country",
+                          legend_title="",
+                          legend_x=0.87,
+                          legend_y=1.0,
+                          label_distance_factor=0.5,
+                          marginal_x=None,  # type: ignore
+                          marginal_y=None)  # type: ignore
 
         # Time to start crossing vs population of city
         df = df_countries[df_countries["time_crossing_day_night_country_avg"] != 0].copy()
         df = df[(df["population_country"].notna()) & (df["population_country"] != 0)]
-        bivariate_class.scatter(df=df,
-                                x="time_crossing_day_night_country_avg",
-                                y="population_country",
-                                color="continent",
-                                text="iso3",
-                                xaxis_title='Crossing initiation time (s)',
-                                yaxis_title='Population of country',
-                                pretty_text=False,
-                                marker_size=10,
-                                save_file=True,
-                                hover_data=hover_data,
-                                hover_name="country",
-                                legend_title="",
-                                legend_x=0.87,
-                                legend_y=1.0,
-                                label_distance_factor=0.5,
-                                marginal_x=None,  # type: ignore
-                                marginal_y=None)  # type: ignore
+        bivariate.scatter(df=df,
+                          x="time_crossing_day_night_country_avg",
+                          y="population_country",
+                          color="continent",
+                          text="iso3",
+                          xaxis_title='Crossing initiation time (s)',
+                          yaxis_title='Population of country',
+                          pretty_text=False,
+                          marker_size=10,
+                          save_file=True,
+                          hover_data=hover_data,
+                          hover_name="country",
+                          legend_title="",
+                          legend_x=0.87,
+                          legend_y=1.0,
+                          label_distance_factor=0.5,
+                          marginal_x=None,  # type: ignore
+                          marginal_y=None)  # type: ignore
 
         # Speed of crossing vs population of country
         df = df_countries[df_countries["speed_crossing_day_night_country_avg"] != 0].copy()
         df = df[(df["population_country"].notna()) & (df["population_country"] != 0)]
-        bivariate_class.scatter(df=df,
-                                x="speed_crossing_day_night_country_avg",
-                                y="population_country",
-                                color="continent",
-                                text="iso3",
-                                xaxis_title='Mean speed of crossing (in m/s)',
-                                yaxis_title='Population of country',
-                                pretty_text=False,
-                                marker_size=10,
-                                save_file=True,
-                                hover_data=hover_data,
-                                hover_name="country",
-                                legend_title="",
-                                legend_x=0.87,
-                                legend_y=1.0,
-                                label_distance_factor=0.2,
-                                marginal_x=None,  # type: ignore
-                                marginal_y=None)  # type: ignore
+        bivariate.scatter(df=df,
+                          x="speed_crossing_day_night_country_avg",
+                          y="population_country",
+                          color="continent",
+                          text="iso3",
+                          xaxis_title='Mean speed of crossing (in m/s)',
+                          yaxis_title='Population of country',
+                          pretty_text=False,
+                          marker_size=10,
+                          save_file=True,
+                          hover_data=hover_data,
+                          hover_name="country",
+                          legend_title="",
+                          legend_x=0.87,
+                          legend_y=1.0,
+                          label_distance_factor=0.2,
+                          marginal_x=None,  # type: ignore
+                          marginal_y=None)  # type: ignore
 
         # Time to start crossing vs population of city
         df = df_countries[df_countries["time_crossing_day_night_country_avg"] != 0].copy()
         df = df[(df["traffic_mortality"].notna()) & (df["traffic_mortality"] != 0)]
-        bivariate_class.scatter(df=df,
-                                x="time_crossing_day_night_country_avg",
-                                y="traffic_mortality",
-                                color="continent",
-                                text="iso3",
-                                xaxis_title='Crossing initiation time (in s)',
-                                yaxis_title='National traffic mortality rate (per 100,000 of population)',
-                                pretty_text=False,
-                                marker_size=10,
-                                save_file=True,
-                                hover_data=hover_data,
-                                hover_name="country",
-                                legend_title="",
-                                legend_x=0.87,
-                                legend_y=1.0,
-                                label_distance_factor=0.5,
-                                marginal_x=None,  # type: ignore
-                                marginal_y=None)  # type: ignore
+        bivariate.scatter(df=df,
+                          x="time_crossing_day_night_country_avg",
+                          y="traffic_mortality",
+                          color="continent",
+                          text="iso3",
+                          xaxis_title='Crossing initiation time (in s)',
+                          yaxis_title='National traffic mortality rate (per 100,000 of population)',
+                          pretty_text=False,
+                          marker_size=10,
+                          save_file=True,
+                          hover_data=hover_data,
+                          hover_name="country",
+                          legend_title="",
+                          legend_x=0.87,
+                          legend_y=1.0,
+                          label_distance_factor=0.5,
+                          marginal_x=None,  # type: ignore
+                          marginal_y=None)  # type: ignore
 
         # Speed of crossing vs population of city
         df = df_countries[df_countries["speed_crossing_day_night_country_avg"] != 0].copy()
         df = df[(df["traffic_mortality"].notna()) & (df["traffic_mortality"] != 0)]
-        bivariate_class.scatter(df=df,
-                                x="speed_crossing_day_night_country_avg",
-                                y="traffic_mortality",
-                                color="continent",
-                                text="iso3",
-                                xaxis_title='Mean speed of crossing (in m/s)',
-                                yaxis_title='National traffic mortality rate (per 100,000 of population)',
-                                pretty_text=False,
-                                marker_size=10,
-                                save_file=True,
-                                hover_data=hover_data,
-                                hover_name="country",
-                                legend_title="",
-                                legend_x=0.87,
-                                legend_y=1.0,
-                                label_distance_factor=0.3,
-                                marginal_x=None,  # type: ignore
-                                marginal_y=None)  # type: ignore
+        bivariate.scatter(df=df,
+                          x="speed_crossing_day_night_country_avg",
+                          y="traffic_mortality",
+                          color="continent",
+                          text="iso3",
+                          xaxis_title='Mean speed of crossing (in m/s)',
+                          yaxis_title='National traffic mortality rate (per 100,000 of population)',
+                          pretty_text=False,
+                          marker_size=10,
+                          save_file=True,
+                          hover_data=hover_data,
+                          hover_name="country",
+                          legend_title="",
+                          legend_x=0.87,
+                          legend_y=1.0,
+                          label_distance_factor=0.3,
+                          marginal_x=None,  # type: ignore
+                          marginal_y=None)  # type: ignore
 
         # Time to start crossing vs population of city
         df = df_countries[df_countries["time_crossing_day_night_country_avg"] != 0].copy()
         df = df[(df["literacy_rate"].notna()) & (df["literacy_rate"] != 0)]
-        bivariate_class.scatter(df=df,
-                                x="time_crossing_day_night_country_avg",
-                                y="literacy_rate",
-                                color="continent",
-                                text="iso3",
-                                xaxis_title='Crossing initiation time (in s)',
-                                yaxis_title='Literacy rate',
-                                pretty_text=False,
-                                marker_size=10,
-                                save_file=True,
-                                hover_data=hover_data,
-                                hover_name="country",
-                                legend_title="",
-                                legend_x=0.87,
-                                legend_y=0.01,
-                                label_distance_factor=0.5,
-                                marginal_x=None,  # type: ignore
-                                marginal_y=None)  # type: ignore
+        bivariate.scatter(df=df,
+                          x="time_crossing_day_night_country_avg",
+                          y="literacy_rate",
+                          color="continent",
+                          text="iso3",
+                          xaxis_title='Crossing initiation time (in s)',
+                          yaxis_title='Literacy rate',
+                          pretty_text=False,
+                          marker_size=10,
+                          save_file=True,
+                          hover_data=hover_data,
+                          hover_name="country",
+                          legend_title="",
+                          legend_x=0.87,
+                          legend_y=0.01,
+                          label_distance_factor=0.5,
+                          marginal_x=None,  # type: ignore
+                          marginal_y=None)  # type: ignore
 
         # Speed of crossing vs population of city
         df = df_countries[df_countries["speed_crossing_day_night_country_avg"] != 0].copy()
         df = df[(df["literacy_rate"].notna()) & (df["literacy_rate"] != 0)]
-        bivariate_class.scatter(df=df,
-                                x="speed_crossing_day_night_country_avg",
-                                y="literacy_rate",
-                                color="continent",
-                                text="iso3",
-                                xaxis_title='Mean speed of crossing (in m/s)',
-                                yaxis_title='Literacy rate',
-                                pretty_text=False,
-                                marker_size=10,
-                                save_file=True,
-                                hover_data=hover_data,
-                                hover_name="country",
-                                legend_title="",
-                                legend_x=0.87,
-                                legend_y=0.01,
-                                label_distance_factor=0.4,
-                                marginal_x=None,  # type: ignore
-                                marginal_y=None)  # type: ignore
+        bivariate.scatter(df=df,
+                          x="speed_crossing_day_night_country_avg",
+                          y="literacy_rate",
+                          color="continent",
+                          text="iso3",
+                          xaxis_title='Mean speed of crossing (in m/s)',
+                          yaxis_title='Literacy rate',
+                          pretty_text=False,
+                          marker_size=10,
+                          save_file=True,
+                          hover_data=hover_data,
+                          hover_name="country",
+                          legend_title="",
+                          legend_x=0.87,
+                          legend_y=0.01,
+                          label_distance_factor=0.4,
+                          marginal_x=None,  # type: ignore
+                          marginal_y=None)  # type: ignore
 
         # Time to start crossing vs population of city
         df = df_countries[df_countries["time_crossing_day_night_country_avg"] != 0].copy()
         df = df[(df["gini"].notna()) & (df["gini"] != 0)]
-        bivariate_class.scatter(df=df,
-                                x="time_crossing_day_night_country_avg",
-                                y="gini",
-                                color="continent",
-                                text="iso3",
-                                xaxis_title='Crossing initiation time (in s)',
-                                yaxis_title='Gini coefficient',
-                                pretty_text=False,
-                                marker_size=10,
-                                save_file=True,
-                                hover_data=hover_data,
-                                hover_name="country",
-                                legend_title="",
-                                legend_x=0.87,
-                                legend_y=1.0,
-                                label_distance_factor=0.5,
-                                marginal_x=None,  # type: ignore
-                                marginal_y=None)  # type: ignore
+        bivariate.scatter(df=df,
+                          x="time_crossing_day_night_country_avg",
+                          y="gini",
+                          color="continent",
+                          text="iso3",
+                          xaxis_title='Crossing initiation time (in s)',
+                          yaxis_title='Gini coefficient',
+                          pretty_text=False,
+                          marker_size=10,
+                          save_file=True,
+                          hover_data=hover_data,
+                          hover_name="country",
+                          legend_title="",
+                          legend_x=0.87,
+                          legend_y=1.0,
+                          label_distance_factor=0.5,
+                          marginal_x=None,  # type: ignore
+                          marginal_y=None)  # type: ignore
 
         # Speed of crossing vs population of city
         df = df_countries[df_countries["speed_crossing_day_night_country_avg"] != 0].copy()
         df = df[(df["gini"].notna()) & (df["gini"] != 0)]
-        bivariate_class.scatter(df=df,
-                                x="speed_crossing_day_night_country_avg",
-                                y="gini",
-                                color="continent",
-                                text="iso3",
-                                xaxis_title='Mean speed of crossing (in m/s)',
-                                yaxis_title='Gini coefficient',
-                                pretty_text=False,
-                                marker_size=10,
-                                save_file=True,
-                                hover_data=hover_data,
-                                hover_name="country",
-                                legend_title="",
-                                legend_x=0.87,
-                                legend_y=1.0,
-                                label_distance_factor=0.5,
-                                marginal_x=None,  # type: ignore
-                                marginal_y=None)  # type: ignore
+        bivariate.scatter(df=df,
+                          x="speed_crossing_day_night_country_avg",
+                          y="gini",
+                          color="continent",
+                          text="iso3",
+                          xaxis_title='Mean speed of crossing (in m/s)',
+                          yaxis_title='Gini coefficient',
+                          pretty_text=False,
+                          marker_size=10,
+                          save_file=True,
+                          hover_data=hover_data,
+                          hover_name="country",
+                          legend_title="",
+                          legend_x=0.87,
+                          legend_y=1.0,
+                          label_distance_factor=0.5,
+                          marginal_x=None,  # type: ignore
+                          marginal_y=None)  # type: ignore
 
         # Time to start crossing vs population of city
         df = df_countries[df_countries["time_crossing_day_night_country_avg"] != 0].copy()
         df = df[(df["med_age"].notna()) & (df["med_age"] != 0)]
-        bivariate_class.scatter(df=df,
-                                x="time_crossing_day_night_country_avg",
-                                y="med_age",
-                                color="continent",
-                                text="iso3",
-                                # size="gmp",
-                                xaxis_title='Crossing initiation time (in s)',
-                                yaxis_title='Median age (in years)',
-                                pretty_text=False,
-                                marker_size=10,
-                                save_file=True,
-                                hover_data=hover_data,
-                                hover_name="country",
-                                legend_title="",
-                                legend_x=0.87,
-                                legend_y=1.0,
-                                label_distance_factor=0.5,
-                                marginal_x=None,  # type: ignore
-                                marginal_y=None)  # type: ignore
+        bivariate.scatter(df=df,
+                          x="time_crossing_day_night_country_avg",
+                          y="med_age",
+                          color="continent",
+                          text="iso3",
+                          # size="gmp",
+                          xaxis_title='Crossing initiation time (in s)',
+                          yaxis_title='Median age (in years)',
+                          pretty_text=False,
+                          marker_size=10,
+                          save_file=True,
+                          hover_data=hover_data,
+                          hover_name="country",
+                          legend_title="",
+                          legend_x=0.87,
+                          legend_y=1.0,
+                          label_distance_factor=0.5,
+                          marginal_x=None,  # type: ignore
+                          marginal_y=None)  # type: ignore
 
         # Speed of crossing vs population of city
         df = df_countries[df_countries["speed_crossing_day_night_country_avg"] != 0].copy()
         df = df[df["med_age"] != 0]
-        bivariate_class.scatter(df=df,
-                                x="speed_crossing_day_night_country_avg",
-                                y="med_age",
-                                color="continent",
-                                text="iso3",
-                                xaxis_title='Mean speed of crossing (in m/s)',
-                                yaxis_title='Median age (in years)',
-                                pretty_text=False,
-                                marker_size=10,
-                                save_file=True,
-                                hover_data=hover_data,
-                                hover_name="country",
-                                legend_title="",
-                                legend_x=0.87,
-                                legend_y=1.0,
-                                label_distance_factor=0.4,
-                                marginal_x=None,  # type: ignore
-                                marginal_y=None)  # type: ignore
+        bivariate.scatter(df=df,
+                          x="speed_crossing_day_night_country_avg",
+                          y="med_age",
+                          color="continent",
+                          text="iso3",
+                          xaxis_title='Mean speed of crossing (in m/s)',
+                          yaxis_title='Median age (in years)',
+                          pretty_text=False,
+                          marker_size=10,
+                          save_file=True,
+                          hover_data=hover_data,
+                          hover_name="country",
+                          legend_title="",
+                          legend_x=0.87,
+                          legend_y=1.0,
+                          label_distance_factor=0.4,
+                          marginal_x=None,  # type: ignore
+                          marginal_y=None)  # type: ignore
 
         # Speed of crossing vs detected mobile phones
         df = df_countries[df_countries["time_crossing_day_night_country_avg"] != 0].copy()
         df['cellphone_normalised'] = df['cellphone'] / df['total_time']
-        bivariate_class.scatter(df=df,
-                                x="time_crossing_day_night_country_avg",
-                                y="cellphone_normalised",
-                                color="continent",
-                                text="iso3",
-                                xaxis_title='Crossing initiation time (in s)',
-                                yaxis_title='Mobile phones detected (normalised over time)',
-                                pretty_text=False,
-                                marker_size=10,
-                                save_file=True,
-                                hover_data=hover_data,
-                                hover_name="country",
-                                legend_title="",
-                                legend_x=0.87,
-                                legend_y=1.0,
-                                label_distance_factor=0.5,
-                                marginal_x=None,  # type: ignore
-                                marginal_y=None)  # type: ignore
+        bivariate.scatter(df=df,
+                          x="time_crossing_day_night_country_avg",
+                          y="cellphone_normalised",
+                          color="continent",
+                          text="iso3",
+                          xaxis_title='Crossing initiation time (in s)',
+                          yaxis_title='Mobile phones detected (normalised over time)',
+                          pretty_text=False,
+                          marker_size=10,
+                          save_file=True,
+                          hover_data=hover_data,
+                          hover_name="country",
+                          legend_title="",
+                          legend_x=0.87,
+                          legend_y=1.0,
+                          label_distance_factor=0.5,
+                          marginal_x=None,  # type: ignore
+                          marginal_y=None)  # type: ignore
 
         # Speed of crossing vs detected mobile phones
         df = df_countries[df_countries["speed_crossing_day_night_country_avg"] != 0].copy()
         df['cellphone_normalised'] = df['cellphone'] / df['total_time']
-        bivariate_class.scatter(df=df,
-                                x="speed_crossing_day_night_country_avg",
-                                y="cellphone_normalised",
-                                color="continent",
-                                text="iso3",
-                                xaxis_title='Mean speed of crossing (in m/s)',
-                                yaxis_title='Mobile phones detected (normalised over time)',
-                                pretty_text=False,
-                                marker_size=10,
-                                save_file=True,
-                                hover_data=hover_data,
-                                hover_name="country",
-                                legend_title="",
-                                legend_x=0.87,
-                                legend_y=1.0,
-                                label_distance_factor=0.5,
-                                marginal_x=None,  # type: ignore
-                                marginal_y=None)  # type: ignore
+        bivariate.scatter(df=df,
+                          x="speed_crossing_day_night_country_avg",
+                          y="cellphone_normalised",
+                          color="continent",
+                          text="iso3",
+                          xaxis_title='Mean speed of crossing (in m/s)',
+                          yaxis_title='Mobile phones detected (normalised over time)',
+                          pretty_text=False,
+                          marker_size=10,
+                          save_file=True,
+                          hover_data=hover_data,
+                          hover_name="country",
+                          legend_title="",
+                          legend_x=0.87,
+                          legend_y=1.0,
+                          label_distance_factor=0.5,
+                          marginal_x=None,  # type: ignore
+                          marginal_y=None)  # type: ignore
 
         # Mean speed of crossing (used to be plots_class.map)
-        maps_class.map_world(df=df_countries,
-                             color="speed_crossing_day_night_country_avg",
-                             title="Mean speed of crossing (in m/s)",
-                             show_colorbar=True,
-                             colorbar_title="",                 # keep your empty title behavior
-                             filter_zero_nan=True,              # preserves old map() filtering
-                             save_file=True,
-                             file_name="map_speed_crossing"
-                             )
+        maps.map_world(df=df_countries,
+                       color="speed_crossing_day_night_country_avg",
+                       title="Mean speed of crossing (in m/s)",
+                       show_colorbar=True,
+                       colorbar_title="",                 # keep your empty title behavior
+                       filter_zero_nan=True,              # preserves old map() filtering
+                       save_file=True,
+                       file_name="map_speed_crossing"
+                       )
 
         # Crossing initiation time (used to be plots_class.map)
-        maps_class.map_world(df=df_countries,
-                             color="time_crossing_day_night_country_avg",
-                             title="Crossing initiation time (in s)",
-                             show_colorbar=True,
-                             colorbar_title="",
-                             filter_zero_nan=True,
-                             save_file=True,
-                             file_name="map_crossing_time"
-                             )
+        maps.map_world(df=df_countries,
+                       color="time_crossing_day_night_country_avg",
+                       title="Crossing initiation time (in s)",
+                       show_colorbar=True,
+                       colorbar_title="",
+                       filter_zero_nan=True,
+                       save_file=True,
+                       file_name="map_crossing_time"
+                       )
 
         # Crossing with and without traffic lights
         df = df_countries.copy()
@@ -2712,24 +2724,24 @@ if __name__ == "__main__":
         df['with_trf_light_norm'] = (df['with_trf_light_day_country'] + df['with_trf_light_night_country']) / df['total_time'] / df['population_country']  # noqa: E501
         df['without_trf_light_norm'] = (df['without_trf_light_day_country'] + df['without_trf_light_night_country']) / df['total_time'] / df['population_country']  # noqa: E501
         df['country'] = df['country'].str.title()
-        bivariate_class.scatter(df=df,
-                                x="with_trf_light_norm",
-                                y="without_trf_light_norm",
-                                color="continent",
-                                text="iso3",
-                                xaxis_title='Crossing events with traffic lights (normalised)',
-                                yaxis_title='Crossing events without traffic lights (normalised)',
-                                pretty_text=False,
-                                marker_size=10,
-                                save_file=True,
-                                hover_data=hover_data,
-                                hover_name="country",
-                                legend_title="",
-                                legend_x=0.87,
-                                legend_y=1.0,
-                                label_distance_factor=0.5,
-                                marginal_x=None,  # type: ignore
-                                marginal_y=None)  # type: ignore
+        bivariate.scatter(df=df,
+                          x="with_trf_light_norm",
+                          y="without_trf_light_norm",
+                          color="continent",
+                          text="iso3",
+                          xaxis_title='Crossing events with traffic lights (normalised)',
+                          yaxis_title='Crossing events without traffic lights (normalised)',
+                          pretty_text=False,
+                          marker_size=10,
+                          save_file=True,
+                          hover_data=hover_data,
+                          hover_name="country",
+                          legend_title="",
+                          legend_x=0.87,
+                          legend_y=1.0,
+                          label_distance_factor=0.5,
+                          marginal_x=None,  # type: ignore
+                          marginal_y=None)  # type: ignore
 
         # Exclude zero values before finding min
         nonzero_speed = df_countries[df_countries["speed_crossing_day_night_country_avg"] > 0]
