@@ -1,5 +1,6 @@
 import os
 import ast
+import polars as pl
 import common
 from utils.core.tools import Tools
 from utils.core.metadata import MetaData
@@ -12,7 +13,7 @@ class IO:
     def __init__(self) -> None:
         pass
 
-    def filter_csv_files(self, file, df_mapping):
+    def filter_csv_files(self, file: str, df_mapping: pl.DataFrame):
         """
         Filters and processes CSV files based on predefined criteria.
 
@@ -41,16 +42,16 @@ class IO:
         if file.endswith(".csv"):
             filename = os.path.splitext(file)[0]
 
-            # Lookup values *before* reading CSV
+            # MetaData helper is assumed Polars-compatible (as per your conversion approach)
             values = metadata_class.find_values_with_video_id(df_mapping, filename)
             if values is None:
-                return None  # Skip if mapping or required value is None
+                return None
 
             vehicle_type = values[18]
             vehicle_list = common.get_configs("vehicles_analyse")
 
-            # Only check if the list is NOT empty
-            if vehicle_list:  # This is True if the list is not empty
+            # Only check if list is NOT empty
+            if vehicle_list:
                 if vehicle_type not in vehicle_list:
                     return None
 
@@ -69,6 +70,8 @@ class IO:
             >>> self.parse_videos('[abc,def]')
             ['abc', 'def']
         """
+        if not isinstance(s, str):
+            return []
         s = s.strip()
         if s.startswith("[") and s.endswith("]"):
             s = s[1:-1]
@@ -89,6 +92,9 @@ class IO:
             [[12], [34], [56]]
         """
         try:
-            return ast.literal_eval(row[colname])
-        except (ValueError, SyntaxError, KeyError, TypeError):
+            v = row.get(colname)
+            if not isinstance(v, str):
+                return []
+            return ast.literal_eval(v)
+        except (ValueError, SyntaxError, KeyError, TypeError, AttributeError):
             return []

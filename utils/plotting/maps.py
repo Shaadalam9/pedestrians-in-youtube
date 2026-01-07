@@ -286,6 +286,7 @@ class Maps:
         )
 
         # --- optional cities ---
+        print(type(df_cities))
         if show_cities and df_cities is not None and {"lat", "lon"}.issubset(df_cities.columns):
             fig.add_trace(go.Scattergeo(
                 lon=df_cities["lon"],

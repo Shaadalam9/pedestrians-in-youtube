@@ -35,20 +35,51 @@ class Geo:
         """
         logger.debug(f"{video_id}: looking for city, start_time={start_time}.")
 
-        for _, row in df.iterrows():
-            # Convert comma-separated string to list of video IDs
-            videos = re.findall(r"[\w-]+", row["videos"])
-            # Parse the stringified list of lists
-            start_times = ast.literal_eval(row["start_time"])
+        # Iterate rows (Polars)
+        for row in df.select(["id", "videos", "start_time"]).iter_rows(named=True):
+            try:
+                videos_raw = row.get("videos")
+                start_raw = row.get("start_time")
 
-            if video_id in videos:
-                index = videos.index(video_id)
+                if not isinstance(videos_raw, str) or not isinstance(start_raw, str):
+                    continue
 
-                # Check if the provided start_time exists in the relevant sublist
-                if start_time in start_times[index]:
-                    return row["id"]
+                # Extract video ids robustly
+                videos = re.findall(r"[\w-]+", videos_raw)
 
-        # No match found
+                if video_id not in videos:
+                    continue
+
+                idx = videos.index(video_id)
+
+                # Parse nested start times
+                start_times = ast.literal_eval(start_raw)
+                if not isinstance(start_times, list) or idx >= len(start_times):
+                    continue
+
+                sub = start_times[idx]
+                if not isinstance(sub, list):
+                    continue
+
+                # Match start_time (handle int/float/string mismatches)
+                try:
+                    st_val = float(start_time)
+                    sub_vals = []
+                    for x in sub:
+                        try:
+                            sub_vals.append(float(x))
+                        except Exception:
+                            continue
+                    if st_val in sub_vals:
+                        return row["id"]
+                except Exception:
+                    # Fallback: direct membership check
+                    if start_time in sub:
+                        return row["id"]
+
+            except Exception:
+                continue
+
         return None
 
     @staticmethod

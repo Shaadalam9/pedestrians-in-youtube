@@ -439,7 +439,7 @@ class Youtube_Helper:
                         continue
 
                     for a in soup.find_all("a"):
-                        href = (a.get("href") or "").strip()
+                        href = (a.get("href") or "").strip()  # type: ignore
                         if not href:
                             continue
 

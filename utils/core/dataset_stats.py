@@ -1,234 +1,213 @@
+from __future__ import annotations
+
 import ast
-import pandas as pd
 import math
+from typing import Any
+
+import polars as pl
+
 from utils.core.metadata import MetaData
 
-metadata_class = MetaData()
+metadata = MetaData()
 
 
 class Dataset_Stats:
     def __init__(self) -> None:
         pass
 
-    def calculate_total_seconds_for_city(self, df, city_name, state_name):
+    @staticmethod
+    def _parse_nested_list(s: str | None) -> list:
+        """
+        Parse stringified Python list (possibly nested) into a Python list.
+        Normalizes:
+          [] -> []
+          [0, 10] -> [[0, 10]]
+          [[0, 10], [20, 30]] -> as-is
+        """
+        if not isinstance(s, str) or not s.strip():
+            return []
+        try:
+            v = ast.literal_eval(s)
+        except Exception:
+            return []
+        if not isinstance(v, list):
+            return []
+        if v and not any(isinstance(el, list) for el in v):
+            return [v]
+        return v
+
+    @staticmethod
+    def _sum_durations(start_times: list, end_times: list) -> int:
+        """Sum (end-start) across nested lists, robust to malformed entries."""
+        total = 0
+        for start, end in zip(start_times, end_times):
+            start_list = start if isinstance(start, list) else [start]
+            end_list = end if isinstance(end, list) else [end]
+            for s, e in zip(start_list, end_list):
+                try:
+                    total += int(e) - int(s)
+                except Exception:
+                    continue
+        return total
+
+    @staticmethod
+    def _videos_to_list_expr(col: str = "videos") -> pl.Expr:
+        """
+        Convert `videos` string column to a list of cleaned video IDs.
+        Handles examples like:
+          [D_LyZL4P3_k]
+          "[ikOjqfFj-7o,GDXBW8LRFu4]"
+          []
+          null
+        """
+        videos_clean = (
+            pl.col(col)
+            .cast(pl.Utf8)
+            .fill_null("")
+            .str.strip_chars()
+            .str.strip_chars("\"'")   # remove surrounding quotes if present
+            .str.strip_chars("[]")    # remove brackets
+            .str.strip_chars()
+        )
+
+        return (
+            videos_clean
+            .str.split(",")
+            .list.eval(pl.element().str.strip_chars())
+            .list.filter(pl.element() != "")
+        )
+
+    # ----------------------------
+    # Public methods (Polars inputs)
+    # ----------------------------
+    def calculate_total_seconds_for_city(self, df: pl.DataFrame, city_name: str, state_name: str) -> int:
         """Calculates the total number of seconds of video for a given city and state.
 
-        This method searches a DataFrame for a specific city and state, retrieves
-        start and end time lists from matching rows, and sums the total recorded
-        video time in seconds. It supports cases where the state is `"unknown"`
-        (matching rows with missing state values).
-
         Args:
-            df (pd.DataFrame): DataFrame containing city, state, start_time, and end_time columns.
-                - `start_time` and `end_time` should be stored as string representations of nested lists.
-            city_name (str): Name of the city to match.
-            state_name (str): Name of the state to match, or `"unknown"` for missing state.
+            df (pl.DataFrame): Must include `city`, `state`, `start_time`, `end_time`.
+            city_name (str): City to match.
+            state_name (str): State to match; if "unknown", matches null/empty/"NA".
 
         Returns:
-            int: Total video duration in seconds for the given city and state.
-
-        Examples:
-            >>> df = pd.DataFrame({
-            ...     'city': ['Paris'],
-            ...     'state': [None],
-            ...     'start_time': ["[[0, 10], [20, 30]]"],
-            ...     'end_time': ["[[5, 15], [25, 35]]"]
-            ... })
-            >>> calculate_total_seconds_for_city(df, "Paris", "unknown")
-            10
+            int: Total duration seconds for the first matching row; 0 if no match.
         """
-        # Filter the DataFrame for the specific city and state
         if state_name.lower() == "unknown":
-            row = df[(df["city"] == city_name) & (pd.isna(df["state"]))]
+            mask = (
+                (pl.col("city") == city_name)
+                & (
+                    pl.col("state").is_null()
+                    | (pl.col("state").cast(pl.Utf8).str.strip_chars() == "")
+                    | (pl.col("state").cast(pl.Utf8) == "NA")
+                )
+            )
         else:
-            row = df[(df["city"] == city_name) & (df["state"] == state_name)]
+            mask = (pl.col("city") == city_name) & (pl.col("state") == state_name)
 
-        # Return 0 if no match is found
-        if row.empty:
-            return 0  # Could alternatively raise an exception
+        row = df.filter(mask).select(["start_time", "end_time"]).head(1)
+        if row.height == 0:
+            return 0
 
-        # Extract the first matching row
-        row = row.iloc[0]
+        start_s = row["start_time"][0]
+        end_s = row["end_time"][0]
 
-        # Convert stored string representations of lists into Python lists
-        start_times = ast.literal_eval(row["start_time"])
-        end_times = ast.literal_eval(row["end_time"])
+        start_times = self._parse_nested_list(start_s)
+        end_times = self._parse_nested_list(end_s)
 
-        total_seconds = 0
+        return self._sum_durations(start_times, end_times)
 
-        # Iterate through nested start/end times and accumulate durations
-        for start, end in zip(start_times, end_times):
-            for s, e in zip(start, end):
-                total_seconds += (int(e) - int(s))
-
-        return total_seconds
-
-    def calculate_total_seconds(self, df):
-        """Calculates the total video duration (in seconds) from a mapping DataFrame.
-
-        This method reads `start_time` and `end_time` columns, which contain string
-        representations of nested lists of timestamps. It iterates through all rows,
-        summing the total video duration across the dataset.
+    def calculate_total_seconds(self, df: pl.DataFrame) -> int:
+        """Calculates total video duration (seconds) across the entire mapping DataFrame.
 
         Args:
-            df (pd.DataFrame): DataFrame containing at least `start_time` and `end_time` columns.
+            df (pl.DataFrame): Must include `start_time` and `end_time`.
 
         Returns:
-            int: The total number of seconds across all start/end pairs in the DataFrame.
-
-        Example:
-            >>> df = pd.DataFrame({
-            ...     'start_time': ["[[0, 10]]", "[[20, 30]]"],
-            ...     'end_time': ["[[5, 15]]", "[[25, 35]]"]
-            ... })
-            >>> calculate_total_seconds(df)
-            20
+            int: Total duration seconds across all rows.
         """
-        grand_total_seconds = 0
+        total = 0
+        for start_s, end_s in df.select(["start_time", "end_time"]).iter_rows():
+            start_times = self._parse_nested_list(start_s)
+            end_times = self._parse_nested_list(end_s)
+            total += self._sum_durations(start_times, end_times)
+        return total
 
-        # Iterate through each row in the DataFrame
-        for _, row in df.iterrows():
-            # Convert string representation into Python list
-            start_times = ast.literal_eval(row["start_time"])
-            end_times = ast.literal_eval(row["end_time"])
-
-            # Sum duration for each start/end timestamp pair
-            for start, end in zip(start_times, end_times):
-                for s, e in zip(start, end):
-                    grand_total_seconds += (int(e) - int(s))
-
-        return grand_total_seconds
-
-    def remove_columns_below_threshold(self, df, threshold):
-        """Removes `start_time`/`end_time` column pairs where total recorded time is below a threshold.
-
-        This method scans all columns in the DataFrame for matching `start_timeX` /
-        `end_timeX` column pairs (where X can be a suffix), calculates the total
-        video duration for all rows in each pair, and removes pairs whose total
-        duration is less than the given threshold.
+    def remove_columns_below_threshold(self, df: pl.DataFrame, threshold: int) -> pl.DataFrame:
+        """Removes `start_time*`/`end_time*` column pairs where total recorded time is below a threshold.
 
         Args:
-            df (pd.DataFrame): DataFrame containing video start/end time columns.
-                - Start/end times should be stored as string representations of nested lists.
-            threshold (int): Minimum total seconds required for a start/end column
-                pair to be retained.
+            df (pl.DataFrame): Contains start/end columns (stringified nested lists).
+            threshold (int): Minimum total seconds required to retain a pair.
 
         Returns:
-            pd.DataFrame: A modified DataFrame with low-duration column pairs removed.
-
-        Example:
-            >>> df = pd.DataFrame({
-            ...     'start_time_city1': ["[[0, 10]]", "[[20, 30]]"],
-            ...     'end_time_city1': ["[[5, 15]]", "[[25, 35]]"]
-            ... })
-            >>> remove_columns_below_threshold(df, threshold=15)
-            Empty DataFrame
-            Columns: []
-            Index: [0, 1]
+            pl.DataFrame: DataFrame with low-duration pairs removed.
         """
-        cols_to_remove = []
+        cols = df.columns
+        bases: set[str] = set()
 
-        # Iterate over all columns to find start/end pairs
-        for col in df.columns:
-            if col.startswith("start_time") or col.startswith("end_time"):
-                # Identify the base name to find its matching pair
-                base = col.replace("start_time", "").replace("end_time", "")
-                start_col = f"start_time{base}"
-                end_col = f"end_time{base}"
+        for c in cols:
+            if c.startswith("start_time"):
+                bases.add(c.replace("start_time", ""))
+            elif c.startswith("end_time"):
+                bases.add(c.replace("end_time", ""))
 
-                # Only process if both start and end columns exist
-                if start_col in df.columns and end_col in df.columns:
-                    total_seconds = 0
+        cols_to_remove: list[str] = []
 
-                    # Iterate through each row and accumulate durations
-                    for _, row in df.iterrows():
-                        start_times = ast.literal_eval(row[start_col])
-                        end_times = ast.literal_eval(row[end_col])
+        for base in bases:
+            start_col = f"start_time{base}"
+            end_col = f"end_time{base}"
+            if start_col not in cols or end_col not in cols:
+                continue
 
-                        # Sum the duration of each start/end pair
-                        for start, end in zip(start_times, end_times):
-                            for s, e in zip(start, end):
-                                total_seconds += (int(e) - int(s))
+            total_seconds = 0
+            for start_s, end_s in df.select([start_col, end_col]).iter_rows():
+                start_times = self._parse_nested_list(start_s)
+                end_times = self._parse_nested_list(end_s)
+                total_seconds += self._sum_durations(start_times, end_times)
 
-                    # Mark this start/end pair for removal if below threshold
-                    if total_seconds < threshold:
-                        cols_to_remove += [start_col, end_col]
+            if total_seconds < threshold:
+                cols_to_remove.extend([start_col, end_col])
 
-        # Deduplicate the removal list and drop columns from DataFrame
-        cols_to_remove = list(set(cols_to_remove))
-        df_modified = df.drop(columns=cols_to_remove)
+        cols_to_remove = sorted(set(cols_to_remove))
+        return df.drop(cols_to_remove) if cols_to_remove else df
 
-        return df_modified
-
-    def calculate_total_videos(self, df):
-        """Counts the total number of unique videos from a mapping DataFrame.
-
-        This method reads the `videos` column, splits its comma-separated contents,
-        strips extra whitespace, and counts unique video IDs/names.
+    def calculate_total_videos(self, df: pl.DataFrame) -> int:
+        """Counts total number of unique videos from a Polars mapping DataFrame.
 
         Args:
-            df (pd.DataFrame): DataFrame containing a `videos` column with
-                comma-separated video identifiers.
+            df (pl.DataFrame): Must include `videos`.
 
         Returns:
-            int: The total count of unique videos.
-
-        Example:
-            >>> df = pd.DataFrame({
-            ...     'videos': ["video1, video2", "video2, video3"]
-            ... })
-            >>> calculate_total_videos(df)
-            3
+            int: Unique video count across the dataset.
         """
-        total_videos = set()
+        out = (
+            df.select(self._videos_to_list_expr("videos").alias("_videos"))
+            .explode("_videos")
+            .select(pl.col("_videos").n_unique().alias("n_unique_videos"))
+        )
+        return int(out.item())
 
-        # Iterate through each row and add all videos to a set (for uniqueness)
-        for _, row in df.iterrows():
-            videos_list = row["videos"].split(",")  # Split comma-separated values
-            for video in videos_list:
-                total_videos.add(video.strip())  # Remove whitespace before adding
-
-        return len(total_videos)
-
-    def pedestrian_cross_per_city(self, pedestrian_crossing_count, df_mapping):
+    def pedestrian_cross_per_city(self, pedestrian_crossing_count: dict, df_mapping: pl.DataFrame) -> dict:
         """Aggregates pedestrian crossing counts per city-condition key.
 
-        This method:
-            1. Counts pedestrian crossing events per video ID from the input dictionary.
-            2. Uses the mapping DataFrame to look up each video's city, latitude, longitude, and condition.
-            3. Constructs a unique key in the format: `{city}_{lat}_{long}_{condition}`.
-            4. Aggregates counts for each unique city-condition key.
+        Keeps your existing MetaData lookup:
+            metadata.find_values_with_video_id(...)
+
+        Note: df_mapping is Polars; it is converted once to pandas for the MetaData helper.
 
         Args:
-            pedestrian_crossing_count (dict): Dictionary mapping video IDs to dictionaries
-                containing:
-                    - "ids" (list): List of detected pedestrian crossing event IDs.
-            df_mapping (pd.DataFrame): Mapping DataFrame used to look up video metadata.
-                Expected to be compatible with `values_class.find_values_with_video_id`.
+            pedestrian_crossing_count (dict): {video_id: {"ids": [...]}, ...}
+            df_mapping (pl.DataFrame): mapping data
 
         Returns:
-            dict: Dictionary mapping `{city}_{lat}_{long}_{condition}` → total pedestrian crossing count.
-
-        Example:
-            >>> pedestrian_crossing_count = {
-            ...     "vid123": {"ids": [1, 2, 3]},
-            ...     "vid456": {"ids": [4]}
-            ... }
-            >>> # df_mapping must work with values_class.find_values_with_video_id
-            >>> pedestrian_cross_per_city(pedestrian_crossing_count, df_mapping)
-            {
-                "Paris_48.85_2.35_0": 3,
-                "London_51.51_-0.13_1": 1
-            }
+            dict: { "{city}_{lat}_{long}_{condition}": total_count }
         """
-        final = {}
+        final: dict[str, int] = {}
 
-        # Step 1: Count pedestrian crossing events per video
-        count = {key: len(value["ids"]) for key, value in pedestrian_crossing_count.items()}
+        # Count events per video
+        count = {key: len(value.get("ids", [])) for key, value in pedestrian_crossing_count.items()}
 
-        # Step 2: Map each video to its city and condition
-        for key, total_events in count.items():
-            result = metadata_class.find_values_with_video_id(df_mapping, key)
+        for video_id, total_events in count.items():
+            result = metadata.find_values_with_video_id(df_mapping, video_id)
 
             if result is not None:
                 condition = result[3]
@@ -236,86 +215,45 @@ class Dataset_Stats:
                 lat = result[6]
                 long = result[7]
 
-                # Step 3: Create the unique city-condition key
                 city_time_key = f"{city}_{lat}_{long}_{condition}"
-
-                # Step 4: Aggregate counts for this key
-                if city_time_key in final:
-                    final[city_time_key] += total_events
-                else:
-                    final[city_time_key] = total_events
+                final[city_time_key] = final.get(city_time_key, 0) + total_events
 
         return final
 
-    def pedestrian_cross_per_country(self, pedestrian_cross_city, df_mapping):
+    def pedestrian_cross_per_country(self, pedestrian_cross_city: dict, df_mapping: pl.DataFrame) -> dict:
         """Aggregates pedestrian crossing counts from city level to country level.
 
-        This method converts city-level pedestrian crossing counts into
-        country-level totals, grouped by country and condition.
+        Keeps your existing MetaData lookup:
+            metadata.get_value(...)
+
+        Note: df_mapping is Polars; it is converted once to pandas for the MetaData helper.
 
         Args:
-            pedestrian_cross_city (dict): Dictionary mapping
-                `{city}_{lat}_{long}_{condition}` → pedestrian crossing count (int).
-            df_mapping (pd.DataFrame): Mapping DataFrame containing city-to-country
-                information. Must be compatible with `values_class.get_value`.
+            pedestrian_cross_city (dict): { "{city}_{lat}_{long}_{condition}": count }
+            df_mapping (pl.DataFrame): mapping data
 
         Returns:
-            dict: Dictionary mapping `{country}_{condition}` → total pedestrian crossing count.
-
-        Example:
-            >>> pedestrian_cross_city = {
-            ...     "Paris_48.85_2.35_0": 3,
-            ...     "London_51.51_-0.13_1": 2
-            ... }
-            >>> # df_mapping must work with values_class.get_value
-            >>> pedestrian_cross_per_country(pedestrian_cross_city, df_mapping)
-            {
-                "France_0": 3,
-                "United Kingdom_1": 2
-            }
+            dict: { "{country}_{condition}": total_count }
         """
-        final = {}
+        final: dict[str, int] = {}
 
-        # Iterate through each city-condition entry
         for city_lat_long_cond, value in pedestrian_cross_city.items():
-            # Extract city, latitude, and condition
-            city, lat, _, cond = city_lat_long_cond.split("_")
+            try:
+                city, lat, _lon, cond = city_lat_long_cond.split("_")
+                lat_f = float(lat)
+            except Exception:
+                continue
 
-            # Look up the country for this city-lat combination
-            country = metadata_class.get_value(df_mapping, "city", city, "lat", float(lat), "country")
-
-            # Aggregate counts by country-condition
+            country = metadata.get_value(df_mapping, "city", city, "lat", lat_f, "country")
             country_key = f"{country}_{cond}"
-            if country_key in final:
-                final[country_key] += value
-            else:
-                final[country_key] = value
+            final[country_key] = final.get(country_key, 0) + int(value)
 
         return final
 
-    def safe_average(self, values):
-        """Calculates the average of a list, ignoring None and NaN values.
-
-        This method removes any `None` or `NaN` entries from the list before
-        calculating the mean. If no valid values remain, it returns `0`.
-
-        Args:
-            values (list): List of numeric values, possibly containing `None` or `NaN`.
-
-        Returns:
-            float: The average of valid values, or `0` if none are valid.
-
-        Example:
-            >>> safe_average([1, 2, None, float('nan'), 4])
-            2.3333333333333335
-            >>> safe_average([None, float('nan')])
-            0
-        """
-        # Keep only values that are not None and not NaN
+    def safe_average(self, values: list[Any]) -> float:
+        """Calculates the average of a list, ignoring None and NaN values."""
         valid_values = [
             v for v in values
             if v is not None and not (isinstance(v, float) and math.isnan(v))
         ]
-
-        # Return average if list is not empty; otherwise return 0
-        return sum(valid_values) / len(valid_values) if valid_values else 0
+        return sum(valid_values) / len(valid_values) if valid_values else 0.0

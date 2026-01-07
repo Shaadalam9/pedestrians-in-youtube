@@ -1,6 +1,7 @@
 import warnings
 import common
 import numpy as np
+import polars as pl
 import plotly.express as px
 from scipy.spatial import KDTree
 from custom_logger import CustomLogger
@@ -102,19 +103,24 @@ class Bivariate:
                     logger.debug('Tried to prettify {} with exception {}.', text, e)
 
             # check and clean the data
-            df = df[np.isfinite(df[[x, y]]).all(axis=1)].copy()  # Remove NaNs and Infs
+            df = df.filter(pl.col(x).is_finite() & pl.col(y).is_finite())  # Remove NaNs and Infs
 
             if text:
                 if text in df.columns:
                     # use KDTree to check point density
-                    tree = KDTree(df[[x, y]].values)  # Ensure finite values
-                    distances, _ = tree.query(df[[x, y]].values, k=2)  # Find nearest neighbor distance
+                    xy = df.select([x, y]).to_numpy()
+                    tree = KDTree(xy)
+                    distances, _ = tree.query(xy, k=2)
 
                     # define a distance threshold for labeling
                     threshold = np.mean(distances[:, 1]) * label_distance_factor
 
                     # only label points that are not too close to others
-                    df["display_label"] = np.where(distances[:, 1] > threshold, df[text], "")
+                    df = df.with_columns(
+                        pl.Series("nn_dist", distances[:, 1])).with_columns(
+                        pl.when(pl.col("nn_dist") > threshold)
+                          .then(pl.col(text)).otherwise(pl.lit("")).alias("display_label")
+                    ).drop("nn_dist")
 
                     text = "display_label"
                 else:

@@ -1,4 +1,5 @@
 import numpy as np
+import polars as pl
 from utils.core.metadata import MetaData
 
 metadata_class = MetaData()
@@ -24,18 +25,30 @@ class Detection:
         """
 
         # Filter dataframe to include only entries for the specified person
-        crossed_ids = dataframe[(dataframe["yolo-id"] == person_id)]
+        crossed_df = dataframe.filter(pl.col("yolo-id") == person_id)
 
-        # Group entries by Unique ID
-        crossed_ids_grouped = crossed_ids.groupby("unique-id")
+        if crossed_df.height == 0:
+            return [], []
 
-        # Filter entries based on x-coordinate boundaries
-        filtered_crossed_ids = crossed_ids_grouped.filter(
-            lambda x: (x["x-center"] <= min_x).any() and (x["x-center"] >= max_x).any())
+        # Group by unique-id and keep only those that cross both boundaries:
+        # (x-center <= min_x).any() and (x-center >= max_x).any()
+        # Equivalent to: min(x-center) <= min_x AND max(x-center) >= max_x
+        crossed_ids = (
+            crossed_df
+            .group_by("unique-id")
+            .agg([
+                pl.col("x-center").min().alias("_x_min"),
+                pl.col("x-center").max().alias("_x_max"),
+            ])
+            .filter((pl.col("_x_min") <= min_x) & (pl.col("_x_max") >= max_x))
+            .select("unique-id")
+            .to_series()
+            .to_list()
+        )
 
-        # Get unique IDs of the person who crossed the road within boundaries
-        crossed_ids = filtered_crossed_ids["unique-id"].unique()
-
+        # Lookup avg_height via existing MetaData helper (convert mapping once if needed)
+        avg_height = None
+        # df_mapping_for_meta = df_mapping.to_pandas() if isinstance(df_mapping, pl.DataFrame) else df_mapping
         result = metadata_class.find_values_with_video_id(df_mapping, video_id)
         if result is not None:
             avg_height = result[15]
@@ -44,10 +57,8 @@ class Detection:
         for uid in crossed_ids:
             if self.is_rider_id(dataframe, uid, avg_height):
                 continue  # Filter out riders
-
             if not self.is_valid_crossing(dataframe, uid):
                 continue  # Skip fake crossing
-
             pedestrian_ids.append(uid)
 
         return pedestrian_ids, crossed_ids
@@ -89,79 +100,103 @@ class Detection:
                 # ...process as pedestrian...
 
         """
-        # Extract all rows corresponding to the person id
-        person_track = df[df['unique-id'] == id]
-        if person_track.empty:
-            return False  # No data for this id
+        # If we cannot compute pixels_per_cm, do not classify as rider
+        try:
+            if avg_height is None or float(avg_height) == 0.0:
+                return False
+            avg_height_f = float(avg_height)
+        except Exception:
+            return False
 
-        frames = person_track['frame-count'].values
-        if len(frames) < min_shared_frames:
-            return False  # Not enough frames to perform check
+        person_track = df.filter(pl.col("unique-id") == id)
+        if person_track.height == 0:
+            return False
 
-        first_frame, last_frame = frames.min(), frames.max()
+        frames = person_track.get_column("frame-count").to_numpy()
+        if frames.size < min_shared_frames:
+            return False
 
-        # Filter DataFrame to get all bicycle/motorcycle detections in relevant frames
-        mask = (
-            (df['frame-count'] >= first_frame)
-            & (df['frame-count'] <= last_frame)
-            & (df['yolo-id'].isin([1, 3]))
+        first_frame = int(frames.min())
+        last_frame = int(frames.max())
+
+        vehicles_in_frames = df.filter(
+            (pl.col("frame-count") >= first_frame)
+            & (pl.col("frame-count") <= last_frame)
+            & (pl.col("yolo-id").is_in([1, 3]))
         )
-        vehicles_in_frames = df[mask]
 
-        for vehicle_id in vehicles_in_frames['unique-id'].unique():
-            # Get trajectory for this vehicle
-            vehicle_track = vehicles_in_frames[vehicles_in_frames['unique-id'] == vehicle_id]
+        if vehicles_in_frames.height == 0:
+            return False
 
-            # Find shared frames between person and vehicle
-            shared_frames = np.intersect1d(person_track['frame-count'], vehicle_track['frame-count'])
+        vehicle_ids = vehicles_in_frames.select("unique-id").unique().to_series().to_list()
 
-            if len(shared_frames) < min_shared_frames:
-                continue  # Not enough overlapping frames to check movement together
+        person_frames_all = person_track.get_column("frame-count").to_numpy()
 
-            # Align positions for person and vehicle on shared frames, sorted by Frame Count
-            person_pos = (
-                person_track[person_track['frame-count'].isin(shared_frames)]
-                .sort_values('frame-count')[['x-center', 'y-center']].values
+        for vehicle_id in vehicle_ids:
+            vehicle_track = vehicles_in_frames.filter(pl.col("unique-id") == vehicle_id)
+            if vehicle_track.height == 0:
+                continue
+
+            vehicle_frames_all = vehicle_track.get_column("frame-count").to_numpy()
+
+            shared_frames = np.intersect1d(person_frames_all, vehicle_frames_all)
+            if shared_frames.size < min_shared_frames:
+                continue
+
+            # Align positions on shared frames (sorted by frame-count)
+            person_shared = (
+                person_track
+                .filter(pl.col("frame-count").is_in(shared_frames))
+                .sort("frame-count")
             )
-            vehicle_pos = (
-                vehicle_track[vehicle_track['frame-count'].isin(shared_frames)]
-                .sort_values('frame-count')[['x-center', 'y-center']].values
+            vehicle_shared = (
+                vehicle_track
+                .filter(pl.col("frame-count").is_in(shared_frames))
+                .sort("frame-count")
             )
 
-            # Calculate person's bounding box heights in pixels for shared frames
-            person_heights = (
-                person_track[person_track['frame-count'].isin(shared_frames)]
-                .sort_values('frame-count')['height'].values
-            )  # This is in pixels per frame
+            # Safety: if counts diverge due to duplicates, align by truncation
+            n = min(person_shared.height, vehicle_shared.height)
+            if n < min_shared_frames:
+                continue
 
-            # Compute pixels-per-cm for each frame using the average real-world height
-            pixels_per_cm = person_heights / avg_height  # array, one per frame
+            person_pos = person_shared.select(["x-center", "y-center"]).head(n).to_numpy()
+            vehicle_pos = vehicle_shared.select(["x-center", "y-center"]).head(n).to_numpy()
 
-            # Compute Euclidean distances between person and vehicle centers for shared frames
+            person_heights = person_shared.get_column("height").head(n).to_numpy()
+            # pixels per cm per frame
+            pixels_per_cm = person_heights / avg_height_f
+
+            # avoid division by zero
+            if np.any(pixels_per_cm == 0):
+                continue
+
             pixel_dists = np.linalg.norm(person_pos - vehicle_pos, axis=1)
-            distances_cm = pixel_dists / pixels_per_cm  # Real-world distance per frame
+            distances_cm = pixel_dists / pixels_per_cm
 
-            proximity = (distances_cm < dist_thresh)
+            proximity = distances_cm < dist_thresh
             if proximity.sum() / len(distances_cm) < overlap_ratio:
-                continue  # Not close enough for sufficient frames
+                continue
 
-            # Calculate movement vectors (delta positions) for both tracks
             person_mov = np.diff(person_pos, axis=0)
             vehicle_mov = np.diff(vehicle_pos, axis=0)
 
-            # Compute cosine similarity of movement direction for each step
             similarities = []
             for a, b in zip(person_mov, vehicle_mov):
-                if np.linalg.norm(a) == 0 or np.linalg.norm(b) == 0:
-                    similarities.append(0)
+                na = np.linalg.norm(a)
+                nb = np.linalg.norm(b)
+                if na == 0 or nb == 0:
+                    similarities.append(0.0)
                 else:
-                    similarities.append(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)))
-            similarity_mask = (np.array(similarities) > similarity_thresh)
+                    similarities.append(float(np.dot(a, b) / (na * nb)))
 
+            if len(similarities) == 0:
+                continue
+
+            similarity_mask = np.array(similarities) > similarity_thresh
             if similarity_mask.sum() / len(similarities) >= overlap_ratio:
                 return True
 
-        # If no such vehicle found moving together, label as pedestrian
         return False
 
     def is_valid_crossing(self, df, person_id, ratio_thresh=0.2):
@@ -190,47 +225,47 @@ class Detection:
             bool: True if crossing is valid (not due to camera movement), False otherwise.
         """
 
-        # Extract all detections for the specified person
-        person_track = df[df['unique-id'] == person_id]
-        if person_track.empty:
-            # No detection for this person
+        person_track = df.filter(pl.col("unique-id") == person_id)
+        if person_track.height == 0:
             return False
 
-        # Determine the first and last frames in which the person appears
-        frames = person_track['frame-count'].values
-        first_frame, last_frame = frames.min(), frames.max()
+        frames = person_track.get_column("frame-count").to_numpy()
+        first_frame = int(frames.min())
+        last_frame = int(frames.max())
 
-        # Filter for static objects (traffic light or stop sign) in those frames
-        static_objs = df[
-            (df['frame-count'] >= first_frame) &
-            (df['frame-count'] <= last_frame) &
-            (df['yolo-id'].isin([9, 11]))
-        ]
+        static_objs = df.filter(
+            (pl.col("frame-count") >= first_frame)
+            & (pl.col("frame-count") <= last_frame)
+            & (pl.col("yolo-id").is_in([9, 11]))
+        )
 
-        if static_objs.empty:
-            # No static object present during this period; cannot verify, assume valid
+        # No static object present; cannot verify, assume valid
+        if static_objs.height == 0:
             return True
 
-        # Calculate the y-movement (vertical movement) of the person
-        person_y_movement = person_track['y-center'].max() - person_track['y-center'].min()
+        # Person y-movement
+        person_y_max = person_track.select(pl.col("y-center").max()).item()
+        person_y_min = person_track.select(pl.col("y-center").min()).item()
+        try:
+            person_y_movement = float(person_y_max) - float(person_y_min)
+        except Exception:
+            return False
 
-        # Calculate the maximum y-movement among all static objects in the same frame range
-        max_static_y_movement = 0
-        for obj_id in static_objs['unique-id'].unique():
-            obj_track = static_objs[static_objs['unique-id'] == obj_id]
-            y_movement = obj_track['y-center'].max() - obj_track['y-center'].min()
-            if y_movement > max_static_y_movement:
-                max_static_y_movement = y_movement
-
-        # If the person does not move vertically, it's an invalid crossing
         if person_y_movement == 0:
             return False
 
-        # Compute the movement ratio
-        movement_ratio = max_static_y_movement / person_y_movement
+        # Max static object y-movement across static object tracks
+        static_movement_max = (
+            static_objs
+            .group_by("unique-id")
+            .agg((pl.col("y-center").max() - pl.col("y-center").min()).alias("y_movement"))
+            .select(pl.col("y_movement").max())
+            .item()
+        )
 
-        # If the static object moves too much compared to the person, crossing is invalid
-        if movement_ratio > ratio_thresh:
+        try:
+            movement_ratio = float(static_movement_max) / person_y_movement
+        except Exception:
             return False
-        else:
-            return True
+
+        return movement_ratio <= ratio_thresh

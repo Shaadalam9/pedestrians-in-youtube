@@ -2,10 +2,12 @@ import common
 import os
 import re
 import ast
-from collections import defaultdict
 import heapq
+from collections import defaultdict
+
+import polars as pl
+
 from helper_script import Youtube_Helper
-import pandas as pd
 from custom_logger import CustomLogger
 from utils.core.metadata import MetaData
 
@@ -43,102 +45,110 @@ class Duration:
         if num == 0:
             return data
 
-        # Process only the 'max' speed segments
-        for segment_type in ['max', 'min']:
+        for segment_type in ["max", "min"]:
             if segment_type in data:
                 for city_data in data[segment_type].values():
                     for video_start_time, inner_value in city_data.items():
-                        # Extract base video name and its offset
-                        video_name, start_offset = video_start_time.rsplit('_', 1)
+                        video_name, start_offset = video_start_time.rsplit("_", 1)
                         start_offset = int(start_offset)
 
                         for unique_id, _ in inner_value.items():
                             try:
-                                # Find the existing folder containing the video file
-                                existing_folder = next((
-                                    path for path in video_paths if os.path.exists(
-                                        os.path.join(path, f"{video_name}.mp4"))), None)
+                                existing_folder = next(
+                                    (
+                                        path
+                                        for path in video_paths
+                                        if os.path.exists(os.path.join(path, f"{video_name}.mp4"))
+                                    ),
+                                    None,
+                                )
 
                                 if not existing_folder:
-                                    raise FileNotFoundError(f"Video file '{video_name}.mp4' not found in any of the specified paths.")  # noqa:E501
+                                    raise FileNotFoundError(
+                                        f"Video file '{video_name}.mp4' not found in any of the specified paths."
+                                    )
 
                                 base_video_path = os.path.join(existing_folder, f"{video_name}.mp4")
 
-                                df = None  # Initialize before the loops
+                                df: pl.DataFrame | None = None
 
-                                for folder_path in common.get_configs('data'):
+                                for folder_path in common.get_configs("data"):
                                     for subfolder in common.get_configs("sub_domain"):
                                         subfolder_path = os.path.join(folder_path, subfolder)
                                         if not os.path.exists(subfolder_path):
                                             continue
                                         for file in os.listdir(subfolder_path):
-                                            if video_start_time in file and file.endswith('.csv'):
+                                            if video_start_time in file and file.endswith(".csv"):
                                                 file_path = os.path.join(subfolder_path, file)
-                                                df = pd.read_csv(file_path)
+                                                df = pl.read_csv(file_path)
 
-                                                # Keep only rows with confidence > min_conf
-                                                df = df[df["confidence"] >= common.get_configs("min_confidence")]
-                                                break  # Found the file, break from subfolder loop
+                                                # Keep only rows with confidence >= min_conf
+                                                df = df.filter(
+                                                    pl.col("confidence").cast(pl.Float64, strict=False)
+                                                    >= float(common.get_configs("min_confidence"))
+                                                )
+                                                break
                                         if df is not None:
-                                            break  # Break from folder_path loop if found
+                                            break
                                     if df is not None:
                                         break
 
                                 if df is None:
-                                    return None, None  # Could not find any matching CSV
+                                    return None, None
 
-                                filtered_df = df[df['unique-id'] == unique_id]
+                                filtered_df = df.filter(pl.col("unique-id") == unique_id)
 
-                                if filtered_df.empty:
-                                    return None, None  # No data found for this unique_id
+                                if filtered_df.height == 0:
+                                    return None, None
 
-                                # Determine frame-based start and end times
-                                first_frame = filtered_df['frame-count'].min()
-                                last_frame = filtered_df['frame-count'].max()
+                                first_frame = filtered_df.select(pl.col("frame-count").min()).item()
+                                last_frame = filtered_df.select(pl.col("frame-count").max()).item()
 
-                                # Look up the frame rate (fps) using the video_start_time
+                                # Lookup fps using mapping (MetaData now Polars-compatible)
                                 result = metadata_class.find_values_with_video_id(df_mapping, video_start_time)
-
-                                # Check if the result is None (i.e., no matching data was found)
                                 if result is not None:
-                                    # Unpack the result since it's not None
                                     fps = result[17]
 
                                     first_time = first_frame / fps
                                     last_time = last_frame / fps
 
-                                    # Adjusted start and end times
                                     real_start_time = first_time + start_offset
                                     if duration is None:
                                         real_end_time = start_offset + last_time
                                     else:
                                         real_end_time = real_start_time + duration
 
-                                    # Trim and save the raw segment
                                     helper.trim_video(
                                         input_path=base_video_path,
-                                        output_path=os.path.join("saved_snaps",
-                                                                 str(name),
-                                                                 segment_type,
-                                                                 "original",
-                                                                 f"{video_name}_{real_start_time}.mp4"),
+                                        output_path=os.path.join(
+                                            "saved_snaps",
+                                            str(name),
+                                            segment_type,
+                                            "original",
+                                            f"{video_name}_{real_start_time}.mp4",
+                                        ),
                                         start_time=real_start_time,
-                                        end_time=real_end_time
+                                        end_time=real_end_time,
                                     )
 
-                                    # Overlay YOLO boxes on the saved segment
-                                    helper.draw_yolo_boxes_on_video(df=filtered_df,
-                                                                    fps=fps,
-                                                                    video_path=os.path.join("saved_snaps",
-                                                                                            str(name),
-                                                                                            segment_type,
-                                                                                            "original",
-                                                                                            f"{video_name}_{real_start_time}.mp4"),  # noqa:E501
-                                                                    output_path=os.path.join("saved_snaps",
-                                                                                             str(name),
-                                                                                             segment_type,
-                                                                                             "tracked",
-                                                                                             f"{video_name}_{real_start_time}.mp4"))  # noqa:E501
+                                    helper.draw_yolo_boxes_on_video(
+                                        df=filtered_df,
+                                        fps=fps,
+                                        video_path=os.path.join(
+                                            "saved_snaps",
+                                            str(name),
+                                            segment_type,
+                                            "original",
+                                            f"{video_name}_{real_start_time}.mp4",
+                                        ),
+                                        output_path=os.path.join(
+                                            "saved_snaps",
+                                            str(name),
+                                            segment_type,
+                                            "tracked",
+                                            f"{video_name}_{real_start_time}.mp4",
+                                        ),
+                                    )
 
                             except FileNotFoundError as e:
                                 logger.error(f"Error: {e}")
@@ -165,26 +175,53 @@ class Duration:
             float: Duration of the segment (end_time - start_time), or
             None: If no matching segment is found.
         """
-        for _, row in df.iterrows():
-            # Extract list of video IDs
-            videos = re.findall(r"[\w-]+", row["videos"])
+        try:
+            st_target = int(start_time)
+        except Exception:
+            return None
 
-            # Convert stringified lists of lists into Python objects
-            start_times = ast.literal_eval(row["start_time"])
-            end_times = ast.literal_eval(row["end_time"])
+        for row in df.select(["videos", "start_time", "end_time"]).iter_rows(named=True):
+            try:
+                videos_raw = row.get("videos")
+                start_raw = row.get("start_time")
+                end_raw = row.get("end_time")
 
-            if video_id in videos:
-                index = videos.index(video_id)  # get the index of the video
+                if not isinstance(videos_raw, str) or not isinstance(start_raw, str) or not isinstance(end_raw, str):
+                    continue
 
-                # Ensure start_time is in the corresponding start_times list
-                if start_time in start_times[index]:  # check if start_time matches
-                    # find end time that matches the start time
-                    index_start = start_times[index].index(start_time)
-                    end_time = end_times[index][index_start]
-                    # Return the difference as the duration
-                    return end_time - start_time
+                videos = re.findall(r"[\w-]+", videos_raw)
+                start_times = ast.literal_eval(start_raw)
+                end_times = ast.literal_eval(end_raw)
 
-        # Return None if no matching video_id and start_time were found
+                if video_id not in videos:
+                    continue
+
+                idx = videos.index(video_id)
+                if not isinstance(start_times, list) or not isinstance(end_times, list):
+                    continue
+                if idx >= len(start_times) or idx >= len(end_times):
+                    continue
+
+                starts_for_vid = start_times[idx]
+                ends_for_vid = end_times[idx]
+                if not isinstance(starts_for_vid, list) or not isinstance(ends_for_vid, list):
+                    continue
+
+                # match start time within that sublist
+                if st_target in starts_for_vid:
+                    idx_start = starts_for_vid.index(st_target)
+                    if idx_start < len(ends_for_vid):
+                        end_t = ends_for_vid[idx_start]
+                        try:
+                            return end_t - st_target
+                        except Exception:
+                            try:
+                                return float(end_t) - float(st_target)
+                            except Exception:
+                                return None
+            except Exception:
+                continue
+
         return None
 
     def find_min_max_video(self, var_dict, num=2):
@@ -213,31 +250,21 @@ class Duration:
                 Each follows the original nested structure.
         """
         all_speeds = []
-
-        # Flatten the nested dictionary and collect tuples of (speed, city_state_cond, video_id, unique_id)
         for city_lat_long_cond, videos in var_dict.items():
             for video_id, unique_dict in videos.items():
                 for unique_id, speed in unique_dict.items():
                     all_speeds.append((speed, city_lat_long_cond, video_id, unique_id))
 
-        # Use heapq to efficiently get the top and bottom N entries based on speed
         top_n = heapq.nlargest(num, all_speeds, key=lambda x: x[0])
         bottom_n = heapq.nsmallest(num, all_speeds, key=lambda x: x[0])
 
-        # Helper function to rebuild the nested structure from a list of tuples
         def format_result(entries):
             temp_result = defaultdict(lambda: defaultdict(dict))
             for speed, city_lat_long_cond, video_id, unique_id in entries:
                 temp_result[city_lat_long_cond][video_id][unique_id] = speed
-
-            # Convert defaultdicts to regular dicts for clean output
             return {
                 city: {video: dict(uniq) for video, uniq in videos.items()}
                 for city, videos in temp_result.items()
             }
 
-        # Return both top and bottom results in the original structure
-        return {
-            'max': format_result(top_n),
-            'min': format_result(bottom_n)
-        }
+        return {"max": format_result(top_n), "min": format_result(bottom_n)}

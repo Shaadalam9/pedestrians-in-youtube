@@ -1,6 +1,8 @@
 from tqdm import tqdm
 import math
 from collections import defaultdict
+import polars as pl
+
 from utils.core.metadata import MetaData
 
 metadata_class = MetaData()
@@ -10,7 +12,7 @@ class Grouping:
     def __init__(self) -> None:
         pass
 
-    def city_country_wrapper(self, input_dict, mapping, show_progress=False):
+    def city_country_wrapper(self, input_dict, mapping: pl.DataFrame, show_progress: bool = False):
         """
         Processes an input dictionary of video IDs and their corresponding values, maps each video ID to metadata
         using a provided mapping function, and builds an output dictionary keyed by city and condition.
@@ -27,37 +29,30 @@ class Grouping:
         """
 
         output = {}
-        # Choose the right iterator based on flag
-        iterator = input_dict.items()
 
+        iterator = input_dict.items()
         if show_progress:
             iterator = tqdm(iterator, desc="Wrapping by city/condition", total=len(input_dict))
 
         for key, value in iterator:
-            # Lookup metadata associated with the video ID
             result = metadata_class.find_values_with_video_id(mapping, key)
+            if result is None:
+                continue
 
-            # Check if the result is None (i.e., no matching data was found)
-            if result is not None:
-                # Unpack the returned metadata
-                condition = result[3]
-                city = result[4]
-                lat = result[6]
-                long = result[7]
+            condition = result[3]
+            city = result[4]
+            lat = result[6]
+            long = result[7]
 
-                # Create the grouping key
-                grouping_key = f"{city}_{lat}_{long}_{condition}"
+            grouping_key = f"{city}_{lat}_{long}_{condition}"
+            if grouping_key not in output:
+                output[grouping_key] = {}
 
-                # Initialise the dictionary for the grouping key if it doesn't exist
-                if grouping_key not in output:
-                    output[grouping_key] = {}
-
-                # Add or update the entry for this video ID
-                output[grouping_key][key] = value
+            output[grouping_key][key] = value
 
         return output
 
-    def process_city_string(self, city, df_mapping):
+    def process_city_string(self, city: str, df_mapping: pl.DataFrame):
         """
         Splits a city string into its components, retrieves the state using provided helper classes,
         and formats the city string with its state.
@@ -72,7 +67,7 @@ class Grouping:
             str: The formatted city string with its state, as returned by wrapper_class.format_city_lat_lon.
         """
         # Split the city string into city name, latitude, and longitude
-        city_new, lat, long = city.split('_')
+        city_new, lat, long = city.split("_")
 
         # Use values_class to retrieve the state associated with the city and coordinates
         state = metadata_class.get_value(df_mapping, "city", city_new, "lat", float(lat), "state")
@@ -157,7 +152,7 @@ class Grouping:
         else:
             raise TypeError("Input must be a string or a list of strings.")
 
-    def country_averages_from_nested(self, var_dict, df_mapping):
+    def country_averages_from_nested(self, var_dict, df_mapping: pl.DataFrame):
         """Aggregates nested city-level values into country-level averages by condition.
 
         This method processes a dictionary where keys are formatted as
@@ -188,28 +183,19 @@ class Grouping:
         # Store all values grouped by country and condition (e.g., "France_0")
         country_condition_values = defaultdict(list)
 
-        # Iterate over each city-condition entry
         for k, inner_dict in var_dict.items():
-            # Split key into components: city, latitude, longitude, condition
-            city, lat, long, condition = k.rsplit('_', 3)
-            lat = float(lat)
-            condition = int(condition)
+            city, lat, long, condition = k.rsplit("_", 3)
+            lat_f = float(lat)
+            condition_i = int(condition)
 
-            # Map city+lat to country using df_mapping
-            country = metadata_class.get_value(df_mapping, "city", city, "lat", lat, "country")
+            country = metadata_class.get_value(df_mapping, "city", city, "lat", lat_f, "country")
             if country:
-                key = f"{country}_{condition}"
-                # Append all measurement values from the inner dictionary
+                key = f"{country}_{condition_i}"
                 country_condition_values[key].extend(inner_dict.values())
 
-        # Compute average for each country-condition if values exist
-        country_condition_averages = {
-            key: sum(vals) / len(vals) for key, vals in country_condition_values.items() if vals
-        }
+        return {key: sum(vals) / len(vals) for key, vals in country_condition_values.items() if vals}
 
-        return country_condition_averages
-
-    def country_averages_from_flat(self, var_dict, df_mapping):
+    def country_averages_from_flat(self, var_dict, df_mapping: pl.DataFrame):
         """Aggregates flat city-level values into country-level averages by condition.
 
         This method processes a dictionary where keys are formatted as
@@ -240,28 +226,19 @@ class Grouping:
         # Store all values grouped by country and condition (e.g., "France_0")
         country_condition_values = defaultdict(list)
 
-        # Iterate over each city-condition entry
         for k, v in var_dict.items():
-            # Split key into components: city, latitude, longitude, condition
-            city, lat, long, condition = k.rsplit('_', 3)
-            lat = float(lat)
-            condition = int(condition)
+            city, lat, long, condition = k.rsplit("_", 3)
+            lat_f = float(lat)
+            condition_i = int(condition)
 
-            # Map city+lat to country using df_mapping
-            country = metadata_class.get_value(df_mapping, "city", city, "lat", lat, "country")
+            country = metadata_class.get_value(df_mapping, "city", city, "lat", lat_f, "country")
             if country:
-                key = f"{country}_{condition}"
-                # Append the numeric measurement
+                key = f"{country}_{condition_i}"
                 country_condition_values[key].append(v)
 
-        # Compute average for each country-condition
-        country_condition_averages = {
-            key: sum(vals) / len(vals) for key, vals in country_condition_values.items()
-        }
+        return {key: sum(vals) / len(vals) for key, vals in country_condition_values.items() if vals}
 
-        return country_condition_averages
-
-    def country_sum_from_cities(self, var_dict, df_mapping):
+    def country_sum_from_cities(self, var_dict, df_mapping: pl.DataFrame):
         """Aggregates city-level numeric values into country-level sums by condition.
 
         This method processes a dictionary where keys are formatted as
@@ -292,23 +269,14 @@ class Grouping:
         # Store all values grouped by country and condition (e.g., "France_0")
         country_condition_values = defaultdict(list)
 
-        # Iterate over each city-condition entry
         for k, v in var_dict.items():
-            # Split key into components: city, latitude, longitude, condition
-            city, lat, long, condition = k.rsplit('_', 3)
-            lat = float(lat)
-            condition = int(condition)
+            city, lat, long, condition = k.rsplit("_", 3)
+            lat_f = float(lat)
+            condition_i = int(condition)
 
-            # Map city+lat to country using df_mapping
-            country = metadata_class.get_value(df_mapping, "city", city, "lat", lat, "country")
+            country = metadata_class.get_value(df_mapping, "city", city, "lat", lat_f, "country")
             if country:
-                key = f"{country}_{condition}"
-                # Append the numeric measurement
+                key = f"{country}_{condition_i}"
                 country_condition_values[key].append(v)
 
-        # Compute sum for each country-condition
-        country_condition_sums = {
-            key: sum(vals) for key, vals in country_condition_values.items()
-        }
-
-        return country_condition_sums
+        return {key: sum(vals) for key, vals in country_condition_values.items()}

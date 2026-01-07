@@ -17,6 +17,8 @@ dependencies = [
     "nodejs-wheel>=22.20.0",
     "pandas==2.1.4",
     "plotly==5.24.1",
+    "polars>=1.33.1",
+    "pyarrow>=22.0.0",
     "pycountry==24.6.1",
     "pycountry-convert==0.7.2",
     "pytubefix==10.0.0",

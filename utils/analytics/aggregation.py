@@ -1,9 +1,12 @@
+import polars as pl
+
+
 class Aggregation:
     def __init__(self) -> None:
         pass
 
     @staticmethod
-    def aggregate_by_iso3(df):
+    def aggregate_by_iso3(df: pl.DataFrame) -> pl.DataFrame:
         """
         Aggregates a DataFrame by ISO3 country codes, applying specific aggregation rules.
         Drops unnecessary location-specific columns before processing.
@@ -57,32 +60,49 @@ class Aggregation:
         merge_columns = [c for c in merge_columns if c in df.columns]
         sum_columns = [c for c in sum_columns if c in df.columns]
 
-        # Drop location-specific columns
-        df = df.drop(columns=drop_columns, errors='ignore')
+        df2 = df.drop(drop_columns)
 
-        # Aggregation dictionary
-        agg_dict = {
-            **{col: 'first' for col in static_columns},
-            **{col: (lambda x: list(x)) for col in merge_columns},
-            **{col: 'sum' for col in sum_columns}
-        }
-
-        # Fix continent assignment if present
-        if 'continent' in df.columns:
-            continent_mode = (
-                df.groupby('iso3')['continent']
-                .agg(lambda x: x.mode().iloc[0] if not x.mode().empty else x.iloc[0])
-                .reset_index()
-                .rename(columns={'continent': 'continent_majority'})
+        # --- Continent majority (mode-like) ---
+        continent_majority = None
+        if "continent" in df2.columns:
+            continent_majority = (
+                df2
+                .group_by(["iso3", "continent"])
+                .len()
+                .sort(["iso3", "len"], descending=[False, True])
+                .group_by("iso3")
+                .agg(pl.col("continent").first().alias("continent"))
             )
-            df = df.drop('continent', axis=1)
-            df = df.merge(continent_mode, on='iso3', how='left')
-            df = df.rename(columns={'continent_majority': 'continent'})
+            # avoid aggregating continent twice
+            static_columns_no_cont = [c for c in static_columns if c != "continent"]
+            df2_no_cont = df2.drop("continent")
+        else:
+            static_columns_no_cont = static_columns
+            df2_no_cont = df2
 
-        # Only keep columns in agg_dict that exist in df
-        agg_dict = {k: v for k, v in agg_dict.items() if k in df.columns}
+        agg_exprs: list[pl.Expr] = []
 
-        # Aggregate
-        df_grouped = df.groupby('iso3').agg(agg_dict).reset_index()
+        # "first" for static columns
+        for c in static_columns_no_cont:
+            agg_exprs.append(pl.col(c).first().alias(c))
+
+        # collect into list for merge columns (works for Utf8; avoids List-only ops)
+        for c in merge_columns:
+            agg_exprs.append(pl.col(c).implode().alias(c))
+
+        # sum for numeric columns (cast safely)
+        for c in sum_columns:
+            agg_exprs.append(
+                pl.col(c)
+                .cast(pl.Float64, strict=False)
+                .fill_null(0)
+                .sum()
+                .alias(c)
+            )
+
+        df_grouped = df2_no_cont.group_by("iso3").agg(agg_exprs)
+
+        if continent_majority is not None:
+            df_grouped = df_grouped.join(continent_majority, on="iso3", how="left")
 
         return df_grouped
