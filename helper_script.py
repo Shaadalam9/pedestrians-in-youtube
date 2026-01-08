@@ -60,7 +60,8 @@ class Youtube_Helper:
         """
 
     def __init__(self, video_title=None):
-        """ Initialises a new instance of the class.
+        """
+        Initialises a new instance of the class.
         Parameters:
         video_title (str, optional): The title of the video. Defaults to None.
         Instance Variables: self.model (str): The model configuration loaded from common.get_configs("model").
@@ -86,13 +87,15 @@ class Youtube_Helper:
         self.client = common.get_configs("client")
 
     def set_video_title(self, title):
-        """ Sets the video title for the instance.
+        """
+        Sets the video title for the instance.
         Parameters: title (str): The new title for the video.
         """
         self.video_title = title
 
     def rename_folder(self, old_name, new_name):
-        """ Renames a folder from old_name to new_name.
+        """
+        Renames a folder from old_name to new_name.
         Parameters: old_name (str): The current name (or path) of the folder.
         new_name (str): The new name (or path) to assign to the folder.
         Error Handling: - Logs an error if the folder with old_name is not found.
@@ -106,8 +109,10 @@ class Youtube_Helper:
             logger.error(f"Error: Folder '{new_name}' already exists.")
 
     def load_upgrade_log(self):
-        """ Load package upgrade attempt log from file.
-        Returns: dict: Dictionary with package names and last upgrade date. """
+        """
+        Load package upgrade attempt log from file.
+        Returns: dict: Dictionary with package names and last upgrade date.
+        """
         if not os.path.exists(UPGRADE_LOG_FILE):
             return {}
         try:
@@ -127,7 +132,8 @@ class Youtube_Helper:
         """ Check whether the given package was already upgraded today.
         Parameters:
                 package_name (str): Name of the package.
-        Returns: bool: True if upgraded today, False otherwise. """
+        Returns: bool: True if upgraded today, False otherwise.
+        """
         log_data = self.load_upgrade_log()
         today = datetime.date.today().isoformat()
         return log_data.get(package_name) == today
@@ -142,8 +148,10 @@ class Youtube_Helper:
         self.save_upgrade_log(log_data)
 
     def upgrade_package_if_needed(self, package_name):
-        """ Upgrades a given Python package using pip if it hasn't been attempted today.
-        Parameters: package_name (str): The name of the package to upgrade. """
+        """
+        Upgrades a given Python package using pip if it hasn't been attempted today.
+        Parameters: package_name (str): The name of the package to upgrade.
+        """
         if self.was_upgraded_today(package_name):
             logging.debug(f"{package_name} upgrade already attempted today. Skipping.")
             return
@@ -159,8 +167,10 @@ class Youtube_Helper:
 
     @staticmethod
     def _wait_for_stable_file(src, checks=2, interval=0.5, timeout=30):
-        """ Wait until src exists and its size is unchanged for checks consecutive checks.
-        Returns True if stable within timeout, else False. """
+        """
+        Wait until src exists and its size is unchanged for checks consecutive checks.
+        Returns True if stable within timeout, else False.
+        """
         deadline = time.time() + timeout
         last = -1
         stable = 0
@@ -186,9 +196,11 @@ class Youtube_Helper:
         return False
 
     def copy_video_safe(self, base_video_path, internal_ssd, vid, max_attempts=5, backoff=0.6):
-        """ Copies base_video_path -> os.path.join(internal_ssd, f"{vid}.mp4")
+        """
+        Copies base_video_path -> os.path.join(internal_ssd, f"{vid}.mp4")
         - Ensures dest dir exists - Waits for source file to be stable
-        - Copies to temp, then atomic replace - Verifies size - Retries on transient OS errors """
+        - Copies to temp, then atomic replace - Verifies size - Retries on transient OS errors
+        """
         if not vid or str(vid).strip() == "":
             raise ValueError("vid must be a non-empty string")
 
@@ -253,19 +265,12 @@ class Youtube_Helper:
 
                 time.sleep(backoff * attempt)
 
-    def download_videos_from_ftp(
-        self,
-        filename: str,
-        base_url: Optional[str] = None,
-        out_dir: str = ".",
-        username: Optional[str] = None,
-        password: Optional[str] = None,
-        token: Optional[str] = None,
-        timeout: int = 20,
-        debug: bool = True,  # <--- new: turn verbose logging on/off
-        max_pages: int = 500,  # safety limit for crawling
-    ) -> Optional[tuple[str, str, str, float]]:
-        """ Search and download a specific .mp4 file from a multi-directory FastAPI-based
+    def download_videos_from_ftp(self, filename: str, base_url: Optional[str] = None, out_dir: str = ".",
+                                 username: Optional[str] = None, password: Optional[str] = None,
+                                 token: Optional[str] = None, timeout: int = 20, debug: bool = True,
+                                 max_pages: int = 500) -> Optional[tuple[str, str, str, float]]:
+        """
+        Search and download a specific .mp4 file from a multi-directory FastAPI-based
         HTTP file server (e.g., files.mobility-squad.com). This function attempts direct
         download from known /files/ paths (tue1/tue2/tue3), and if not found, recursively
         crawls the /browse pages to locate the video file. Progress is shown with tqdm.
@@ -315,7 +320,7 @@ class Youtube_Helper:
 
         filename_with_ext = filename if filename.lower().endswith(".mp4") else f"{filename}.mp4"
         filename_lower = filename_with_ext.lower()
-        aliases = ["tue1", "tue2", "tue3"]
+        aliases = ["tue1", "tue2", "tue3", "tue4"]
 
         req_params = {"token": token} if token else None
 
@@ -508,7 +513,8 @@ class Youtube_Helper:
             return None
 
     def download_video_with_resolution(self, vid, resolutions=["720p", "480p", "360p", "144p"], output_path="."):
-        """ Downloads a YouTube video in one of the specified resolutions and returns video details.
+        """
+        Downloads a YouTube video in one of the specified resolutions and returns video details.
         This function attempts to download the video using the pytubefix/YouTube method.
         Parameters: vid (str): The YouTube video ID.
         resolutions (list of str, optional): A list of preferred video resolutions.
@@ -665,7 +671,8 @@ class Youtube_Helper:
                 return None
 
     def get_video_fps(self, video_file_path):
-        """ Retrieves the frames per second (FPS) of a video file using OpenCV.
+        """
+        Retrieves the frames per second (FPS) of a video file using OpenCV.
         Parameters: video_file_path (str): The file path to the video whose FPS is to be determined.
         Returns: int or None: The rounded FPS value of the video if successful;
         otherwise, returns None if an error occurs.
@@ -674,7 +681,8 @@ class Youtube_Helper:
         2. Retrieves the FPS using the CAP_PROP_FPS property.
         3. Rounds the FPS value to the nearest integer.
         4. Releases the video resource.
-        5. Returns the rounded FPS value, or None if an exception is encountered. """
+        5. Returns the rounded FPS value, or None if an exception is encountered.
+        """
         try:
             # Open the video file using OpenCV
             video = cv2.VideoCapture(video_file_path)
@@ -694,7 +702,8 @@ class Youtube_Helper:
 
     @staticmethod
     def get_video_resolution_label(video_path: str) -> str:
-        """Return the resolution label (e.g., '720p', '1080p') for a given video file.
+        """
+        Return the resolution label (e.g., '720p', '1080p') for a given video file.
         This method inspects the video file to determine its frame height and then maps
         it to a common resolution label. If the resolution does not match a well-known
         standard, it falls back to returning <height>p.
@@ -702,7 +711,8 @@ class Youtube_Helper:
         Returns: str: Resolution label (e.g., "720p", "1080p", "2160p").
         Falls back to "<height>p" if no predefined label exists.
         Raises: FileNotFoundError: If the provided video path does not exist.
-        RuntimeError: If the video file cannot be opened with OpenCV. """
+        RuntimeError: If the video file cannot be opened with OpenCV.
+        """
         # Ensure the video file exists
         if not os.path.exists(video_path):
             raise FileNotFoundError(f"Video not found: {video_path}")
@@ -732,7 +742,8 @@ class Youtube_Helper:
         return labels.get(height, f"{height}p")
 
     def trim_video(self, input_path, output_path, start_time, end_time):
-        """ Trims a segment from a video and saves the result to a specified file.
+        """
+        Trims a segment from a video and saves the result to a specified file.
         Parameters: input_path (str): The file path to the original video.
         output_path (str): The destination file path where the trimmed video will be saved.
         start_time (float or str): The start time for the trimmed segment.
@@ -743,7 +754,8 @@ class Youtube_Helper:
         1. Loads the original video using MoviePy's VideoFileClip.
         2. Creates a subclip from the original video based on the provided start_time and end_time.
         3. Writes the subclip to the output_path using the H.264 video codec and AAC audio codec.
-        4. Closes the video file to free up resources. """
+        4. Closes the video file to free up resources.
+        """
         # Load the video and create a subclip using the provided start and end times.
         video_clip = VideoFileClip(input_path).subclip(start_time, end_time)
 
@@ -835,7 +847,8 @@ class Youtube_Helper:
         out.release()
 
     def detect_gpu(self):
-        """ Detects whether an NVIDIA or Intel GPU is available and returns the appropriate FFmpeg encoder.
+        """
+        Detects whether an NVIDIA or Intel GPU is available and returns the appropriate FFmpeg encoder.
         Returns: str: 'hevc_nvenc' for NVIDIA, 'hevc_qsv' for Intel, or None if no compatible GPU is found.
         """
         try:
@@ -855,10 +868,12 @@ class Youtube_Helper:
         return None  # No compatible GPU found
 
     def extract_youtube_id(self, file_path):
-        """ Extracts the YouTube video ID from a given file path.
+        """
+        Extracts the YouTube video ID from a given file path.
         Args: file_path (str): The full path of the video file.
         Returns: str: The extracted YouTube ID.
-        Raises: ValueError: If no valid YouTube ID is found. """
+        Raises: ValueError: If no valid YouTube ID is found.
+        """
         filename = os.path.basename(file_path)  # Get only the filename
         youtube_id, ext = os.path.splitext(filename)  # Remove the file extension
         if not youtube_id or len(youtube_id) < 5:  # Basic validation
@@ -867,7 +882,8 @@ class Youtube_Helper:
 
     def create_video_from_images(self, image_folder, output_path,
                                  video_title, seg_mode=False, bbox_mode=False, frame_rate=30):
-        """ Creates a video file from a sequence of image frames. The output filename will reflect the mode used.
+        """
+        Creates a video file from a sequence of image frames. The output filename will reflect the mode used.
         Parameters: image_folder (str): Folder containing frame images.
         output_path (str): Directory where the output video will be saved.
         video_title (str): Base title for the video.
@@ -920,10 +936,12 @@ class Youtube_Helper:
         return output_video_path
 
     def merge_txt_to_csv_dynamically_bbox(self, txt_location, output_csv, frame_count):
-        """ Merges YOLO-format label data from a .txt file into a CSV, frame by frame.
+        """
+        Merges YOLO-format label data from a .txt file into a CSV, frame by frame.
         Parameters: txt_location (str): Directory containing label .txt files.
         output_csv (str): Path to the CSV file to update.
-        frame_count (int): Frame number being processed (used for naming). """
+        frame_count (int): Frame number being processed (used for naming).
+        """
         # Define the path for the new text file
         new_txt_file_name = os.path.join(txt_location, f"label_{frame_count}.txt")
 
@@ -951,8 +969,10 @@ class Youtube_Helper:
             df.to_csv(output_csv, index=False, mode='a', header=False)  # If it exists, append without header
 
     def merge_txt_to_csv_dynamically_seg(self, txt_location, output_csv, frame_count):
-        """ Merges YOLO-format segmentation+tracking label data from a .txt file into a CSV,
-        frame by frame. Handles possible formatting issues gracefully. """
+        """
+        Merges YOLO-format segmentation+tracking label data from a .txt file into a CSV,
+        frame by frame. Handles possible formatting issues gracefully.
+        """
         new_txt_file_name = os.path.join(txt_location, f"label_{frame_count}.txt")
         if not os.path.isfile(new_txt_file_name) or os.stat(new_txt_file_name).st_size == 0:
             return  # No labels for this frame
@@ -986,9 +1006,11 @@ class Youtube_Helper:
             df.to_csv(output_csv, index=False, mode='a', header=False)
 
     def delete_folder(self, folder_path):
-        """ Deletes the folder and all its contents recursively.
+        """
+        Deletes the folder and all its contents recursively.
         Parameters: folder_path (str): The path of the folder to delete.
-        Returns: bool: True if the folder was successfully deleted, False otherwise. """
+        Returns: bool: True if the folder was successfully deleted, False otherwise.
+        """
         if os.path.exists(folder_path) and os.path.isdir(folder_path):
             try:
                 shutil.rmtree(folder_path)
@@ -1002,7 +1024,8 @@ class Youtube_Helper:
             return False
 
     def delete_youtube_mod_videos(self, folders):
-        """ Deletes files of the form {youtube_id}_mod.mp4 from the given list of folders.
+        """
+        Deletes files of the form {youtube_id}_mod.mp4 from the given list of folders.
         Args: folders (list): List of folder paths to scan.
         """
         pattern = re.compile(r"^[A-Za-z0-9_-]{11}_mod\.mp4$")
@@ -1020,7 +1043,8 @@ class Youtube_Helper:
                         logger.info(f"Failed to delete {file_path}: {e}")
 
     def get_iso_alpha_3(self, country_name, existing_iso):
-        """ Converts a country name to ISO 3166-1 alpha-3 format.
+        """
+        Converts a country name to ISO 3166-1 alpha-3 format.
         Parameters: country_name (str): Full country name.
         existing_iso (str): Existing ISO code as fallback.
         Returns: str or None: ISO 3166-1 alpha-3 code or fallback value.
@@ -1086,7 +1110,9 @@ class Youtube_Helper:
         logger.info("Mapping file updated successfully with country population.")
 
     def get_continent_from_country(self, country):
-        """ Returns the continent based on the country name using pycountry_convert. """
+        """
+        Returns the continent based on the country name using pycountry_convert.
+        """
         try:
             # Convert country name to ISO Alpha-2 code
             alpha2_code = country_name_to_country_alpha2(country)
@@ -1180,7 +1206,9 @@ class Youtube_Helper:
 
     def tracking_mode(self, input_video_path, output_video_path, video_title,
                       video_fps, seg_mode, bbox_mode, flag=0, run_root='runs'):
-        """ Performs object tracking on a video using YOLO models and saves results. (docstring as in your code) """
+        """
+        Performs object tracking on a video using YOLO models and saves results.
+        """
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
         # ------------------------------------------------------------------
