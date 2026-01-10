@@ -13,10 +13,10 @@ If you use this work for academic work please cite the following paper:
 The code is open-source and free to use. It is aimed for, but not limited to, academic research. We welcome forking of this repository, pull requests, and any contributions in the spirit of open science and open-source code. For inquiries about collaboration, you may contact Md Shadab Alam (md_shadab_alam@outlook.com) or Pavlo Bazilinskyy (pavlo.bazilinskyy@gmail.com).
 
 ## Getting started
-[![Python Version](https://img.shields.io/badge/python-3.9.19-blue.svg)](https://www.python.org/downloads/release/python-3919/)
+[![Python Version](https://img.shields.io/badge/python-3.10.18-blue.svg)](https://www.python.org/downloads/release/python-3919/)
 [![Package Manager: uv](https://img.shields.io/badge/package%20manager-uv-green)](https://docs.astral.sh/uv/)
 
-Tested with **Python 3.9.19** and the [`uv`](https://docs.astral.sh/uv/) package manager.
+Tested with **Python 3.10.18** and the [`uv`](https://docs.astral.sh/uv/) package manager.
 Follow these steps to set up the project.
 
 **Step 1:** Install `uv`. `uv` is a fast Python package and environment manager. Install it using one of the following methods:
@@ -74,9 +74,9 @@ git clone https://github.com/Shaadalam9/pedestrians-in-youtube.git
 cd pedestrians-in-youtube
 ```
 
-**Step 5:** Ensure correct Python version. If you don’t already have Python 3.9.19 installed, let `uv` fetch it:
+**Step 5:** Ensure correct Python version. If you don’t already have Python 3.10.18 installed, let `uv` fetch it:
 ```command line
-uv python install 3.9.19
+uv python install 3.10.18
 ```
 The repo should contain a .python-version file so `uv` will automatically use this version.
 
@@ -156,8 +156,8 @@ Configuration of the project needs to be defined in `config`. Please use the `de
 - **`email_recipients`**: List of emails for sending the message.
 - **`max_workers`**: Specifies the maximum number of segment-processing worker threads (i.e., how many segments can be analysed in parallel). Increasing this increases concurrent segment processing, subject to GPU/CPU and I/O limits.
 - **`download_workers`**: Specifies the maximum number of concurrent video download/prepare workers. Increasing this allows multiple videos to be downloaded/prepared in parallel (useful when network/FTP is the bottleneck).
-- **`max_active_segments_per_video`**: Specifies the maximum number of segments from the *same video* that are allowed to be processed concurrently.  
-  - If set to **1**, the scheduler tends to distribute workers across **different videos** (e.g., with `max_workers=3`, it will try to process 3 different videos at once).  
+- **`max_active_segments_per_video`**: Specifies the maximum number of segments from the *same video* that are allowed to be processed concurrently.
+  - If set to **1**, the scheduler tends to distribute workers across **different videos** (e.g., with `max_workers=3`, it will try to process 3 different videos at once).
   - If set to **2+**, multiple workers may process segments from the **same video** simultaneously, which can improve throughput when one video has many segments but reduces “video diversity” across workers.
 
 

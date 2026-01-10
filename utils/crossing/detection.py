@@ -98,7 +98,8 @@ class Detection:
         short_disp_req: float = 0.12,
         eps: float = 1e-9,
     ) -> bool:
-        """Returns whether a tracked person is a rider (bicycle or motorcycle) using normalized YOLO boxes.
+        """
+        Returns whether a tracked person is a rider (bicycle or motorcycle) using normalized YOLO boxes.
 
         This implementation assumes the YOLO CSV geometry columns are normalized to the frame:
         `x-center`, `y-center`, `width`, `height` ∈ [0, 1]. In this representation, values are
