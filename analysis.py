@@ -510,7 +510,7 @@ if __name__ == "__main__":
         df = df.sort(["country", "city"])
 
         # scatter plot for cities with number of videos over total time
-        bivariate.scatter(df=df.to_pandas(),
+        bivariate.scatter(df=df,
                           x="total_time",
                           y="video_count",
                           color="flag_country",
@@ -603,7 +603,7 @@ if __name__ == "__main__":
         hover_data = ["country", "continent", "total_time", "video_count"]
 
         # plot (convert at plotting boundary)
-        bivariate.scatter(df=df_country.to_pandas(),
+        bivariate.scatter(df=df_country,
                           x="total_time",
                           y="video_count",
                           color="continent",
@@ -2075,7 +2075,7 @@ if __name__ == "__main__":
     if common.get_configs("analysis_level") == "city":
 
         # Amount of footage
-        bivariate.scatter(df=df.to_pandas(),
+        bivariate.scatter(df=df,
                           x="total_time",
                           y="person",
                           color="continent",
