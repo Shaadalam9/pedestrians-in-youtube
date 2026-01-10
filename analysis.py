@@ -894,6 +894,9 @@ if __name__ == "__main__":
             if col not in df_pivot.columns:
                 df_pivot = df_pivot.with_columns(pl.lit(0).alias(col))
 
+        # --- enforce alphabetical continent order ---
+        df_pivot = df_pivot.sort("continent")
+
         time_columns = [col for col in ["Day", "Night"] if col in df_pivot.columns]
 
         # --- plot ---
