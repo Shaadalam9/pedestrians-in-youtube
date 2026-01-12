@@ -20,6 +20,9 @@ class Metrics_cache:
     def __init__(self) -> None:
         pass
 
+    # class-level cache to store metrics for all video files, avoids redundant computation
+    _all_metrics_cache: ClassVar[Dict[str, Any]] = {}
+
     @staticmethod
     def _parse_videos_cell(videos_cell: str | None) -> list[str]:
         """
@@ -316,19 +319,39 @@ class Metrics_cache:
     def clear_cache(cls) -> None:
         cls._all_metrics_cache.clear()
 
-    def get_unique_values(self, df, value):
+    def get_unique_values(self, df, value, null_placeholder="__NULL__"):
         """
-        Calculates the number of unique countries from a DataFrame.
+        Returns (unique_values, count) using Polars only.
+
+        - If `value` is a string: unique values from that column.
+        - If `value` is a list/tuple: unique combinations across those columns.
+
+        Notes:
+          - For composite keys, nulls are filled with `null_placeholder` so rows with
+            missing components (e.g., missing state) are still counted deterministically.
+          - All key columns are cast to Utf8 to avoid type-mismatch issues.
 
         Args:
-            df (DataFrame): A DataFrame containing the CSV data.
+            df (polars.DataFrame): Polars DataFrame
+            value (str | list[str] | tuple[str]): Column name or list/tuple of column names
+            null_placeholder (str): Replacement for nulls in key columns
 
         Returns:
-            tuple: A set of unique countries and the total count of unique countries.
+            tuple: (set_of_unique_values, count)
+                  - single column -> set of scalars
+                  - multi column  -> set of tuples
         """
-        unique_values = set(df[value].unique())
+
+        if isinstance(value, (list, tuple)):
+            cols = list(value)
+
+            tmp = df.select(
+                [pl.col(c).cast(pl.Utf8).fill_null(null_placeholder) for c in cols]
+            ).unique()
+
+            unique_values = set(tmp.rows())  # set[tuple[str, ...]]
+        else:
+            s = df.get_column(value).cast(pl.Utf8).fill_null(null_placeholder)
+            unique_values = set(s.unique().to_list())  # set[str]
 
         return unique_values, len(unique_values)
-
-    # class-level cache to store metrics for all video files, avoids redundant computation
-    _all_metrics_cache: ClassVar[Dict[str, Any]] = {}

@@ -933,10 +933,10 @@ if __name__ == "__main__":
                     dataset_stats.calculate_total_videos(df_mapping))
 
         country, number = metrics_cache.get_unique_values(df_mapping, "iso3")
-        logger.info("Total number of countries and territories before filtering: {}.", number)
+        logger.info(f"Total number of countries and territories before filtering: {number}.")
 
-        city, number = metrics_cache.get_unique_values(df_mapping, "city")
-        logger.info("Total number of cities before filtering: {}.", number)
+        city_country, number = metrics_cache.get_unique_values(df_mapping, ["city", "state", "iso3"])
+        logger.info(f"Total number of city+country pairs before filtering: {number}.")
 
         # Limit countries if required
         countries_include = common.get_configs("countries_analyse")
@@ -1834,10 +1834,10 @@ if __name__ == "__main__":
                     dataset_stats.calculate_total_videos(df_mapping))
 
         country, number = metrics_cache.get_unique_values(df_mapping, "iso3")
-        logger.info("Total number of countries and territories after filtering: {}.", number)
+        logger.info(f"Total number of countries and territories after filtering: {number}.")
 
-        city, number = metrics_cache.get_unique_values(df_mapping, "city")
-        logger.info("Total number of cities after filtering: {}.", number)
+        city_country, number = metrics_cache.get_unique_values(df_mapping, ["city", "state", "iso3"])
+        logger.info(f"Total number of city+country pairs before filtering: {number}.")
 
         df_mapping = mapping_enrich.add_speed_and_time_to_mapping(
             df_mapping=df_mapping,
