@@ -28,7 +28,7 @@ class Detection:
         """
 
         # Filter dataframe to include only entries for the specified person
-        crossed_df = dataframe.filter(pl.col("yolo-id") == person_id)
+        crossed_df = dataframe.filter(pl.col("yolo-id") == 0)
 
         if crossed_df.height == 0:
             return [], []
@@ -339,72 +339,216 @@ class Detection:
         # No vehicle match met the criteria => not a rider.
         return False
 
-    def is_valid_crossing(self, df, person_id, ratio_thresh=0.2):
+    def is_valid_crossing(self, df, person_id, ratio_thresh=0.6, STATIC_CLASS_IDS=(9, 10, 11, 12, 13),
+                          MIN_SHARED_FRAMES=8, RELX_MIN=0.05, Q=0.05, EPS=1e-9):
         """
-        Determines if a detected pedestrian crossing is valid based on the relative movement
-        between the person and static objects (traffic light or stop sign) in the YOLO output.
+        Checks whether an apparent pedestrian road-crossing is real or caused by dashcam turning.
 
-        The function assumes the camera (e.g., dashcam) may be moving. To account for this,
-        it compares the y-direction movement of the static object(s) and the person. If the
-        static object's y-movement is a significant fraction of the person's y-movement, it
-        is likely due to camera movement rather than actual pedestrian crossing, and the
-        crossing is classified as invalid.
+        This function is designed for dashcam footage where camera motion (especially turning)
+        can create *apparent* lateral motion of pedestrians that are actually stationary.
+        To reduce these false positives, it uses detections from "static-ish" objects
+        (e.g., traffic lights / stop signs) as a proxy for camera-induced motion.
+
+        Core idea:
+          - During a camera turn, both the pedestrian and background objects shift similarly
+            in image space, especially in the X direction.
+          - If the pedestrian's X motion is mostly explained by the camera (as estimated from
+            a static object's X motion), then the pedestrian did not truly move relative to
+            the scene and the crossing is likely invalid.
+
+        The algorithm:
+          1) Extract the person track (YOLO person class, same unique-id).
+          2) Within the person time window, find tracks for static objects.
+          3) For each static track, align it with the person by frame-count (inner join).
+          4) Compute robust X-motion ranges using quantiles to reduce jitter:
+               px_rng   = robust_range(person_x)
+               sx_rng   = robust_range(static_x)
+               relx_rng = robust_range(person_x - static_x)
+             where robust_range(x) = quantile(1-Q) - quantile(Q)
+          5) Select the best static reference (most overlap frames; tie-break by larger sx_rng).
+          6) Decide validity:
+               - If relx_rng is tiny => person moves with camera => invalid (False)
+               - Else if sx_rng/px_rng is large AND relx_rng not strong => invalid (False)
+               - Otherwise => valid (True)
+
+        Notes:
+          - This function assumes the input coordinates are normalized in [0, 1].
+          - It expects `df` to be a Polars DataFrame and `pl` to be imported.
+          - If no static objects are available, the function returns True (cannot verify).
 
         Args:
-            df (pd.DataFrame): DataFrame containing YOLO detections with columns:
-                'yolo-id', 'x-center', 'y-center', 'width', 'height', 'unique-id', 'frame-count'.
-                All coordinates are normalized between 0 and 1.
-            person_id (int or str): Unique Id of the person (pedestrian) to be analyzed.
-            key: Placeholder for additional parameters (not used in this function).
-            avg_height: Placeholder for additional parameters (not used in this function).
-            fps: Placeholder for additional parameters (not used in this function).
-            ratio_thresh (float, optional): Threshold ratio of static object y-movement to
-                person's y-movement. Default is 0.2.
+          df (pl.DataFrame): YOLO detections with columns:
+            - "yolo-id" (int): class id (0 = person)
+            - "unique-id": tracker id per object
+            - "frame-count" (int): frame index
+            - "x-center" (float): normalized x-center in [0,1]
+            - "confidence" (float, optional): detection confidence
+            - other YOLO fields are allowed but not required here
+          person_id (Any): The tracker unique-id for the person to validate.
+          ratio_thresh (float): Threshold for camera-dominance ratio = static_x_rng / person_x_rng.
+            Larger values are more permissive. Typical range: 0.5–0.9.
+          STATIC_CLASS_IDS (Tuple[int, ...]): Class IDs treated as static references.
+            Default is COCO-like: traffic light (9), fire hydrant (10), stop sign (11),
+            parking meter (12), bench (13).
+          MIN_SHARED_FRAMES (int): Minimum number of overlapping frames between person and a
+            candidate static track to consider it usable.
+          RELX_MIN (float): Minimum robust range of (person_x - static_x) to treat motion as
+            real (independent of camera). Lower = more permissive.
+          Q (float): Quantile used for robust range (e.g., Q=0.05 uses 5%..95% range).
+          EPS (float): Small constant to avoid divide-by-zero.
 
         Returns:
-            bool: True if crossing is valid (not due to camera movement), False otherwise.
+          bool: True if the crossing is likely valid (person moved independently of the camera),
+            False if the apparent crossing is likely caused by camera turning.
+
         """
-        person_track = df.filter(pl.col("unique-id") == person_id)
+        # -------------------------------------------------------------------------
+        # Deduplicate per frame to reduce jitter and avoid join misalignment.
+        #    - For each (yolo-id, unique-id, frame-count), keep the highest-confidence row.
+        #    - This is important because multiple detections per frame can inflate ranges.
+        # -------------------------------------------------------------------------
+        if "confidence" in df.columns:
+            df = (
+                df.sort(
+                    ["yolo-id", "unique-id", "frame-count", "confidence"],
+                    descending=[False, False, False, True],
+                )
+                .unique(subset=["yolo-id", "unique-id", "frame-count"], keep="first")
+            )
+        else:
+            # If confidence is not present, just keep the first per key.
+            df = df.unique(subset=["yolo-id", "unique-id", "frame-count"], keep="first")
+
+        # -------------------------------------------------------------------------
+        # Extract the person's track.
+        #    - We restrict to yolo-id == 0 (person) to avoid accidental collisions where
+        #      another class might share the same unique-id due to tracker re-use.
+        #    - We also ensure one row per frame-count for a clean alignment later.
+        # -------------------------------------------------------------------------
+        person_track = (
+            df.filter((pl.col("yolo-id") == 0) & (pl.col("unique-id") == person_id))
+            .sort("frame-count")
+            .unique(subset=["frame-count"], keep="first")
+        )
         if person_track.height == 0:
+            # No track => cannot validate => treat as invalid crossing.
             return False
 
+        # Identify the time window of the person track.
         frames = person_track.get_column("frame-count").to_numpy()
         first_frame = int(frames.min())
         last_frame = int(frames.max())
 
-        static_objs = df.filter(
-            (pl.col("frame-count") >= first_frame)
-            & (pl.col("frame-count") <= last_frame)
-            & (pl.col("yolo-id").is_in([9, 11]))
+        # -------------------------------------------------------------------------
+        # Collect static-object detections in the same time window.
+        #    - These objects should (ideally) be fixed in the world and move only due to
+        #      camera motion. Their apparent X movement serves as a proxy for camera turn.
+        # -------------------------------------------------------------------------
+        static_objs = (
+            df.filter(
+                (pl.col("frame-count") >= first_frame)
+                & (pl.col("frame-count") <= last_frame)
+                & (pl.col("yolo-id").is_in(list(STATIC_CLASS_IDS)))
+            )
+            .sort("frame-count")
         )
 
-        # No static object present; cannot verify, assume valid
+        # If we have no static references, we cannot disentangle camera motion.
+        # Preserve your earlier behavior: assume the crossing is valid.
         if static_objs.height == 0:
             return True
 
-        # Person y-movement
-        person_y_max = person_track.select(pl.col("y-center").max()).item()
-        person_y_min = person_track.select(pl.col("y-center").min()).item()
-        try:
-            person_y_movement = float(person_y_max) - float(person_y_min)
-        except Exception:
+        # -------------------------------------------------------------------------
+        # Define a robust range function.
+        #    - Using min/max can be overly sensitive to jitter/outliers.
+        #    - Quantile range (Q..1-Q) is more stable in practice.
+        # -------------------------------------------------------------------------
+        def robust_range(series: pl.Series) -> float:
+            # Quantiles might fail if the series is empty or not numeric; handle gracefully.
+            try:
+                lo = series.quantile(Q, "nearest")
+                hi = series.quantile(1.0 - Q, "nearest")
+                return float(hi - lo)  # type: ignore
+            except Exception:
+                return 0.0
+
+        # -------------------------------------------------------------------------
+        # Compare the person to each static track and choose the best reference.
+        #    Selection policy:
+        #      - prefer the static track with the most overlapping frames
+        #      - tie-break by larger static motion (more informative camera signal)
+        # -------------------------------------------------------------------------
+        best = None
+        static_uids = static_objs.select("unique-id").unique().to_series().to_list()
+
+        for sid in static_uids:
+            # Extract a single static object's track and keep one row per frame.
+            s_track = (
+                static_objs.filter(pl.col("unique-id") == sid)
+                .sort("frame-count")
+                .unique(subset=["frame-count"], keep="first")
+            )
+            if s_track.height == 0:
+                continue
+
+            # Align by frame-count. We only consider frames where both are present.
+            joined = person_track.join(s_track, on="frame-count", how="inner", suffix="_s")
+
+            # Require a minimum overlap to avoid unstable statistics.
+            if joined.height < MIN_SHARED_FRAMES:
+                continue
+
+            # Extract aligned X-centers.
+            px = joined.get_column("x-center")      # person x
+            sx = joined.get_column("x-center_s")    # static x
+            relx = px - sx                          # person relative to static
+
+            # Robust motion magnitudes.
+            px_rng = robust_range(px)
+            sx_rng = robust_range(sx)
+            relx_rng = robust_range(relx)
+
+            # Camera dominance ratio: if high, camera motion can explain most person motion.
+            ratio = float(sx_rng / max(px_rng, EPS))
+
+            cand = {
+                "shared": int(joined.height),
+                "px_rng": float(px_rng),
+                "sx_rng": float(sx_rng),
+                "relx_rng": float(relx_rng),
+                "ratio": float(ratio),
+            }
+
+            # Pick best candidate reference.
+            if best is None:
+                best = cand
+            else:
+                if (cand["shared"], cand["sx_rng"]) > (best["shared"], best["sx_rng"]):
+                    best = cand
+
+        # If no static track had enough overlap, fall back to permissive behavior.
+        if best is None:
+            return True
+
+        # -------------------------------------------------------------------------
+        # Decision rules (updated to prioritize RELATIVE motion).
+        #
+        # Rule A (primary):
+        #   If the relative motion is tiny, the person is moving with the background
+        #   and the "crossing" is likely a camera-turn artifact => invalid.
+        #
+        # Rule B (secondary guard):
+        #   If camera dominance ratio is high *and* relative motion is not strong,
+        #   treat as invalid.
+        #
+        # These rules intentionally rely on (person_x - static_x), which is the key
+        # to rejecting turning artifacts.
+        # -------------------------------------------------------------------------
+        if best["relx_rng"] < RELX_MIN:
             return False
 
-        if person_y_movement == 0:
+        if best["ratio"] >= float(ratio_thresh) and best["relx_rng"] < (2.0 * RELX_MIN):
             return False
 
-        # Max static object y-movement across static object tracks
-        static_movement_max = (
-            static_objs
-            .group_by("unique-id")
-            .agg((pl.col("y-center").max() - pl.col("y-center").min()).alias("y_movement"))
-            .select(pl.col("y_movement").max())
-            .item()
-        )
-
-        try:
-            movement_ratio = float(static_movement_max) / person_y_movement
-        except Exception:
-            return False
-
-        return movement_ratio <= ratio_thresh
+        # Otherwise, the person shows independent lateral motion relative to the scene.
+        return True
