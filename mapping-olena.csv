@@ -3078,7 +3078,7 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 3077,Tra On,"[Trà Ôn,tt. Trà Ôn]",,Vietnam,VNM,Asia,9.965542,105.9223145,0.0,37869,97338583,,96.13,164.0,32.5,35.7,0.0,[mRgezX7yhH8],[[0]],[[0]],[[917]],[3],[08102025],[UCY3cXZ7eoQ09mmQXNecl92g]
 3078,Vinh Long,[Vĩnh Long],,Vietnam,VNM,Asia,10.251411,105.971106,0.0,137870,97338583,0.0,96.13,164.0,32.5,35.7,0.0,"[PRrc3FFxnrY,i7jjjRrAEu0]","[[0],[0]]","[[0],[300]]","[[1928],[707]]","[3,3]","[6102025,30092025]","[UCY3cXZ7eoQ09mmQXNecl92g,UCY3cXZ7eoQ09mmQXNecl92g]"
 3079,Veenendaal,[],,Netherlands,NLD,Europe,52.0259814,5.5539239,0.0,61271,16655799,4.0,0.0,177.0,42.2,28.1,0.0,[RecHce_lmbk],[[0]],[[2107]],[[2430]],[0],[03032023],[UCUi-Liy74EDwSsb_VvYnwzQ]
-3080,Heerlen,[],,Netherlands,NLD,Europe,50.888741,5.976223,0.0,93084,16655799,4.0,0.0,177.0,42.2,28.1,0.0,[9KGA1C0H-vg],[[0]],[[984]],[[1180]],[0],[03042025],[UCp8fT5J0kfcfunmdH8_UfTg]
+3080,Heerlen,[],,Netherlands,NLD,Europe,50.888741,5.976223,0.0,93084,16655799,4.0,0.0,177.0,42.2,28.1,0.0,"[9KGA1C0H-vg,ghm4yvquQNg]","[[0], [0]]","[[984], [816]]","[[1180], [1111]]","[0,0]","[3042025,23112023]","[UCp8fT5J0kfcfunmdH8_UfTg,UCqMkUN6RN3EBhOFtjhUeR-g]"
 3081,Valkenburg,[],,Netherlands,NLD,Europe,50.8647531,5.8312518,0.0,0,16655799,4.0,0.0,177.0,42.2,28.1,36.67,[9KGA1C0H-vg],[[0]],[[259]],[[377]],[0],[03042025],[UCp8fT5J0kfcfunmdH8_UfTg]
 3082,Liège,[],,Belgium,BEL,Europe,50.6450944,5.5736112,0.0,195278,11555997,5.8,0.0,171.0,41.9,27.2,27.59,[5KJO8OiF3nw],[[0]],[[5461]],[[6320]],[0],[09082023],[UCUUPDaFc0ENkfBIJhCfGmdg]
 3083,Aywaille,[],,Belgium,BEL,Europe,50.4758998,5.6763249,0.0,10636,11555997,5.8,0.0,171.0,41.9,27.2,0.0,[5KJO8OiF3nw],"[[0,0]]","[[7148,7539]]","[[7390,7929]]",[0],[9082023],[UCUUPDaFc0ENkfBIJhCfGmdg]
@@ -4916,7 +4916,7 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 4915,Spremberg,[],,Germany,DEU,Europe,51.5714513,14.3804302,0.0,2489,83491249,3.8,0.0,173.0,47.8,31.9,0.0,[uuw4v_scOz4],[[0]],[[0]],[[476]],[2],[30062022],[UC4JDYNTwaxT2Ah2EELBaR9g]
 4916,Kalmthout,[],,Belgium,BEL,Europe,51.3832723,4.4763255,0.0,17485,11825551,,0.0,171.0,41.9,27.2,0.0,[XNSFdFVP3DU],[[0]],[[0]],[[394]],[0],[30062019],[UCLeztQkAq09NP6JhyPlLJqg]
 4917,Ridderkerk,[],,Netherlands,NLD,Europe,51.8714812,4.5999778,0.0,45189,18100436,4.0,0.0,177.0,42.2,28.1,0.0,[l-1-wPWl3VI],"[[0,0]]","[[114,2041]]","[[1988,2209]]",[0],[8042016],[UCBpl4esO3eym5FAAngMXAhQ]
-4918,Brunssum,[],,Netherlands,NLD,Europe,50.9431108,5.9705675,0.0,29254,18100436,4.0,0.0,177.0,42.2,28.1,0.0,[NyKPUvYQiYE],[[0]],[[22]],[[340]],[2],[09052024],[UCxyiGr-9Jl3yjEZ6BdUhGdA]
+4918,Brunssum,[],,Netherlands,NLD,Europe,50.9431108,5.9705675,0.0,29254,18100436,4.0,0.0,177.0,42.2,28.1,0.0,"[NyKPUvYQiYE,ghm4yvquQNg]","[[0], [0]]","[[22], [0]]","[[340], [811]]","[2,0]","[9052024,23112023]","[UCxyiGr-9Jl3yjEZ6BdUhGdA,UCqMkUN6RN3EBhOFtjhUeR-g]"
 4919,Hoensbroek,[],,Netherlands,NLD,Europe,50.9239397,5.9293862,0.0,25000,18100436,4.0,0.0,177.0,42.2,28.1,0.0,[x4jXryBnyYY],[[0]],[[0]],[[345]],[1],[26052016],[UC2-_sbbMB1VNM95LGJmx6rg]
 4920,Schinnen,[],,Netherlands,NLD,Europe,50.9425257,5.8861938,0.0,12911,18100436,4.0,0.0,177.0,42.2,28.1,0.0,[x4jXryBnyYY],[[0]],[[660]],[[895]],[1],[26052016],[UC2-_sbbMB1VNM95LGJmx6rg]
 4921,Geleen,[],,Netherlands,NLD,Europe,50.9699953,5.8267029,0.0,32790,18100436,4.0,0.0,177.0,42.2,28.1,0.0,[x4jXryBnyYY],[[0]],[[1195]],[[1836]],[1],[26052016],[UC2-_sbbMB1VNM95LGJmx6rg]
