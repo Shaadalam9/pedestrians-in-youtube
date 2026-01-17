@@ -3990,7 +3990,7 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 3989,Sedona,[],AZ,United States,USA,North America,34.8688613,-111.7614394,0.0,10388,340110988,12.7,0.0,170.0,38.5,41.4,0.0,[4-daKW2Rz_I],[[0]],[[0]],[[1647]],[0],[22072021],[UChv3DmLA2hH-d93bGgqjMLg]
 3990,Deventer,[],,Netherlands,NLD,Europe,52.255549,6.156391,0.0,97331,18100436,4.0,0.0,177.0,42.2,28.1,0.0,[Lsdq7Btp3Ww],[[0]],[[173]],[[4244]],[0],[23042020],[UCEmYk0x__JH0Y8oaiBZOc3A]
 3991,Lelystad,[],,Netherlands,NLD,Europe,52.5150949,5.4768915,0.0,70741,18100436,4.0,0.0,177.0,42.2,28.1,0.0,"[exkPbeBVZLE,ujJX0qg43AM]","[[0],[0]]","[[16],[2947]]","[[2650],[3067]]","[0,0]","[06052020,22112021]","[UCEmYk0x__JH0Y8oaiBZOc3A,UCSLBUGtW5BogV_ewodaFdYw]"
-3992,Hillegom,[],,Netherlands,NLD,Europe,52.292733,4.584227,0.0,18419,18100436,4.0,0.0,177.0,42.2,28.1,0.0,[3_56z_t_538],[[0]],[[1242]],[[1724]],[0],[16092023],[UCzI1yDVTGGE3_75EOzTNKbA]
+3992,Hillegom,[],,Netherlands,NLD,Europe,52.292733,4.584227,0.0,18419,18100436,4.0,0.0,177.0,42.2,28.1,0.0,"[3_56z_t_538,xtL3SIFbUjo]","[[0], [0]]","[[1242], [810]]","[[1724], [1013]]","[0,0]","[16092023,2042022]","[UCzI1yDVTGGE3_75EOzTNKbA,UCZRc0MrzGtEnuhHpvrHKR-Q]"
 3993,Midwolda,[],,Netherlands,NLD,Europe,53.1949414,7.012616,0.0,1885,18100436,4.0,0.0,177.0,42.2,28.1,0.0,[mh5i_bsmA1k],[[0]],[[1233]],[[1530]],[0],[31082023],[UCnBn9XMC_RuvjCM_DnT3aWw]
 3994,Delfzijl,[],,Netherlands,NLD,Europe,53.3325644,6.9135144,0.0,28649,18100436,4.0,0.0,177.0,42.2,28.1,0.0,[mh5i_bsmA1k],[[0]],[[174]],[[361]],[0],[31082023],[UCnBn9XMC_RuvjCM_DnT3aWw]
 3995,Emden,[],,Germany,DEU,Europe,53.3670541,7.2058304,0.0,51526,83491249,3.8,0.0,173.0,47.8,31.9,0.0,[GmCs62WVrrY],[[0]],[[0]],[[437]],[0],[02082024],[UCUXzou-vPVnzB_zEk9NyQLg]
@@ -5528,3 +5528,4 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 5527,Bray,[],,Ireland,IRL,Europe,53.2014604,-6.1105049,0.0,32600,5458600,3.1,0.0,172.0,39.8,31.4,0.0,[lX2fhiI4y0A],[[0]],[[0]],[[1379]],[0],[13052022],[UCmi3MTAnlrmzdMZWRS1q4_A]
 5528,Pleasanton,[],CA,United States,USA,North America,37.6624312,-121.8746789,0.0,1175,340110988,12.7,0.0,170.0,38.5,41.4,0.0,[Ia_PJ0SisfE],[[0]],[[18]],[[1697]],[0],[16122019],[UCHplzTv-YsCVknNzR079ArQ]
 5529,Neerharen,[],,Belgium,BEL,Europe,50.907778,5.680982,0.0,1720,11825551,5.8,0.0,171.0,41.9,27.2,19.3,[BSOCQVQGoMI],[[0]],[[1596]],[[2023]],[0],[18092023],[UCmdM5GYtOfAknP_B9-HJ2Xg]
+5530,Pesaro,[],,Italy,ITA,Europe,43.9098114,12.9131228,0.0,77241,58927633,5.3,99.35,168.0,48.0,35.9,0.0,[yc6tEmH7IcE],[[1]],[[300]],[[1278]],[0],[12082023],[UCmdM5GYtOfAknP_B9-HJ2Xg]
