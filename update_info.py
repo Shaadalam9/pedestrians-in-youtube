@@ -78,8 +78,8 @@ def get_video_info(video_id):
         safe_channel = str(channel).replace("{", "{{").replace("}", "}}")
 
         logger.info(
-            f"✅ fetched: {video_id} | title: {safe_title} | upload: {upload_date} "
-            f"| channel: {safe_channel} | views: {views}"
+            "✅ fetched: {} | title: {} | upload: {} | channel: {} | views: {}",
+            video_id, safe_title, upload_date, safe_channel, views
         )
 
         return {
@@ -93,7 +93,10 @@ def get_video_info(video_id):
         }
 
     except Exception as e:
-        logger.info(f"❌ failed to fetch {video_id}: {e}")
+        logger.info(
+            "❌ failed to fetch {}: {}",
+            video_id, e
+        )
         return {
             "video": video_id,
             "title": "",
