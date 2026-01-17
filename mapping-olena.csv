@@ -5559,6 +5559,6 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 5558,Santarem,[],,Portugal,PRT,Europe,39.2363637,-8.6867081,0.0,475344,10749635,8.2,94.48,168.0,46.0,33.5,32.35,[NScmTl1AK6M],[[0]],[[0]],[[432]],[0],[12112022],[UCl_BBDHaspRNE41ImatDu9g]
 5559,Pesaro,[],,Italy,ITA,Europe,43.9098114,12.9131228,0.0,77241,58927633,5.3,99.35,168.0,48.0,35.9,0.0,[yc6tEmH7IcE],[[1]],[[300]],[[1278]],[0],[12082023],[UCmdM5GYtOfAknP_B9-HJ2Xg]
 5560,Lisserbroek,[],,Netherlands,NLD,Europe,52.2566546,4.5732,0.0,3360,18100436,4.0,0.0,177.0,42.2,28.1,0.0,[xtL3SIFbUjo],[[0]],[[5060]],[[5449]],[0],[02042022],[UCZRc0MrzGtEnuhHpvrHKR-Q]
-5561,Drachten,[],,Netherlands,NLD,Europe,53.1091111,6.0948102,0.0,44537,18100436,4.0,0.0,177.0,42.2,28.1,0.0,[hya1j1GLrhM],[[0]],[[10]],[[159]],[0],[19062016],[UCqnraLU1X-bZ9IDaB4uRtTA]
+5561,Drachten,[],,Netherlands,NLD,Europe,53.1091111,6.0948102,0.0,44537,18100436,4.0,0.0,177.0,42.2,28.1,0.0,"[hya1j1GLrhM,deRXP6uS7fM]","[[0], [0, 0, 0]]","[[10], [0, 1459, 2783]]","[[159], [1300, 2680, 3168]]","[0,0]","[19062016,7042022]","[UCqnraLU1X-bZ9IDaB4uRtTA,UChVX4KN6f1kzmr7AI-nzErw]"
 5562,Oosterwolde,[],,Netherlands,NLD,Europe,52.9892251,6.2908202,0.0,9245,18100436,4.0,0.0,177.0,42.2,28.1,0.0,[hya1j1GLrhM],[[0]],[[845]],[[1082]],[0],[19062016],[UCqnraLU1X-bZ9IDaB4uRtTA]
-5563,Donkerbroek,[],,Netherlands,NLD,Europe,53.017574,6.2355345,0.0,1140,18100436,4,0.0,177,42.2,28.1,0.0,[hya1j1GLrhM],[[0]],[[1657]],[[1818]],[0],[19062016],[UCqnraLU1X-bZ9IDaB4uRtTA]
+5563,Donkerbroek,[],,Netherlands,NLD,Europe,53.017574,6.2355345,0.0,1140,18100436,4.0,0.0,177.0,42.2,28.1,0.0,[hya1j1GLrhM],[[0]],[[1657]],[[1818]],[0],[19062016],[UCqnraLU1X-bZ9IDaB4uRtTA]
