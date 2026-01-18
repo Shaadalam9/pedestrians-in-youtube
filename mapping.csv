@@ -2634,7 +2634,7 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 2633,Lübeck,[Lubeck],,Germany,DEU,Europe,53.866444,10.684738,0.0,212207,83240525.0,3.8,0.0,173.0,47.8,31.9,27.27,"[kM9fLUzjcnw,xjbMSp9x82I]","[[0],[0]]","[[65],[32]]","[[1295],[2195]]","[0,0]","[31052025,30112025]","[UC3Eauw3W60Nt5dGOeMYX_Nw,UC62XLEy4ZRTL2q8YzOJBDow]"
 2634,Åmål,[Amal],,Sweden,SWE,Europe,59.05109281,12.69695637,0.0,11906,10353442.0,3.1,0.0,174.0,41.0,30.0,0.0,[dsafjYelLHY],[[0]],[[30]],[[547]],[0],[27052025],[UC3Eauw3W60Nt5dGOeMYX_Nw]
 2635,Baja,[],,Hungary,HUN,Europe,46.1785471,18.9517255,0.0,37714,9749763.0,7.7,99.1,170.0,44.5,29.6,20.0,[qakZhDdtl0g],[[0]],[[55]],[[976]],[0],[22052025],[UC3Eauw3W60Nt5dGOeMYX_Nw]
-2636,Lund,[],,Sweden,SWE,Europe,55.7029296,13.1929449,0.0,87244,10353442.0,3.1,0.0,174.0,41.0,30.0,0.0,[rLHpI3B6a9U],[[0]],[[20]],[[1200]],[0],[12052025],[UC3Eauw3W60Nt5dGOeMYX_Nw]
+2636,Lund,[],,Sweden,SWE,Europe,55.7029296,13.1929449,0.0,87244,10353442.0,3.1,0.0,174.0,41.0,30.0,0.0,"[rLHpI3B6a9U,mdcRId6RFcY]","[[0], [0]]","[[20], [0]]","[[1200], [1149]]","[0,0]","[12052025,28112025]","[UC3Eauw3W60Nt5dGOeMYX_Nw,UCYU1p7dPNHiwmxpPeGgwA-w]"
 2637,Angered,[],,Sweden,SWE,Europe,57.7970147,12.0495271,0.0,1062,10353442.0,3.1,0.0,174.0,41.0,30.0,0.0,[JOvfeOssygY],[[0]],[[30]],[[2491]],[0],[22042025],[UC3Eauw3W60Nt5dGOeMYX_Nw]
 2638,Kungsbacka,[],,Sweden,SWE,Europe,57.466667,12.166667,0.0,85792,10353442.0,3.1,0.0,174.0,41.0,30.0,0.0,"[A8nqgN542Uw,FGEvUSlW_Og]","[[0], [0]]","[[30], [0]]","[[1504], [524]]","[0,0]","[19042025,16092022]","[UC3Eauw3W60Nt5dGOeMYX_Nw,UCYU1p7dPNHiwmxpPeGgwA-w]"
 2639,Kungälv,[Kungalv],,Sweden,SWE,Europe,57.9,11.916667,0.0,24101,10353442.0,3.1,0.0,174.0,41.0,30.0,0.0,[FDYMl_R_0bA],[[0]],[[24]],[[1016]],[0],[09042025],[UC3Eauw3W60Nt5dGOeMYX_Nw]
@@ -3084,7 +3084,7 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 3083,Aywaille,[],,Belgium,BEL,Europe,50.4758998,5.6763249,0.0,10636,11555997.0,5.8,0.0,171.0,41.9,27.2,0.0,[5KJO8OiF3nw],"[[0,0]]","[[7148,7539]]","[[7390,7929]]",[0],[9082023],[UCUUPDaFc0ENkfBIJhCfGmdg]
 3084,La Reid,[],,Belgium,BEL,Europe,50.4749824,5.7882112,0.0,2874,11555997.0,5.8,0.0,171.0,41.9,27.2,0.0,[5KJO8OiF3nw],[[0]],[[8187]],[[8292]],[0],[09082023],[UCUUPDaFc0ENkfBIJhCfGmdg]
 3085,Spa,[],,Belgium,BEL,Europe,50.4920654,5.8627569,0.0,10756,11555997.0,5.8,0.0,171.0,41.9,27.2,6.38,[5KJO8OiF3nw],[[0]],[[8531]],[[8851]],[0],[09082023],[UCUUPDaFc0ENkfBIJhCfGmdg]
-3086,Malmedy,[],,Belgium,BEL,Europe,50.4265348,6.0276059,0.0,12654,11555997.0,5.8,0.0,171.0,41.9,27.2,0.0,[5KJO8OiF3nw],[[0]],[[9553]],[[10336]],[0],[09082023],[UCUUPDaFc0ENkfBIJhCfGmdg]
+3086,Malmedy,[],,Belgium,BEL,Europe,50.4265348,6.0276059,0.0,12654,11555997.0,5.8,0.0,171.0,41.9,27.2,0.0,"[5KJO8OiF3nw,HSudYM2QtRI]","[[0], [0]]","[[9553], [0]]","[[10336], [395]]","[0,0]","[9082023,20012023]","[UCUUPDaFc0ENkfBIJhCfGmdg,UCYU1p7dPNHiwmxpPeGgwA-w]"
 3087,Bévercé,[],,Belgium,BEL,Europe,50.4415348,6.0391879,0.0,4550,11555997.0,5.8,0.0,171.0,41.9,27.2,0.0,[5KJO8OiF3nw],[[0]],[[10392]],[[10431]],[0],[09082023],[UCUUPDaFc0ENkfBIJhCfGmdg]
 3088,Eupen,[],,Belgium,BEL,Europe,50.6305665,6.0312717,0.0,18029,11555997.0,5.8,0.0,171.0,41.9,27.2,0.0,[5KJO8OiF3nw],[[1]],[[11613]],[[12177]],[0],[09082023],[UCUUPDaFc0ENkfBIJhCfGmdg]
 3089,Vinh Hau,[Vĩnh Hậu],,Vietnam,VNM,Asia,9.209044837,105.6576963,0.0,41899,97338583.0,0.0,96.13,164.0,32.5,35.7,0.0,"[5lAVEQFWbbY,mqbyZt_enLw]","[[0],[0]]","[[15],[1165]]","[[200],[1504]]","[3,3]","[4102025,4102025]","[UCY3cXZ7eoQ09mmQXNecl92g,UCY3cXZ7eoQ09mmQXNecl92g]"
@@ -4524,7 +4524,7 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 4523,Turgutreis,[],,Türkiye,TUR,Asia,37.0057722,27.2578341,0.0,6041,85664944.0,6.7,97.26,169.0,33.5,41.9,0.0,[PPmiFk4YqIE],"[[0,0]]","[[0,1069]]","[[1065,1389]]",[0],[5072023],[UC20vyRWEaC2GIS8DkmeRQaA]
 4524,Kolymbia,[],,Greece,GRC,Europe,36.2532461,28.1611108,0.0,350,10400720.0,,0.0,173.0,46.2,32.9,0.0,[_mp3wVVZX3M],[[0]],[[0]],[[334]],[0],[03112021],[UCv033S0A-uVLkR5YVp1jg3A]
 4525,Rhodes,[],,Greece,GRC,Europe,36.1725297,27.9194016,0.0,56128,10400720.0,,0.0,173.0,46.2,32.9,0.0,[_yfG2X8dAbM],[[0]],[[0]],[[430]],[0],[15092021],[UCv033S0A-uVLkR5YVp1jg3A]
-4526,Helsingborg,[],,Sweden,SWE,Europe,56.0442098,12.703706,0.0,104250,10605098.0,0.0,0.0,174.0,41.0,30.0,0.0,"[3PDTbgGbUFE,CSTNkZZ1qfU]","[[0],[0]]","[[0],[0]]","[[412],[779]]","[0,0]","[25052021,8042021]","[UCv033S0A-uVLkR5YVp1jg3A,UCv033S0A-uVLkR5YVp1jg3A]"
+4526,Helsingborg,[],,Sweden,SWE,Europe,56.0442098,12.703706,0.0,104250,10605098.0,0.0,0.0,174.0,41.0,30.0,0.0,"[3PDTbgGbUFE,CSTNkZZ1qfU,HT94DKenaAY]","[[0], [0], [0]]","[[0], [0], [0]]","[[412], [779], [677]]","[0,0,0]","[25052021,8042021,7112021]","[UCv033S0A-uVLkR5YVp1jg3A,UCv033S0A-uVLkR5YVp1jg3A,UCYU1p7dPNHiwmxpPeGgwA-w]"
 4527,Halmstad,[],,Sweden,SWE,Europe,56.6739826,12.8574827,0.0,70480,10605098.0,0.0,0.0,174.0,41.0,30.0,0.0,"[aIsJohz9JcM,aWoRDeaT-eY]","[[0], [0, 0]]","[[0], [0, 761]]","[[428], [353, 1207]]","[0,0]","[17052021,9072021]","[UCv033S0A-uVLkR5YVp1jg3A,UCYU1p7dPNHiwmxpPeGgwA-w]"
 4528,Gränna,[Granna],,Sweden,SWE,Europe,58.0250583,14.4673146,0.0,2726,10605098.0,,0.0,174.0,41.0,30.0,0.0,[yNlGMG5cuA0],[[0]],[[0]],[[441]],[0],[30042021],[UCv033S0A-uVLkR5YVp1jg3A]
 4529,Jönköping,[Jonkoping],,Sweden,SWE,Europe,57.7825634,14.165719,0.0,112766,10605098.0,,0.0,174.0,41.0,30.0,0.0,[L5GhgqDPJxs],[[0]],[[0]],[[443]],[0],[21042021],[UCv033S0A-uVLkR5YVp1jg3A]
@@ -5593,4 +5593,19 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 5592,Sölvesborg,[Solvesborg],,Sweden,SWE,Europe,56.0506535,14.5871906,0.0,8972,10605098.0,3.1,0.0,174.0,41.0,30.0,0.0,[CCxfvdvaRJY],[[0]],[[0]],[[417]],[0],[31082021],[UCYU1p7dPNHiwmxpPeGgwA-w]
 5593,Lindström,[],MN,United States,USA,North America,45.3894083,-92.8479921,0.0,4401,340110988.0,12.7,0.0,170.0,38.5,41.4,0.0,[NxhGfFk6bko],[[0]],[[0]],[[349]],[0],[04022024],[UCYU1p7dPNHiwmxpPeGgwA-w]
 5594,Vetlanda,[],,Sweden,SWE,Europe,57.365574,15.1677901,0.0,27528,10605098.0,3.1,0.0,174.0,41.0,30.0,0.0,[uiMsnu22jps],[[0]],[[0]],[[726]],[0],[12072025],[UCYU1p7dPNHiwmxpPeGgwA-w]
-5595,Trelleborg,[],,Sweden,SWE,Europe,55.37592,13.1461522,0.0,29316,10605098,3.1,0.0,174,41,30.0,0.0,[ftiFgtMMz_w],[[0]],[[0]],[[399]],[0],[23102021],[UCYU1p7dPNHiwmxpPeGgwA-w]
+5595,Trelleborg,[],,Sweden,SWE,Europe,55.37592,13.1461522,0.0,29316,10605098.0,3.1,0.0,174.0,41.0,30.0,0.0,[ftiFgtMMz_w],[[0]],[[0]],[[399]],[0],[23102021],[UCYU1p7dPNHiwmxpPeGgwA-w]
+5596,Duluth,[],MN,United States,USA,North America,46.7838287,-92.1052679,0.0,86110,340110988.0,12.7,0.0,170.0,38.5,41.4,0.0,"[6xTi8XCNURI,k2PimVQIR2g]","[[0], [0]]","[[0], [0]]","[[562], [1242]]","[0,0]","[14022024,21102022]","[UCYU1p7dPNHiwmxpPeGgwA-w,UCYU1p7dPNHiwmxpPeGgwA-w]"
+5597,Żywiec,[Zywiec],,Poland,POL,Europe,49.6890338,19.20305,0.0,32132,37392000.0,9.4,98.74,173.0,41.7,30.2,0.0,[OMqcdRj9h1A],[[0]],[[0]],[[882]],[0],[09112024],[UCYU1p7dPNHiwmxpPeGgwA-w]
+5598,Tomelilla,[],,Sweden,SWE,Europe,55.5447478,13.9329289,0.0,13639,10605098.0,3.1,0.0,174.0,41.0,30.0,0.0,[TAWD5_QUG48],[[0]],[[0]],[[622]],[0],[10122025],[UCYU1p7dPNHiwmxpPeGgwA-w]
+5599,Torup,[],,Sweden,SWE,Europe,56.9535425,13.074462,0.0,210,10605098.0,3.1,0.0,174.0,41.0,30.0,0.0,[RsMwFR1R1Ps],[[0]],[[0]],[[334]],[0],[28062021],[UCYU1p7dPNHiwmxpPeGgwA-w]
+5600,Karlshamn,[],,Sweden,SWE,Europe,56.1701723,14.8631279,0.0,20112,10605098.0,3.1,0.0,174.0,41.0,30.0,0.0,[AQXQmhytuiI],[[0]],[[0]],[[767]],[0],[06092021],[UCYU1p7dPNHiwmxpPeGgwA-w]
+5601,Svedala,[],,Sweden,SWE,Europe,55.5513434,13.216676,0.0,0,10605098.0,3.1,0.0,174.0,41.0,30.0,0.0,[2VnVBSbmqJs],[[0]],[[0]],[[533]],[0],[02122025],[UCYU1p7dPNHiwmxpPeGgwA-w]
+5602,Olofsbo,[],,Sweden,SWE,Europe,56.9221109,12.3942376,0.0,0,10605098.0,3.1,0.0,174.0,41.0,30.0,0.0,[q0g1g_3PdYg],[[0]],[[0]],[[543]],[0],[03012022],[UCYU1p7dPNHiwmxpPeGgwA-w]
+5603,Höör,[Hoor],,Sweden,SWE,Europe,55.932952,13.54581,0.0,17518,10605098.0,3.1,0.0,174.0,41.0,30.0,0.0,[ByS7WHDNYaI],[[0]],[[0]],[[452]],[0],[22112025],[UCYU1p7dPNHiwmxpPeGgwA-w]
+5604,Świnoujście,[Swinoujscie],,Poland,POL,Europe,53.906765,14.251944,0.0,40919,37392000.0,9.4,98.74,173.0,41.7,30.2,0.0,[q4PQp_sI13A],[[0]],[[0]],[[2262]],[0],[28092025],[UCYU1p7dPNHiwmxpPeGgwA-w]
+5605,Kumla,[],,Sweden,SWE,Europe,59.1179551,15.1206208,0.0,16663,10605098.0,3.1,0.0,174.0,41.0,30.0,0.0,[uXv22aoEoZ4],[[0]],[[0]],[[544]],[0],[15112023],[UCYU1p7dPNHiwmxpPeGgwA-w]
+5606,Tranås,[Tranas],,Sweden,SWE,Europe,58.05,14.833333,0.0,18604,10605098.0,3.1,0.0,174.0,41.0,30.0,0.0,[bY9_p0IddDw],[[0]],[[0]],[[815]],[0],[29062022],[UCYU1p7dPNHiwmxpPeGgwA-w]
+5607,Klintehamn,[],,Sweden,SWE,Europe,57.3863942,18.2028447,0.0,1490,10605098.0,3.1,0.0,174.0,41.0,30.0,0.0,[SQRn0XocKuo],[[0]],[[0]],[[379]],[0],[15052021],[UCYU1p7dPNHiwmxpPeGgwA-w]
+5608,Harplinge,[],,Sweden,SWE,Europe,56.7443478,12.7249152,0.0,1498,10605098.0,3.1,0.0,174.0,41.0,30.0,0.0,[6mVn8j1M_-o],[[0]],[[0]],[[325]],[0],[29062021],[UCYU1p7dPNHiwmxpPeGgwA-w]
+5609,Bromölla,[Bromolla],,Sweden,SWE,Europe,56.075485,14.468927,0.0,12470,10605098.0,3.1,0.0,174.0,41.0,30.0,0.0,[T0aCGR83F64],[[0]],[[0]],[[312]],[0],[03092021],[UCYU1p7dPNHiwmxpPeGgwA-w]
+5610,Falköping,[Falkoping],,Sweden,SWE,Europe,58.1695083,13.5542412,0.0,17170,10605098,3.1,0.0,174,41,30.0,0.0,[T0aCGR83F64],[[0]],[[0]],[[312]],[0],[03092021],[UCYU1p7dPNHiwmxpPeGgwA-w]
