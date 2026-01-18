@@ -8,7 +8,7 @@ The dataset is available on [kaggle](https://www.kaggle.com/datasets/anonymousau
 ## Citation and usage of code
 If you use this work for academic work please cite the following paper:
 
-> Alam, Md. S., Martens, M. H., & Bazilinskyy, P. (2025). Understanding global pedestrian behaviour in 401 cities with dashcam videos on YouTube. Under review. Available at https://bazilinskyy.github.io/publications/alam2025crossing
+> Alam, M. S., Martens, M. H., & Bazilinskyy, P. (2025). Understanding global pedestrian behaviour in 401 cities with dashcam videos on YouTube. Under review. Available at https://bazilinskyy.github.io/publications/alam2025crossing
 
 The code is open-source and free to use. It is aimed for, but not limited to, academic research. We welcome forking of this repository, pull requests, and any contributions in the spirit of open science and open-source code. For inquiries about collaboration, you may contact Md Shadab Alam (md_shadab_alam@outlook.com) or Pavlo Bazilinskyy (pavlo.bazilinskyy@gmail.com).
 
