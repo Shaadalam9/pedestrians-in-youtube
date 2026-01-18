@@ -5,7 +5,7 @@
 name: Lint codebase
 
 on:
-  # Run on every push (including to main, unless you add branches-ignore below)
+  # Run on every push (including to main, unless you add branches-ignore)
   push:
     # branches-ignore:
     #   - main
@@ -15,10 +15,10 @@ on:
     branches:
       - main
 
-# Keep permissions least-privilege. Super-Linter commonly needs:
-# - contents:read      -> checkout + read repository files
-# - statuses:write     -> publish commit status checks
-# - pull-requests:read -> read PR metadata (when running on pull_request)
+# Least-privilege permissions:
+# - contents:read      -> read repository content
+# - statuses:write     -> publish status checks
+# - pull-requests:read -> read PR metadata (when event is pull_request)
 permissions:
   contents: read
   statuses: write
@@ -31,117 +31,119 @@ jobs:
 
     steps:
       # Checkout is required so Super-Linter can access your repository contents.
-      # fetch-depth: 0 is important when VALIDATE_ALL_CODEBASE=false because the
-      # linter needs git history to determine changed files accurately.
+      # fetch-depth: 0 is important when VALIDATE_ALL_CODEBASE=false so it can
+      # correctly compute changed files for pushes/PRs.
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # Run Super-Linter (it executes inside a Docker container).
+      # Run Super-Linter (container-based).
       #
-      # Your runs show failures in CHECKOV and GITHUB_ACTIONS_ZIZMOR, but the console
-      # logs do not include the detailed findings. Therefore we enable "Option A":
-      # save linter outputs to files so we can download and inspect the exact issues.
+      # Your failures are from:
+      # - CHECKOV
+      # - GITHUB_ACTIONS (actionlint)
+      # - GITHUB_ACTIONS_ZIZMOR (zizmor)
+      #
+      # We enable output saving so we can print the detailed findings after the run.
       - name: Run Super-Linter
         uses: super-linter/super-linter@v8.3.2
         env:
-          # Required: token used for GitHub API calls and status checks.
+          # Required
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-          # Repository settings
+          # Repo settings
           DEFAULT_BRANCH: main
 
-          # Only lint changed files in the event payload (faster, less noise).
-          # Note: some linters (notably Checkov) may still scan more broadly.
+          # Faster runs: lint changed files only
           VALIDATE_ALL_CODEBASE: false
 
-          # Option A: write linter outputs to disk
-          #
-          # - super-linter-output/ : per-linter result files (best place to find
-          #   Checkov/Zizmor details if they are not printed to the console)
-          # - super-linter.log     : consolidated log file from the run
+          # Save per-linter outputs to disk so we can inspect them
+          # (Super-Linter writes outputs under super-linter-output/... when enabled). :contentReference[oaicite:2]{index=2}
           SAVE_SUPER_LINTER_OUTPUT: true
-          CREATE_LOG_FILE: true
+
+          # Avoid creating super-linter.log by default:
+          # - often ends up root-owned and breaks artifact upload
+          # - can contain sensitive environment data if uploaded :contentReference[oaicite:3]{index=3}
+          CREATE_LOG_FILE: false
+
+          # Optional: also write a GitHub Actions step summary (nice UX)
+          ENABLE_GITHUB_ACTIONS_STEP_SUMMARY: true
 
           # File filtering:
-          # - INCLUDE everything by default
-          # - EXCLUDE docs/templates and large/generated artifacts
           FILTER_REGEX_INCLUDE: ".*"
           FILTER_REGEX_EXCLUDE: '(^README\.md$|^templates/|^\.github/ISSUE_TEMPLATE/|^\.github/PULL_REQUEST_TEMPLATE\.md$|^figures/|^mapping_metadata\.csv$)'
 
-          # Tell Super-Linter where repo-stored linter configs live
+          # Linter config location
           LINTER_RULES_PATH: .github/linters
-
-          # JSCPD: ensure it loads .github/linters/.jscpd.json
           JSCPD_CONFIG_FILE: .jscpd.json
 
-          # Keep your existing formatter choices (disabled here)
+          # Your existing preferences
           VALIDATE_PYTHON_BLACK: false
           VALIDATE_PYTHON_ISORT: false
-
-          # Disable Biome unless you explicitly want it
           VALIDATE_BIOME_FORMAT: false
           VALIDATE_BIOME_LINT: false
 
-      # IMPORTANT: Super-Linter runs inside Docker and can create output files owned by
-      # root with restrictive permissions (e.g., 0600). The artifact uploader runs as
-      # the "runner" user and will fail with EACCES if any file in the upload path is
-      # not readable by runner.
+      # Surface the actual failing findings in the job log.
       #
-      # This step stages outputs into $RUNNER_TEMP (runner-owned) and copies them in a
-      # way that ensures:
-      # - runner can read every file
-      # - files are owned by runner (not root) in the staging directory
+      # Super-Linter saves outputs under:
+      #   super-linter-output/super-linter/   (mostly JSON)
+      # when SAVE_SUPER_LINTER_OUTPUT=true. :contentReference[oaicite:4]{index=4}
       #
-      # Key implementation details:
-      # - Use a sudo tar pipeline for directories so we can READ root-owned files, but
-      #   EXTRACT as runner (which makes staged files runner-owned).
-      # - For the log file, do NOT use "sudo cp" because that creates a root-owned
-      #   destination file. Instead, read with sudo and write via redirection (runner).
-      - name: Collect Super-Linter outputs for upload
+      # This step searches those outputs and prints:
+      # - Checkov rule IDs (CKV_*)
+      # - actionlint messages for workflows
+      # - zizmor security findings
+      - name: Print CHECKOV / actionlint / zizmor findings
         if: always()
         shell: bash
         run: |
           set -euo pipefail
 
-          # Stage artifacts in a runner-owned directory.
-          DEST="${RUNNER_TEMP}/super-linter-artifacts"
-          mkdir -p "${DEST}"
+          OUT_ROOT="super-linter-output"
+          OUT_DIR="${OUT_ROOT}/super-linter"
 
-          # Copy the per-linter output directory (if present) while stripping root ownership.
-          # This avoids unreadable root-owned files breaking upload-artifact.
-          if [ -d "super-linter-output" ]; then
-            sudo tar -C . -cf - super-linter-output | tar -C "${DEST}" -xf -
+          echo "Looking for Super-Linter outputs..."
+          if [ -d "${OUT_DIR}" ]; then
+            echo "Found outputs at: ${OUT_DIR}"
+          elif [ -d "${OUT_ROOT}" ]; then
+            echo "Found ${OUT_ROOT}, but not ${OUT_DIR}. Listing contents to locate outputs:"
+            find "${OUT_ROOT}" -maxdepth 3 -type f -print | sort || true
+            # Continue anyway; we might still find something.
+          else
+            echo "No super-linter-output directory found. Cannot print saved findings."
+            exit 0
           fi
 
-          # Copy the consolidated log file as a runner-owned file:
-          # - sudo cat reads the (possibly root-owned) source
-          # - ">" redirection writes the destination as runner
-          if [ -f "super-linter.log" ]; then
-            sudo cat "super-linter.log" > "${DEST}/super-linter.log"
-          fi
+          echo ""
+          echo "Saved output files (top 200):"
+          find "${OUT_ROOT}" -type f -print | sort | head -n 200 || true
 
-          # Ensure the runner can read everything that will be zipped and uploaded.
-          # (Directories need +x to traverse.)
-          chmod -R a+rX "${DEST}" || true
+          echo ""
+          echo "::group::CHECKOV findings (look for CKV_... rule IDs)"
+          # Most actionable Checkov info includes CKV_* rule IDs and file/resource references.
+          grep -R --line-number -E 'CKV_[A-Z0-9_]+' "${OUT_ROOT}" || true
+          echo "::endgroup::"
 
-          # Helpful diagnostics in the job log.
-          echo "Super-Linter artifacts staged at: ${DEST}"
-          ls -la "${DEST}" || true
-          if [ -f "${DEST}/super-linter.log" ]; then
-            echo "Staged super-linter.log permissions:"
-            ls -la "${DEST}/super-linter.log" || true
-          fi
+          echo ""
+          echo "::group::GITHUB_ACTIONS (actionlint) findings"
+          # actionlint typically references .github/workflows/*.yml and explains the error.
+          grep -R --line-number -E 'actionlint|\.github/workflows/|workflow|jobs\.' "${OUT_ROOT}" || true
+          echo "::endgroup::"
 
-      # Upload the staged outputs so you can download them from the workflow run page.
-      # After download, inspect:
-      # - super-linter-output/** : per-linter findings (CHECKOV, ZIZMOR, etc.)
-      # - super-linter.log       : consolidated log file
-      - name: Upload Super-Linter output artifact
+          echo ""
+          echo "::group::GITHUB_ACTIONS_ZIZMOR findings"
+          # zizmor findings often mention pinning actions, permissions, pull_request_target, etc.
+          grep -R --line-number -i -E 'zizmor|pull_request_target|permissions|pinned|pinning|uses:' "${OUT_ROOT}" || true
+          echo "::endgroup::"
+
+      # Upload the saved outputs (not super-linter.log) so you can download them if needed.
+      # Uploading only super-linter-output avoids the common root-owned log permission failure
+      # and reduces the risk of exposing sensitive environment info. :contentReference[oaicite:5]{index=5}
+      - name: Upload Super-Linter outputs
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: super-linter-output
-          path: ${{ runner.temp }}/super-linter-artifacts
+          path: super-linter-output
           if-no-files-found: warn
