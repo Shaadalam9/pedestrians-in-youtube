@@ -1,167 +1,41 @@
-################################
-# Super-Linter GitHub Workflow  #
-################################
+---
 name: Lint codebase
 
-on:
-  # Run on every push (including to main, unless you add branches-ignore)
+on: # yamllint disable-line rule:truthy
   push:
-
-  # Run on PRs targeting main
   pull_request:
     branches: [main]
 
-# Least-privilege permissions.
-# Notes:
-# - contents:read is required to read repository files.
-# - statuses:write is used if you want status checks reported.
-# - pull-requests:read is used when analyzing PR metadata.
-# - packages:read can be required to pull images from GHCR in some setups.
 permissions:
   contents: read
   statuses: write
-  pull-requests: read
-  packages: read
 
 jobs:
-  super-linter:
+  lint:
     name: Lint codebase
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout is required so Super-Linter can read your repository files.
-      #
-      # IMPORTANT (security): Zizmor/Checkov commonly require that actions be pinned
-      # to a full-length commit SHA, not just "@v4". This pins checkout to the commit
-      # behind the v4.2.2 release.
-      - name: Checkout repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2 :contentReference[oaicite:2]{index=2}
+      - name: Checkout code
+      - uses: actions/checkout@v4
         with:
-          # Full history helps Super-Linter compute diffs when VALIDATE_ALL_CODEBASE=false.
           fetch-depth: 0
+          persist-credentials: false
 
-      # Run Super-Linter.
-      #
-      # IMPORTANT (security): Pin Super-Linter action to a commit SHA as well.
-      - name: Run Super-Linter
-        uses: super-linter/super-linter@d5b0a2ab116623730dd094f15ddc1b6b25bf7b99 # v8.3.2 :contentReference[oaicite:3]{index=3}
+      - name: Super-Linter
+        uses: super-linter/super-linter@v8.3.2
         env:
-          # Required: used by Super-Linter for GitHub API calls and (optionally) status checks.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-          # Repository settings
           DEFAULT_BRANCH: main
-
-          # Prefer faster runs by linting only changed files.
-          # Note: Some tools (e.g., Checkov) can still scan more broadly depending on config.
           VALIDATE_ALL_CODEBASE: false
 
-          # Option A: persist linter outputs to disk so we can review them easily.
-          SAVE_SUPER_LINTER_OUTPUT: true
-
-          # Writes a markdown summary into the GitHub Actions step summary UI.
-          ENABLE_GITHUB_ACTIONS_STEP_SUMMARY: true
-
-          # Avoid creating a root-owned super-linter.log in the workspace (can cause EACCES issues).
-          # You still get per-linter stdout/stderr files under super-linter-output/.
-          CREATE_LOG_FILE: false
-
-          # File filtering:
-          # - INCLUDE everything by default
-          # - EXCLUDE docs/templates and large/generated artifacts
-          FILTER_REGEX_INCLUDE: ".*"
-          FILTER_REGEX_EXCLUDE: '(^README\.md$|^templates/|^\.github/ISSUE_TEMPLATE/|^\.github/PULL_REQUEST_TEMPLATE\.md$|^figures/|^mapping_metadata\.csv$)'
-
-          # Tell Super-Linter where your repo-stored linter configs live
+          # Use configs from .github/linters
           LINTER_RULES_PATH: .github/linters
-
-          # JSCPD: ensure it loads .github/linters/.jscpd.json
           JSCPD_CONFIG_FILE: .jscpd.json
 
-          # Keep your existing formatter choices (disabled here)
-          VALIDATE_PYTHON_BLACK: false
-          VALIDATE_PYTHON_ISORT: false
+          # Exclude generated artifacts (fixes your HTMLHint failures)
+          FILTER_REGEX_EXCLUDE: '(^|/)README\.md$|(^|/)figures/'
 
-          # Disable Biome unless you explicitly want it
-          VALIDATE_BIOME_FORMAT: false
-          VALIDATE_BIOME_LINT: false
-
-          # Optional: suppress commitlint warning if you do not use it
-          VALIDATE_GIT_COMMITLINT: false
-
-      # Always print the actual findings into the job log so you can debug without downloading artifacts.
-      # This step is intentionally defensive: it checks whether each file exists and is non-empty.
-      - name: Show findings in logs and step summary
-        if: always()
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          OUT_ROOT="super-linter-output/super-linter"
-
-          echo "Looking for Super-Linter outputs..."
-          if [ ! -d "${OUT_ROOT}" ]; then
-            echo "No output directory found at ${OUT_ROOT}."
-            exit 0
-          fi
-
-          # Add the generated Super-Linter summary into the GitHub Step Summary UI (if present).
-          if [ -f "super-linter-output/super-linter-summary.md" ]; then
-            {
-              echo "## Super-Linter summary"
-              cat "super-linter-output/super-linter-summary.md"
-            } >> "${GITHUB_STEP_SUMMARY}"
-          fi
-
-          # These files usually contain the actionable details when Super-Linter says
-          # "Errors found in CHECKOV" / "Errors found in GITHUB_ACTIONS_ZIZMOR".
-          FILES_TO_DUMP=(
-            "${OUT_ROOT}/super-linter-parallel-stdout-CHECKOV"
-            "${OUT_ROOT}/super-linter-parallel-stderr-CHECKOV"
-            "${OUT_ROOT}/super-linter-parallel-stdout-GITHUB_ACTIONS"
-            "${OUT_ROOT}/super-linter-parallel-stderr-GITHUB_ACTIONS"
-            "${OUT_ROOT}/super-linter-parallel-stdout-GITHUB_ACTIONS_ZIZMOR"
-            "${OUT_ROOT}/super-linter-parallel-stderr-GITHUB_ACTIONS_ZIZMOR"
-          )
-
-          for f in "${FILES_TO_DUMP[@]}"; do
-            if [ -s "${f}" ]; then
-              echo "::group::${f}"
-              # Print the first 400 lines to keep logs readable.
-              sed -n '1,400p' "${f}"
-              echo "::endgroup::"
-            else
-              echo "No content (or file missing): ${f}"
-            fi
-          done
-
-      # Stage outputs into a runner-owned directory for artifact upload.
-      - name: Stage Super-Linter outputs for artifact upload
-        if: always()
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          DEST="${RUNNER_TEMP}/super-linter-artifacts"
-          rm -rf "${DEST}"
-          mkdir -p "${DEST}"
-
-          if [ -d "super-linter-output" ]; then
-            cp -R "super-linter-output" "${DEST}/"
-          fi
-
-          # Ensure the runner can read everything that will be zipped and uploaded.
-          chmod -R a+rX "${DEST}" || true
-
-          echo "Staged artifacts at: ${DEST}"
-          find "${DEST}" -maxdepth 4 -type f | head -n 200
-
-      # Upload staged results for offline review.
-      # Pin upload-artifact to a commit SHA (Zizmor/Checkov often require this).
-      - name: Upload Super-Linter output artifact
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2 :contentReference[oaicite:5]{index=5}
-        with:
-          name: super-linter-output
-          path: ${{ runner.temp }}/super-linter-artifacts
-          if-no-files-found: warn
+          # Keep your existing Python choices
+          VALIDATE_PYTHON_BLACK: "false"
+          VALIDATE_PYTHON_ISORT: "false"
