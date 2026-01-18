@@ -1,6 +1,6 @@
 """Adding new data to the mapping file."""
 # by Pavlo Bazilinskyy <pavlo.bazilinskyy@gmail.com>
-from flask import Flask, request, render_template, jsonify
+from flask import Flask, request, render_template
 import pandas as pd
 import os
 import common
@@ -24,6 +24,12 @@ height_data = pd.read_csv(os.path.join(common.root_dir, 'height_data.csv'))
 age_data = pd.read_csv(os.path.join(common.root_dir, 'countries.csv'))
 
 
+def format_city_label(city, state, country, iso3):
+    if isinstance(state, str) and state.strip():
+        return f"{city}, {state}, {country} ({iso3})"
+    return f"{city}, {country} ({iso3})"
+
+
 @app.route("/autocomplete/cities")
 def autocomplete_cities():
     q = request.args.get("q", "").strip().lower()
@@ -40,6 +46,7 @@ def autocomplete_cities():
 
     for _, row in df.iterrows():
         city = row.get("city")
+        state = row.get("state")
         country = row.get("country")
         iso3 = row.get("iso3")
 
@@ -53,8 +60,15 @@ def autocomplete_cities():
             seen.add(key)
             results.append({
                 "city": city.strip(),
+                "state": state if isinstance(state, str) else "",
                 "country": country,
-                "iso3": iso3
+                "iso3": iso3,
+                "label": format_city_label(
+                    city.strip(),
+                    state,
+                    country,
+                    iso3
+                )
             })
 
         aka = row.get("city_aka")
@@ -71,10 +85,16 @@ def autocomplete_cities():
                     seen.add(key)
                     results.append({
                         "city": name,
+                        "state": state if isinstance(state, str) else "",
                         "country": country,
-                        "iso3": iso3
+                        "iso3": iso3,
+                        "label": format_city_label(
+                            name,
+                            state,
+                            country,
+                            iso3
+                        )
                     })
-
     # Prefix-first, then alphabetical
     results.sort(
         key=lambda x: (
