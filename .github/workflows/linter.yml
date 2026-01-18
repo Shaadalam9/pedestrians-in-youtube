@@ -1,13 +1,13 @@
----
 name: Lint codebase
 
-on: # yamllint disable-line rule:truthy
+on:
   push:
   pull_request:
     branches: [main]
 
 permissions:
   contents: read
+  packages: read
   statuses: write
 
 jobs:
@@ -17,24 +17,24 @@ jobs:
 
     steps:
       - name: Checkout code
-      - uses: actions/checkout@v4
+        uses: actions/checkout@v4
         with:
+          # Full git history is needed to get the list of changed files
           fetch-depth: 0
-          persist-credentials: false
 
-      - name: Super-Linter
+      - name: Run Super-Linter
         uses: super-linter/super-linter@v8.3.2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEFAULT_BRANCH: main
-          VALIDATE_ALL_CODEBASE: false
+          VALIDATE_ALL_CODEBASE: "false"
 
           # Use configs from .github/linters
           LINTER_RULES_PATH: .github/linters
           JSCPD_CONFIG_FILE: .jscpd.json
 
-          # Exclude generated artifacts (fixes your HTMLHint failures)
-          FILTER_REGEX_EXCLUDE: '(^|/)README\.md$|(^|/)figures/'
+          # Exclude generated artifacts (prevents HTMLHint failures in figures/*.html)
+          FILTER_REGEX_EXCLUDE: '(^|/)README\.md$|(^|/)figures/.*'
 
           # Keep your existing Python choices
           VALIDATE_PYTHON_BLACK: "false"
