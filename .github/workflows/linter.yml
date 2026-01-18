@@ -44,16 +44,13 @@ jobs:
           DEFAULT_BRANCH: main
           VALIDATE_ALL_CODEBASE: false
 
+          # Option A: Save linter outputs to files so we can inspect CHECKOV/ZIZMOR findings
+          SAVE_SUPER_LINTER_OUTPUT: true
+          CREATE_LOG_FILE: true
+
           # File filtering:
           # - INCLUDE everything by default
           # - EXCLUDE documentation, templates, and generated artifacts
-          #
-          # Notes:
-          # - Templates are commonly stored in:
-          #   - templates/
-          #   - .github/ISSUE_TEMPLATE/
-          #   - .github/PULL_REQUEST_TEMPLATE.md
-          # - Generated artifacts in your logs are under figures/ and can be very large.
           FILTER_REGEX_INCLUDE: ".*"
           FILTER_REGEX_EXCLUDE: '(^README\.md$|^templates/|^\.github/ISSUE_TEMPLATE/|^\.github/PULL_REQUEST_TEMPLATE\.md$|^figures/|^mapping_metadata\.csv$)'
 
@@ -67,21 +64,22 @@ jobs:
           VALIDATE_PYTHON_BLACK: false
           VALIDATE_PYTHON_ISORT: false
 
-          # Biome is currently failing because it lints large generated HTML files and
-          # you are also seeing Biome/Prettier conflict warnings. Disable unless you
-          # explicitly want Biome for JS/TS/CSS in this repo.
+          # Disable Biome unless you explicitly want it
           VALIDATE_BIOME_FORMAT: false
           VALIDATE_BIOME_LINT: false
 
           # Optional: suppress commitlint warning if you do not use it
           # VALIDATE_GIT_COMMITLINT: false
 
-          # Trivy is currently FAILING due to vulnerabilities in uv.lock.
-          # Choose ONE approach below:
-          #
-          # A) Recommended for green CI now: move dependency/security scanning to a dedicated
-          #    security workflow and disable Trivy here:
+          # Trivy note (keep as-is unless you decide otherwise):
           # VALIDATE_TRIVY: false
-          #
-          # B) Keep Trivy here and fix the underlying vulnerabilities by upgrading deps
-          #    (see guidance below).
+
+      - name: Upload Super-Linter output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: super-linter-output
+          path: |
+            super-linter-output
+            super-linter.log
+          if-no-files-found: warn
