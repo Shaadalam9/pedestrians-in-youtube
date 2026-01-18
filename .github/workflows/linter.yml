@@ -1,67 +1,85 @@
 ---
 ###########################
-###########################
-## Linter GitHub Actions ##
-###########################
+## Linter GitHub Action  ##
 ###########################
 name: Lint codebase
 
-#
-# Documentation:
-# https://help.github.com/en/articles/workflow-syntax-for-github-actions
-#
+# Workflow syntax:
+# https://docs.github.com/actions/using-workflows/workflow-syntax-for-github-actions
 
 #############################
-# Start the job on all push #
+# Triggers
 #############################
 on:
+  # Run on every push
   push:
-    # branches-ignore: [master]
-    # Remove the line above to run when pushing to master
+  # Run on PRs targeting main
   pull_request:
     branches: [main]
 
-###############
-# Set the Job #
-###############
+#############################
+# Permissions (least privilege)
+#############################
+permissions:
+  # Super-Linter only needs read access to the repository contents
+  contents: read
+  # Super-Linter reports status checks back to GitHub
+  statuses: write
+
+#############################
+# Jobs
+#############################
 jobs:
-  build:
-    # Name the Job
+  lint:
+    # Name shown in the Actions UI
     name: Lint codebase
-    # Set the agent to run on
+    # Use GitHub-hosted Ubuntu runner
     runs-on: ubuntu-latest
 
     ##################
-    # Load all steps #
+    # Steps
     ##################
     steps:
       ##########################
-      # Checkout the code base #
+      # Checkout the repository
       ##########################
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v5
         with:
-          # Full git history is needed to get a proper list of changed files within `super-linter`
+          # Full history helps Super-Linter compute the changed-file set reliably
           fetch-depth: 0
 
       ################################
-      # Run Linter against code base #
+      # Run Super-Linter
       ################################
       - name: Lint codebase
-        uses: github/super-linter@v3.17.0
+        # Use the maintained Super-Linter action (github/super-linter is deprecated)
+        uses: super-linter/super-linter@v8.3.2
         env:
+          # Only lint changed files (faster); set true to lint everything every run
           VALIDATE_ALL_CODEBASE: false
+
+          # Default branch name used by Super-Linter when comparing changes
           DEFAULT_BRANCH: main
+
+          # Required for Super-Linter to post annotations/status back to GitHub
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-          FILTER_REGEX_INCLUDE: .*
-          FILTER_REGEX_EXCLUDE: README\.md  # This line excludes README.md
+          # Include all files by default (then exclude via FILTER_REGEX_EXCLUDE)
+          FILTER_REGEX_INCLUDE: '.*'
 
+          # Exclude:
+          # - all files under templates/ (Jinja/templated HTML often causes HTMLHint false positives)
+          # - README.md
+          FILTER_REGEX_EXCLUDE: '(^templates/|^README\.md$)'
+
+          # Disable Black / isort validation (keeps your previous behavior)
           VALIDATE_PYTHON_BLACK: false
           VALIDATE_PYTHON_ISORT: false
 
-          # Ensure Super-Linter uses configs from .github/linters
+          # Tell Super-Linter where to look for per-linter config files
+          # (e.g., .github/linters/.htmlhintrc, .github/linters/.flake8, etc.)
           LINTER_RULES_PATH: .github/linters
 
-          # Ensure JSCPD reads this config filename from LINTER_RULES_PATH
+          # JSCPD will look for this file inside LINTER_RULES_PATH
           JSCPD_CONFIG_FILE: .jscpd.json
