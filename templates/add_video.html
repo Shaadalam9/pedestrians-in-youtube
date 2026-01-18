@@ -814,23 +814,29 @@ input.addEventListener("input", async () => {
 
         if (cities.length === 0) return;
 
-        cities.forEach(item => {
-            const div = document.createElement("div");
+        const seen = new Set();
 
-            // DISPLAY: city + state + country (+ ISO3)
+        cities.forEach(item => {
+            const key = [
+                item.city?.toLowerCase(),
+                item.state?.toLowerCase() || "",
+                item.country?.toLowerCase()
+            ].join("|");
+
+            if (seen.has(key)) return;
+            seen.add(key);
+
+            const div = document.createElement("div");
             div.textContent = item.label;
 
             div.onclick = () => {
-                // fill city
                 input.value = item.city;
 
-                // fill state (or clear if missing)
                 const stateInput = document.getElementById("state");
                 if (stateInput) {
                     stateInput.value = item.state ? item.state : "";
                 }
 
-                // auto-select country
                 const countrySelect = document.getElementById("country");
                 if (countrySelect) {
                     for (const option of countrySelect.options) {
