@@ -15,10 +15,10 @@ on:
     branches:
       - main
 
-# Least-privilege permissions:
-# - contents:read      -> read repository content
-# - statuses:write     -> publish status checks
-# - pull-requests:read -> read PR metadata (when event is pull_request)
+# Keep permissions least-privilege. Super-Linter commonly needs:
+# - contents:read      -> checkout + read repository files
+# - statuses:write     -> publish commit status checks
+# - pull-requests:read -> read PR metadata (PR runs only)
 permissions:
   contents: read
   statuses: write
@@ -30,9 +30,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout is required so Super-Linter can access your repository contents.
-      # fetch-depth: 0 is important when VALIDATE_ALL_CODEBASE=false so it can
-      # correctly compute changed files for pushes/PRs.
+      # Checkout is required so Super-Linter can access repository contents.
+      # fetch-depth: 0 is important when VALIDATE_ALL_CODEBASE=false so Super-Linter
+      # can compute changed files correctly for pushes/PRs.
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
@@ -40,106 +40,158 @@ jobs:
 
       # Run Super-Linter (container-based).
       #
-      # Your failures are from:
-      # - CHECKOV
-      # - GITHUB_ACTIONS (actionlint)
-      # - GITHUB_ACTIONS_ZIZMOR (zizmor)
-      #
-      # We enable output saving so we can print the detailed findings after the run.
+      # We enable output saving so the detailed findings (especially Checkov/Zizmor)
+      # are written to disk under super-linter-output/. This is critical because
+      # the console output can sometimes show only a summary.
       - name: Run Super-Linter
         uses: super-linter/super-linter@v8.3.2
         env:
-          # Required
+          # Required: used by Super-Linter for GitHub API calls and status checks
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-          # Repo settings
+          # Repository settings
           DEFAULT_BRANCH: main
 
-          # Faster runs: lint changed files only
+          # Lint changed files only (faster). Some linters may still scan more broadly.
           VALIDATE_ALL_CODEBASE: false
 
-          # Save per-linter outputs to disk so we can inspect them
-          # (Super-Linter writes outputs under super-linter-output/... when enabled). :contentReference[oaicite:2]{index=2}
+          # Save per-linter outputs to disk:
+          # - super-linter-output/super-linter/* contains stdout/stderr and JSON results
+          # - super-linter-output/super-linter-summary.md is a run summary
           SAVE_SUPER_LINTER_OUTPUT: true
 
-          # Avoid creating super-linter.log by default:
-          # - often ends up root-owned and breaks artifact upload
-          # - can contain sensitive environment data if uploaded :contentReference[oaicite:3]{index=3}
+          # Do not create super-linter.log by default:
+          # - it may be root-owned (permission problems)
+          # - it can include sensitive context if uploaded
           CREATE_LOG_FILE: false
 
-          # Optional: also write a GitHub Actions step summary (nice UX)
+          # Optional: writes a GitHub Actions step summary (nice for PR review UX)
           ENABLE_GITHUB_ACTIONS_STEP_SUMMARY: true
 
           # File filtering:
+          # - INCLUDE everything by default
+          # - EXCLUDE docs/templates and large/generated artifacts
           FILTER_REGEX_INCLUDE: ".*"
           FILTER_REGEX_EXCLUDE: '(^README\.md$|^templates/|^\.github/ISSUE_TEMPLATE/|^\.github/PULL_REQUEST_TEMPLATE\.md$|^figures/|^mapping_metadata\.csv$)'
 
-          # Linter config location
+          # Tell Super-Linter where repo-stored linter configs live
           LINTER_RULES_PATH: .github/linters
+
+          # JSCPD: ensure it loads .github/linters/.jscpd.json
           JSCPD_CONFIG_FILE: .jscpd.json
 
-          # Your existing preferences
+          # Keep your existing formatter choices (disabled here)
           VALIDATE_PYTHON_BLACK: false
           VALIDATE_PYTHON_ISORT: false
+
+          # Disable Biome unless you explicitly want it
           VALIDATE_BIOME_FORMAT: false
           VALIDATE_BIOME_LINT: false
 
-      # Surface the actual failing findings in the job log.
+      # Print the actual failing outputs into the job log.
       #
-      # Super-Linter saves outputs under:
-      #   super-linter-output/super-linter/   (mostly JSON)
-      # when SAVE_SUPER_LINTER_OUTPUT=true. :contentReference[oaicite:4]{index=4}
+      # Why this exists:
+      # - Searching/grepping for CKV_* or "zizmor" is unreliable because linters may output
+      #   JSON or formats that don't contain those exact strings.
+      # - The reliable source of truth is the saved stdout/stderr files and worker JSON
+      #   created by Super-Linter when SAVE_SUPER_LINTER_OUTPUT=true.
       #
-      # This step searches those outputs and prints:
-      # - Checkov rule IDs (CKV_*)
-      # - actionlint messages for workflows
-      # - zizmor security findings
-      - name: Print CHECKOV / actionlint / zizmor findings
+      # What this step does:
+      # - Lists saved output files
+      # - Prints the first N lines of Checkov and Zizmor stdout/stderr
+      # - Prints the JSON worker results (first N lines)
+      # - Best-effort extracts message/error fields using jq (if present)
+      - name: Print CHECKOV and ZIZMOR outputs (from saved files)
         if: always()
         shell: bash
         run: |
           set -euo pipefail
 
-          OUT_ROOT="super-linter-output"
-          OUT_DIR="${OUT_ROOT}/super-linter"
+          OUT_ROOT="super-linter-output/super-linter"
 
-          echo "Looking for Super-Linter outputs..."
-          if [ -d "${OUT_DIR}" ]; then
-            echo "Found outputs at: ${OUT_DIR}"
-          elif [ -d "${OUT_ROOT}" ]; then
-            echo "Found ${OUT_ROOT}, but not ${OUT_DIR}. Listing contents to locate outputs:"
-            find "${OUT_ROOT}" -maxdepth 3 -type f -print | sort || true
-            # Continue anyway; we might still find something.
-          else
-            echo "No super-linter-output directory found. Cannot print saved findings."
+          echo "Super-Linter output root: ${OUT_ROOT}"
+          if [ ! -d "${OUT_ROOT}" ]; then
+            echo "ERROR: ${OUT_ROOT} not found. Is SAVE_SUPER_LINTER_OUTPUT=true set?"
             exit 0
           fi
 
           echo ""
           echo "Saved output files (top 200):"
-          find "${OUT_ROOT}" -type f -print | sort | head -n 200 || true
+          find "super-linter-output" -type f -print | sort | head -n 200 || true
+
+          # Helper: print file size and first N lines safely
+          print_file () {
+            local f="$1"
+            local n="${2:-200}"
+
+            echo ""
+            if [ -f "$f" ]; then
+              echo "---- FILE: $f"
+              ls -la "$f" || true
+              if [ ! -s "$f" ]; then
+                echo "(file is empty)"
+                return 0
+              fi
+              echo "---- FIRST ${n} LINES:"
+              sed -n "1,${n}p" "$f" || true
+            else
+              echo "---- FILE: $f (missing)"
+            fi
+          }
+
+          # Always useful: the generated summary markdown
+          print_file "super-linter-output/super-linter-summary.md" 200
 
           echo ""
-          echo "::group::CHECKOV findings (look for CKV_... rule IDs)"
-          # Most actionable Checkov info includes CKV_* rule IDs and file/resource references.
-          grep -R --line-number -E 'CKV_[A-Z0-9_]+' "${OUT_ROOT}" || true
+          echo "::group::CHECKOV (stdout/stderr/exit code)"
+          print_file "${OUT_ROOT}/super-linter-parallel-command-exit-code-CHECKOV" 50
+          print_file "${OUT_ROOT}/super-linter-parallel-stdout-CHECKOV" 250
+          print_file "${OUT_ROOT}/super-linter-parallel-stderr-CHECKOV" 250
+          print_file "${OUT_ROOT}/super-linter-worker-results-CHECKOV.json" 250
           echo "::endgroup::"
 
           echo ""
-          echo "::group::GITHUB_ACTIONS (actionlint) findings"
-          # actionlint typically references .github/workflows/*.yml and explains the error.
-          grep -R --line-number -E 'actionlint|\.github/workflows/|workflow|jobs\.' "${OUT_ROOT}" || true
+          echo "::group::GITHUB_ACTIONS_ZIZMOR (stdout/stderr/exit code)"
+          print_file "${OUT_ROOT}/super-linter-parallel-command-exit-code-GITHUB_ACTIONS_ZIZMOR" 50
+          print_file "${OUT_ROOT}/super-linter-parallel-stdout-GITHUB_ACTIONS_ZIZMOR" 250
+          print_file "${OUT_ROOT}/super-linter-parallel-stderr-GITHUB_ACTIONS_ZIZMOR" 250
+          print_file "${OUT_ROOT}/super-linter-worker-results-GITHUB_ACTIONS_ZIZMOR.json" 250
           echo "::endgroup::"
 
           echo ""
-          echo "::group::GITHUB_ACTIONS_ZIZMOR findings"
-          # zizmor findings often mention pinning actions, permissions, pull_request_target, etc.
-          grep -R --line-number -i -E 'zizmor|pull_request_target|permissions|pinned|pinning|uses:' "${OUT_ROOT}" || true
+          echo "::group::Best-effort JSON extraction (errors/messages)"
+          if command -v jq >/dev/null 2>&1; then
+            for j in \
+              "${OUT_ROOT}/super-linter-worker-results-CHECKOV.json" \
+              "${OUT_ROOT}/super-linter-worker-results-GITHUB_ACTIONS_ZIZMOR.json"
+            do
+              echo ""
+              echo "---- JSON: ${j}"
+              if [ -f "${j}" ] && [ -s "${j}" ]; then
+                # Print top-level keys and any likely message/error/stderr/stdout fields if present.
+                jq -r '
+                  [
+                    ("keys=" + (keys|join(","))),
+                    ("message=" + ((..|objects|.message? // empty) | tostring)),
+                    ("error="   + ((..|objects|.error?   // empty) | tostring)),
+                    ("stderr="  + ((..|objects|.stderr?  // empty) | tostring)),
+                    ("stdout="  + ((..|objects|.stdout?  // empty) | tostring))
+                  ]
+                  | map(select(length > 0))
+                  | .[0:50]
+                  | .[]
+                ' "${j}" 2>/dev/null || true
+              else
+                echo "(missing or empty)"
+              fi
+            done
+          else
+            echo "jq not installed; skipping JSON extraction."
+          fi
           echo "::endgroup::"
 
-      # Upload the saved outputs (not super-linter.log) so you can download them if needed.
-      # Uploading only super-linter-output avoids the common root-owned log permission failure
-      # and reduces the risk of exposing sensitive environment info. :contentReference[oaicite:5]{index=5}
+      # Upload saved outputs so you can download and inspect them from the workflow run.
+      # This is the safest artifact: it contains per-linter outputs and JSON results.
       - name: Upload Super-Linter outputs
         if: always()
         uses: actions/upload-artifact@v4
