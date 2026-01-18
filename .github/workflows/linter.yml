@@ -5,15 +5,18 @@
 name: Lint codebase
 
 on:
+  # Run on every push (including to main, unless you add branches-ignore)
   push:
-    # If you want to avoid running on pushes to main, uncomment:
-    # branches-ignore:
-    #   - main
+
+  # Run on PRs targeting main
   pull_request:
     branches:
       - main
 
-# Minimum permissions Super-Linter typically needs to create status checks.
+# Keep permissions least-privilege. Super-Linter commonly needs:
+# - contents:read to checkout and read the repo
+# - statuses:write to publish status checks
+# - pull-requests:read when analyzing PR metadata
 permissions:
   contents: read
   statuses: write
@@ -25,42 +28,50 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout is required so Super-Linter can compute changed files when
-      # VALIDATE_ALL_CODEBASE=false.
+      # Required for Super-Linter to access repository contents.
+      # fetch-depth: 0 is important when VALIDATE_ALL_CODEBASE=false so Super-Linter
+      # can correctly compute the diff (changed files) for PRs and pushes.
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          # Full git history is needed to correctly determine changed files
-          # for PRs and push events.
           fetch-depth: 0
 
+      # Run Super-Linter (container-based). This job is failing because CHECKOV and
+      # ZIZMOR report findings, but their details may not show in the console logs.
+      # We therefore enable "Option A" output saving so we can retrieve the exact
+      # findings via an artifact.
       - name: Run Super-Linter
         uses: super-linter/super-linter@v8.3.2
         env:
-          # Required
+          # Required: used by Super-Linter for GitHub API calls and status checks.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-          # Super-Linter behavior
+          # Repository settings
           DEFAULT_BRANCH: main
+
+          # Only lint files changed in the push/PR (faster, less noise).
+          # Note: some linters (notably Checkov) may still scan broadly.
           VALIDATE_ALL_CODEBASE: false
 
-          # Option A: Save linter outputs to files so we can inspect CHECKOV/ZIZMOR findings
+          # Option A: write linter outputs to disk
+          # - super-linter-output/ contains per-linter results
+          # - super-linter.log is the consolidated log file
           SAVE_SUPER_LINTER_OUTPUT: true
           CREATE_LOG_FILE: true
 
           # File filtering:
           # - INCLUDE everything by default
-          # - EXCLUDE documentation, templates, and generated artifacts
+          # - EXCLUDE docs/templates and large/generated artifacts
           FILTER_REGEX_INCLUDE: ".*"
           FILTER_REGEX_EXCLUDE: '(^README\.md$|^templates/|^\.github/ISSUE_TEMPLATE/|^\.github/PULL_REQUEST_TEMPLATE\.md$|^figures/|^mapping_metadata\.csv$)'
 
-          # Ensure Super-Linter uses configs from .github/linters
+          # Tell Super-Linter where your repo-stored linter configs live
           LINTER_RULES_PATH: .github/linters
 
-          # Ensure JSCPD reads this config filename from LINTER_RULES_PATH
+          # JSCPD: ensure it loads .github/linters/.jscpd.json
           JSCPD_CONFIG_FILE: .jscpd.json
 
-          # Keep your existing Python formatter choices
+          # Keep your existing formatter choices (disabled here)
           VALIDATE_PYTHON_BLACK: false
           VALIDATE_PYTHON_ISORT: false
 
@@ -68,18 +79,48 @@ jobs:
           VALIDATE_BIOME_FORMAT: false
           VALIDATE_BIOME_LINT: false
 
-          # Optional: suppress commitlint warning if you do not use it
-          # VALIDATE_GIT_COMMITLINT: false
+      # IMPORTANT: Super-Linter runs inside Docker and may create output files owned by
+      # root (or with restrictive permissions). actions/upload-artifact runs as the
+      # "runner" user and can fail with EACCES while zipping unreadable files.
+      #
+      # This step copies the outputs into $RUNNER_TEMP (a runner-owned directory) and
+      # ensures everything is readable before uploading.
+      - name: Collect Super-Linter outputs for upload
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
 
-          # Trivy note (keep as-is unless you decide otherwise):
-          # VALIDATE_TRIVY: false
+          # Stage artifacts in a runner-owned directory.
+          DEST="${RUNNER_TEMP}/super-linter-artifacts"
+          mkdir -p "${DEST}"
 
-      - name: Upload Super-Linter output
+          # Copy the per-linter output directory if present.
+          if [ -d "super-linter-output" ]; then
+            cp -R "super-linter-output" "${DEST}/"
+          fi
+
+          # Copy the consolidated log file if present.
+          # Use sudo as a fallback in case the file is owned by root/restricted.
+          if [ -f "super-linter.log" ]; then
+            cp "super-linter.log" "${DEST}/" 2>/dev/null || sudo cp "super-linter.log" "${DEST}/"
+          fi
+
+          # Ensure the runner can read everything that will be zipped and uploaded.
+          chmod -R a+rX "${DEST}" || true
+
+          # Helpful diagnostics in the job log.
+          echo "Super-Linter artifacts staged at: ${DEST}"
+          ls -la "${DEST}" || true
+
+      # Upload the staged outputs so you can download them from the workflow run page.
+      # After download, inspect:
+      # - super-linter-output/** for per-linter findings (CHECKOV, ZIZMOR, etc.)
+      # - super-linter.log for the consolidated run log
+      - name: Upload Super-Linter output artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: super-linter-output
-          path: |
-            super-linter-output
-            super-linter.log
+          path: ${{ runner.temp }}/super-linter-artifacts
           if-no-files-found: warn
