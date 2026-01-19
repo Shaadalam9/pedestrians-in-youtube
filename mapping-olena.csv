@@ -5251,7 +5251,7 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 5250,Marsaskala,[Wied il-Għajn],,Malta,MLT,Europe,35.8629162,14.5591879,0.0,14592,574250.0,4.1,93.31,169.0,43.2,28.7,18.75,[x5P0eJ3TuIg],[[0]],[[15]],[[835]],[0],[15012021],[UCg1sAFKjbgemJnIODXe_2BQ]
 5251,Manikata,[],,Malta,MLT,Europe,35.9407206,14.3537646,0.0,539,574250.0,4.1,93.31,169.0,43.2,28.7,0.0,[6M_10SBf53U],[[0]],[[10]],[[350]],[0],[14012021],[UCg1sAFKjbgemJnIODXe_2BQ]
 5252,Bugibba,[],,Malta,MLT,Europe,35.9483211,14.4105059,0.0,32000,574250.0,4.1,93.31,169.0,43.2,28.7,0.0,[eQ0-Q1KScl4],[[0]],[[12]],[[562]],[0],[13012021],[UCg1sAFKjbgemJnIODXe_2BQ]
-5253,Lindström,[],MN,United States,USA,North America,45.3894083,-92.8479921,0.0,4401,340110988.0,12.7,0.0,170.0,38.5,41.4,0.0,[NxhGfFk6bko],[[0]],[[0]],[[349]],[0],[04022024],[UCYU1p7dPNHiwmxpPeGgwA-w]
+5253,Lindström,[Lindstrom],MN,United States,USA,North America,45.3894083,-92.8479921,0.0,4401,340110988.0,12.7,0.0,170.0,38.5,41.4,0.0,[NxhGfFk6bko],[[0]],[[0]],[[349]],[0],[04022024],[UCYU1p7dPNHiwmxpPeGgwA-w]
 5254,Forfar,[],,United Kingdom,GBR,Europe,56.6443013,-2.888212,0.0,13970,69281437.0,3.2,0.0,171.0,40.6,35.1,27.5,[SkuwBjbF1-E],[[0]],[[20]],[[285]],[3],[11012021],[UCg1sAFKjbgemJnIODXe_2BQ]
 5255,Dunfermline,[],,United Kingdom,GBR,Europe,56.0713724,-3.4616183,0.0,50380,69281437.0,3.2,0.0,171.0,40.6,35.1,45.95,[jw2zcYeavWk],[[0]],[[0]],[[430]],[3],[09012021],[UCg1sAFKjbgemJnIODXe_2BQ]
 5256,Grantown-on-Spey,[],,United Kingdom,GBR,Europe,57.3295089,-3.6104018,0.0,2440,69281437.0,3.2,0.0,171.0,40.6,35.1,0.0,[JcGHP7VVkOs],[[0]],[[24]],[[286]],[0],[08012021],[UCg1sAFKjbgemJnIODXe_2BQ]
@@ -5591,7 +5591,7 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 5590,Simrishamn,[],,Sweden,SWE,Europe,55.5565541,14.3499903,0.0,6779,10605098.0,3.1,0.0,174.0,41.0,30.0,0.0,[TG-oFiO001k],[[0]],[[0]],[[992]],[0],[13122025],[UCYU1p7dPNHiwmxpPeGgwA-w]
 5591,Kalmar,[],,Sweden,SWE,Europe,56.6628826,16.3662382,0.0,38408,10605098.0,3.1,0.0,174.0,41.0,30.0,0.0,[emuYUy_Lwgk],[[0]],[[0]],[[714]],[0],[31072021],[UCYU1p7dPNHiwmxpPeGgwA-w]
 5592,Sölvesborg,[Solvesborg],,Sweden,SWE,Europe,56.0506535,14.5871906,0.0,8972,10605098.0,3.1,0.0,174.0,41.0,30.0,0.0,[CCxfvdvaRJY],[[0]],[[0]],[[417]],[0],[31082021],[UCYU1p7dPNHiwmxpPeGgwA-w]
-5593,Lindström,[],MN,United States,USA,North America,45.3894083,-92.8479921,0.0,4401,340110988.0,12.7,0.0,170.0,38.5,41.4,0.0,[NxhGfFk6bko],[[0]],[[0]],[[349]],[0],[04022024],[UCYU1p7dPNHiwmxpPeGgwA-w]
+5593,Butwal,[],,Nepal,NPL,Asia,27.7003986,83.4657667,0.0,91733,29911840.0,16.3,68.71,158.0,24.0,32.8,0.0,"[SE0WX_dmJLc,nzPFgI2Hck8]","[[0],[0]]","[[0],[0]]","[[876],[1371]]","[3,3]","[16102021,15102021]","[UCGY7lCSXNC9FWzxzu-sevWg,UCGY7lCSXNC9FWzxzu-sevWg]"
 5594,Vetlanda,[],,Sweden,SWE,Europe,57.365574,15.1677901,0.0,27528,10605098.0,3.1,0.0,174.0,41.0,30.0,0.0,[uiMsnu22jps],[[0]],[[0]],[[726]],[0],[12072025],[UCYU1p7dPNHiwmxpPeGgwA-w]
 5595,Trelleborg,[],,Sweden,SWE,Europe,55.37592,13.1461522,0.0,29316,10605098.0,3.1,0.0,174.0,41.0,30.0,0.0,[ftiFgtMMz_w],[[0]],[[0]],[[399]],[0],[23102021],[UCYU1p7dPNHiwmxpPeGgwA-w]
 5596,Duluth,[],MN,United States,USA,North America,46.7838287,-92.1052679,0.0,86110,340110988.0,12.7,0.0,170.0,38.5,41.4,0.0,"[6xTi8XCNURI,k2PimVQIR2g]","[[0],[0]]","[[0],[0]]","[[562],[1242]]","[0,0]","[14022024,21102022]","[UCYU1p7dPNHiwmxpPeGgwA-w,UCYU1p7dPNHiwmxpPeGgwA-w]"
@@ -5682,4 +5682,3 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 5681,Mellerud,[],,Sweden,SWE,Europe,58.698527,12.45952,0.0,9052,10605098.0,3.1,0.0,174.0,41.0,30.0,0.0,[ktXvADYtTOY],[[0]],[[0]],[[398]],[0],[18072023],[UCYU1p7dPNHiwmxpPeGgwA-w]
 5682,Mariestad,[],,Sweden,SWE,Europe,58.7093225,13.8228754,0.0,16122,10605098.0,3.1,0.0,174.0,41.0,30.0,0.0,[7dsjH-QRtyM],[[0]],[[0]],[[745]],[0],[19082023],[UCYU1p7dPNHiwmxpPeGgwA-w]
 5683,Zwickau,[],,Germany,DEU,Europe,50.7185043,12.4939267,0.0,98796,83491249.0,3.8,0.0,173.0,47.8,31.9,17.39,[wso6bNmqkWY],[[0]],[[338]],[[954]],[0],[20062024],[UCvLzZbl8OQVa7VDedEtkX9A]
-5684,Butwal,[],,Nepal,NPL,Asia,27.7003986,83.4657667,0.0,91733,29911840.0,16.3,68.71,158.0,24.0,32.8,0.0,"[SE0WX_dmJLc,nzPFgI2Hck8]","[[0],[0]]","[[0],[0]]","[[876],[1371]]","[3,3]","[16102021,15102021]","[UCGY7lCSXNC9FWzxzu-sevWg,UCGY7lCSXNC9FWzxzu-sevWg]"
