@@ -1,9 +1,11 @@
+from __future__ import annotations
+
 import os
 import ast
 import re
 from tqdm import tqdm
 import common
-from typing import Dict, Any, ClassVar
+from typing import Dict, Any, ClassVar, TypeAlias
 
 import polars as pl
 
@@ -14,6 +16,9 @@ from utils.core.grouping import Grouping
 metadata_class = MetaData()
 grouping_class = Grouping()
 logger = CustomLogger(__name__)  # use custom logger
+
+UniqueValue: TypeAlias = str | tuple[str, ...]
+UniqueValues: TypeAlias = set[UniqueValue]
 
 
 class Metrics_cache:
@@ -319,39 +324,52 @@ class Metrics_cache:
     def clear_cache(cls) -> None:
         cls._all_metrics_cache.clear()
 
-    def get_unique_values(self, df, value, null_placeholder="__NULL__"):
+    def get_unique_values(
+        self,
+        df: pl.DataFrame,
+        value: str | list[str] | tuple[str, ...],
+        null_placeholder: str = "__NULL__",
+        return_duplicates: bool = False,
+    ) -> tuple[UniqueValues, int, pl.DataFrame | None]:
         """
-        Returns (unique_values, count) using Polars only.
+        Returns (unique_values, count, dup_report).
 
-        - If `value` is a string: unique values from that column.
-        - If `value` is a list/tuple: unique combinations across those columns.
+        - unique_values: set[str] for single-column keys, set[tuple[str, ...]] for composite keys
+        - count: number of unique keys
+        - dup_report: Polars DataFrame describing duplicated keys, or None if return_duplicates=False
 
-        Notes:
-          - For composite keys, nulls are filled with `null_placeholder` so rows with
-            missing components (e.g., missing state) are still counted deterministically.
-          - All key columns are cast to Utf8 to avoid type-mismatch issues.
-
-        Args:
-            df (polars.DataFrame): Polars DataFrame
-            value (str | list[str] | tuple[str]): Column name or list/tuple of column names
-            null_placeholder (str): Replacement for nulls in key columns
-
-        Returns:
-            tuple: (set_of_unique_values, count)
-                  - single column -> set of scalars
-                  - multi column  -> set of tuples
+        Duplicate report includes:
+          - key columns (value)
+          - dup_count (how many times the key appears)
+          - row_indices (which row numbers have that key)
         """
 
-        if isinstance(value, (list, tuple)):
-            cols = list(value)
+        cols = list(value) if isinstance(value, (list, tuple)) else [value]
 
-            tmp = df.select(
-                [pl.col(c).cast(pl.Utf8).fill_null(null_placeholder) for c in cols]
-            ).unique()
+        key_exprs = [
+            pl.col(c).cast(pl.Utf8).fill_null(null_placeholder).alias(c) for c in cols
+        ]
 
-            unique_values = set(tmp.rows())  # set[tuple[str, ...]]
+        keys_only = df.select(key_exprs)
+
+        if len(cols) == 1:
+            s = keys_only.get_column(cols[0])
+            unique_values: UniqueValues = set(s.unique().to_list())
         else:
-            s = df.get_column(value).cast(pl.Utf8).fill_null(null_placeholder)
-            unique_values = set(s.unique().to_list())  # set[str]
+            unique_values = set(keys_only.unique().rows())
 
-        return unique_values, len(unique_values)
+        dup_report: pl.DataFrame | None = None
+        if return_duplicates:
+            keyed = df.with_row_count("row_index").with_columns(key_exprs)
+
+            dup_report = (
+                keyed.group_by(cols)
+                .agg(
+                    pl.len().alias("dup_count"),
+                    pl.col("row_index").alias("row_indices"),
+                )
+                .filter(pl.col("dup_count") > 1)
+                .sort("dup_count", descending=True)
+            )
+
+        return unique_values, len(unique_values), dup_report

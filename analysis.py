@@ -932,11 +932,19 @@ if __name__ == "__main__":
         logger.info("Total number of videos before filtering: {}.",
                     dataset_stats.calculate_total_videos(df_mapping))
 
-        country, number = metrics_cache.get_unique_values(df_mapping, "iso3")
+        country, number, _ = metrics_cache.get_unique_values(df_mapping, "iso3")
         logger.info(f"Total number of countries and territories before filtering: {number}.")
 
-        city_country, number = metrics_cache.get_unique_values(df_mapping, ["city", "state", "iso3"])
-        logger.info(f"Total number of city+country pairs before filtering: {number}.")
+        city_state_iso3, number, dup_report = metrics_cache.get_unique_values(
+            df_mapping,
+            ["city", "state", "iso3"],
+            return_duplicates=True,
+        )
+
+        logger.info(f"Total number of unique city+state+iso3 keys: {number}.")
+
+        if dup_report is not None and dup_report.height > 0:
+            logger.warning(f"Duplicated keys:\n{dup_report}")
 
         # Limit countries if required
         countries_include = common.get_configs("countries_analyse")
@@ -1833,11 +1841,19 @@ if __name__ == "__main__":
         logger.info("Total number of videos after filtering: {}.",
                     dataset_stats.calculate_total_videos(df_mapping))
 
-        country, number = metrics_cache.get_unique_values(df_mapping, "iso3")
+        country, number, _ = metrics_cache.get_unique_values(df_mapping, "iso3")
         logger.info(f"Total number of countries and territories after filtering: {number}.")
 
-        city_country, number = metrics_cache.get_unique_values(df_mapping, ["city", "state", "iso3"])
-        logger.info(f"Total number of city+country pairs before filtering: {number}.")
+        city_state_iso3, number, dup_report = metrics_cache.get_unique_values(
+            df_mapping,
+            ["city", "state", "iso3"],
+            return_duplicates=True,
+        )
+
+        logger.info(f"Total number of unique city+state+iso3 keys after filtering: {number}.")
+
+        if dup_report is not None and dup_report.height > 0:
+            logger.warning(f"Duplicated keys:\n{dup_report}")
 
         df_mapping = mapping_enrich.add_speed_and_time_to_mapping(
             df_mapping=df_mapping,
