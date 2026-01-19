@@ -324,13 +324,9 @@ class Metrics_cache:
     def clear_cache(cls) -> None:
         cls._all_metrics_cache.clear()
 
-    def get_unique_values(
-        self,
-        df: pl.DataFrame,
-        value: str | list[str] | tuple[str, ...],
-        null_placeholder: str = "__NULL__",
-        return_duplicates: bool = False,
-    ) -> tuple[UniqueValues, int, pl.DataFrame | None]:
+    def get_unique_values(self, df: pl.DataFrame, value: str | list[str] | tuple[str, ...],
+                          null_placeholder: str = "__NULL__", return_duplicates: bool = False
+                          ) -> tuple[UniqueValues, int, pl.DataFrame | None]:
         """
         Returns (unique_values, count, dup_report).
 
@@ -360,7 +356,7 @@ class Metrics_cache:
 
         dup_report: pl.DataFrame | None = None
         if return_duplicates:
-            keyed = df.with_row_count("row_index").with_columns(key_exprs)
+            keyed = df.with_row_index("row_index").with_columns(key_exprs)
 
             dup_report = (
                 keyed.group_by(cols)
