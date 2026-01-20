@@ -1,105 +1,201 @@
-from __future__ import annotations
+"""
+metrics_cache.py
 
-import os
+Purpose
+-------
+Compute and cache per-video detection metrics derived from YOLO CSV outputs, then wrap/aggregate
+those metrics via Grouping.city_country_wrapper() using the mapping dataframe.
+
+Key design points
+-----------------
+- Uses a class-level cache so multiple downstream calls do not re-scan the filesystem or re-read CSVs.
+- Indexes CSV files once per compute run (fast lookup by filename/prefix).
+- Computes *rates per minute* for most object classes (unique object IDs per minute).
+- Computes a specialized "cellphones per person" normalized measure.
+
+Compatibility / linting
+-----------------------
+- Avoids Python 3.10-only typing features such as:
+    - typing.TypeAlias
+    - PEP 604 unions: X | Y
+  and avoids PEP 585 generics such as list[str], set[str], dict[str, str] which can trigger
+  mypy/pylint issues depending on configured python_version.
+"""
+
 import ast
+import os
 import re
-from tqdm import tqdm
-import common
-from typing import Dict, Any, ClassVar, TypeAlias
+from typing import Any, ClassVar, Dict, Iterable, List, Optional, Sequence, Set, Tuple, Union
 
 import polars as pl
+from tqdm import tqdm
 
+import common
 from custom_logger import CustomLogger
-from utils.core.metadata import MetaData
 from utils.core.grouping import Grouping
+from utils.core.metadata import MetaData
 
-metadata_class = MetaData()
-grouping_class = Grouping()
-logger = CustomLogger(__name__)  # use custom logger
+# ------------------------------------------------------------------------------
+# Constants (YOLO class IDs) used by the project
+# ------------------------------------------------------------------------------
+YOLO_PERSON = 0
+YOLO_BICYCLE = 1
+YOLO_CAR = 2
+YOLO_MOTORCYCLE = 3
+YOLO_BUS = 5
+YOLO_TRUCK = 7
+YOLO_TRAFFIC_SIGN_IDS = (9, 11)
+YOLO_CELLPHONE = 67
 
-UniqueValue: TypeAlias = str | tuple[str, ...]
-UniqueValues: TypeAlias = set[UniqueValue]
+# ------------------------------------------------------------------------------
+# Type aliases (kept compatible with older Python tooling)
+# ------------------------------------------------------------------------------
+UniqueValue = Union[str, Tuple[str, ...]]
+UniqueValues = Set[UniqueValue]
+
+# ------------------------------------------------------------------------------
+# Shared helpers (external dependencies)
+# ------------------------------------------------------------------------------
+_METADATA = MetaData()
+_GROUPING = Grouping()
+_LOGGER = CustomLogger(__name__)
 
 
-class Metrics_cache:
-    def __init__(self) -> None:
-        pass
+class MetricsCache:
+    """
+    Compute and cache metrics derived from YOLO detection CSVs.
 
-    # class-level cache to store metrics for all video files, avoids redundant computation
+    Public entrypoints
+    ------------------
+    - calculate_cellphones(df_mapping)
+    - calculate_traffic_signs(df_mapping)
+    - calculate_traffic(df_mapping, ...flags...)
+    - get_unique_values(df, value, ...)
+    - clear_cache()
+
+    Cache format
+    ------------
+    _all_metrics_cache is a dictionary mapping metric name -> wrapped output from Grouping.city_country_wrapper().
+    Example keys:
+      "cellphones", "traffic_signs", "vehicles", "bicycles", "cars", "motorcycles", "buses", "trucks", "persons"
+    """
+
+    # Class-level cache: avoids recomputation across calls within the same process.
     _all_metrics_cache: ClassVar[Dict[str, Any]] = {}
 
+    # --------------------------------------------------------------------------
+    # CSV indexing and parsing helpers
+    # --------------------------------------------------------------------------
     @staticmethod
-    def _parse_videos_cell(videos_cell: str | None) -> list[str]:
+    def _parse_videos_cell(videos_cell: Optional[str]) -> List[str]:
         """
-        Extract video ids robustly from strings like:
+        Extract video IDs robustly from the mapping cell content.
+
+        The mapping file may store values like:
           [abc]
           "[abc,def]"
           ["abc","def"]
           []
+        We treat any token matching [A-Za-z0-9_-]+ as an ID component.
         """
         if not isinstance(videos_cell, str):
             return []
-        # same intent as your original: extract tokens like ids (letters/digits/_/-)
         return re.findall(r"[\w-]+", videos_cell)
 
+    @staticmethod
+    def _index_csv_files(data_folders: Sequence[str], subfolders: Sequence[str]) -> Dict[str, str]:
+        """
+        Build a filename -> full_path index for detection CSVs.
+
+        This allows O(1) lookup once we know the exact filename, and quick prefix checks when only
+        vid/start_time is known.
+        """
+        csv_index: Dict[str, str] = {}
+        for folder_path in data_folders:
+            for sub in subfolders:
+                sub_path = os.path.join(folder_path, sub)
+                if not os.path.exists(sub_path):
+                    continue
+
+                for fname in os.listdir(sub_path):
+                    if fname.endswith(".csv"):
+                        csv_index[fname] = os.path.join(sub_path, fname)
+
+        return csv_index
+
+    @staticmethod
+    def _extract_fps_from_filename(vid: str, start_time: str, filename: str) -> Optional[int]:
+        """
+        Extract FPS from filenames matching:
+            {vid}_{start_time}_{fps}.csv
+
+        Returns:
+            int FPS if pattern matches, otherwise None.
+        """
+        pattern = r"^%s_%s_(\d+)\.csv$" % (re.escape(str(vid)), re.escape(str(start_time)))
+        match = re.match(pattern, filename)
+        if not match:
+            return None
+        return int(match.group(1))
+
+    @staticmethod
+    def _count_unique_objects(df: pl.DataFrame, yolo_ids: Iterable[int]) -> int:
+        """
+        Count unique 'unique-id' values where 'yolo-id' is in yolo_ids.
+
+        Notes:
+        - Casts columns defensively to handle string-typed CSV columns.
+        - Returns 0 if required columns are missing or result is empty.
+        """
+        required = {"yolo-id", "unique-id"}
+        if not required.issubset(set(df.columns)):
+            return 0
+
+        filtered = df.filter(pl.col("yolo-id").cast(pl.Int64, strict=False).is_in(list(yolo_ids)))
+        if filtered.height == 0:
+            return 0
+
+        # Polars scalar extraction: select -> item()
+        return int(filtered.select(pl.col("unique-id").n_unique()).item())
+
+    # --------------------------------------------------------------------------
+    # Core compute path
+    # --------------------------------------------------------------------------
     @classmethod
     def _compute_all_metrics(cls, df_mapping: pl.DataFrame) -> None:
         """
-        Computes and caches all traffic and object detection metrics for the given video mapping DataFrame.
+        Compute and cache all metrics for the provided mapping DataFrame.
 
-        This method processes mapping information for video files, scans associated CSV detection results,
-        computes summary metrics per video (such as cell phone usage per person, object counts per minute for
-        various vehicle types, traffic signs, and persons), and caches the results grouped and wrapped by city/country.
-        The results are stored in a class-level cache to avoid repeated computation.
+        Expected df_mapping columns (minimum):
+          - videos
+          - start_time
+          - time_of_day
 
-        Args:
-            df_mapping (pandas.DataFrame): A DataFrame containing metadata about video files,
-                with columns expected to include 'videos', 'start_time', and 'time_of_day'.
-                Each row describes a set of related video segments.
-
-        Side Effects:
-            Updates the class-level cache variable `_all_metrics_cache` with a dictionary containing
-            all metrics, each mapped via `wrapper_class.city_country_wrapper` for aggregation.
-
-        Metrics computed (keys in cache):
-            - "cellphones": cell phone detections per person, normalized for time
-            - "traffic_signs": count of detected traffic signs (YOLO ids 9, 11)
-            - "vehicles": count of all vehicles (YOLO ids 2, 3, 5, 7)
-            - "bicycles": count of bicycles (YOLO id 1)
-            - "cars": count of cars (YOLO id 2)
-            - "motorcycles": count of motorcycles (YOLO id 3)
-            - "buses": count of buses (YOLO id 5)
-            - "trucks": count of trucks (YOLO id 7)
-            - "persons": count of people (YOLO id 0)
+        In addition, MetaData.find_values_with_video_id() must be able to locate:
+          - start timestamp (seconds)
+          - end timestamp (seconds)
+          - fps (frames per second)
+        from the mapping for a given key: "{vid}_{start_time}_{fps}"
         """
-
-        # List of data folders containing detection CSVs
+        # 1) Build an index of available detection CSVs
         data_folders = common.get_configs("data")
-        csv_files: Dict[str, str] = {}
+        subfolders = common.get_configs("sub_domain")
+        csv_files = cls._index_csv_files(data_folders, subfolders)
 
-        # Index all CSV files from bbox and seg subfolders for quick lookup
-        for folder_path in data_folders:
-            for subfolder in common.get_configs("sub_domain"):
-                subfolder_path = os.path.join(folder_path, subfolder)
-                if not os.path.exists(subfolder_path):
-                    continue
-                for file in os.listdir(subfolder_path):
-                    if file.endswith(".csv"):
-                        csv_files[file] = os.path.join(subfolder_path, file)
+        # 2) Prepare metric layers as raw per-video dictionaries (video_key -> metric_value)
+        cellphone_metric: Dict[str, float] = {}
+        traffic_signs_metric: Dict[str, float] = {}
+        vehicles_metric: Dict[str, float] = {}
+        bicycles_metric: Dict[str, float] = {}
+        cars_metric: Dict[str, float] = {}
+        motorcycles_metric: Dict[str, float] = {}
+        buses_metric: Dict[str, float] = {}
+        trucks_metric: Dict[str, float] = {}
+        persons_metric: Dict[str, float] = {}
 
-        cellphone_info: Dict[str, float] = {}
-        traffic_signs_layer: Dict[str, float] = {}
-        vehicle_layer: Dict[str, float] = {}
-        bicycle_layer: Dict[str, float] = {}
-        car_layer: Dict[str, float] = {}
-        motorcycle_layer: Dict[str, float] = {}
-        bus_layer: Dict[str, float] = {}
-        truck_layer: Dict[str, float] = {}
-        person_layer: Dict[str, float] = {}
+        min_conf = float(common.get_configs("min_confidence"))
 
-        min_conf = common.get_configs("min_confidence")
-
-        # Iterate mapping rows (Polars)
+        # 3) Iterate mapping rows (Polars)
         mapping_iter = df_mapping.select(["videos", "start_time", "time_of_day"]).iter_rows(named=True)
 
         for row in tqdm(mapping_iter, total=df_mapping.height, desc="Analysing the csv files:"):
@@ -109,196 +205,195 @@ class Metrics_cache:
 
             video_ids = cls._parse_videos_cell(videos_cell)
 
+            # start_time/time_of_day appear to be stored as python-literal strings (lists of lists).
             try:
                 start_times = ast.literal_eval(start_time_cell) if isinstance(start_time_cell, str) else None
                 time_of_day = ast.literal_eval(time_of_day_cell) if isinstance(time_of_day_cell, str) else None
             except Exception:
+                # Malformed cells should not crash the run; skip this row.
                 continue
 
             if not (isinstance(start_times, list) and isinstance(time_of_day, list)):
                 continue
 
-            # Loop through all video_id + start_time pairs
+            # Each mapping row may reference multiple vids; each vid has multiple segments.
             for vid, start_times_list, time_of_day_list in zip(video_ids, start_times, time_of_day):
                 if not isinstance(start_times_list, list) or not isinstance(time_of_day_list, list):
                     continue
 
-                for start_time, time_of_day_value in zip(start_times_list, time_of_day_list):
-                    prefix = f"{vid}_{start_time}_"
+                for start_time, _tod in zip(start_times_list, time_of_day_list):
+                    # Identify a CSV by prefix {vid}_{start_time}_ then parse fps from the filename.
+                    prefix = "%s_%s_" % (vid, start_time)
 
-                    matching_files = [
-                        fname for fname in csv_files
-                        if fname.startswith(prefix) and fname.endswith(".csv")
-                    ]
-                    if not matching_files:
-                        logger.warning(f"[WARNING] File not found for prefix: {prefix}")
+                    matches = [fname for fname in csv_files.keys() if fname.startswith(prefix) and fname.endswith(".csv")]  # noqa: E501
+                    if not matches:
+                        _LOGGER.warning("[WARNING] File not found for prefix: %s", prefix)
                         continue
-                    elif len(matching_files) > 1:
-                        logger.warning(
-                            f"[WARNING] Multiple files found for prefix: {prefix}, using the first one: {matching_files[0]}"  # noqa: E501
+
+                    if len(matches) > 1:
+                        _LOGGER.warning(
+                            "[WARNING] Multiple files found for prefix: %s, using first: %s",
+                            prefix,
+                            matches[0],
                         )
 
-                    filename = matching_files[0]
-
-                    # Extract fps using regex
-                    match = re.match(rf"{re.escape(str(vid))}_{re.escape(str(start_time))}_(\d+)\.csv", filename)
-                    if match:
-                        fps = int(match.group(1))
-                    else:
-                        logger.error(f"[ERROR] Could not extract fps from filename: {filename}")
+                    fps = cls._extract_fps_from_filename(str(vid), str(start_time), matches[0])
+                    if fps is None:
+                        _LOGGER.error("[ERROR] Could not extract fps from filename: %s", matches[0])
                         continue
 
-                    filename = f"{vid}_{start_time}_{fps}.csv"
-                    if filename not in csv_files:
+                    filename = "%s_%s_%s.csv" % (vid, start_time, fps)
+                    file_path = csv_files.get(filename)
+                    if not file_path:
                         continue
 
-                    file_path = csv_files[filename]
-
-                    # Find video meta details (start, end, city, location, etc.)
-                    # Assumes MetaData helper accepts Polars df_mapping (as per your request)
-                    result = metadata_class.find_values_with_video_id(df_mapping, f"{vid}_{start_time}_{fps}")
-                    if result is None:
+                    # 4) Use mapping metadata to compute segment duration
+                    key_for_meta = "%s_%s_%s" % (vid, start_time, fps)
+                    meta = _METADATA.find_values_with_video_id(df_mapping, key_for_meta)
+                    if meta is None:
                         continue
 
-                    start = result[1]
-                    end = result[2]
-                    fps = result[17]
-                    duration = end - start  # seconds
-                    video_key = f"{vid}_{start_time}_{fps}"
+                    # NOTE: These indices come from your existing MetaData contract.
+                    # If you can change MetaData to return a dict/namedtuple, that will be safer.
+                    start_sec = meta[1]
+                    end_sec = meta[2]
+                    fps_from_meta = meta[17]
 
-                    # Load detection data for this video segment (Polars)
+                    # Prefer the FPS from metadata if present/valid.
                     try:
-                        dataframe = pl.read_csv(file_path)
-                    except Exception as e:
-                        logger.warning(f"[WARNING] Failed reading {file_path}: {e}")
+                        fps_final = int(fps_from_meta)
+                    except Exception:
+                        fps_final = fps
+
+                    try:
+                        duration = float(end_sec) - float(start_sec)  # type: ignore
+                    except Exception:
                         continue
 
-                    if "confidence" not in dataframe.columns or "yolo-id" not in dataframe.columns or "unique-id" not in dataframe.columns:  # noqa: E501
+                    if duration <= 0:
                         continue
 
-                    # Keep only rows with confidence >= min_conf
-                    dataframe = dataframe.filter(
-                        pl.col("confidence").cast(pl.Float64, strict=False) >= float(min_conf)
-                    )
-                    if dataframe.height == 0:
-                        # still record zero rates for non-cellphone metrics if desired; original code skips naturally
+                    video_key = "%s_%s_%s" % (vid, start_time, fps_final)
+
+                    # 5) Read detection CSV and filter by confidence
+                    try:
+                        df = pl.read_csv(file_path)
+                    except Exception as exc:
+                        _LOGGER.warning("[WARNING] Failed reading %s: %s", file_path, exc)
                         continue
 
-                    # Helpers to count unique object ids for yolo-id filters
-                    def _n_unique_for_yolo_ids(ids: list[int]) -> int:
-                        return int(
-                            dataframe
-                            .filter(pl.col("yolo-id").cast(pl.Int64, strict=False).is_in(ids))
-                            .select(pl.col("unique-id").n_unique())
-                            .item()
-                        )
+                    required_cols = {"confidence", "yolo-id", "unique-id"}
+                    if not required_cols.issubset(set(df.columns)):
+                        continue
 
-                    def _n_unique_for_yolo_id(i: int) -> int:
-                        return int(
-                            dataframe
-                            .filter(pl.col("yolo-id").cast(pl.Int64, strict=False) == i)
-                            .select(pl.col("unique-id").n_unique())
-                            .item()
-                        )
+                    df = df.filter(pl.col("confidence").cast(pl.Float64, strict=False) >= min_conf)
+                    if df.height == 0:
+                        # Nothing above threshold; still record zeros for rate metrics.
+                        traffic_signs_metric[video_key] = 0.0
+                        vehicles_metric[video_key] = 0.0
+                        bicycles_metric[video_key] = 0.0
+                        cars_metric[video_key] = 0.0
+                        motorcycles_metric[video_key] = 0.0
+                        buses_metric[video_key] = 0.0
+                        trucks_metric[video_key] = 0.0
+                        persons_metric[video_key] = 0.0
+                        continue
 
-                    # ---- CELL PHONES (YOLO 67): per person, normalised ----
-                    mobile_ids = _n_unique_for_yolo_id(67)
-                    num_person = _n_unique_for_yolo_id(0)
-                    if num_person > 0 and mobile_ids > 0 and duration > 0:
-                        avg_cellphone = ((mobile_ids * 60) / duration / num_person) * 1000
-                        cellphone_info[video_key] = float(avg_cellphone)
+                    # 6) Compute unique counts
+                    persons = cls._count_unique_objects(df, [YOLO_PERSON])
+                    cellphones = cls._count_unique_objects(df, [YOLO_CELLPHONE])
 
-                    # ---- TRAFFIC SIGNS (YOLO 9, 11) ----
-                    traffic_sign_n = _n_unique_for_yolo_ids([9, 11])
-                    traffic_signs_layer[video_key] = float((traffic_sign_n / duration) * 60) if duration > 0 else 0.0
+                    traffic_signs = cls._count_unique_objects(df, YOLO_TRAFFIC_SIGN_IDS)
+                    vehicles = cls._count_unique_objects(df, [YOLO_CAR, YOLO_MOTORCYCLE, YOLO_BUS, YOLO_TRUCK])
+                    bicycles = cls._count_unique_objects(df, [YOLO_BICYCLE])
+                    cars = cls._count_unique_objects(df, [YOLO_CAR])
+                    motorcycles = cls._count_unique_objects(df, [YOLO_MOTORCYCLE])
+                    buses = cls._count_unique_objects(df, [YOLO_BUS])
+                    trucks = cls._count_unique_objects(df, [YOLO_TRUCK])
 
-                    # ---- VEHICLES (YOLO 2,3,5,7) ----
-                    vehicle_n = _n_unique_for_yolo_ids([2, 3, 5, 7])
-                    vehicle_layer[video_key] = float((vehicle_n / duration) * 60) if duration > 0 else 0.0
+                    # 7) Convert to per-minute rates (unique objects per minute)
+                    per_min = 60.0 / duration
 
-                    # ---- BICYCLES (YOLO 1) ----
-                    bicycle_n = _n_unique_for_yolo_id(1)
-                    bicycle_layer[video_key] = float((bicycle_n / duration) * 60) if duration > 0 else 0.0
+                    traffic_signs_metric[video_key] = float(traffic_signs) * per_min
+                    vehicles_metric[video_key] = float(vehicles) * per_min
+                    bicycles_metric[video_key] = float(bicycles) * per_min
+                    cars_metric[video_key] = float(cars) * per_min
+                    motorcycles_metric[video_key] = float(motorcycles) * per_min
+                    buses_metric[video_key] = float(buses) * per_min
+                    trucks_metric[video_key] = float(trucks) * per_min
+                    persons_metric[video_key] = float(persons) * per_min
 
-                    # ---- CARS (YOLO 2) ----
-                    car_n = _n_unique_for_yolo_id(2)
-                    car_layer[video_key] = float((car_n / duration) * 60) if duration > 0 else 0.0
+                    # 8) Cellphones metric: per-person normalized measure
+                    # Your original formula:
+                    #   avg_cellphone = ((cellphones * 60) / duration / persons) * 1000
+                    if persons > 0 and cellphones > 0:
+                        cellphone_metric[video_key] = ((float(cellphones) * 60.0) / duration / float(persons)) * 1000.0
 
-                    # ---- MOTORCYCLES (YOLO 3) ----
-                    motorcycle_n = _n_unique_for_yolo_id(3)
-                    motorcycle_layer[video_key] = float((motorcycle_n / duration) * 60) if duration > 0 else 0.0
-
-                    # ---- BUSES (YOLO 5) ----
-                    bus_n = _n_unique_for_yolo_id(5)
-                    bus_layer[video_key] = float((bus_n / duration) * 60) if duration > 0 else 0.0
-
-                    # ---- TRUCKS (YOLO 7) ----
-                    truck_n = _n_unique_for_yolo_id(7)
-                    truck_layer[video_key] = float((truck_n / duration) * 60) if duration > 0 else 0.0
-
-                    # ---- PERSONS (YOLO 0) ----
-                    person_n = num_person
-                    person_layer[video_key] = float((person_n / duration) * 60) if duration > 0 else 0.0
-
-        metric_dicts = [
-            ("cellphones", cellphone_info),
-            ("traffic_signs", traffic_signs_layer),
-            ("vehicles", vehicle_layer),
-            ("bicycles", bicycle_layer),
-            ("cars", car_layer),
-            ("motorcycles", motorcycle_layer),
-            ("buses", bus_layer),
-            ("trucks", truck_layer),
-            ("persons", person_layer),
+        # 9) Wrap metrics with grouping layer and store into the class cache
+        metric_layers: List[Tuple[str, Dict[str, float]]] = [
+            ("cellphones", cellphone_metric),
+            ("traffic_signs", traffic_signs_metric),
+            ("vehicles", vehicles_metric),
+            ("bicycles", bicycles_metric),
+            ("cars", cars_metric),
+            ("motorcycles", motorcycles_metric),
+            ("buses", buses_metric),
+            ("trucks", trucks_metric),
+            ("persons", persons_metric),
         ]
 
         cls._all_metrics_cache = {}
 
-        for i, (metric_name, metric_layer) in enumerate(metric_dicts, 1):
-            logger.info(f"[{i}/{len(metric_dicts)}] Wrapping '{metric_name}' ...")
-            wrapped = grouping_class.city_country_wrapper(
-                input_dict=metric_layer,
+        for idx, (name, layer) in enumerate(metric_layers, start=1):
+            _LOGGER.info("[%s/%s] Wrapping '%s' ...", idx, len(metric_layers), name)
+            wrapped = _GROUPING.city_country_wrapper(
+                input_dict=layer,
                 mapping=df_mapping,
                 show_progress=True,
             )
-            cls._all_metrics_cache[metric_name] = wrapped
+            cls._all_metrics_cache[name] = wrapped
 
     @classmethod
     def _ensure_cache(cls, df_mapping: pl.DataFrame) -> None:
-        """
-        Ensure that the class-level metrics cache is populated.
-        If the cache is empty, computes all metrics for the provided mapping DataFrame.
-        """
+        """Compute metrics if cache is empty."""
         if not cls._all_metrics_cache:
             cls._compute_all_metrics(df_mapping)
 
+    # --------------------------------------------------------------------------
+    # Public API: metric getters
+    # --------------------------------------------------------------------------
     @classmethod
-    def calculate_cellphones(cls, df_mapping: pl.DataFrame):
-        """
-        Return the cached cell phone metric, computing all metrics if needed.
-        """
+    def calculate_cellphones(cls, df_mapping: pl.DataFrame) -> Any:
+        """Return wrapped cellphone metric (computes cache on first call)."""
         cls._ensure_cache(df_mapping)
         return cls._all_metrics_cache["cellphones"]
 
     @classmethod
-    def calculate_traffic_signs(cls, df_mapping: pl.DataFrame):
-        """
-        Return the cached traffic sign metric, computing all metrics if needed.
-        """
+    def calculate_traffic_signs(cls, df_mapping: pl.DataFrame) -> Any:
+        """Return wrapped traffic-sign metric (computes cache on first call)."""
         cls._ensure_cache(df_mapping)
         return cls._all_metrics_cache["traffic_signs"]
 
     @classmethod
-    def calculate_traffic(cls, df_mapping: pl.DataFrame, person: int = 0, bicycle: int = 0, motorcycle: int = 0,
-                          car: int = 0, bus: int = 0, truck: int = 0):
+    def calculate_traffic(
+        cls,
+        df_mapping: pl.DataFrame,
+        person: bool = False,
+        bicycle: bool = False,
+        motorcycle: bool = False,
+        car: bool = False,
+        bus: bool = False,
+        truck: bool = False,
+    ) -> Any:
         """
-        Return the requested vehicle/person/bicycle metric from the cache, computing if needed.
-        Arguments specify which traffic metric to return. If multiple flags are set, precedence is given as:
-        - 'person' if set
-        - 'bicycle' if set
-        - if all of motorcycle, car, bus, truck are set: returns 'vehicles'
-        - otherwise, returns individual type if its flag is set
-        - fallback is 'vehicles'
+        Return a requested traffic-related metric from the cache.
+
+        Selection logic (kept consistent with your original intent):
+        - If person=True: return persons
+        - Else if bicycle=True: return bicycles
+        - Else if motorcycle=car=bus=truck=True: return vehicles (aggregate)
+        - Else return the first specific vehicle type requested
+        - Else fallback: vehicles
         """
         cls._ensure_cache(df_mapping)
 
@@ -306,6 +401,7 @@ class Metrics_cache:
             return cls._all_metrics_cache["persons"]
         if bicycle:
             return cls._all_metrics_cache["bicycles"]
+
         if motorcycle and car and bus and truck:
             return cls._all_metrics_cache["vehicles"]
         if car:
@@ -316,48 +412,50 @@ class Metrics_cache:
             return cls._all_metrics_cache["buses"]
         if truck:
             return cls._all_metrics_cache["trucks"]
-        # Fallback to all vehicles
+
         return cls._all_metrics_cache["vehicles"]
 
-    # Optional helper to force a rebuild, e.g. after data changes
     @classmethod
     def clear_cache(cls) -> None:
+        """Clear cached metrics (useful if input data changes)."""
         cls._all_metrics_cache.clear()
 
-    def get_unique_values(self, df: pl.DataFrame, value: str | list[str] | tuple[str, ...],
-                          null_placeholder: str = "__NULL__", return_duplicates: bool = False
-                          ) -> tuple[UniqueValues, int, pl.DataFrame | None]:
+    # --------------------------------------------------------------------------
+    # Utility: unique value extraction + duplicate reporting
+    # --------------------------------------------------------------------------
+    def get_unique_values(
+        self,
+        df: pl.DataFrame,
+        value: Union[str, Sequence[str]],
+        null_placeholder: str = "__NULL__",
+        return_duplicates: bool = False,
+    ) -> Tuple[UniqueValues, int, Optional[pl.DataFrame]]:
         """
         Returns (unique_values, count, dup_report).
 
-        - unique_values: set[str] for single-column keys, set[tuple[str, ...]] for composite keys
-        - count: number of unique keys
-        - dup_report: Polars DataFrame describing duplicated keys, or None if return_duplicates=False
-
-        Duplicate report includes:
-          - key columns (value)
-          - dup_count (how many times the key appears)
-          - row_indices (which row numbers have that key)
+        unique_values:
+          - set[str] for single-column keys
+          - set[tuple[str, ...]] for composite keys
         """
-
         cols = list(value) if isinstance(value, (list, tuple)) else [value]
 
-        key_exprs = [
-            pl.col(c).cast(pl.Utf8).fill_null(null_placeholder).alias(c) for c in cols
-        ]
-
+        key_exprs = [pl.col(c).cast(pl.Utf8).fill_null(null_placeholder).alias(c) for c in cols]  # type: ignore
         keys_only = df.select(key_exprs)
 
-        if len(cols) == 1:
-            s = keys_only.get_column(cols[0])
-            unique_values: UniqueValues = set(s.unique().to_list())
-        else:
-            unique_values = set(keys_only.unique().rows())
+        # Build as UniqueValues explicitly so Pylance does not infer set[Any] unions.
+        unique_values: UniqueValues = set()
 
-        dup_report: pl.DataFrame | None = None
+        if len(cols) == 1:
+            series = keys_only.get_column(cols[0])  # type: ignore
+            for v in series.unique().to_list():
+                unique_values.add(str(v))
+        else:
+            for row in keys_only.unique().rows():
+                unique_values.add(tuple(str(v) for v in row))
+
+        dup_report: Optional[pl.DataFrame] = None
         if return_duplicates:
             keyed = df.with_row_index("row_index").with_columns(key_exprs)
-
             dup_report = (
                 keyed.group_by(cols)
                 .agg(

@@ -27,7 +27,7 @@ from utils.analytics.events import Events
 from utils.analytics.geo import Geo
 from utils.analytics.io import IO
 from utils.analytics.mapping_enrichment import Mapping_Enrich
-from utils.analytics.metrics_cache import Metrics_cache
+from utils.analytics.metrics_cache import MetricsCache
 from utils.core.dataset_stats import Dataset_Stats
 from utils.core.tools import Tools
 from utils.crossing.detection import Detection
@@ -60,7 +60,7 @@ stacked = Stacked()
 distribution = Distributions()
 
 dataset_stats = Dataset_Stats()
-metrics_cache = Metrics_cache()
+metrics_cache = MetricsCache()
 analytics_IO = IO()
 duration = Duration()
 mapping_enrich = Mapping_Enrich()
@@ -1228,25 +1228,25 @@ if __name__ == "__main__":
         cellphone_city = metrics_cache.calculate_cellphones(df_mapping)
 
         logger.info("Calculating counts of detected vehicles.")
-        vehicle_city = metrics_cache.calculate_traffic(df_mapping, motorcycle=1, car=1, bus=1, truck=1)
+        vehicle_city = metrics_cache.calculate_traffic(df_mapping, motorcycle=True, car=True, bus=True, truck=True)
 
         logger.info("Calculating counts of detected bicycles.")
-        bicycle_city = metrics_cache.calculate_traffic(df_mapping, bicycle=1)
+        bicycle_city = metrics_cache.calculate_traffic(df_mapping, bicycle=True)
 
         logger.info("Calculating counts of detected cars (subset of vehicles).")
-        car_city = metrics_cache.calculate_traffic(df_mapping, car=1)
+        car_city = metrics_cache.calculate_traffic(df_mapping, car=True)
 
         logger.info("Calculating counts of detected motorcycles (subset of vehicles).")
-        motorcycle_city = metrics_cache.calculate_traffic(df_mapping, motorcycle=1)
+        motorcycle_city = metrics_cache.calculate_traffic(df_mapping, motorcycle=True)
 
         logger.info("Calculating counts of detected buses (subset of vehicles).")
-        bus_city = metrics_cache.calculate_traffic(df_mapping, bus=1)
+        bus_city = metrics_cache.calculate_traffic(df_mapping, bus=True)
 
         logger.info("Calculating counts of detected trucks (subset of vehicles).")
-        truck_city = metrics_cache.calculate_traffic(df_mapping, truck=1)
+        truck_city = metrics_cache.calculate_traffic(df_mapping, truck=True)
 
         logger.info("Calculating counts of detected persons.")
-        person_city = metrics_cache.calculate_traffic(df_mapping, person=1)
+        person_city = metrics_cache.calculate_traffic(df_mapping, person=True)
 
         logger.info("Calculating counts of detected crossing events with traffic lights.")
         cross_evnt_city = events.crossing_event_wt_traffic_light(df_mapping, data)

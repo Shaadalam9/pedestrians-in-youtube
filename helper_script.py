@@ -6,16 +6,14 @@ from pytubefix import YouTube
 from pytubefix.cli import on_progress
 from moviepy.video.io.VideoFileClip import VideoFileClip
 import cv2
-from ultralytics import YOLO
+from ultralytics import YOLO  # type: ignore
 from collections import defaultdict
-from typing import Optional, Set, Any
+from typing import Optional, Set
 import shutil
 import numpy as np
 import pandas as pd
 import world_bank_data as wb
-import yt_dlp
 import pycountry
-from pycountry_convert import country_name_to_country_alpha2, country_alpha2_to_continent_code
 from custom_logger import CustomLogger
 import common
 import torch
@@ -147,23 +145,112 @@ class Youtube_Helper:
         log_data[package_name] = datetime.date.today().isoformat()
         self.save_upgrade_log(log_data)
 
-    def upgrade_package_if_needed(self, package_name):
+    def upgrade_package_if_needed(self, package_name: str) -> None:
         """
-        Upgrades a given Python package using pip if it hasn't been attempted today.
-        Parameters: package_name (str): The name of the package to upgrade.
+        Upgrade a Python package using `uv` (pip-compatible mode), once per day.
+
+        This method avoids repeated upgrade attempts within a single day by consulting
+        `was_upgraded_today(package_name)`. Upgrades are executed using uv's pip interface:
+
+            uv pip install --upgrade <package>
+
+        Cross-platform behavior:
+          - Resolves the `uv` executable via PATH (shutil.which) and common user install locations.
+          - Targets the currently running interpreter's environment by passing:
+                --python sys.executable
+            This ensures the upgrade applies to the same virtual environment (.venv) that is
+            executing this code, regardless of OS.
+
+        Parameters:
+            package_name: The distribution name to upgrade (e.g., "requests", "pydantic").
+
+        Notes:
+            If `uv` cannot be found, the method logs an error and records the attempt for today
+            to avoid repeated failures.
         """
         if self.was_upgraded_today(package_name):
-            logging.debug(f"{package_name} upgrade already attempted today. Skipping.")
+            logging.debug("%s upgrade already attempted today. Skipping.", package_name)
             return
 
+        uv_exe = Youtube_Helper._resolve_uv_executable()
+
+        if not uv_exe:
+            logging.error(
+                "Cannot upgrade %s because `uv` was not found on PATH (or common install locations).",
+                package_name,
+            )
+            # Still record the attempt to avoid retry loops.
+            self.mark_as_upgraded(package_name)
+            return
+
+        cmd = [
+            uv_exe,
+            "pip",
+            "install",
+            "--upgrade",
+            package_name,
+            # Ensures the operation applies to the environment of this running Python.
+            "--python",
+            sys.executable,
+        ]
+
         try:
-            logging.info(f"Upgrading {package_name}...")
-            subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", package_name])
-            logging.info(f"{package_name} upgraded successfully.")
+            logging.info("Upgrading %s with uv (targeting %s)...", package_name, sys.executable)
+            subprocess.check_call(cmd)
+            logging.info("%s upgraded successfully.", package_name)
             self.mark_as_upgraded(package_name)
         except subprocess.CalledProcessError as e:
-            logging.error(f"Failed to upgrade {package_name}: {e}")
-            self.mark_as_upgraded(package_name)  # still log it to avoid retrying
+            logging.error("Failed to upgrade %s with uv: %s", package_name, e)
+            # Still record the attempt to avoid retry loops.
+            self.mark_as_upgraded(package_name)
+
+    @staticmethod
+    def _resolve_uv_executable() -> str | None:
+        """
+        Resolve the `uv` executable in a cross-platform manner.
+
+        Resolution order:
+          1) Use PATH resolution via shutil.which("uv")
+          2) Check common user install locations:
+             - Unix/macOS: ~/.local/bin/uv
+             - Windows: %USERPROFILE%\\.local\\bin\\uv.exe (less common, but included)
+             - Windows: %APPDATA%\\uv\\uv.exe (possible for some installers)
+          3) Check venv scripts/bin directory (if uv is installed into the venv)
+
+        Returns:
+            Absolute path to `uv` if found; otherwise None.
+        """
+        # 1) PATH resolution
+        uv_on_path = shutil.which("uv")
+        if uv_on_path:
+            return uv_on_path
+
+        candidates: list[str] = []
+
+        home = os.path.expanduser("~")
+
+        # 2) Common user locations
+        # Unix-like
+        candidates.append(os.path.join(home, ".local", "bin", "uv"))
+
+        # Windows common knowledge: uv.exe naming
+        candidates.append(os.path.join(home, ".local", "bin", "uv.exe"))
+
+        appdata = os.environ.get("APPDATA")
+        if appdata:
+            candidates.append(os.path.join(appdata, "uv", "uv.exe"))
+
+        # 3) Venv-local (if uv installed inside this environment)
+        # Works for both Windows and Unix-like: sys.executable points into venv.
+        py_dir = os.path.dirname(sys.executable)
+        candidates.append(os.path.join(py_dir, "uv"))       # Unix-like venv: .venv/bin/uv
+        candidates.append(os.path.join(py_dir, "uv.exe"))   # Windows venv: .venv/Scripts/uv.exe
+
+        for path in candidates:
+            if path and os.path.isfile(path) and os.access(path, os.X_OK):
+                return path
+
+        return None
 
     @staticmethod
     def _wait_for_stable_file(src, checks=2, interval=0.5, timeout=30):
@@ -515,22 +602,14 @@ class Youtube_Helper:
     def download_video_with_resolution(self, vid, resolutions=["720p", "480p", "360p", "144p"], output_path="."):
         """
         Downloads a YouTube video in one of the specified resolutions and returns video details.
-        This function attempts to download the video using the pytubefix/YouTube method.
-        Parameters: vid (str): The YouTube video ID.
-        resolutions (list of str, optional): A list of preferred video resolutions.
-        output_path (str, optional): The directory where the video will be downloaded.
-        Returns: tuple or None: A tuple (video_file_path, vid, resolution, fps) if successful, or None if methods fail.
+        Uses pytubefix/YouTube only (no yt_dlp).
         """
         try:
-            # Optionally upgrade pytubefix (if configured and it is Monday)
             if self.update_package and datetime.datetime.today().weekday() == 0:
-                self.upgrade_package_if_needed("pytube")
                 self.upgrade_package_if_needed("pytubefix")
 
-            # Construct the YouTube URL.
             youtube_url = f"https://www.youtube.com/watch?v={vid}"
 
-            # Create a YouTube object using the provided client configuration.
             if self.need_authentication:
                 youtube_object = YouTube(
                     youtube_url,
@@ -545,130 +624,75 @@ class Youtube_Helper:
             selected_stream = None
             selected_resolution = None
 
-            # Iterate over the preferred resolutions to find a matching stream.
+            # 1) Preferred resolutions (exact match)
             for resolution in resolutions:
-                # Filter the streams for the current resolution.
                 video_streams = youtube_object.streams.filter(res=resolution)
                 if video_streams:
                     selected_resolution = resolution
                     logger.debug(f"Found video {vid} in {resolution}.")
-                    # Use the first available stream.
-                    if hasattr(video_streams, 'first'):
-                        selected_stream = video_streams.first()
-                    else:
-                        selected_stream = video_streams[0]
+                    selected_stream = video_streams.first() if hasattr(video_streams, "first") else video_streams[0]
                     break
 
+            # 2) Fallback logic if no preferred match
             if not selected_stream:
-                logger.error(f"{vid}: no stream available for video in the specified resolutions.")
-                return None
 
-            # Construct the file path for the downloaded video.
+                def _height(s) -> int:
+                    # Use numeric height if present; else parse '720p', '1080p60', etc.
+                    h = getattr(s, "height", None)
+                    if isinstance(h, int) and h > 0:
+                        return h
+                    res_attr = getattr(s, "resolution", None) or getattr(s, "res", None) or ""
+                    m = re.search(r"(\d{3,4})p", str(res_attr))
+                    return int(m.group(1)) if m else -1
+
+                def _is_mp4(s) -> bool:
+                    mime = getattr(s, "mime_type", "") or ""
+                    return "mp4" in mime.lower()
+
+                def _pick_prefer_progressive(streams_at_height):
+                    progressive = [s for s in streams_at_height if getattr(s, "is_progressive", False)]
+                    return progressive[0] if progressive else streams_at_height[0]
+
+                streams = list(youtube_object.streams)
+
+                # 2a) Highest available <= 720p (MP4 only; progressive preferred implicitly by height selection set)
+                le_720 = [s for s in streams if _is_mp4(s) and 0 < _height(s) <= 720]
+                if le_720:
+                    max_h = max(_height(s) for s in le_720)
+                    at_max_h = [s for s in le_720 if _height(s) == max_h]
+                    chosen = _pick_prefer_progressive(at_max_h)
+                    selected_stream = chosen
+                    selected_resolution = getattr(chosen, "resolution", None) or getattr(chosen, "res", None) or f"{max_h}p"  # noqa: E501
+                    logger.debug(f"{vid}: no preferred match; picked highest available {selected_resolution} (≤720p).")
+                else:
+                    # 2b) If none <= 720p, pick the LOWEST available > 720p (MP4 only)
+                    gt_720 = [s for s in streams if _is_mp4(s) and _height(s) > 720]
+                    if not gt_720:
+                        logger.error(f"{vid}: no MP4 stream available at any resolution.")
+                        return None
+
+                    min_h = min(_height(s) for s in gt_720)
+                    at_min_h = [s for s in gt_720 if _height(s) == min_h]
+                    chosen = _pick_prefer_progressive(at_min_h)
+
+                    selected_stream = chosen
+                    selected_resolution = getattr(chosen, "resolution", None) or getattr(chosen, "res", None) or f"{min_h}p"  # noqa: E501
+                    logger.debug(f"{vid}: no ≤720p stream; picked lowest available >720p ({selected_resolution}).")
+
             video_file_path = os.path.join(output_path, f"{vid}.mp4")
             logger.info(f"{vid}: download in {selected_resolution} started with pytubefix.")
 
-            # Download the video.
             selected_stream.download(output_path, filename=f"{vid}.mp4")
             self.video_title = youtube_object.title
+
             fps = self.get_video_fps(video_file_path)
             logger.info(f"{vid}: FPS={fps}.")
+
             return video_file_path, vid, selected_resolution, fps
 
         except Exception as e:
             logger.error(f"{vid}: pytubefix download method failed: {e}")
-            logger.info(f"{vid}: falling back to yt_dlp method.")
-
-            # ----- Fallback method: using yt_dlp -----
-            try:
-                # Optionally upgrade yt_dlp (if the configuration requires it and it is Monday)
-                if self.update_package and datetime.datetime.today().weekday() == 0:
-                    self.upgrade_package_if_needed("yt_dlp")
-
-                # Construct the YouTube URL.
-                youtube_url = f"https://www.youtube.com/watch?v={vid}"
-
-                # Extract video information (including available formats) without downloading.
-                extract_opts = {
-                    'skip_download': True,
-                    'quiet': True,
-                }
-                with yt_dlp.YoutubeDL(extract_opts) as ydl:  # type: ignore
-                    # pyright: ignore[reportArgumentType]
-                    info_dict = ydl.extract_info(youtube_url, download=False)
-
-                available_formats: list[dict[str, Any]] = info_dict.get("formats") or []
-                selected_format_str = None
-                selected_resolution = None
-
-                # Iterate over the preferred resolutions.
-                for res in resolutions:
-                    try:
-                        res_height = int(res.rstrip("p"))
-                    except ValueError:
-                        continue
-
-                    # Check for a video-only stream (no audio).
-                    video_only_found = any(
-                        fmt
-                        for fmt in available_formats
-                        if fmt.get("height") == res_height and fmt.get("acodec") == "none"
-                    )
-                    if video_only_found:
-                        selected_format_str = f"bestvideo[height={res_height}]"
-                        selected_resolution = res
-                        logger.info(f"{vid}: found video-only format in {res}.")
-                        break
-
-                    # Otherwise, check for any stream at that resolution.
-                    progressive_found = any(fmt for fmt in available_formats if fmt.get("height") == res_height)
-                    if progressive_found:
-                        selected_format_str = f"best[height={res_height}]"
-                        selected_resolution = res
-                        logger.info(f"{vid}: found progressive format in {res}. Audio will be removed.")
-                        break
-
-                if not selected_format_str:
-                    logger.error(f"{vid}: no stream available in the specified resolutions.")
-                    # Raise an exception to trigger the fallback method.
-                    raise Exception(f"{vid}: no stream available via yt_dlp")
-
-                po_token = common.get_secrets("po_token")
-
-                # Set download options.
-                download_opts = {
-                    'format': selected_format_str,
-                    'outtmpl': os.path.join(output_path, f"{vid}.%(ext)s"),
-                    'quiet': True,
-                    'postprocessors': [{
-                        'key': 'FFmpegVideoConvertor',
-                        'preferedformat': 'mp4'
-                    }],
-                    'postprocessor_args': ['-an'],
-                    'http_headers': {
-                        'Cookie': f'pot={po_token}'
-                    },
-                    'extractor_args': {
-                        'youtube': {
-                            'po_token': f'web.gvs+{po_token}'
-                        }
-                    },
-                    'cookiesfrombrowser': ('chrome',)
-                }
-
-                logger.info(f"{vid}: download in {selected_resolution} started with yt_dlp.")
-                with yt_dlp.YoutubeDL(download_opts) as ydl:  # type: ignore
-                    ydl.download([youtube_url])
-
-                # Final output file path (assuming the postprocessor outputs an MP4 file).
-                video_file_path = os.path.join(output_path, f"{vid}.mp4")
-                self.video_title = info_dict.get("title")  # type: ignore
-                fps = self.get_video_fps(video_file_path)
-                logger.info(f"FPS of {vid}: {fps}.")
-                return video_file_path, vid, selected_resolution, fps
-
-            except Exception as e:
-                logger.error(f"{vid}: yt_dlp download method failed: {e}.")
-                return None
+            return None
 
     def get_video_fps(self, video_file_path):
         """
@@ -703,43 +727,87 @@ class Youtube_Helper:
     @staticmethod
     def get_video_resolution_label(video_path: str) -> str:
         """
-        Return the resolution label (e.g., '720p', '1080p') for a given video file.
-        This method inspects the video file to determine its frame height and then maps
-        it to a common resolution label. If the resolution does not match a well-known
-        standard, it falls back to returning <height>p.
-        Args: video_path (str): Path to the video file.
-        Returns: str: Resolution label (e.g., "720p", "1080p", "2160p").
-        Falls back to "<height>p" if no predefined label exists.
-        Raises: FileNotFoundError: If the provided video path does not exist.
-        RuntimeError: If the video file cannot be opened with OpenCV.
+        Return a resolution label for a local video file using an "exact, truthful" policy.
+
+        Policy
+        -----------------
+        - Read the frame height (pixels) from the file via OpenCV.
+        - If the height matches a known standard, return its label (e.g., "720p", "1080p").
+        - If the height is close to a known standard within a small tolerance (to account for
+          encoder/container padding such as 1088 instead of 1080), return the nearest
+          standard label.
+        - Otherwise, return the exact height in the form "<height>p" (e.g., "540p", "768p").
+
+        This approach remains compatible with the updated download selection logic, which
+        may select non-standard heights when they are the best available option.
+
+        Parameters
+        ----------
+        video_path : str
+            Path to the video file on disk.
+
+        Returns
+        -------
+        str
+            A resolution label (e.g., "144p", "360p", "720p", "1080p") or "<height>p" for
+            non-standard heights.
+
+        Raises
+        ------
+        FileNotFoundError
+            If `video_path` does not exist.
+        RuntimeError
+            If the video cannot be opened or the frame height cannot be determined.
+
+        Notes
+        -----
+        - The label is derived from frame height only (not bitrate, codec, aspect ratio, etc.).
+        - Some videos may report padded heights (e.g., 544, 736, 1088). These are mapped to
+          the nearest standard label only when within the configured tolerance.
         """
-        # Ensure the video file exists
         if not os.path.exists(video_path):
             raise FileNotFoundError(f"Video not found: {video_path}")
 
-        # Open video using OpenCV
         cap = cv2.VideoCapture(video_path)
         if not cap.isOpened():
             raise RuntimeError(f"Could not open video: {video_path}")
 
-        # Extract video frame height (resolution height in pixels)
-        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        height = int(round(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)))
         cap.release()
 
-        # Map common video resolutions to human-readable labels
+        if height <= 0:
+            raise RuntimeError(f"Could not determine frame height for video: {video_path}")
+
+        # Canonical/common heights (add more if we want "named" labels, but non-matches still fall back to "<height>p")
         labels = {
             144: "144p",
             240: "240p",
             360: "360p",
             480: "480p",
+            540: "540p",
+            576: "576p",
             720: "720p",
+            900: "900p",
             1080: "1080p",
             1440: "1440p",
             2160: "2160p",  # 4K UHD
+            4320: "4320p",  # 8K UHD
         }
 
-        # Return label if known, otherwise fallback to "<height>p"
-        return labels.get(height, f"{height}p")
+        # Small tolerance to normalize padded encodes (e.g., 1088 -> 1080).
+        tolerance_px = 16
+
+        # Exact match
+        if height in labels:
+            return labels[height]
+
+        # Nearest label within tolerance (padding normalization only)
+        closest_h = min(labels.keys(), key=lambda h: abs(height - h))
+        if abs(height - closest_h) <= tolerance_px:
+            return labels[closest_h]
+
+        # Truthful fallback for truly non-standard heights
+        return f"{height}p"
 
     def trim_video(self, input_path, output_path, start_time, end_time):
         """
@@ -1108,31 +1176,6 @@ class Youtube_Helper:
         # Save the updated DataFrame back to the same CSV
         data.to_csv(self.mapping, index=False)
         logger.info("Mapping file updated successfully with country population.")
-
-    def get_continent_from_country(self, country):
-        """
-        Returns the continent based on the country name using pycountry_convert.
-        """
-        try:
-            # Convert country name to ISO Alpha-2 code
-            alpha2_code = country_name_to_country_alpha2(country)
-
-            # Convert ISO Alpha-2 code to continent code
-            continent_code = country_alpha2_to_continent_code(alpha2_code)
-
-            # Map continent codes to continent names
-            continent_map = {
-                "AF": "Africa",
-                "AS": "Asia",
-                "EU": "Europe",
-                "NA": "North America",
-                "SA": "South America",
-                "OC": "Oceania",
-                "AN": "Antarctica"
-            }
-            return continent_map.get(continent_code, "Unknown")
-        except KeyError:
-            return "Unknown"
 
     def get_latest_gini_values(self):
         """
