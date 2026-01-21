@@ -31,6 +31,11 @@ BBOX_OUTPUT_DIRS = [
     Path("/Volumes/Alam/pedestrians_in-youtube/data/bbox"),
 ]
 
+# =========================
+# FLAG: print removed cities
+# =========================
+PRINT_REMOVED_CITIES = False  # set True to print which city rows are dropped
+
 
 # =========================
 # Parsing helpers
@@ -171,6 +176,10 @@ def build_remaining() -> None:
         if c not in df.columns:
             raise ValueError(f"Missing required column: {c}")
 
+    # Only enforce city column if printing is enabled (keeps change minimal)
+    if PRINT_REMOVED_CITIES and "city" not in df.columns:
+        raise ValueError("Missing required column: city (required when PRINT_REMOVED_CITIES=True)")
+
     has_vehicle = "vehicle_type" in df.columns
     has_upload = "upload_date" in df.columns
     has_channel = "channel" in df.columns
@@ -180,11 +189,15 @@ def build_remaining() -> None:
     kept_segments = 0
     dropped_rows = 0
 
+    removed_cities: List[str] = []  # collects city names of dropped rows (optional)
+
     for _, row in df.iterrows():
         videos = parse_bracketed_str_list(row.get("videos", ""))
         n = len(videos)
         if n == 0:
             dropped_rows += 1
+            if PRINT_REMOVED_CITIES:
+                removed_cities.append(str(row.get("city", "")).strip())
             continue
 
         st_ll = normalize_len(parse_list_of_lists(row.get("start_time", "")), n, [])
@@ -249,6 +262,8 @@ def build_remaining() -> None:
         # DROP THE WHOLE ROW if all videos are already processed (i.e., nothing remains)
         if not new_videos:
             dropped_rows += 1
+            if PRINT_REMOVED_CITIES:
+                removed_cities.append(str(row.get("city", "")).strip())
             continue
 
         out_row = dict(row)
@@ -275,6 +290,18 @@ def build_remaining() -> None:
     print(f"Segments remaining: {kept_segments}")
     print(f"Rows dropped (fully processed): {dropped_rows}")
     print(f"Rows kept: {len(out_df)} / {len(df)}")
+
+    if PRINT_REMOVED_CITIES:
+        print("\nCities removed (rows dropped):")
+        # Print unique cities while preserving first-seen order
+        seen: Set[str] = set()
+        for c in removed_cities:
+            c = c or "(missing city)"
+            if c in seen:
+                continue
+            seen.add(c)
+            print(f"  - {c}")
+        print(f"Total removed rows printed: {len(removed_cities)}")
 
 
 if __name__ == "__main__":
