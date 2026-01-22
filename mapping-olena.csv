@@ -5774,4 +5774,7 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 5773,Libivá,[Libiva],,Czechia,CZE,Europe,49.797953,16.913916,0.0,240,10882341,5.9,0.0,175.0,43.9,25.0,0.0,[EMAl__iUD_U],[[0]],[[14009]],[[14088]],[0],[10082025],[UCXAMx3D3UqiM5aukWNiISYA]
 5774,Mohelnice,[],,Czechia,CZE,Europe,49.7769472,16.9196183,0.0,9742,10882341,5.9,0.0,175.0,43.9,25.0,0.0,[EMAl__iUD_U],[[0]],[[14249]],[[14428]],[0],[10082025],[UCXAMx3D3UqiM5aukWNiISYA]
 5775,Litomyšl,[Litomysl],,Czechia,CZE,Europe,49.8725491,16.3101243,0.0,10146,10882341,5.9,0.0,175.0,43.9,25.0,15.79,[EMAl__iUD_U],[[0]],[[16997]],[[17540]],[0],[10082025],[UCXAMx3D3UqiM5aukWNiISYA]
-5776,Vysoké Mýto,[Vysoke Myto],,Czechia,CZE,Europe,49.9534727,16.1616455,0.0,12293,10882341,5.9,0.0,175,43.9,25.0,0.0,[EMAl__iUD_U],[[0]],[[18134]],[[18553]],[0],[10082025],[UCXAMx3D3UqiM5aukWNiISYA]
+5776,Vysoké Mýto,[Vysoke Myto],,Czechia,CZE,Europe,49.9534727,16.1616455,0.0,12293,10882341,5.9,0.0,175.0,43.9,25.0,0.0,[EMAl__iUD_U],[[0]],[[18134]],[[18553]],[0],[10082025],[UCXAMx3D3UqiM5aukWNiISYA]
+5777,Hořesedly,[Horesedly],,Czechia,CZE,Europe,50.1622261,13.6036808,0.0,453,10882341,5.9,0.0,175.0,43.9,25.0,0.0,[EMAl__iUD_U],[[0]],[[27385]],[[27450]],[0],[10082025],[UCXAMx3D3UqiM5aukWNiISYA]
+5778,Hořovičky,[Horovicky],,Czechia,CZE,Europe,50.1556137,13.5314037,0.0,478,10882341,5.9,0.0,175.0,43.9,25.0,0.0,[EMAl__iUD_U],[[0]],[[27659]],[[27738]],[0],[10082025],[UCXAMx3D3UqiM5aukWNiISYA]
+5779,Mokřiny,[Mokriny],,Czechia,CZE,Europe,50.2094219,12.2130384,0.0,527,10882341,5.9,0.0,175,43.9,25.0,0.0,[EMAl__iUD_U],[[0]],[[32624]],[[33012]],[0],[10082025],[UCXAMx3D3UqiM5aukWNiISYA]
