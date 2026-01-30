@@ -830,15 +830,16 @@ input.addEventListener("input", async () => {
             div.textContent = item.label;
 
             div.onclick = () => {
-                input.value = item.state
-                    ? `${item.city}, ${item.state}`
-                    : item.city;
+                // Always put only the city name in the city field
+                input.value = item.city;
 
+                // Put state (if any) into the separate state field
                 const stateInput = document.getElementById("state");
                 if (stateInput) {
-                    stateInput.value = item.state ? item.state : "";
+                    stateInput.value = item.state || "";   // use || instead of ternary for clarity
                 }
 
+                // Set country dropdown
                 const countrySelect = document.getElementById("country");
                 if (countrySelect) {
                     for (const option of countrySelect.options) {
@@ -849,6 +850,7 @@ input.addEventListener("input", async () => {
                     }
                 }
 
+                // Hide suggestions
                 box.innerHTML = "";
                 box.classList.remove("has-items");
             };
