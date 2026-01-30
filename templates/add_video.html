@@ -830,7 +830,9 @@ input.addEventListener("input", async () => {
             div.textContent = item.label;
 
             div.onclick = () => {
-                input.value = item.city;
+                input.value = item.state
+                    ? `${item.city}, ${item.state}`
+                    : item.city;
 
                 const stateInput = document.getElementById("state");
                 if (stateInput) {

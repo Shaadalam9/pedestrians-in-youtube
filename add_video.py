@@ -54,7 +54,10 @@ def autocomplete_cities():
             continue
 
         city_norm = normalize(city)
-        key = (city_norm, country, iso3)
+        state_norm = normalize(state) if isinstance(state, str) else ""
+
+        # ✅ INCLUDE STATE IN DEDUPLICATION
+        key = (city_norm, state_norm, country, iso3)
 
         if q in city_norm and key not in seen:
             seen.add(key)
@@ -79,7 +82,8 @@ def autocomplete_cities():
                     continue
 
                 name_norm = normalize(name)
-                key = (name_norm, country, iso3)
+                state_norm = normalize(state) if isinstance(state, str) else ""
+                key = (name_norm, state_norm, country, iso3)
 
                 if q in name_norm and key not in seen:
                     seen.add(key)
