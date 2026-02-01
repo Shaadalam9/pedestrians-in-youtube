@@ -367,6 +367,465 @@ class Analysis():
 
 analysis_class = Analysis()
 
+# ---------------------------------------------------------------------
+# Extra rollups / summaries (continent, day-night, vehicle, max/min)
+# ---------------------------------------------------------------------
+
+
+def log_rollups(df_mapping: pl.DataFrame) -> None:
+    """
+    Logs:
+      - videos by continent (+ %), duration by continent (+ %)
+      - unique videos by continent (+ %)
+      - vehicle x time-of-day counts (+ %)
+      - continent x time-of-day counts (+ %)
+      - videos: only day / only night / both (+ %)
+      - max/min country & city by video count and duration
+    """
+
+    # -----------------------------
+    # Helpers (robust parsing)
+    # -----------------------------
+    def _safe_eval_list(x):
+        if x is None:
+            return []
+        if isinstance(x, list):
+            return x
+        if not isinstance(x, str):
+            return []
+        s = x.strip().strip('"').strip("'")
+        if s == "" or s == "[]":
+            return []
+        try:
+            v = ast.literal_eval(s)
+            return v if isinstance(v, list) else []
+        except Exception:
+            return []
+
+    def _flatten_any(lst):
+        out = []
+        for item in lst:
+            if isinstance(item, list):
+                out.extend(_flatten_any(item))
+            else:
+                out.append(item)
+        return out
+
+    def _compute_footage_time_s(row: dict) -> int:
+        """Sum of (end-start) across aligned start/end lists; nested-safe."""
+        try:
+            st = _flatten_any(_safe_eval_list(row.get("start_time")))
+            en = _flatten_any(_safe_eval_list(row.get("end_time")))
+            total = 0.0
+            for s, e in zip(st, en):
+                try:
+                    total += float(e) - float(s)
+                except Exception:
+                    continue
+            return int(total)
+        except Exception:
+            return 0
+
+    def _safe_num_to_int(v):
+        if v is None:
+            return None
+        try:
+            return int(v)
+        except Exception:
+            try:
+                return int(float(str(v).strip()))
+            except Exception:
+                return None
+
+    def _map_with_fallback(dct: dict, v):
+        if v is None:
+            return None
+        if v in dct:
+            return dct[v]
+        sv = v.strip() if isinstance(v, str) else str(v).strip()
+        if sv in dct:
+            return dct[sv]
+        try:
+            iv = int(sv)
+            if iv in dct:
+                return dct[iv]
+        except Exception:
+            try:
+                iv = int(float(sv))
+                if iv in dct:
+                    return dct[iv]
+            except Exception:
+                pass
+        try:
+            fv = float(sv)
+            if fv in dct:
+                return dct[fv]
+        except Exception:
+            pass
+        return None
+
+    # -----------------------------
+    # Build base: videos_list, video_count, footage_time_s
+    # -----------------------------
+    required_cols = {"continent", "country", "city", "iso3", "videos", "start_time", "end_time"}
+    missing_cols = sorted(list(required_cols - set(df_mapping.columns)))
+    if missing_cols:
+        logger.warning(f"[rollups] Missing columns in df_mapping: {missing_cols}. Rollups may be incomplete.")
+
+    videos_raw = pl.col("videos").cast(pl.Utf8).str.strip_chars().str.strip_chars("\"'")
+    is_list = videos_raw.str.starts_with("[") & videos_raw.str.ends_with("]")
+
+    videos_inner = (
+        pl.when(is_list)
+          .then(videos_raw.str.strip_chars("[]"))
+          .otherwise(videos_raw)
+          .fill_null("")
+          .str.replace_all(r"[\"']", "")
+          .str.strip_chars()
+    )
+
+    videos_list_expr = (
+        pl.when(videos_inner == "")
+          .then(pl.lit([]).cast(pl.List(pl.Utf8)))
+          .otherwise(
+              videos_inner
+              .str.split(",")
+              .list.eval(pl.element().str.strip_chars())
+              .list.filter(pl.element() != "")
+          ).alias("videos_list")
+    )
+
+    df_base = (
+        df_mapping
+        .with_columns([
+            videos_list_expr,  # creates videos_list
+        ])
+        .with_columns([
+            pl.col("videos_list").list.len().fill_null(0).cast(pl.Int64).alias("video_count"),
+            pl.struct(["start_time", "end_time"])
+              .map_elements(_compute_footage_time_s, return_dtype=pl.Int64)
+              .alias("footage_time_s"),
+        ])
+        .with_columns([
+            (pl.col("footage_time_s") / 3600).round(2).alias("footage_time_h"),
+        ])
+    )
+
+    # -----------------------------
+    # Continent: videos (+%) and duration (+%)
+    # -----------------------------
+    cont = (
+        df_base
+        .filter(pl.col("continent").is_not_null() & (pl.col("continent") != ""))
+        .group_by("continent")
+        .agg([
+            pl.sum("video_count").alias("videos_sum"),
+            pl.sum("footage_time_s").alias("duration_s"),
+        ])
+    )
+
+    tot_videos_sum = int(cont.select(pl.sum("videos_sum")).item() or 0)
+    tot_duration_s = int(cont.select(pl.sum("duration_s")).item() or 0)
+    denom_v = max(tot_videos_sum, 1)
+    denom_t = max(tot_duration_s, 1)
+
+    cont = (
+        cont
+        .with_columns([
+            (pl.col("videos_sum") / pl.lit(denom_v) * 100).round(2).alias("videos_sum_pct"),
+            (pl.col("duration_s") / pl.lit(denom_t) * 100).round(2).alias("duration_pct"),
+            (pl.col("duration_s") / 3600).round(2).alias("duration_h"),
+        ])
+        .sort("videos_sum", descending=True)
+    )
+
+    logger.info("\n=== [rollups] Continent summary (sum videos + %, duration + %) ===")
+    logger.info(f"\n{cont}")
+
+    # Unique videos by continent (explode videos_list)
+    cont_unique = (
+        df_base
+        .select(["continent", "videos_list"])
+        .explode("videos_list")
+        .filter(pl.col("continent").is_not_null() & (pl.col("continent") != ""))
+        .filter(pl.col("videos_list").is_not_null() & (pl.col("videos_list") != ""))
+        .group_by("continent")
+        .agg(pl.col("videos_list").n_unique().alias("unique_videos"))
+        .sort("unique_videos", descending=True)
+    )
+    tot_unique = int(cont_unique.select(pl.sum("unique_videos")).item() or 0)
+    denom_u = max(tot_unique, 1)
+    cont_unique = cont_unique.with_columns(
+        (pl.col("unique_videos") / pl.lit(denom_u) * 100).round(2).alias("unique_videos_pct")
+    )
+
+    logger.info("\n=== [rollups] Continent unique videos (+ %) ===")
+    logger.info(f"\n{cont_unique}")
+
+    # -----------------------------
+    # Vehicle x time_of_day (segment-level pairs)
+    # -----------------------------
+    if {"vehicle_type", "time_of_day"} <= set(df_mapping.columns):
+
+        pair_dtype = pl.List(
+            pl.Struct([
+                pl.Field("vehicle_type", pl.Utf8),
+                pl.Field("time_of_day", pl.Utf8),
+            ])
+        )
+
+        def _expand_vehicle_tod(row: dict) -> list[dict]:
+            try:
+                vts = _safe_eval_list(row.get("vehicle_type"))
+                tods = _safe_eval_list(row.get("time_of_day"))
+                if not (isinstance(vts, list) and isinstance(tods, list)):
+                    return []
+            except Exception:
+                return []
+
+            out = []
+            for vt, tod in zip(vts, tods):
+                vt_list = vt if isinstance(vt, list) else [vt]
+                tod_list = tod if isinstance(tod, list) else [tod]
+                for v in vt_list:
+                    for t in tod_list:
+                        out.append({"vehicle_type": str(v), "time_of_day": str(t)})
+            return out
+
+        df_pairs = (
+            df_mapping
+            .select(["vehicle_type", "time_of_day"])
+            .with_columns(
+                pl.struct(["vehicle_type", "time_of_day"])
+                  .map_elements(lambda r: _expand_vehicle_tod(r), return_dtype=pair_dtype)
+                  .alias("pairs")
+            )
+            .explode("pairs")
+            .with_columns([
+                pl.col("pairs").struct.field("vehicle_type").alias("vehicle_type_raw"),
+                pl.col("pairs").struct.field("time_of_day").alias("time_of_day_raw"),
+            ])
+            .drop("pairs")
+            .with_columns([
+                pl.col("vehicle_type_raw").map_elements(
+                    lambda x: _map_with_fallback(analysis_class.vehicle_map, x),
+                    return_dtype=pl.Utf8,
+                ).alias("vehicle_type_name"),
+                pl.col("time_of_day_raw").map_elements(
+                    lambda x: _map_with_fallback(analysis_class.time_map, x),
+                    return_dtype=pl.Utf8,
+                ).alias("time_of_day_name"),
+            ])
+            .filter(pl.col("vehicle_type_name").is_not_null() & pl.col("time_of_day_name").is_not_null())
+        )
+
+        veh_tod = (
+            df_pairs
+            .group_by(["vehicle_type_name", "time_of_day_name"])
+            .len()
+            .rename({"len": "count"})
+        )
+        tot_pairs = int(veh_tod.select(pl.sum("count")).item() or 0)
+        denom_p = max(tot_pairs, 1)
+        veh_tod = veh_tod.with_columns(
+            (pl.col("count") / pl.lit(denom_p) * 100).round(2).alias("pct")
+        ).sort(["vehicle_type_name", "time_of_day_name"])
+
+        logger.info("\n=== [rollups] Vehicle x time-of-day (pair counts + %) ===")
+        logger.info(f"\n{veh_tod}")
+
+    # -----------------------------
+    # Continent x time_of_day (video entries counts)
+    # -----------------------------
+    if {"continent", "time_of_day"} <= set(df_mapping.columns):
+
+        cont_pair_dtype = pl.List(
+            pl.Struct([
+                pl.Field("continent", pl.Utf8),
+                pl.Field("time_of_day", pl.Utf8),
+            ])
+        )
+
+        def _expand_continent_tod(row: dict) -> list[dict]:
+            contv = "" if row.get("continent") is None else str(row.get("continent"))
+            tods = _safe_eval_list(row.get("time_of_day"))
+            out = []
+            for tod in tods:
+                tod_list = tod if isinstance(tod, list) else [tod]
+                for t in tod_list:
+                    out.append({"continent": contv, "time_of_day": str(t)})
+            return out
+
+        df_ct = (
+            df_mapping
+            .select(["continent", "time_of_day"])
+            .with_columns(
+                pl.struct(["continent", "time_of_day"])
+                  .map_elements(lambda r: _expand_continent_tod(r), return_dtype=cont_pair_dtype)
+                  .alias("pairs")
+            )
+            .explode("pairs")
+            .with_columns([
+                pl.col("pairs").struct.field("continent").alias("continent"),
+                pl.col("pairs").struct.field("time_of_day").alias("time_of_day_raw"),
+            ])
+            .drop("pairs")
+            .with_columns(
+                pl.col("time_of_day_raw").map_elements(
+                    lambda x: _map_with_fallback(analysis_class.time_map, x),
+                    return_dtype=pl.Utf8,
+                ).alias("time_of_day_name")
+            )
+            .filter(
+                pl.col("continent").is_not_null() & (pl.col("continent") != "") &
+                pl.col("time_of_day_name").is_not_null()
+            )
+        )
+
+        cont_tod = (
+            df_ct
+            .group_by(["continent", "time_of_day_name"])
+            .len()
+            .rename({"len": "count"})
+        )
+        tot_ct = int(cont_tod.select(pl.sum("count")).item() or 0)
+        denom_ct = max(tot_ct, 1)
+        cont_tod = cont_tod.with_columns(
+            (pl.col("count") / pl.lit(denom_ct) * 100).round(2).alias("pct")
+        ).sort(["continent", "time_of_day_name"])
+
+        logger.info("\n=== [rollups] Continent x time-of-day (entry counts + %) ===")
+        logger.info(f"\n{cont_tod}")
+
+    # -----------------------------
+    # Videos: only day / only night / both (+ %)
+    # -----------------------------
+    if {"videos", "time_of_day"} <= set(df_mapping.columns):
+
+        vid_flag_dtype = pl.List(
+            pl.Struct([
+                pl.Field("video_id", pl.Utf8),
+                pl.Field("has_day", pl.Boolean),
+                pl.Field("has_night", pl.Boolean),
+            ])
+        )
+
+        def _video_daynight_pairs(row: dict) -> list[dict]:
+            vids = row.get("videos_list", [])
+            tods = _safe_eval_list(row.get("time_of_day"))
+            out = []
+            for vid, tod in zip(vids, tods):
+                vid_str = str(vid).strip()
+                if not vid_str:
+                    continue
+                tod_flat = _flatten_any(tod) if isinstance(tod, list) else [tod]
+                flags = set()
+                for t in tod_flat:
+                    iv = _safe_num_to_int(t)
+                    if iv in (0, 1):
+                        flags.add(iv)
+                out.append({
+                    "video_id": vid_str,
+                    "has_day": (0 in flags),
+                    "has_night": (1 in flags),
+                })
+            return out
+
+        df_video_flags = (
+            df_base
+            .select(["videos_list", "time_of_day"])
+            .with_columns(
+                pl.struct(["videos_list", "time_of_day"])
+                  .map_elements(lambda r: _video_daynight_pairs(r), return_dtype=vid_flag_dtype)
+                  .alias("video_flags")
+            )
+            .explode("video_flags")
+            .with_columns([
+                pl.col("video_flags").struct.field("video_id").alias("video_id"),
+                pl.col("video_flags").struct.field("has_day").alias("has_day"),
+                pl.col("video_flags").struct.field("has_night").alias("has_night"),
+            ])
+            .drop("video_flags")
+            .filter(pl.col("video_id").is_not_null() & (pl.col("video_id") != ""))
+            .group_by("video_id")
+            .agg([
+                pl.any("has_day").alias("has_day"),  # type: ignore
+                pl.any("has_night").alias("has_night"),  # type: ignore
+            ])
+            .with_columns(
+                pl.when(pl.col("has_day") & pl.col("has_night")).then(pl.lit("both_day_night"))
+                .when(pl.col("has_day")).then(pl.lit("only_day"))
+                .when(pl.col("has_night")).then(pl.lit("only_night"))
+                .otherwise(pl.lit("unknown"))
+                .alias("daynight_category")
+            )
+        )
+
+        daynight = (
+            df_video_flags
+            .group_by("daynight_category")
+            .len()
+            .rename({"len": "videos"})
+            .sort("videos", descending=True)
+        )
+        tot_v = int(daynight.select(pl.sum("videos")).item() or 0)
+        denom_v2 = max(tot_v, 1)
+        daynight = daynight.with_columns(
+            (pl.col("videos") / pl.lit(denom_v2) * 100).round(2).alias("pct")
+        )
+
+        logger.info("\n=== [rollups] Videos: only day / only night / both (+ %) ===")
+        logger.info(f"\n{daynight}")
+
+    # -----------------------------
+    # Max / Min by country and city (videos & duration)
+    # -----------------------------
+    city_rank = (
+        df_base
+        .filter(pl.col("city").is_not_null() & (pl.col("city") != ""))
+        .group_by(["continent", "country", "city", "iso3"])
+        .agg([
+            pl.sum("video_count").alias("video_count"),
+            pl.sum("footage_time_s").alias("footage_time_s"),
+        ])
+        .with_columns((pl.col("footage_time_s") / 3600).round(2).alias("footage_time_h"))
+    )
+
+    country_rank = (
+        df_base
+        .filter(pl.col("country").is_not_null() & (pl.col("country") != ""))
+        .group_by(["continent", "country", "iso3"])
+        .agg([
+            pl.sum("video_count").alias("video_count"),
+            pl.sum("footage_time_s").alias("footage_time_s"),
+        ])
+        .with_columns((pl.col("footage_time_s") / 3600).round(2).alias("footage_time_h"))
+    )
+
+    def _top_bottom(df: pl.DataFrame, col: str):
+        top = df.sort(col, descending=True).head(1)
+        bot = df.filter(pl.col(col) > 0).sort(col).head(1)
+        return top, bot
+
+    top_city_v, bot_city_v = _top_bottom(city_rank, "video_count")
+    top_city_t, bot_city_t = _top_bottom(city_rank, "footage_time_s")
+
+    top_ctry_v, bot_ctry_v = _top_bottom(country_rank, "video_count")
+    top_ctry_t, bot_ctry_t = _top_bottom(country_rank, "footage_time_s")
+
+    logger.info("\n=== [rollups] Max/Min CITY by videos ===")
+    logger.info(f"\nMAX:\n{top_city_v}\nMIN (non-zero):\n{bot_city_v}")
+
+    logger.info("\n=== [rollups] Max/Min CITY by duration ===")
+    logger.info(f"\nMAX:\n{top_city_t}\nMIN (non-zero):\n{bot_city_t}")
+
+    logger.info("\n=== [rollups] Max/Min COUNTRY by videos ===")
+    logger.info(f"\nMAX:\n{top_ctry_v}\nMIN (non-zero):\n{bot_ctry_v}")
+
+    logger.info("\n=== [rollups] Max/Min COUNTRY by duration ===")
+    logger.info(f"\nMAX:\n{top_ctry_t}\nMIN (non-zero):\n{bot_ctry_t}")
+
+
 # Execute analysis
 if __name__ == "__main__":
     logger.info("Analysis started.")
@@ -420,6 +879,7 @@ if __name__ == "__main__":
              ) = pickle.load(file)
 
         logger.info("Loaded analysis results from pickle file.")
+        log_rollups(df_mapping)
     else:
         # Store the mapping file
         df_mapping = pl.read_csv(common.get_configs("mapping"))
@@ -950,6 +1410,7 @@ if __name__ == "__main__":
         countries_include = common.get_configs("countries_analyse")
         if countries_include:
             df_mapping = df_mapping.filter(pl.col("iso3").is_in(countries_include))
+        log_rollups(df_mapping)
 
         # Make a dict for all columns
         city_country_cols = {
@@ -1829,6 +2290,7 @@ if __name__ == "__main__":
         countries_include = common.get_configs("countries_analyse")
         if countries_include:
             df_mapping = df_mapping.filter(pl.col("iso3").is_in(countries_include))
+        log_rollups(df_mapping)
 
         total_duration = dataset_stats.calculate_total_seconds(df_mapping)
 
