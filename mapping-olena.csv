@@ -5919,4 +5919,7 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 5918,Novgrad,[],,Bulgaria,BGR,Europe,43.60501,25.58486,0.0,0,6437360,9.2,98.35,169.0,44.7,41.3,0.0,[509mnvjCIMw],[[0]],[[984]],[[1104]],[0],[31082023],[UCUszl6VBXRTXa1T3QKIoj_Q]
 5919,Dzhulyunitsa,[],,Bulgaria,BGR,Europe,43.1326,25.90231,0.0,1573,6437360,9.2,98.35,169.0,44.7,41.3,0.0,[509mnvjCIMw],[[0]],[[1241]],[[1261]],[0],[31082023],[UCUszl6VBXRTXa1T3QKIoj_Q]
 5920,Tsenovo,[],,Bulgaria,BGR,Europe,43.5775668,25.6024829,0.0,4890,6437360,9.2,98.35,169.0,44.7,41.3,0.0,[509mnvjCIMw],[[0]],[[1731]],[[1969]],[0],[31082023],[UCUszl6VBXRTXa1T3QKIoj_Q]
-5921,Koprivets,[],,Bulgaria,BGR,Europe,43.40554,25.8769,0.0,685,6437360,9.2,98.35,169,44.7,41.3,0.0,[509mnvjCIMw],[[0]],[[3524]],[[3728]],[0],[31082023],[UCUszl6VBXRTXa1T3QKIoj_Q]
+5921,Koprivets,[],,Bulgaria,BGR,Europe,43.40554,25.8769,0.0,685,6437360,9.2,98.35,169.0,44.7,41.3,0.0,[509mnvjCIMw],[[0]],[[3524]],[[3728]],[0],[31082023],[UCUszl6VBXRTXa1T3QKIoj_Q]
+5922,Lom Cherkovna,[],,Bulgaria,BGR,Europe,43.34254,25.97033,0.0,430,6437360,9.2,98.35,169.0,44.7,41.3,0.0,[509mnvjCIMw],[[0]],[[4098]],[[4285]],[0],[31082023],[UCUszl6VBXRTXa1T3QKIoj_Q]
+5923,Zdravets,[],,Bulgaria,BGR,Europe,42.1427283,25.5729344,0.0,0,6437360,9.2,98.35,169.0,44.7,41.3,0.0,[509mnvjCIMw],[[0]],[[6508]],[[6644]],[0],[31082023],[UCUszl6VBXRTXa1T3QKIoj_Q]
+5924,Targovishte,[],,Bulgaria,BGR,Europe,43.261206,26.571779,0.0,34793,6437360,9.2,98.35,169,44.7,41.3,0.0,[509mnvjCIMw],[[0]],[[6728]],[[7146]],[0],[31082023],[UCUszl6VBXRTXa1T3QKIoj_Q]
