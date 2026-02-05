@@ -5422,7 +5422,7 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 5421,Bistrița,[Bistrita],,Romania,ROU,Europe,47.1327012,24.4963949,0.0,78877,19036031,10.3,99.16,171.0,45.1,35.8,44.44,[7aMfLFAKbzM],[[0]],[[6]],[[431]],[0],[07082023],[UCq_1TgDfj7FYypdEZFSUbnQ]
 5422,Suceava,[],,Romania,ROU,Europe,47.646887,26.249771,0.0,84308,19036031,10.3,99.16,171.0,45.1,35.8,34.78,[bergRDH9UjU],[[0]],[[6]],[[574]],[0],[05082023],[UCq_1TgDfj7FYypdEZFSUbnQ]
 5423,Mangalia,[],,Romania,ROU,Europe,43.8150793,28.5830306,0.0,39619,19036031,10.3,99.16,171.0,45.1,35.8,27.03,[iuOcXqvMlII],[[0]],[[21]],[[297]],[0],[06092021],[UCq_1TgDfj7FYypdEZFSUbnQ]
-5424,Kavala,[],,Greece,GRC,Europe,40.9369224,24.4122766,0.0,54027,10400720,8.3,93.91,173.0,46.2,32.9,0.0,[a1tB4xARGus],[[0]],[[104]],[[864]],[0],[12092023],[UC7h-PEdLxIUeqWMlCNoI40w]
+5424,Kavala,[],,Greece,GRC,Europe,40.9369224,24.4122766,0.0,54027,10400720,8.3,93.91,173.0,46.2,32.9,0.0,"[a1tB4xARGus,FMQyGmfO-Lk]","[[0], [0]]","[[104], [136]]","[[864], [1048]]","[0,0]","[12092023,9022024]","[UC7h-PEdLxIUeqWMlCNoI40w,UCUszl6VBXRTXa1T3QKIoj_Q]"
 5425,Limmen,[],,Netherlands,NLD,Europe,52.5718803,4.6937182,0.0,7300,18100436,4.0,0.0,177.0,42.2,28.1,27.66,[F6LMg9bxGGc],"[[0,0]]","[[506,744]]","[[733,771]]",[3],[21112021],[UCzuKrxFevimm-Xu4WuBG2gw]
 5426,Heiloo,[],,Netherlands,NLD,Europe,52.6019248,4.7050318,0.0,23464,18100436,4.0,0.0,177.0,42.2,28.1,12.5,[F6LMg9bxGGc],"[[0,0,0]]","[[772,857,903]]","[[813,901,1097]]",[3],[21112021],[UCzuKrxFevimm-Xu4WuBG2gw]
 5427,Agios Nikolaos,[],Halkidiki,Greece,GRC,Europe,40.248612,23.694768,0.0,11421,10400720,8.3,93.91,173.0,46.2,32.9,0.0,[43mwhmK7prs],[[0]],[[0]],[[490]],[0],[15092025],[UCaw2H_TnQO1F3ZAIQHQPptg]
@@ -5955,3 +5955,6 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 5954,Kiten,[],,Bulgaria,BGR,Europe,42.23584,27.77419,0.0,1115,6437360,9.2,98.35,169.0,44.7,41.3,0.0,"[ZfmwWagto0Q,DpKeBqvxIwQ]","[[0], [0]]","[[4303], [110]]","[[4561], [473]]","[0,0]","[5102023,16102023]","[UCUszl6VBXRTXa1T3QKIoj_Q,UCUszl6VBXRTXa1T3QKIoj_Q]"
 5955,Samovodene,[],,Bulgaria,BGR,Europe,43.14179,25.6013,0.0,1493,6437360,9.2,98.35,169.0,44.7,41.3,0.0,[oE9WEj_UJt8],[[0]],[[918]],[[1085]],[0],[11122023],[UCUszl6VBXRTXa1T3QKIoj_Q]
 5956,Polikraishte,[],,Bulgaria,BGR,Europe,43.17861,25.62065,0.0,1648,6437360,9.2,98.35,169.0,44.7,41.3,0.0,[oE9WEj_UJt8],[[0]],[[1150]],[[1480]],[0],[11122023],[UCUszl6VBXRTXa1T3QKIoj_Q]
+5957,Palio,[],,Greece,GRC,Europe,40.901654,24.344302,0.0,64021,10400720,8.3,93.91,173.0,46.2,32.9,0.0,[FMQyGmfO-Lk],[[0]],[[1312]],[[1722]],[0],[09022024],[UCUszl6VBXRTXa1T3QKIoj_Q]
+5958,Vavdos,[],,Greece,GRC,Europe,40.4263422,23.3242292,0.0,380,10400720,8.3,93.91,173.0,46.2,32.9,0.0,[FMQyGmfO-Lk],[[0]],[[9213]],[[9436]],[0],[09022024],[UCUszl6VBXRTXa1T3QKIoj_Q]
+5959,Nea Kallikrateia,[],,Greece,GRC,Europe,40.3106856,23.0632154,0.0,7238,10400720,8.3,93.91,173,46.2,32.9,0.0,[FMQyGmfO-Lk],[[1]],[[11749]],[[12380]],[0],[09022024],[UCUszl6VBXRTXa1T3QKIoj_Q]
