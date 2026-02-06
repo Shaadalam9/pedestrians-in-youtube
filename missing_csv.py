@@ -17,19 +17,19 @@ from pathlib import Path
 from typing import Any, Dict, List, Set, Tuple
 
 import pandas as pd
+import common
 
 
 # =========================
 # EDIT THESE PATHS
 # =========================
 
-INPUT_CSV = "mapping.csv"
+INPUT_CSV = common.get_configs("mapping")
 OUTPUT_CSV = "mapping_remaining.csv"
 
 # Put ALL bbox output directories you want to check here.
-BBOX_OUTPUT_DIRS = [
-    Path("/Volumes/Alam/pedestrians_in-youtube/data/bbox"),
-]
+BBOX_OUTPUT_DIRS = common.get_configs("data")
+
 
 # =========================
 # FLAG: print removed cities
@@ -167,7 +167,8 @@ def index_existing_bbox_segments(bbox_dirs: List[Path]) -> Set[Tuple[str, int]]:
 # =========================
 
 def build_remaining() -> None:
-    bbox_present = index_existing_bbox_segments(BBOX_OUTPUT_DIRS)
+    bbox_dirs = [Path(p) for p in BBOX_OUTPUT_DIRS]
+    bbox_present = index_existing_bbox_segments(bbox_dirs)
 
     df = pd.read_csv(INPUT_CSV, dtype=str, keep_default_na=False)
 

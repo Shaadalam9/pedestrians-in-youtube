@@ -42,7 +42,6 @@ WHAT IT DOES
   * _output/validate_release.log
   * _output/sha256_manifest.txt
 
-NO CLI / ARGPARSE
 -----------------
 Edit CONFIG below and run:
   python validate_release.py
@@ -58,7 +57,6 @@ import logging
 import math
 import re
 import sys
-import common
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 from pathlib import Path
