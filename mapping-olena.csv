@@ -5963,5 +5963,13 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 5962,Deçan,[Decan],,Kosovo,XKX,Europe,42.5402266,20.2882372,0.0,50500,1578000,0.0,0.0,0.0,31.7,0.0,0.0,[897dEGWtb6o],[[0]],[[1780]],[[2370]],[0],[10042022],[UCOG_imhDwtvT4Bxy4J_vItg]
 5963,Tuzi,[],,Montenegro,MNE,Europe,42.3661526,19.3300881,0.0,12000,623327,7.6,98.53,177.0,40.7,38.5,0.0,[VKb-c19YtwM],[[0]],[[472]],[[830]],[0],[29032024],[UCkPN7BZ_oPyroFo4Pindxyg]
 5964,Lezhë,[Lezhe],,Albania,ALB,Europe,41.7816638,19.6433538,0.0,18695,2363314,11.7,97.68,168.0,35.8,33.2,0.0,[VKb-c19YtwM],[[0]],[[5124]],[[5415]],[0],[29032024],[UCkPN7BZ_oPyroFo4Pindxyg]
-5965,Sutomore,[],,Montenegro,MNE,Europe,42.1426733,19.0429902,0.0,1827,623327,7.6,98.53,177.0,40.7,38.5,0.0,[EAASsKjg8VA],[[0]],[[0]],[[1149]],[0],[12082025],[UCCdqIOYAGRdWIuNsbRn7gvQ]
-5966,Bečići,[Becici],,Montenegro,MNE,Europe,42.2838324,18.8725252,0.0,850,623327,7.6,98.53,177,40.7,38.5,0.0,[eLouIrLvEAA],[[0]],[[42]],[[370]],[0],[31072025],[UCCdqIOYAGRdWIuNsbRn7gvQ]
+5965,Sutomore,[],,Montenegro,MNE,Europe,42.1426733,19.0429902,0.0,1827,623327,7.6,98.53,177.0,40.7,38.5,0.0,"[EAASsKjg8VA,eLouIrLvEAA]","[[0], [0]]","[[0], [2417]]","[[1149], [2881]]","[0,0]","[12082025,31072025]","[UCCdqIOYAGRdWIuNsbRn7gvQ,UCCdqIOYAGRdWIuNsbRn7gvQ]"
+5966,Bečići,[Becici],,Montenegro,MNE,Europe,42.2838324,18.8725252,0.0,850,623327,7.6,98.53,177.0,40.7,38.5,0.0,[eLouIrLvEAA],[[0]],[[42]],[[370]],[0],[31072025],[UCCdqIOYAGRdWIuNsbRn7gvQ]
+5967,Shkodër,[Shkoder],,Albania,ALB,Europe,42.0681371,19.5121437,0.0,95553,2363314,11.7,97.68,168.0,35.8,33.2,0.0,[OAnuk_dB8H0],"[[0, 0]]","[[18, 1410]]","[[918, 1514]]",[0],[15082025],[UCCdqIOYAGRdWIuNsbRn7gvQ]
+5968,Krvavi Potok,[],,Slovenia,SVN,Europe,45.6190825,13.9095062,0.0,86,2130638,5.1,99.52,174.0,45.9,24.6,0.0,[ro1RSbWM6WI],[[0]],[[67]],[[144]],[0],[18082025],[UCCdqIOYAGRdWIuNsbRn7gvQ]
+5969,Kozina,[],,Slovenia,SVN,Europe,45.6085113,13.9353038,0.0,4194,2130638,5.1,99.52,174.0,45.9,24.6,0.0,[ro1RSbWM6WI],[[0]],[[297]],[[359]],[0],[18082025],[UCCdqIOYAGRdWIuNsbRn7gvQ]
+5970,Hrpelje,[],,Slovenia,SVN,Europe,45.6067654,13.94366,0.0,4194,2130638,5.1,99.52,174.0,45.9,24.6,0.0,[ro1RSbWM6WI],[[0]],[[373]],[[451]],[0],[18082025],[UCCdqIOYAGRdWIuNsbRn7gvQ]
+5971,Markovščina,[Markovscina],,Slovenia,SVN,Europe,45.5609458,14.0346757,0.0,119,2130638,5.1,99.52,174.0,45.9,24.6,0.0,[ro1RSbWM6WI],[[0]],[[944]],[[998]],[0],[18082025],[UCCdqIOYAGRdWIuNsbRn7gvQ]
+5972,Podgrad,[],,Slovenia,SVN,Europe,45.7352064,15.2009199,0.0,24,2130638,5.1,99.52,174.0,45.9,24.6,0.0,[ro1RSbWM6WI],[[0]],[[1530]],[[1607]],[0],[18082025],[UCCdqIOYAGRdWIuNsbRn7gvQ]
+5973,Ulcinj,[],,Montenegro,MNE,Europe,41.926012,19.2055563,0.0,10828,623327,7.6,98.53,177.0,40.7,38.5,0.0,"[4CDBkAHd9Oo,DYwFeCeqaRQ]","[[0], [0]]","[[1108], [472]]","[[1678], [996]]","[0,0]","[13082025,16082025]","[UCCdqIOYAGRdWIuNsbRn7gvQ,UCCdqIOYAGRdWIuNsbRn7gvQ]"
+5974,Vladimir,[],,Montenegro,MNE,Europe,42.0050689,19.3052089,0.0,757,623327,7.6,98.53,177,40.7,38.5,0.0,[DYwFeCeqaRQ],[[0]],[[2060]],[[2252]],[0],[16082025],[UCCdqIOYAGRdWIuNsbRn7gvQ]
