@@ -5422,7 +5422,7 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 5421,Bistrița,[Bistrita],,Romania,ROU,Europe,47.1327012,24.4963949,0.0,78877,19036031,10.3,99.16,171.0,45.1,35.8,44.44,[7aMfLFAKbzM],[[0]],[[6]],[[431]],[0],[07082023],[UCq_1TgDfj7FYypdEZFSUbnQ]
 5422,Suceava,[],,Romania,ROU,Europe,47.646887,26.249771,0.0,84308,19036031,10.3,99.16,171.0,45.1,35.8,34.78,[bergRDH9UjU],[[0]],[[6]],[[574]],[0],[05082023],[UCq_1TgDfj7FYypdEZFSUbnQ]
 5423,Mangalia,[],,Romania,ROU,Europe,43.8150793,28.5830306,0.0,39619,19036031,10.3,99.16,171.0,45.1,35.8,27.03,[iuOcXqvMlII],[[0]],[[21]],[[297]],[0],[06092021],[UCq_1TgDfj7FYypdEZFSUbnQ]
-5424,Kavala,[],,Greece,GRC,Europe,40.9369224,24.4122766,0.0,54027,10400720,8.3,93.91,173.0,46.2,32.9,0.0,"[a1tB4xARGus,FMQyGmfO-Lk]","[[0], [0]]","[[104], [136]]","[[864], [1048]]","[0,0]","[12092023,9022024]","[UC7h-PEdLxIUeqWMlCNoI40w,UCUszl6VBXRTXa1T3QKIoj_Q]"
+5424,Kavala,[],,Greece,GRC,Europe,40.9369224,24.4122766,0.0,54027,10400720,8.3,93.91,173.0,46.2,32.9,0.0,"[a1tB4xARGus,FMQyGmfO-Lk,l6DldfVAaS8]","[[0], [0], [0]]","[[104], [136], [46]]","[[864], [1048], [1414]]","[0,0,0]","[12092023,9022024,3082024]","[UC7h-PEdLxIUeqWMlCNoI40w,UCUszl6VBXRTXa1T3QKIoj_Q,UC62XLEy4ZRTL2q8YzOJBDow]"
 5425,Limmen,[],,Netherlands,NLD,Europe,52.5718803,4.6937182,0.0,7300,18100436,4.0,0.0,177.0,42.2,28.1,27.66,[F6LMg9bxGGc],"[[0,0]]","[[506,744]]","[[733,771]]",[3],[21112021],[UCzuKrxFevimm-Xu4WuBG2gw]
 5426,Heiloo,[],,Netherlands,NLD,Europe,52.6019248,4.7050318,0.0,23464,18100436,4.0,0.0,177.0,42.2,28.1,12.5,[F6LMg9bxGGc],"[[0,0,0]]","[[772,857,903]]","[[813,901,1097]]",[3],[21112021],[UCzuKrxFevimm-Xu4WuBG2gw]
 5427,Agios Nikolaos,[],Halkidiki,Greece,GRC,Europe,40.248612,23.694768,0.0,11421,10400720,8.3,93.91,173.0,46.2,32.9,0.0,[43mwhmK7prs],[[0]],[[0]],[[490]],[0],[15092025],[UCaw2H_TnQO1F3ZAIQHQPptg]
@@ -5972,4 +5972,6 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 5971,Markovščina,[Markovscina],,Slovenia,SVN,Europe,45.5609458,14.0346757,0.0,119,2130638,5.1,99.52,174.0,45.9,24.6,0.0,[ro1RSbWM6WI],[[0]],[[944]],[[998]],[0],[18082025],[UCCdqIOYAGRdWIuNsbRn7gvQ]
 5972,Podgrad,[],,Slovenia,SVN,Europe,45.7352064,15.2009199,0.0,24,2130638,5.1,99.52,174.0,45.9,24.6,0.0,[ro1RSbWM6WI],[[0]],[[1530]],[[1607]],[0],[18082025],[UCCdqIOYAGRdWIuNsbRn7gvQ]
 5973,Ulcinj,[],,Montenegro,MNE,Europe,41.926012,19.2055563,0.0,10828,623327,7.6,98.53,177.0,40.7,38.5,0.0,"[4CDBkAHd9Oo,DYwFeCeqaRQ]","[[0], [0]]","[[1108], [472]]","[[1678], [996]]","[0,0]","[13082025,16082025]","[UCCdqIOYAGRdWIuNsbRn7gvQ,UCCdqIOYAGRdWIuNsbRn7gvQ]"
-5974,Vladimir,[],,Montenegro,MNE,Europe,42.0050689,19.3052089,0.0,757,623327,7.6,98.53,177,40.7,38.5,0.0,[DYwFeCeqaRQ],[[0]],[[2060]],[[2252]],[0],[16082025],[UCCdqIOYAGRdWIuNsbRn7gvQ]
+5974,Vladimir,[],,Montenegro,MNE,Europe,42.0050689,19.3052089,0.0,757,623327,7.6,98.53,177.0,40.7,38.5,0.0,[DYwFeCeqaRQ],[[0]],[[2060]],[[2252]],[0],[16082025],[UCCdqIOYAGRdWIuNsbRn7gvQ]
+5975,Bar,[],,Montenegro,MNE,Europe,42.0979745,19.0954528,0.0,17727,623327,7.6,98.53,177.0,40.7,38.5,0.0,[58vxIYPT2CE],[[0]],[[38]],[[405]],[0],[12012026],[UCzcpolbCg6LsdMIf-L0BYzg]
+5976,Dobra Voda,[],,Montenegro,MNE,Europe,42.0510559,19.1462648,0.0,995,623327,7.6,98.53,177.0,40.7,38.5,0.0,[58vxIYPT2CE],[[0]],[[685]],[[1238]],[0],[12012026],[UCzcpolbCg6LsdMIf-L0BYzg]
