@@ -5998,4 +5998,6 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 5997,Yachats,[],OR,United States,USA,North America,44.312756,-124.104999,0.0,718,340110988,12.7,0.0,170.0,38.5,41.4,0.0,[Acj20vURexo],[[0]],[[0]],[[1395]],[0],[25092025],[UChv3DmLA2hH-d93bGgqjMLg]
 5998,Arcata,[],CA,United States,USA,North America,40.866517,-124.08284,0.0,17843,340110988,12.7,0.0,170.0,38.5,41.4,0.0,[-KXHgoWGbAg],[[0]],[[64]],[[1722]],[0],[18092025],[UChv3DmLA2hH-d93bGgqjMLg]
 5999,Surdulica,[],,Serbia,SRB,Europe,42.6919329,22.1701473,0.0,9242,6567783,7.5,99.34,175.0,43.7,36.2,0.0,[K6mAYrdxQDk],[[0]],[[1443]],[[1750]],[0],[18072025],[UCy7ctrQA1duIZquYLQBrA5Q]
-6000,Ćurkovica,[Curkovica],,Serbia,SRB,Europe,42.436459,22.000037,0.0,261,6567783,7.5,99.34,175,43.7,36.2,0.0,[K6mAYrdxQDk],[[0]],[[1751]],[[1885]],[0],[18072025],[UCy7ctrQA1duIZquYLQBrA5Q]
+6000,Ćurkovica,[Curkovica],,Serbia,SRB,Europe,42.436459,22.000037,0.0,261,6567783,7.5,99.34,175.0,43.7,36.2,0.0,[K6mAYrdxQDk],[[0]],[[1751]],[[1885]],[0],[18072025],[UCy7ctrQA1duIZquYLQBrA5Q]
+6001,Klisura,[],,Bulgaria,BGR,Europe,42.6937241,24.4494186,0.0,1485,6437360,9.2,98.35,169.0,44.7,41.3,0.0,[K6mAYrdxQDk],[[0]],[[4120]],[[4162]],[0],[18072025],[UCy7ctrQA1duIZquYLQBrA5Q]
+6002,Winterthur,[],,Switzerland,CHE,Europe,47.4991723,8.7291498,0.0,91908,9082848,2.2,0.0,172,44,33.1,51.35,[QIwNW1QxuNA],[[0]],[[45]],[[1576]],[0],[06072024],[UC62XLEy4ZRTL2q8YzOJBDow]
