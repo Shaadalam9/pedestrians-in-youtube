@@ -5971,7 +5971,7 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 5970,Lezhë,[Lezhe],,Albania,ALB,Europe,41.7816638,19.6433538,0.0,18695,2363314,11.7,97.68,168.0,35.8,33.2,0.0,[VKb-c19YtwM],[[0]],[[5124]],[[5415]],[0],[29032024],[UCkPN7BZ_oPyroFo4Pindxyg]
 5971,Sutomore,[],,Montenegro,MNE,Europe,42.1426733,19.0429902,0.0,1827,623327,7.6,98.53,177.0,40.7,38.5,0.0,"[EAASsKjg8VA,eLouIrLvEAA]","[[0],[0]]","[[0],[2417]]","[[1149],[2881]]","[0,0]","[12082025,31072025]","[UCCdqIOYAGRdWIuNsbRn7gvQ,UCCdqIOYAGRdWIuNsbRn7gvQ]"
 5972,Bečići,[Becici],,Montenegro,MNE,Europe,42.2838324,18.8725252,0.0,850,623327,7.6,98.53,177.0,40.7,38.5,0.0,[eLouIrLvEAA],[[0]],[[42]],[[370]],[0],[31072025],[UCCdqIOYAGRdWIuNsbRn7gvQ]
-5973,Shkodër,[Shkoder],,Albania,ALB,Europe,42.0681371,19.5121437,0.0,95553,2363314,11.7,97.68,168.0,35.8,33.2,0.0,[OAnuk_dB8H0],"[[0]]","[[18]]","[[918]]",[0],[15082025],[UCCdqIOYAGRdWIuNsbRn7gvQ]
+5973,Shkodër,[Shkoder],,Albania,ALB,Europe,42.0681371,19.5121437,0.0,95553,2363314,11.7,97.68,168.0,35.8,33.2,0.0,[OAnuk_dB8H0],[[0]],[[18]],[[918]],[0],[15082025],[UCCdqIOYAGRdWIuNsbRn7gvQ]
 5974,Krvavi Potok,[],,Slovenia,SVN,Europe,45.6190825,13.9095062,0.0,86,2130638,5.1,99.52,174.0,45.9,24.6,0.0,[ro1RSbWM6WI],[[0]],[[67]],[[144]],[0],[18082025],[UCCdqIOYAGRdWIuNsbRn7gvQ]
 5975,Kozina,[],,Slovenia,SVN,Europe,45.6085113,13.9353038,0.0,4194,2130638,5.1,99.52,174.0,45.9,24.6,0.0,[ro1RSbWM6WI],[[0]],[[297]],[[359]],[0],[18082025],[UCCdqIOYAGRdWIuNsbRn7gvQ]
 5976,Hrpelje,[],,Slovenia,SVN,Europe,45.6067654,13.94366,0.0,4194,2130638,5.1,99.52,174.0,45.9,24.6,0.0,[ro1RSbWM6WI],[[0]],[[373]],[[451]],[0],[18082025],[UCCdqIOYAGRdWIuNsbRn7gvQ]
@@ -5997,3 +5997,5 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 5996,Cottage Grove,[],OR,United States,USA,North America,43.7974729,-123.058896,0.0,35918,340110988,12.7,0.0,170.0,38.5,41.4,0.0,[3oEN9JPWqiU],[[0]],[[54]],[[1406]],[0],[01102025],[UChv3DmLA2hH-d93bGgqjMLg]
 5997,Yachats,[],OR,United States,USA,North America,44.312756,-124.104999,0.0,718,340110988,12.7,0.0,170.0,38.5,41.4,0.0,[Acj20vURexo],[[0]],[[0]],[[1395]],[0],[25092025],[UChv3DmLA2hH-d93bGgqjMLg]
 5998,Arcata,[],CA,United States,USA,North America,40.866517,-124.08284,0.0,17843,340110988,12.7,0.0,170.0,38.5,41.4,0.0,[-KXHgoWGbAg],[[0]],[[64]],[[1722]],[0],[18092025],[UChv3DmLA2hH-d93bGgqjMLg]
+5999,Surdulica,[],,Serbia,SRB,Europe,42.6919329,22.1701473,0.0,9242,6567783,7.5,99.34,175.0,43.7,36.2,0.0,[K6mAYrdxQDk],[[0]],[[1443]],[[1750]],[0],[18072025],[UCy7ctrQA1duIZquYLQBrA5Q]
+6000,Ćurkovica,[Curkovica],,Serbia,SRB,Europe,42.436459,22.000037,0.0,261,6567783,7.5,99.34,175,43.7,36.2,0.0,[K6mAYrdxQDk],[[0]],[[1751]],[[1885]],[0],[18072025],[UCy7ctrQA1duIZquYLQBrA5Q]
