@@ -5979,7 +5979,7 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 5978,Podgrad,[],,Slovenia,SVN,Europe,45.7352064,15.2009199,0.0,24,2130638,5.1,99.52,174.0,45.9,24.6,0.0,[ro1RSbWM6WI],[[0]],[[1530]],[[1607]],[0],[18082025],[UCCdqIOYAGRdWIuNsbRn7gvQ]
 5979,Ulcinj,[],,Montenegro,MNE,Europe,41.926012,19.2055563,0.0,10828,623327,7.6,98.53,177.0,40.7,38.5,0.0,"[4CDBkAHd9Oo,DYwFeCeqaRQ]","[[0],[0]]","[[1108],[472]]","[[1678],[996]]","[0,0]","[13082025,16082025]","[UCCdqIOYAGRdWIuNsbRn7gvQ,UCCdqIOYAGRdWIuNsbRn7gvQ]"
 5980,Vladimir,[],,Montenegro,MNE,Europe,42.0050689,19.3052089,0.0,757,623327,7.6,98.53,177.0,40.7,38.5,0.0,[DYwFeCeqaRQ],[[0]],[[2060]],[[2252]],[0],[16082025],[UCCdqIOYAGRdWIuNsbRn7gvQ]
-5981,Bar,[],,Montenegro,MNE,Europe,42.0979745,19.0954528,0.0,17727,623327,7.6,98.53,177.0,40.7,38.5,0.0,[58vxIYPT2CE],[[0]],[[38]],[[405]],[0],[12012026],[UCzcpolbCg6LsdMIf-L0BYzg]
+5981,Bar,[],,Montenegro,MNE,Europe,42.0979745,19.0954528,0.0,17727,623327,7.6,98.53,177.0,40.7,38.5,0.0,"[58vxIYPT2CE,jQw0OitxDcU]","[[0], [0]]","[[38], [2594]]","[[405], [2677]]","[0,0]","[12012026,6012026]","[UCzcpolbCg6LsdMIf-L0BYzg,UCzcpolbCg6LsdMIf-L0BYzg]"
 5982,Dobra Voda,[],,Montenegro,MNE,Europe,42.0510559,19.1462648,0.0,995,623327,7.6,98.53,177.0,40.7,38.5,0.0,[58vxIYPT2CE],[[0]],[[685]],[[1238]],[0],[12012026],[UCzcpolbCg6LsdMIf-L0BYzg]
 5983,Meggen,[],,Switzerland,CHE,Europe,47.0470746,8.3733992,0.0,6533,9082848,2.2,0.0,172.0,44.0,33.1,0.0,[nvsxMSsZPaI],[[0]],[[2758]],[[3306]],[0],[01112021],[UCOTltJnsvy8V9ku46nARF6w]
 5984,Küssnacht,[Küssnacht],SZ,Switzerland,CHE,Europe,47.08385,8.4386308,0.0,13084,9082848,2.2,0.0,172.0,44.0,33.1,0.0,[nvsxMSsZPaI],[[0]],[[3307]],[[3668]],[0],[01112021],[UCOTltJnsvy8V9ku46nARF6w]
@@ -6005,3 +6005,6 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 6004,Bajram Curri,[],,Albania,ALB,Europe,42.3576482,20.0753026,0.0,4113,2363314,11.7,97.68,168.0,35.8,33.2,0.0,[7sYH4_3Uvl4],[[0]],[[6]],[[180]],[0],[05012025],[UCKDi3klSRgweF2ltY0AymSw]
 6005,Gjakova,[],,Kosovo,XKX,Africa,42.3798793,20.4316226,0.0,94158,1578000,0.0,0.0,0.0,31.7,0.0,0.0,[7sYH4_3Uvl4],[[0]],[[2730]],[[2967]],[0],[05012025],[UCKDi3klSRgweF2ltY0AymSw]
 6006,Maqellarë,[Maqellare],,Albania,ALB,Europe,41.5889687,20.4863759,0.0,10662,2363314,11.7,97.68,168.0,35.8,33.2,0.0,[_2bWV6gZxq0],[[0]],[[0]],[[140]],[0],[02042025],[UCKDi3klSRgweF2ltY0AymSw]
+6007,Lezha,[],,Albania,ALB,Europe,41.7816638,19.6433538,0.0,18695,2363314,11.7,97.68,168.0,35.8,33.2,0.0,[RMRsLspfvH0],[[0]],[[0]],[[373]],[0],[19052025],[UCE0UnCI3U4rk0clsURyeRiA]
+6008,Budva,[],,Montenegro,MNE,Europe,42.2885656,18.8419505,0.0,18000,623327,7.6,98.53,177.0,40.7,38.5,0.0,[jQw0OitxDcU],[[0]],[[31]],[[677]],[0],[06012026],[UCzcpolbCg6LsdMIf-L0BYzg]
+6009,Tivat,[],,Montenegro,MNE,Europe,42.4303762,18.6988104,0.0,10149,623327,7.6,98.53,177,40.7,38.5,0.0,[5LpB2_nYOpM],[[0]],[[40]],[[517]],[0],[30122025],[UCzcpolbCg6LsdMIf-L0BYzg]
