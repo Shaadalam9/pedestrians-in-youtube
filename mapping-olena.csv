@@ -6002,3 +6002,5 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 6001,Klisura,[],,Bulgaria,BGR,Europe,42.6937241,24.4494186,0.0,1485,6437360,9.2,98.35,169.0,44.7,41.3,0.0,[K6mAYrdxQDk],[[0]],[[4120]],[[4162]],[0],[18072025],[UCy7ctrQA1duIZquYLQBrA5Q]
 6002,Winterthur,[],,Switzerland,CHE,Europe,47.4991723,8.7291498,0.0,91908,9082848,2.2,0.0,172.0,44.0,33.1,51.35,[QIwNW1QxuNA],[[0]],[[45]],[[1576]],[0],[06072024],[UC62XLEy4ZRTL2q8YzOJBDow]
 6003,Fürnitz,[],,Austria,AUT,Europe,46.5625966,13.816001,0.0,1520,9200931,4.9,0.0,173.0,44.8,30.8,0.0,[Rz0n-jbZa5c],[[0]],[[0]],[[123]],[0],[15072020],[UCoTedxE3WwpDUGW8P6a3T6Q]
+6004,Bajram Curri,[],,Albania,ALB,Europe,42.3576482,20.0753026,0.0,4113,2363314,11.7,97.68,168.0,35.8,33.2,0.0,[7sYH4_3Uvl4],[[0]],[[6]],[[180]],[0],[05012025],[UCKDi3klSRgweF2ltY0AymSw]
+6005,Gjakova,[],,Kosovo,XKX,Africa,42.3798793,20.4316226,0.0,94158,1578000,0.0,0.0,0.0,31.7,0.0,0.0,[7sYH4_3Uvl4],[[0]],[[2730]],[[2967]],[0],[05012025],[UCKDi3klSRgweF2ltY0AymSw]
