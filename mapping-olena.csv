@@ -6022,4 +6022,4 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 6021,Bardhosh,[],,Kosovo,XKX,Europe,42.7207888,21.1346529,0.0,3126,1578000,0.0,0.0,0.0,31.7,0.0,0.0,[2SszbCkbuk4],[[0]],[[1296]],[[1479]],[0],[28102024],[UCKPKkECp7Ad_GjQ8MFm1nXg]
 6022,Llugë,[Lluge],,Kosovo,XKX,Europe,42.8296146,21.1873588,0.0,1169,1578000,0.0,0.0,0.0,31.7,0.0,0.0,[2SszbCkbuk4],[[0]],[[2485]],[[2741]],[0],[28102024],[UCKPKkECp7Ad_GjQ8MFm1nXg]
 6023,Prishtina,[],,Kosovo,XKX,Africa,42.6638771,21.1640849,0.0,550000,1578000,0.0,0.0,0.0,31.7,0.0,0.0,[Fb8ypeFbegE],[[0]],[[0]],[[598]],[0],[23072022],[UC28vHkLF8Z4adJ0DB_H--0A]
-6024,Shëngjin,[Shengjin],,Albania,ALB,Europe,41.8097827,19.5989755,0.0,2698,2363314,11.7,97.68,168.0,35.8,33.2,0.0,[m86FsrzRZDs],[[0]],[[3737]],[[4325]],[0],[12072024],[UCKDi3klSRgweF2ltY0AymSw]
+6024,Shëngjin,[Shengjin],,Albania,ALB,Europe,41.8097827,19.5989755,0.0,2698,2363314,11.7,97.68,168.0,35.8,33.2,0.0,"[m86FsrzRZDs,oOdSqucxVr0]","[[0], [0]]","[[3737], [192]]","[[4325], [836]]","[0,0]","[12072024,7072020]","[UCKDi3klSRgweF2ltY0AymSw,UCMHhxfex1xOOsKSUEkNVOOQ]"
