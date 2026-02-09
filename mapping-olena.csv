@@ -6026,3 +6026,8 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 6025,Besianë,[],,Kosovo,XKX,Africa,42.9078011,21.1925286,0.0,35000,1578000,0.0,0.0,0.0,31.7,0.0,0.0,[Lgq1B8YyU80],[[0]],[[829]],[[1480]],[0],[02122024],[UCKPKkECp7Ad_GjQ8MFm1nXg]
 6026,Peran,[],,Kosovo,XKX,Europe,42.9290781,21.1663991,0.0,1328,1578000,0.0,0.0,0.0,31.7,0.0,0.0,[Lgq1B8YyU80],[[0]],[[1480]],[[1660]],[0],[02122024],[UCKPKkECp7Ad_GjQ8MFm1nXg]
 6027,Restelicë,[Restelice],,Kosovo,XKX,Europe,41.9434475,20.669966,0.0,2630,1578000,0.0,0.0,0.0,31.7,0.0,0.0,[flNk9jf5eIk],[[0]],[[580]],[[1269]],[0],[24122024],[UCKPKkECp7Ad_GjQ8MFm1nXg]
+6028,Pouskë,[],,Kosovo,XKX,Europe,42.1942262,20.763189,0.0,684,1578000,0.0,0.0,0.0,31.7,0.0,0.0,[_m-I4xXehfI],[[0]],[[1116]],[[1361]],[0],[04012025],[UCKPKkECp7Ad_GjQ8MFm1nXg]
+6029,Reçan,[Recan],,Kosovo,XKX,Europe,42.1735235,20.8182231,0.0,1883,1578000,0.0,0.0,0.0,31.7,0.0,0.0,[_m-I4xXehfI],[[0]],[[2314]],[[2580]],[0],[04012025],[UCKPKkECp7Ad_GjQ8MFm1nXg]
+6030,Sredskë,[Sredske],,Kosovo,XKX,Europe,42.171221,20.855328,0.0,0,1578000,0.0,0.0,0.0,31.7,0.0,0.0,[_m-I4xXehfI],[[0]],[[2594]],[[2721]],[0],[04012025],[UCKPKkECp7Ad_GjQ8MFm1nXg]
+6031,Bogoshefc,[],,Kosovo,XKX,Africa,42.1715492,20.8786653,0.0,102,1578000,0.0,0.0,0.0,31.7,0.0,0.0,[_m-I4xXehfI],[[0]],[[2793]],[[2893]],[0],[04012025],[UCKPKkECp7Ad_GjQ8MFm1nXg]
+6032,Mushnikovë,[Mushnikove],,Kosovo,XKX,Europe,42.1738484,20.8967307,0.0,1633,1578000,0.0,0.0,0.0,31.7,0.0,0.0,[_m-I4xXehfI],[[0]],[[2895]],[[3061]],[0],[04012025],[UCKPKkECp7Ad_GjQ8MFm1nXg]
