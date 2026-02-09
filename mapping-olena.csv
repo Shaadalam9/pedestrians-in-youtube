@@ -6018,7 +6018,7 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 6017,Ersekë,[Erseke],,Albania,ALB,Europe,40.3384368,20.6810024,0.0,7890,2363314,11.7,97.68,168.0,35.8,33.2,0.0,[37vAzpIqnaA],[[0]],[[2723]],[[2972]],[0],[19112024],[UCKPKkECp7Ad_GjQ8MFm1nXg]
 6018,Dragash,[],,Kosovo,XKX,Europe,42.0615806,20.6533669,0.0,35000,1578000,0.0,0.0,0.0,31.7,0.0,0.0,"[awuW2ORgSLA,1UHvyjfVPzo,flNk9jf5eIk]","[[0], [0], [0]]","[[1365], [1661], [3229]]","[[1685], [1831], [3486]]","[0,0,0]","[7102024,29042025,24122024]","[UCKPKkECp7Ad_GjQ8MFm1nXg,UCKPKkECp7Ad_GjQ8MFm1nXg,UCKPKkECp7Ad_GjQ8MFm1nXg]"
 6019,Bellobrad,[],,Kosovo,XKX,Africa,42.119172,20.682621,0.0,989,1578000,0.0,0.0,0.0,31.7,0.0,0.0,[awuW2ORgSLA],[[0]],[[2367]],[[2503]],[0],[07102024],[UCKPKkECp7Ad_GjQ8MFm1nXg]
-6020,Ferizaj,[],,Kosovo,XKX,Europe,42.3682168,21.1532848,0.0,59504,1578000,0.0,0.0,0.0,31.7,0.0,0.0,"[5iS3_mZzJ2U,Su7LY0H72r4]","[[0], [0]]","[[14], [90]]","[[871], [310]]","[0,0]","[29052025,7122025]","[UCKPKkECp7Ad_GjQ8MFm1nXg,UCxmEBDS-QDwH-1b5PaNQNWQ]"
+6020,Ferizaj,[],,Kosovo,XKX,Europe,42.3682168,21.1532848,0.0,59504,1578000,0.0,0.0,0.0,31.7,0.0,0.0,"[5iS3_mZzJ2U,Su7LY0H72r4,sGgY5LSSroE]","[[0], [0], [0]]","[[14], [90], [2854]]","[[871], [310], [3235]]","[0,0,0]","[29052025,7122025,18032025]","[UCKPKkECp7Ad_GjQ8MFm1nXg,UCxmEBDS-QDwH-1b5PaNQNWQ,UCKPKkECp7Ad_GjQ8MFm1nXg]"
 6021,Bardhosh,[],,Kosovo,XKX,Europe,42.7207888,21.1346529,0.0,3126,1578000,0.0,0.0,0.0,31.7,0.0,0.0,[2SszbCkbuk4],[[0]],[[1296]],[[1479]],[0],[28102024],[UCKPKkECp7Ad_GjQ8MFm1nXg]
 6022,Llugë,[Lluge],,Kosovo,XKX,Europe,42.8296146,21.1873588,0.0,1169,1578000,0.0,0.0,0.0,31.7,0.0,0.0,[2SszbCkbuk4],[[0]],[[2485]],[[2741]],[0],[28102024],[UCKPKkECp7Ad_GjQ8MFm1nXg]
 6023,Prishtina,[],,Kosovo,XKX,Africa,42.6638771,21.1640849,0.0,550000,1578000,0.0,0.0,0.0,31.7,0.0,0.0,[Fb8ypeFbegE],[[0]],[[0]],[[598]],[0],[23072022],[UC28vHkLF8Z4adJ0DB_H--0A]
@@ -6031,3 +6031,7 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 6030,Sredskë,[Sredske],,Kosovo,XKX,Europe,42.171221,20.855328,0.0,0,1578000,0.0,0.0,0.0,31.7,0.0,0.0,[_m-I4xXehfI],[[0]],[[2594]],[[2721]],[0],[04012025],[UCKPKkECp7Ad_GjQ8MFm1nXg]
 6031,Bogoshefc,[],,Kosovo,XKX,Africa,42.1715492,20.8786653,0.0,102,1578000,0.0,0.0,0.0,31.7,0.0,0.0,[_m-I4xXehfI],[[0]],[[2793]],[[2893]],[0],[04012025],[UCKPKkECp7Ad_GjQ8MFm1nXg]
 6032,Mushnikovë,[Mushnikove],,Kosovo,XKX,Europe,42.1738484,20.8967307,0.0,1633,1578000,0.0,0.0,0.0,31.7,0.0,0.0,[_m-I4xXehfI],[[0]],[[2895]],[[3061]],[0],[04012025],[UCKPKkECp7Ad_GjQ8MFm1nXg]
+6033,Jazhincë,[Jazhince],,North Macedonia,MKD,Europe,42.1639784,21.1757992,0.0,913,1822612,5.1,96.13,169.0,40.1,33.0,0.0,[sGgY5LSSroE],[[0]],[[841]],[[1014]],[0],[18032025],[UCKPKkECp7Ad_GjQ8MFm1nXg]
+6034,Štrpce,[ Strpce],,Kosovo,XKX,Europe,42.2401249,21.0253337,0.0,13630,1578000,0.0,0.0,0.0,31.7,0.0,0.0,[sGgY5LSSroE],[[0]],[[1104]],[[1340]],[0],[18032025],[UCKPKkECp7Ad_GjQ8MFm1nXg]
+6035,Bajnicë,[Bajnice],,Kosovo,XKX,Europe,42.2889858,21.1647865,0.0,475,1578000,0.0,0.0,0.0,31.7,0.0,0.0,[sGgY5LSSroE],"[[0, 0]]","[[2234, 2409]]","[[2408, 2662]]",[0],[18032025],[UCKPKkECp7Ad_GjQ8MFm1nXg]
+6036,Gremë,[Greme],,Kosovo,XKX,Europe,42.3380327,21.151677,0.0,4421,1578000,0.0,0.0,0.0,31.7,0.0,0.0,[sGgY5LSSroE],[[0]],[[2663]],[[2854]],[0],[18032025],[UCKPKkECp7Ad_GjQ8MFm1nXg]
