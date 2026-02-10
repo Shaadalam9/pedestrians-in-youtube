@@ -161,7 +161,7 @@ output_csv_file = 'mapping_cleaned.csv'
 
 # List of video IDs to remove
 videos_to_delete = [
-    'MEpQrmOAy3o'
+    'VLbSvoyQQ0E'
 ]
 
 # Run the script
