@@ -11,7 +11,7 @@ import random
 import requests
 import ast
 from geopy.geocoders import Nominatim
-from geopy.exc import GeocoderTimedOut, GeocoderUnavailable
+from geopy.exc import GeocoderTimedOut, GeocoderUnavailable, GeocoderServiceError
 from datetime import datetime
 
 app = Flask(__name__)
@@ -875,7 +875,7 @@ def get_traffic_index(city, state, country):
 
 
 def get_coordinates(city, state, country):
-    """Get city coordinates either from the pickle file or geocode them."""
+    """Get city coordinates."""
     # Generate a unique user agent with the current date and time
     current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     user_agent = f"my_geocoding_script_{current_time}"
@@ -899,8 +899,12 @@ def get_coordinates(city, state, country):
 
     except GeocoderTimedOut:
         print(f"Geocoding timed out for {location_query}.")
+        return None, None  # Return None if city is not found
     except GeocoderUnavailable:
         print(f"Geocoding server could not be reached for {location_query}.")
+        return None, None  # Return None if city is not found
+    except GeocoderServiceError:
+        print(f"Non-successful status for {location_query}.")
         return None, None  # Return None if city is not found
 
 
