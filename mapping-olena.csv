@@ -1986,7 +1986,7 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 1985,Prelog,[],,Croatia,HRV,Europe,46.3366064,16.614794,0.0,4042,4047200,7.9,99.45,174.0,44.8,29.7,0.0,[kzIBGcbDrXo],[[0]],[[165]],[[378]],[0],[09122023],[UCKPKkECp7Ad_GjQ8MFm1nXg]
 1986,Čakovec,[Cakovec],,Croatia,HRV,Europe,46.3892305,16.4368593,0.0,15078,4047200,7.9,99.45,174.0,44.8,29.7,0.0,[kzIBGcbDrXo],[[0]],[[1100]],[[1466]],[0],[09122023],[UCKPKkECp7Ad_GjQ8MFm1nXg]
 1987,Nedelišće,[Nedelisce],,Croatia,HRV,Europe,46.376116,16.3859138,0.0,11017,4047200,7.9,99.45,174.0,44.8,29.7,0.0,[kzIBGcbDrXo],[[0]],[[1690]],[[2126]],[0],[09122023],[UCKPKkECp7Ad_GjQ8MFm1nXg]
-1988,Umag,[],,Croatia,HRV,Europe,45.4323587,13.5224098,0.0,6751,4047200,7.9,99.45,174.0,44.8,29.7,0.0,"[D5YF1gO3zwo,sh8Sw5d49hU]","[[0],[0]]","[[13],[16]]","[[757],[520]]","[0,0]","[17022023,5042020]","[UCxf-ISIk3SIE__V7fvoUpFQ,UCg1sAFKjbgemJnIODXe_2BQ]"
+1988,Umag,[],,Croatia,HRV,Europe,45.4323587,13.5224098,0.0,6751,4047200,7.9,99.45,174.0,44.8,29.7,0.0,"[D5YF1gO3zwo,sh8Sw5d49hU,To43Ji_b9NA]","[[0], [0], [0]]","[[13], [16], [1133]]","[[757], [520], [1926]]","[0,0,0]","[17022023,5042020,6022026]","[UCxf-ISIk3SIE__V7fvoUpFQ,UCg1sAFKjbgemJnIODXe_2BQ,UCjSeC6zAw2G4Jy31n7x0JhA]"
 1989,Lucija,[],,Slovenia,SVN,Europe,45.50708,13.6046378,0.0,6057,2100126,5.1,99.6,174.0,45.9,24.6,0.0,[D5YF1gO3zwo],[[0]],[[1706]],[[2023]],[0],[17022023],[UCxf-ISIk3SIE__V7fvoUpFQ]
 1990,Portorož,[Portoroz],,Slovenia,SVN,Europe,45.5146489,13.5910112,0.0,2947,2100126,5.1,99.6,174.0,45.9,24.6,0.0,[D5YF1gO3zwo],[[0]],[[2073]],[[2516]],[0],[17022023],[UCxf-ISIk3SIE__V7fvoUpFQ]
 1991,Biograd na Moru,[],,Croatia,HRV,Europe,43.9377147,15.4477635,0.0,5601,4047200,7.9,99.45,174.0,44.8,29.7,0.0,[mR6GsaFdPno],[[0]],[[0]],[[445]],[0],[11082024],[UCt_LlOp29uAi7JVBYdJDkYw]
@@ -5275,7 +5275,7 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 5274,Poreč,[Porec],,Croatia,HRV,Europe,45.2271961,13.5957333,0.0,8841,3866233,7.9,98.15,174.0,44.8,29.7,0.0,[e-Dj436zakE],[[0]],[[20]],[[730]],[0],[12102020],[UCg1sAFKjbgemJnIODXe_2BQ]
 5275,Opatija,[],,Croatia,HRV,Europe,45.3349238,14.3067834,0.0,5701,3866233,7.9,98.15,174.0,44.8,29.7,0.0,[zQY0Lu0Zx8w],"[[0,0]]","[[20,331]]","[[314,640]]",[0],[12102020],[UCg1sAFKjbgemJnIODXe_2BQ]
 5276,Podstrana,[],,Croatia,HRV,Europe,43.4903118,16.5615609,0.0,9129,3866233,7.9,98.15,174.0,44.8,29.7,0.0,[8poyVmXJynY],[[0]],[[16]],[[548]],[0],[11102020],[UCg1sAFKjbgemJnIODXe_2BQ]
-5277,Novigrad,[],,Croatia,HRV,Europe,45.3159178,13.5630277,0.0,2160,3866233,7.9,98.15,174.0,44.8,29.7,0.0,[u4W-0mAJaOw],[[0]],[[20]],[[471]],[0],[11102020],[UCg1sAFKjbgemJnIODXe_2BQ]
+5277,Novigrad,[],,Croatia,HRV,Europe,45.3159178,13.5630277,0.0,2160,3866233,7.9,98.15,174.0,44.8,29.7,0.0,"[u4W-0mAJaOw,To43Ji_b9NA]","[[0], [0, 0]]","[[20], [28, 667]]","[[471], [565, 791]]","[0,0]","[11102020,6022026]","[UCg1sAFKjbgemJnIODXe_2BQ,UCjSeC6zAw2G4Jy31n7x0JhA]"
 5278,Tribanj,[],,Croatia,HRV,Europe,44.3494943,15.3170011,0.0,232,3866233,7.9,98.15,174.0,44.8,29.7,0.0,[y7INHZguQDg],[[0]],[[17]],[[670]],[0],[08102020],[UCg1sAFKjbgemJnIODXe_2BQ]
 5279,Novi Vinodolski,[],,Croatia,HRV,Europe,45.128264,14.7888328,0.0,3336,3866233,7.9,98.15,174.0,44.8,29.7,0.0,[YzqCmUJlV9I],[[0]],[[20]],[[350]],[0],[08102020],[UCg1sAFKjbgemJnIODXe_2BQ]
 5280,Polkowice,[],,Poland,POL,Europe,51.5039288,16.0713371,0.0,21565,37392000,9.4,98.74,173.0,41.7,30.2,0.0,[NeqzlKwy-4M],"[[0,0]]","[[120,215]]","[[147,393]]",[0],[3102020],[UCg1sAFKjbgemJnIODXe_2BQ]
@@ -6513,3 +6513,4 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 6512,Cres,[],,Croatia,HRV,Europe,44.960346,14.4079371,0.0,2185,3866233,7.9,98.15,174.0,44.8,29.7,0.0,[L-dSh0RKc-E],[[0]],[[0]],[[209]],[0],[31012023],[UC2fnpxL0qJBoEzS2-C1TlZA]
 6513,Vrsar,[],,Croatia,HRV,Europe,45.1490782,13.6063472,0.0,1923,3866233,7.9,98.15,174.0,44.8,29.7,0.0,[Kv3o_RaTk0w],[[0]],[[360]],[[1400]],[0],[05022026],[UCjSeC6zAw2G4Jy31n7x0JhA]
 6514,Vis,[],,Croatia,HRV,Europe,43.059733,16.184765,0.0,1918,3866233,7.9,98.15,174.0,44.8,29.7,0.0,[hwP3Bu9c0d4],"[[0, 0]]","[[87, 694]]","[[180, 1185]]",[0],[4052022],[UC8dlMEF8LyyxEaX_HKVizpg]
+6515,Dajla,[],,Croatia,HRV,Europe,45.352641,13.5497192,0.0,353,3866233,7.9,98.15,174.0,44.8,29.7,0.0,[To43Ji_b9NA],[[0]],[[956]],[[1047]],[0],[06022026],[UCjSeC6zAw2G4Jy31n7x0JhA]
