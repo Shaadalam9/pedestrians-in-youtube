@@ -6499,3 +6499,7 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 6498,Otlja,[],,North Macedonia,MKD,Europe,42.1442242,21.587793,0.0,2326,1822612,5.1,96.13,169.0,40.1,33.0,0.0,[zQXfJ1hp6WQ],[[0]],[[3298]],[[3450]],[0],[28102025],[UCKPKkECp7Ad_GjQ8MFm1nXg]
 6499,Lipkovo,[],,North Macedonia,MKD,Europe,42.1572002,21.5860103,0.0,29965,1822612,5.1,96.13,169.0,40.1,33.0,0.0,[zQXfJ1hp6WQ],[[0]],[[3475]],[[3598]],[0],[28102025],[UCKPKkECp7Ad_GjQ8MFm1nXg]
 6500,Argostoli,[],,Greece,GRC,Europe,38.1756733,20.4878796,0.0,9820,10400720,8.3,93.91,173.0,46.2,32.9,25.0,[XFAPmgXaP4c],[[0]],[[8]],[[763]],[0],[16062019],[UC4MunFYykvYJxBJQbsO4RdQ]
+6501,Sveti Stefan,[],,North Macedonia,MKD,Europe,41.0764388,20.8050363,0.0,112,1822612,5.1,96.13,169.0,40.1,33.0,0.0,[q9VKhLxRw5s],[[0]],[[279]],[[361]],[0],[03082021],[UCYGTPKshHIktPJdVza4dzCA]
+6502,Dolno Kojsno,[],,North Macedonia,MKD,Europe,41.064986,20.8045,0.0,551,1822612,5.1,96.13,169.0,40.1,33.0,0.0,[q9VKhLxRw5s],[[0]],[[362]],[[455]],[0],[03082021],[UCYGTPKshHIktPJdVza4dzCA]
+6503,Lagadin,[],,North Macedonia,MKD,Europe,41.0477726,20.8026871,0.0,81,1822612,5.1,96.13,169.0,40.1,33.0,0.0,[q9VKhLxRw5s],[[0]],[[456]],[[659]],[0],[03082021],[UCYGTPKshHIktPJdVza4dzCA]
+6504,Peštani,[Pestani],,North Macedonia,MKD,Europe,41.018117,20.810852,0.0,1326,1822612,5.1,96.13,169,40.1,33.0,0.0,[q9VKhLxRw5s],[[0]],[[660]],[[810]],[0],[03082021],[UCYGTPKshHIktPJdVza4dzCA]
