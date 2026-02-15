@@ -5273,7 +5273,7 @@ id,city,city_aka,state,country,iso3,continent,lat,lon,gmp,population_city,popula
 5272,Wschowa,[],,Poland,POL,Europe,51.8038354,16.3172771,0.0,14458,37392000,9.4,98.74,173.0,41.7,30.2,0.0,[iygFTDWiWnw],[[0]],[[16]],[[300]],[0],[23102020],[UCg1sAFKjbgemJnIODXe_2BQ]
 5273,Tučepi,[Tucepi],,Croatia,HRV,Europe,43.2651336,17.0580946,0.0,1819,3866233,7.9,98.15,174.0,44.8,29.7,0.0,[pApm_LmdjK8],[[0]],[[40]],[[288]],[0],[20102020],[UCg1sAFKjbgemJnIODXe_2BQ]
 5274,Poreč,[Porec],,Croatia,HRV,Europe,45.2271961,13.5957333,0.0,8841,3866233,7.9,98.15,174.0,44.8,29.7,0.0,[e-Dj436zakE],[[0]],[[20]],[[730]],[0],[12102020],[UCg1sAFKjbgemJnIODXe_2BQ]
-5275,Opatija,[],,Croatia,HRV,Europe,45.3349238,14.3067834,0.0,5701,3866233,7.9,98.15,174.0,44.8,29.7,0.0,[zQY0Lu0Zx8w],"[[0,0]]","[[20,331]]","[[314,640]]",[0],[12102020],[UCg1sAFKjbgemJnIODXe_2BQ]
+5275,Opatija,[],,Croatia,HRV,Europe,45.3349238,14.3067834,0.0,5701,3866233,7.9,98.15,174.0,44.8,29.7,0.0,"[zQY0Lu0Zx8w,IMh6BFDRKJk]","[[0, 0], [0]]","[[20, 331], [29]]","[[314, 640], [725]]","[0,0]","[12102020,19012023]","[UCg1sAFKjbgemJnIODXe_2BQ,UCHhqou8CmYuktpXZN0H91xA]"
 5276,Podstrana,[],,Croatia,HRV,Europe,43.4903118,16.5615609,0.0,9129,3866233,7.9,98.15,174.0,44.8,29.7,0.0,[8poyVmXJynY],[[0]],[[16]],[[548]],[0],[11102020],[UCg1sAFKjbgemJnIODXe_2BQ]
 5277,Novigrad,[],,Croatia,HRV,Europe,45.3159178,13.5630277,0.0,2160,3866233,7.9,98.15,174.0,44.8,29.7,0.0,"[u4W-0mAJaOw,To43Ji_b9NA]","[[0], [0, 0]]","[[20], [28, 667]]","[[471], [565, 791]]","[0,0]","[11102020,6022026]","[UCg1sAFKjbgemJnIODXe_2BQ,UCjSeC6zAw2G4Jy31n7x0JhA]"
 5278,Tribanj,[],,Croatia,HRV,Europe,44.3494943,15.3170011,0.0,232,3866233,7.9,98.15,174.0,44.8,29.7,0.0,[y7INHZguQDg],[[0]],[[17]],[[670]],[0],[08102020],[UCg1sAFKjbgemJnIODXe_2BQ]
