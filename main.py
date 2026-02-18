@@ -231,7 +231,7 @@ def process_mapping_concurrently(mapping, config, secret, logger) -> int:
                 continue
 
             has_bbox = any(glob.glob(os.path.join(folder, "bbox", f"{vid}_{st}_*.csv")) for folder in data_folders)
-            has_seg  = any(glob.glob(os.path.join(folder, "seg",  f"{vid}_{st}_*.csv")) for folder in data_folders)
+            has_seg = any(glob.glob(os.path.join(folder, "seg",  f"{vid}_{st}_*.csv")) for folder in data_folders)
             if (bbox_mode_cfg and not has_bbox) or (seg_mode_cfg and not has_seg):
                 needs_any = True
                 break
@@ -631,7 +631,7 @@ def process_mapping_concurrently(mapping, config, secret, logger) -> int:
                     continue
 
                 video_info[v] = info
-                fps = info["video_fps"]
+                fps = info["video_fps"]  # noqa: F841
 
                 if not (bbox_mode_cfg or seg_mode_cfg):
                     # Download-only mode: nothing else to do.
@@ -643,8 +643,10 @@ def process_mapping_concurrently(mapping, config, secret, logger) -> int:
                     if _segment_marker_anyfps_exists(v, st):
                         continue
 
-                    has_bbox = any(glob.glob(os.path.join(folder, "bbox", f"{v}_{st}_*.csv")) for folder in data_folders)
-                    has_seg  = any(glob.glob(os.path.join(folder, "seg",  f"{v}_{st}_*.csv")) for folder in data_folders)
+                    has_bbox = any(glob.glob(os.path.join(folder, "bbox",
+                                                          f"{v}_{st}_*.csv")) for folder in data_folders)
+                    has_seg = any(glob.glob(os.path.join(folder, "seg",
+                                                         f"{v}_{st}_*.csv")) for folder in data_folders)
                     run_bbox = bool(bbox_mode_cfg and not has_bbox)
                     run_seg = bool(seg_mode_cfg and not has_seg)
                     if run_bbox or run_seg:
