@@ -110,6 +110,35 @@ def process_mapping_concurrently(mapping, config, secret, logger) -> int:
     internal_ssd = video_paths[-1] if video_paths else "."
     os.makedirs(internal_ssd, exist_ok=True)
 
+    # ------------------------------------------------------------------
+    # Segment marker helpers
+    # ------------------------------------------------------------------
+    def _segment_marker_anyfps_exists(video_id: str, start_time: int) -> bool:
+        """True if a marker like {video_id}_{start_time}_{fps} exists in any data folder root.
+
+        We do not know FPS before opening/downloading the video, so we accept any FPS,
+        but require that the suffix after '{video_id}_{start_time}_' starts with digits.
+        """
+        prefix = f"{video_id}_{int(start_time)}_"
+        for folder in data_folders:
+            try:
+                for p in glob.glob(os.path.join(folder, prefix + "*")):
+                    bn = os.path.basename(p)
+                    if not bn.startswith(prefix):
+                        continue
+                    rest = bn[len(prefix):]
+                    digits = []
+                    for ch in rest:
+                        if ch.isdigit():
+                            digits.append(ch)
+                        else:
+                            break
+                    if digits:
+                        return True
+            except Exception:
+                continue
+        return False
+
     # Snellius multi-task sharding (1 task == 1 GPU)
     snellius_mode = bool(getattr(config, "snellius_mode", False))
     shard_mode = bool(getattr(config, "snellius_shard_mode", False))
@@ -183,14 +212,26 @@ def process_mapping_concurrently(mapping, config, secret, logger) -> int:
     for vid, info in video_plan.items():
         segments = info["segments"]
 
+        # Marker check intentionally ignores FPS (any {vid}_{start}_{fps} counts).
+        def _marker_done(start_time: int) -> bool:
+            return _segment_marker_anyfps_exists(vid, start_time)
+
+        # Skip entire video if every segment has a marker.
+        if all(_marker_done(st) for st, _, _ in segments):
+            continue
+
         if not (bbox_mode_cfg or seg_mode_cfg):
             vids_to_handle.append(vid)
             continue
 
         needs_any = False
         for st, _, _ in segments:
+            # Marker present → this segment is already considered processed.
+            if _marker_done(st):
+                continue
+
             has_bbox = any(glob.glob(os.path.join(folder, "bbox", f"{vid}_{st}_*.csv")) for folder in data_folders)
-            has_seg = any(glob.glob(os.path.join(folder, "seg",  f"{vid}_{st}_*.csv")) for folder in data_folders)
+            has_seg  = any(glob.glob(os.path.join(folder, "seg",  f"{vid}_{st}_*.csv")) for folder in data_folders)
             if (bbox_mode_cfg and not has_bbox) or (seg_mode_cfg and not has_seg):
                 needs_any = True
                 break
@@ -217,118 +258,175 @@ def process_mapping_concurrently(mapping, config, secret, logger) -> int:
     def _prepare_video(vid: str):
         h = _get_worker_helper()
 
-        # Locate existing file in any configured video path.
-        existing_path = None
-        for vp in video_paths:
-            candidate = os.path.join(vp, f"{vid}.mp4")
-            if os.path.isfile(candidate):
-                existing_path = candidate
-                break
-
-        output_path = internal_ssd if getattr(config, "external_ssd", False) else (video_paths[0] if video_paths else ".")   # noqa: E501
+        # Preferred cache destination:
+        # - if external_ssd=True, we typically use the last configured path (internal_ssd)
+        # - otherwise we use the first configured path
+        output_path = internal_ssd if getattr(config, "external_ssd", False) else (video_paths[0] if video_paths else ".")  # noqa: E501
         os.makedirs(output_path, exist_ok=True)
 
-        ftp_download = False
+        snellius_mode = bool(getattr(config, "snellius_mode", False))
+        ftp_server = getattr(config, "ftp_server", None)
+
+        preferred_path = os.path.join(output_path, f"{vid}.mp4")
+
         video_title = vid
         resolution = ""
         video_fps = 0.0
-        base_video_path = existing_path
+        base_video_path = None
 
-        # Refresh from FTP if requested and file already on SSD
-        if existing_path and getattr(config, "external_ssd", False) and existing_path.startswith(internal_ssd) and getattr(config, "ftp_server", None):  # noqa: E501
+        # Cleanup intent:
+        # - always_delete_paths: local copies created from other folders (and any processing-speed working copies)
+        # - downloaded_paths: FTP/YouTube downloads (deleted only when delete_youtube_video=True)
+        always_delete_paths = []
+        downloaded_paths = []
+        download_source = "existing"
+
+        # ------------------------------------------------------------------
+        # 0) If the canonical cache file already exists in output_path, use it.
+        #    Do NOT re-download (no FTP refresh).
+        # ------------------------------------------------------------------
+        if os.path.isfile(preferred_path):
+            base_video_path = preferred_path
+
+        # ------------------------------------------------------------------
+        # 1) Non-Snellius only: if preferred is missing, look for an existing copy
+        #    in other configured video folders and copy it into output_path.
+        #    Copied MP4s are deleted by default once processing finishes.
+        # ------------------------------------------------------------------
+        if base_video_path is None and not snellius_mode:
+            for vp in video_paths:
+                try:
+                    if os.path.abspath(vp) == os.path.abspath(output_path):
+                        continue
+                except Exception:
+                    pass
+
+                candidate = os.path.join(vp, f"{vid}.mp4")
+                if not os.path.isfile(candidate):
+                    continue
+
+                try:
+                    out = h.copy_video_safe(candidate, output_path, vid)
+                    if out:
+                        base_video_path = out
+                    else:
+                        shutil.copy2(candidate, preferred_path)
+                        base_video_path = preferred_path
+
+                    download_source = "copy"
+                    always_delete_paths.append(base_video_path)
+                except Exception as e:
+                    logger.warning(f"{vid}: failed to copy from {candidate} ({e!r}); will try download.")
+                break
+
+        # ------------------------------------------------------------------
+        # 2) If still missing: download from FTP (if configured).
+        #    Snellius mode: ONLY FTP (no YouTube, no local-copy reuse beyond preferred_path).
+        # ------------------------------------------------------------------
+        if base_video_path is None and ftp_server:
+            tmp_dir = os.path.join(output_path, ".ftp_tmp", f"{vid}_{uuid.uuid4().hex}")
+            os.makedirs(tmp_dir, exist_ok=True)
             try:
-                tmp_dir = os.path.join(internal_ssd, ".ftp_refresh_tmp")
-                os.makedirs(tmp_dir, exist_ok=True)
                 tmp = h.download_videos_from_ftp(
                     filename=vid,
-                    base_url=config.ftp_server,
+                    base_url=ftp_server,
                     out_dir=tmp_dir,
                     username=getattr(secret, "ftp_username", None),
                     password=getattr(secret, "ftp_password", None),
                     token=getattr(secret, "ftp_token", None),
                     debug=False,
                 )
-                if tmp is not None:
-                    tmp_video_path, video_title, resolution, fps = tmp
-                    try:
-                        os.remove(existing_path)
-                    except FileNotFoundError:
-                        pass
-                    final_path = os.path.join(output_path, f"{vid}.mp4")
-                    shutil.move(tmp_video_path, final_path)
-                    base_video_path = final_path
-                    ftp_download = True
-                    video_fps = float(fps or 0.0)
-                    h.set_video_title(video_title)
             except Exception as e:
-                logger.warning(f"{vid}: FTP refresh failed ({e!r}); using existing file.")
-                base_video_path = existing_path
+                tmp = None
+                logger.warning(f"{vid}: FTP download failed ({e!r}).")
 
-        # If still no base file, download (FTP then YouTube fallback)
-        if base_video_path is None:
-            ftp_only = bool(getattr(config, "snellius_mode", False))
+            if tmp is not None:
+                tmp_video_path, video_title, resolution, fps = tmp
 
-            tmp = None
-            if getattr(config, "ftp_server", None):
                 try:
-                    tmp = h.download_videos_from_ftp(
-                        filename=vid,
-                        base_url=config.ftp_server,
-                        out_dir=output_path,
-                        username=getattr(secret, "ftp_username", None),
-                        password=getattr(secret, "ftp_password", None),
-                        token=getattr(secret, "ftp_token", None),
-                        debug=False,
-                    )
-                except Exception as e:
-                    if ftp_only:
-                        logger.warning(f"{vid}: FTP download failed ({e!r}); skipping (Snellius ftp-only).")
-                        return None
-                    logger.warning(f"{vid}: FTP download failed ({e!r}); falling back to YouTube.")
+                    os.remove(preferred_path)
+                except FileNotFoundError:
+                    pass
+                try:
+                    os.replace(tmp_video_path, preferred_path)
+                except Exception:
+                    shutil.move(tmp_video_path, preferred_path)
 
-                if tmp is not None:
-                    base_video_path, video_title, resolution, fps = tmp
-                    ftp_download = True
-                    video_fps = float(fps or 0.0)
-                elif ftp_only:
-                    logger.info(f"{vid}: not available on FTP; skipping (Snellius ftp-only).")
+                base_video_path = preferred_path
+                downloaded_paths.append(preferred_path)
+                download_source = "ftp"
+                video_fps = float(fps or 0.0)
+                try:
+                    h.set_video_title(video_title)
+                except Exception:
+                    pass
+            else:
+                if snellius_mode:
+                    logger.info(f"{vid}: not available on FTP; skipping (Snellius mode).")
+                    try:
+                        shutil.rmtree(tmp_dir)
+                    except Exception:
+                        pass
                     return None
 
-            elif ftp_only:
-                logger.warning(f"{vid}: ftp_server not configured; skipping (Snellius ftp-only).")
+            try:
+                shutil.rmtree(tmp_dir)
+            except Exception:
+                pass
+
+        # ------------------------------------------------------------------
+        # 3) If still missing: download from YouTube ONLY when snellius_mode is False.
+        # ------------------------------------------------------------------
+        if base_video_path is None:
+            if snellius_mode:
+                logger.info(f"{vid}: no local file and FTP unavailable; skipping (Snellius mode).")
                 return None
 
-            if (not ftp_only) and base_video_path is None:
-                yt = h.download_video_with_resolution(vid, output_path=output_path)
-                if yt is None:
-                    raise RuntimeError(f"{vid}: could not download video via FTP or YouTube.")
-                base_video_path, video_title, resolution, fps = yt
-                video_fps = float(fps or 0.0)
+            yt = h.download_video_with_resolution(vid, output_path=output_path)
+            if yt is None:
+                raise RuntimeError(f"{vid}: could not download video via FTP or YouTube.")
+            base_video_path, video_title, resolution, fps = yt
+            video_fps = float(fps or 0.0)
+            downloaded_paths.append(base_video_path)
+            download_source = "youtube"
+            try:
+                h.set_video_title(video_title)
+            except Exception:
+                pass
 
-            h.set_video_title(video_title)
-        # Ensure we have FPS
+        # Ensure FPS
         if not video_fps or video_fps <= 0:
             try:
                 video_fps = float(h.get_video_fps(base_video_path))  # type: ignore
             except Exception:
                 video_fps = 0.0
 
-        # If running from external SSD, copy to internal SSD for processing speed
+        # Optional processing-speed working copy (safe to delete after processing)
         if getattr(config, "external_ssd", False) and base_video_path and not base_video_path.startswith(internal_ssd):
             try:
                 out = h.copy_video_safe(base_video_path, internal_ssd, vid)
-                base_video_path = out
+                if out and out != base_video_path:
+                    always_delete_paths.append(out)
+                    base_video_path = out
             except Exception as e:
                 logger.warning(f"{vid}: failed to copy to internal SSD ({e!r}); processing from source.")
+
+        # Ensure helper has a title
+        try:
+            h.set_video_title(video_title or vid)
+        except Exception:
+            pass
 
         return {
             "vid": vid,
             "base_video_path": base_video_path,
             "output_path": output_path,
-            "video_title": vid,
+            "video_title": video_title or vid,
             "resolution": resolution,
             "video_fps": float(video_fps),
-            "ftp_download": ftp_download,
+            "download_source": download_source,
+            "downloaded_paths": list(downloaded_paths),
+            "always_delete_paths": list(always_delete_paths),
         }
 
     # ------------------------------------------------------------------
@@ -455,18 +553,45 @@ def process_mapping_concurrently(mapping, config, secret, logger) -> int:
         if not info:
             return
 
-        # Mirror original cleanup behaviour, but do it as soon as a video is fully drained.
-        if info.get("ftp_download"):
+        ext_ssd = bool(getattr(config, "external_ssd", False))
+        keep_root = None
+        if ext_ssd:
             try:
-                os.remove(info["base_video_path"])
+                keep_root = os.path.abspath(internal_ssd)
+            except Exception:
+                keep_root = None
+
+        def _ok_to_delete(path: str) -> bool:
+            """When external_ssd=True, only delete files that live in videos[-1]."""
+            if not keep_root:
+                return True
+            try:
+                ap = os.path.abspath(path)
+            except Exception:
+                return False
+            return ap == keep_root or ap.startswith(keep_root + os.sep)
+
+        # Default cleanup: delete MP4s created by COPYING from other folders
+        # (and any processing-speed working copies).
+        for p in set(info.get("always_delete_paths") or []):
+            if not _ok_to_delete(p):
+                continue
+            try:
+                os.remove(p)
             except FileNotFoundError:
                 pass
 
-        if getattr(config, "delete_youtube_video", False) and processed_any.get(v, False):
-            try:
-                os.remove(os.path.join(info["output_path"], f"{v}.mp4"))
-            except FileNotFoundError:
-                pass
+        # Conditional cleanup: delete FTP/YouTube downloads only when explicitly enabled.
+        # When external_ssd=True, never delete anything outside videos[-1]
+        # even if delete_youtube_video=True.
+        if getattr(config, "delete_youtube_video", False):
+            for p in set(info.get("downloaded_paths") or []):
+                if not _ok_to_delete(p):
+                    continue
+                try:
+                    os.remove(p)
+                except FileNotFoundError:
+                    pass
 
         # Drop bookkeeping to free buffer slots and memory
         video_info.pop(v, None)
@@ -514,9 +639,12 @@ def process_mapping_concurrently(mapping, config, secret, logger) -> int:
                     continue
 
                 for (st, et, tod) in video_plan[v]["segments"]:
-                    segment_csv = f"{v}_{st}_{int(fps)}.csv"
-                    has_bbox = any(os.path.isfile(os.path.join(folder, "bbox", segment_csv)) for folder in data_folders)  # noqa: E501
-                    has_seg = any(os.path.isfile(os.path.join(folder, "seg",  segment_csv)) for folder in data_folders)
+                    # If any marker exists for this segment (any FPS), skip it regardless of CSV presence.
+                    if _segment_marker_anyfps_exists(v, st):
+                        continue
+
+                    has_bbox = any(glob.glob(os.path.join(folder, "bbox", f"{v}_{st}_*.csv")) for folder in data_folders)
+                    has_seg  = any(glob.glob(os.path.join(folder, "seg",  f"{v}_{st}_*.csv")) for folder in data_folders)
                     run_bbox = bool(bbox_mode_cfg and not has_bbox)
                     run_seg = bool(seg_mode_cfg and not has_seg)
                     if run_bbox or run_seg:
