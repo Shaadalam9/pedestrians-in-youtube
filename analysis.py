@@ -1663,7 +1663,11 @@ if __name__ == "__main__":
         df = df.sort(["continent", "country"])
 
         # map with all cities
-        maps.mapbox_map(df=df.to_pandas(), hover_data=hover_data, hover_name="flag_city", file_name='mapbox_map_all')
+        maps.mapbox_map(df=df.to_pandas(),
+                        hover_data=hover_data,
+                        hover_name="flag_city",
+                        marker_size=4,
+                        file_name='mapbox_map_all')
 
         # Sort by continent and city, both in ascending order
         df = df.sort(["country", "city"])

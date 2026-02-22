@@ -14,7 +14,7 @@ class Maps:
         pass
 
     def mapbox_map(self, df, density_col=None, density_radius=30, hover_data=None, hover_name=None,
-                   file_name="mapbox_map", save_final=True):
+                   marker_size=10, file_name="mapbox_map", save_final=True):
         """Generates a world map of cities using Mapbox, with optional density visualization.
 
         This method can create either:
@@ -30,6 +30,7 @@ class Maps:
             hover_data (list, optional): List of additional DataFrame columns to display when hovering.
                 Defaults to None.
             hover_name (list, optional): title on top of hover popup.
+            marker_size (int, optional): size of markers.
             file_name (str, optional): Name of the saved file (without extension). Defaults to "mapbox_map".
             save_final (bool, optional): If True, saves the figure. Defaults to True.
 
@@ -44,9 +45,13 @@ class Maps:
                 lon="lon",
                 hover_data=hover_data,
                 hover_name=hover_name,
-                color=df["continent"],  # Color points by continent
-                zoom=1.3  # Initial zoom level # pyright: ignore[reportArgumentType]
+                color=df["continent"],
+                zoom=1.3  # pyright: ignore[reportArgumentType]
             )
+
+            # Apply marker size
+            fig.update_traces(marker=dict(size=marker_size))
+
         # Draw density map if density column is provided
         else:
             fig = px.density_mapbox(
