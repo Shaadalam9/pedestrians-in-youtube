@@ -14,7 +14,7 @@ class Maps:
         pass
 
     def mapbox_map(self, df, density_col=None, density_radius=30, hover_data=None, hover_name=None,
-                   marker_size=10, file_name="mapbox_map", save_final=True):
+                   marker_size=5, file_name="mapbox_map", save_final=True):
         """Generates a world map of cities using Mapbox, with optional density visualization.
 
         This method can create either:
