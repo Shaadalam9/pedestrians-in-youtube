@@ -715,10 +715,18 @@ def get_city_population(city_data):
     :param country_code: 2-letter ISO code of the country
     :return: City data
     """
-    if 'geonames' in city_data and len(city_data['geonames']) > 0:
-        return city_data['geonames'][0].get('population', None)
-    else:
+    if not city_data:
         return 0
+
+    if not isinstance(city_data, dict):
+        return 0
+
+    geonames = city_data.get("geonames")
+
+    if isinstance(geonames, list) and len(geonames) > 0:
+        return geonames[0].get("population", 0)
+
+    return 0
 
 
 # Fetch average height by ISO-3 code
