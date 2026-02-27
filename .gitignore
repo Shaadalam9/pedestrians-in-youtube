@@ -29,6 +29,7 @@ __pycache__/
 *.pyc
 *.egg-info/
 .venv
+.wb_cache
 
 # macOS specific files
 **/.DS_Store
