@@ -96,6 +96,16 @@ OVERLAP_MATCH_EPS: float = 1e-3     # match tolerance for start and end when del
 EXPORT_OVERLAPS_FOUND_CSV: bool = True
 OVERLAPS_FOUND_CSV_NAME: str = "overlaps_found.csv"
 
+# Export a CSV listing videos involved in selected validation checks
+# Categories included:
+#   1) mapping_csv.multi_continent_videos
+#   2) mapping_metadata.duplicate_video_rows
+#   3) mapping_vs_metadata.missing_metadata_rows
+#   4) mapping_vs_metadata.segment_count_match (mismatches only)
+#   5) metadata_vs_mapping.missing_in_mapping
+EXPORT_VALIDATION_VIDEO_ISSUES_CSV: bool = True
+VALIDATION_VIDEO_ISSUES_CSV_NAME: str = "validation_video_issues.csv"
+
 # Keep mapping list like columns in the original compact style (no quotes, no spaces)
 WRITE_MAPPING_LISTS_COMPACT: bool = True
 
@@ -1610,7 +1620,11 @@ class MetadataRow:
     date_updated: str
 
 
-def load_mapping_metadata(path: Path, logger: logging.Logger, report: Report) -> Dict[str, MetadataRow]:
+def load_mapping_metadata(
+    path: Path,
+    logger: logging.Logger,
+    report: Report,
+) -> Tuple[Dict[str, MetadataRow], Dict[str, int]]:
     out: Dict[str, MetadataRow] = {}
 
     total_rows = count_csv_data_rows(path)
@@ -1618,6 +1632,7 @@ def load_mapping_metadata(path: Path, logger: logging.Logger, report: Report) ->
     # NEW: detect duplicate video ids in mapping_metadata.csv
     first_seen_row: Dict[str, int] = {}
     dup_row_count = 0
+    dup_video_counts: Counter[str] = Counter()
     dup_examples: List[Dict[str, Any]] = []
 
     with path.open("r", encoding="utf-8", newline="") as f:
@@ -1642,6 +1657,7 @@ def load_mapping_metadata(path: Path, logger: logging.Logger, report: Report) ->
 
             if video in first_seen_row:
                 dup_row_count += 1
+                dup_video_counts[video] += 1
                 if len(dup_examples) < 25:
                     dup_examples.append(
                         {"video": video, "first_row": first_seen_row[video], "duplicate_row": rownum}
@@ -1677,10 +1693,14 @@ def load_mapping_metadata(path: Path, logger: logging.Logger, report: Report) ->
         ok=True,
         details={"n_unique_videos": len(out), "n_rows_total": total_rows, "duplicate_row_count": dup_row_count},
     )
-    return out
+    return out, dict(dup_video_counts)
 
 
-def compare_metadata_segments(video_aggs: Dict[str, VideoAgg], meta: Dict[str, MetadataRow], report: Report) -> None:
+def compare_metadata_segments(
+    video_aggs: Dict[str, VideoAgg],
+    meta: Dict[str, MetadataRow],
+    report: Report,
+) -> Tuple[List[str], List[Dict[str, Any]]]:
     mismatches: List[Dict[str, Any]] = []
     missing_meta: List[str] = []
 
@@ -1714,6 +1734,99 @@ def compare_metadata_segments(video_aggs: Dict[str, VideoAgg], meta: Dict[str, M
         details={"mismatch_count": len(mismatches), "examples": mismatches[:25]},
         warn=(len(mismatches) > 0),
     )
+
+    return missing_meta, mismatches
+
+
+def export_validation_video_issues_csv(
+    out_csv_path: Path,
+    multi_continent_videos: Sequence[str],
+    metadata_duplicate_counts: Dict[str, int],
+    missing_metadata_videos: Sequence[str],
+    segment_count_mismatches: Sequence[Dict[str, Any]],
+    missing_in_mapping_videos: Sequence[str],
+    logger: logging.Logger,
+) -> None:
+    """Write a single CSV containing videos involved in selected checks."""
+    out_csv_path.parent.mkdir(parents=True, exist_ok=True)
+
+    with out_csv_path.open("w", encoding="utf-8", newline="") as f:
+        w = csv.DictWriter(
+            f,
+            fieldnames=[
+                "category",
+                "video",
+                "claimed_segments",
+                "derived_segments",
+                "reason",
+            ],
+        )
+        w.writeheader()
+
+        # 1) mapping_csv.multi_continent_videos
+        for vid in sorted(set(multi_continent_videos)):
+            w.writerow(
+                {
+                    "category": "mapping_csv.multi_continent_videos",
+                    "video": vid,
+                    "claimed_segments": "",
+                    "derived_segments": "",
+                    "reason": "multiple_continents",
+                }
+            )
+
+        # 2) mapping_metadata.duplicate_video_rows
+        for vid in sorted(metadata_duplicate_counts.keys()):
+            w.writerow(
+                {
+                    "category": "mapping_metadata.duplicate_video_rows",
+                    "video": vid,
+                    "claimed_segments": "",
+                    "derived_segments": "",
+                    "reason": f"duplicate_rows:{int(metadata_duplicate_counts.get(vid, 0))}",
+                }
+            )
+
+        # 3) mapping_vs_metadata.missing_metadata_rows
+        for vid in sorted(set(missing_metadata_videos)):
+            w.writerow(
+                {
+                    "category": "mapping_vs_metadata.missing_metadata_rows",
+                    "video": vid,
+                    "claimed_segments": "",
+                    "derived_segments": "",
+                    "reason": "missing_metadata",
+                }
+            )
+
+        # 4) mapping_vs_metadata.segment_count_match (mismatches only)
+        for mm in segment_count_mismatches:
+            vid = str(mm.get("video", "")).strip()
+            if not vid:
+                continue
+            w.writerow(
+                {
+                    "category": "mapping_vs_metadata.segment_count_match",
+                    "video": vid,
+                    "claimed_segments": "" if mm.get("claimed") is None else str(mm.get("claimed")),
+                    "derived_segments": "" if mm.get("derived") is None else str(mm.get("derived")),
+                    "reason": str(mm.get("reason", "mismatch")),
+                }
+            )
+
+        # 5) metadata_vs_mapping.missing_in_mapping
+        for vid in sorted(set(missing_in_mapping_videos)):
+            w.writerow(
+                {
+                    "category": "metadata_vs_mapping.missing_in_mapping",
+                    "video": vid,
+                    "claimed_segments": "",
+                    "derived_segments": "",
+                    "reason": "missing_in_mapping",
+                }
+            )
+
+    logger.info(f"Validation video issues CSV written: {out_csv_path}")
 
 
 # =============================================================================
@@ -2132,6 +2245,10 @@ def main() -> int:
     # ---------------------------------------------------------------------
     mapping_agg, video_aggs = parse_mapping_csv(mapping_path, logger, report)
 
+    multi_continent_videos = sorted(
+        [vid for vid, agg in video_aggs.items() if agg.continents and len(agg.continents) > 1]
+    )
+
     _print_mapping_summary(mapping_agg, logger)
     _print_continent_table(mapping_agg, logger)
     _print_daynight_entries(mapping_agg, logger)
@@ -2170,9 +2287,9 @@ def main() -> int:
     # ---------------------------------------------------------------------
     # 4) Load mapping_metadata.csv and cross-check
     # ---------------------------------------------------------------------
-    meta = load_mapping_metadata(meta_path, logger, report)
+    meta, metadata_duplicate_counts = load_mapping_metadata(meta_path, logger, report)
 
-    compare_metadata_segments(video_aggs, meta, report)
+    missing_metadata_videos, segment_count_mismatches = compare_metadata_segments(video_aggs, meta, report)
 
     missing_in_mapping = [vid for vid in meta.keys() if vid not in video_aggs and vid != "#NAME?"]
     report.add(
@@ -2181,6 +2298,32 @@ def main() -> int:
         details={"missing_count": len(missing_in_mapping), "examples": missing_in_mapping[:25]},
         warn=(len(missing_in_mapping) > 0),
     )
+
+    if EXPORT_VALIDATION_VIDEO_ISSUES_CSV:
+        out_csv = out_dir / VALIDATION_VIDEO_ISSUES_CSV_NAME
+        export_validation_video_issues_csv(
+            out_csv_path=out_csv,
+            multi_continent_videos=multi_continent_videos,
+            metadata_duplicate_counts=metadata_duplicate_counts,
+            missing_metadata_videos=missing_metadata_videos,
+            segment_count_mismatches=segment_count_mismatches,
+            missing_in_mapping_videos=missing_in_mapping,
+            logger=logger,
+        )
+        report.add(
+            "export.validation_video_issues_csv",
+            ok=True,
+            details={
+                "path": str(out_csv),
+                "counts": {
+                    "mapping_csv.multi_continent_videos": len(multi_continent_videos),
+                    "mapping_metadata.duplicate_video_rows": len(metadata_duplicate_counts),
+                    "mapping_vs_metadata.missing_metadata_rows": len(missing_metadata_videos),
+                    "mapping_vs_metadata.segment_count_match_mismatches": len(segment_count_mismatches),
+                    "metadata_vs_mapping.missing_in_mapping": len(missing_in_mapping),
+                },
+            },
+        )
 
     # ---------------------------------------------------------------------
     # 5) Check YOLO folder
