@@ -10,6 +10,8 @@ from threading import Timer
 import random
 import requests
 import ast
+import re
+import json
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut, GeocoderUnavailable, GeocoderServiceError
 from datetime import datetime
@@ -157,6 +159,15 @@ def save_csv(df, file_path):
     df.to_csv(file_path, index=False)
 
 
+
+def compact_nested_list(value):
+    """Serialise nested lists (ints) without spaces, eg [[0],[1,2]]."""
+    try:
+        return json.dumps(value, separators=(',', ':'))
+    except Exception:
+        # Fallback: remove whitespace characters
+        return re.sub(r"\s+", "", str(value))
+
 # --- Check if city, state and country exist in the CSV, including city_aka ---
 def city_matches(row, city_input):
     city_input = city_input.strip().lower()
@@ -169,6 +180,198 @@ def city_matches(row, city_input):
         aka_list = [item.strip().lower() for item in aka_raw[1:-1].split(',') if item.strip()]
 
     return city_input == main or city_input in aka_list
+
+
+# --- Global video lookup helpers (across all rows) ---
+def _is_missing(x):
+    try:
+        return x is None or (isinstance(x, float) and pd.isna(x)) or (isinstance(x, str) and x.strip() in ["", "None", "nan"])
+    except Exception:
+        return x is None
+
+
+def _safe_literal_eval(val, default):
+    """Safely parse stringified Python literals used in the mapping file."""
+    if _is_missing(val):
+        return default
+    if isinstance(val, (list, dict, tuple)):
+        return val
+    s = str(val).strip()
+    if not s:
+        return default
+    try:
+        return ast.literal_eval(s)
+    except Exception:
+        return default
+
+
+def _parse_videos_cell(videos_cell):
+    """Return list of video ids from the mapping CSV videos cell."""
+    if _is_missing(videos_cell):
+        return []
+
+    s = str(videos_cell).strip()
+    # Handle variants like: "[id1, id2]", "['id1', 'id2']", "id1,id2"
+    if s.startswith('[') and s.endswith(']'):
+        parsed = _safe_literal_eval(s, None)
+        if isinstance(parsed, list):
+            out = []
+            for x in parsed:
+                if _is_missing(x):
+                    continue
+                out.append(str(x).strip().strip('"').strip("'"))
+            return [x for x in out if x]
+        # Fall back to manual splitting
+        s = s[1:-1]
+
+    parts = [p.strip().strip('"').strip("'") for p in s.split(',')]
+    return [p for p in parts if p]
+
+
+def _segments_for_video_in_row(row, video_id):
+    """Return list of (start, end) segments for video_id within a single mapping row."""
+    vids = _parse_videos_cell(row.get('videos', ''))
+    if video_id not in vids:
+        return []
+    pos = vids.index(video_id)
+
+    starts_all = _safe_literal_eval(row.get('start_time', ''), [])
+    ends_all = _safe_literal_eval(row.get('end_time', ''), [])
+
+    try:
+        starts = starts_all[pos] if pos < len(starts_all) else []
+        ends = ends_all[pos] if pos < len(ends_all) else []
+    except Exception:
+        starts, ends = [], []
+
+    segs = []
+    for st, et in zip(starts, ends):
+        try:
+            segs.append((int(st), int(et)))
+        except Exception:
+            continue
+    return segs
+
+
+def _segments_overlap_allow_touch(a_start, a_end, b_start, b_end):
+    """Return True if two segments overlap.
+
+    Segments are treated as *half open* for overlap checks: [start, end).
+    This means a segment that starts exactly at another segment's end is allowed.
+
+    Example: existing 11 to 587, new 587 to 590 => NOT overlapping.
+    """
+    a_start = int(a_start)
+    a_end = int(a_end)
+    b_start = int(b_start)
+    b_end = int(b_end)
+    return a_start < b_end and b_start < a_end
+
+
+def _find_overlapping_segment(existing_segs, new_start, new_end):
+    """Return the first (start, end) segment that overlaps the proposed segment, else None."""
+    for st, et in existing_segs:
+        try:
+            if _segments_overlap_allow_touch(st, et, new_start, new_end):
+                return (int(st), int(et))
+        except Exception:
+            continue
+    return None
+
+def find_overlap_across_mapping(video_hits, new_start, new_end, exclude_idxs=None):
+    """Return info about the first overlapping segment found for this video anywhere in the mapping file."""
+    if exclude_idxs:
+        try:
+            exclude = set(exclude_idxs)
+        except Exception:
+            exclude = set()
+    else:
+        exclude = set()
+
+    for h in (video_hits or []):
+        if not isinstance(h, dict):
+            continue
+        idx = h.get('idx')
+        if idx in exclude:
+            continue
+        label = format_city_label(
+            str(h.get('city', '')).strip(),
+            h.get('state', ''),
+            str(h.get('country', '')).strip(),
+            str(h.get('iso3', '')).strip(),
+        )
+        for st, et in (h.get('segments', []) or []):
+            try:
+                if _segments_overlap_allow_touch(st, et, new_start, new_end):
+                    return {'label': label, 'start': int(st), 'end': int(et), 'idx': idx}
+            except Exception:
+                continue
+    return None
+
+
+
+def find_video_occurrences(df, video_id):
+    """Find every row in df that already contains video_id. Returns list of dicts."""
+    hits = []
+    if not video_id:
+        return hits
+
+    for idx, row in df.iterrows():
+        vids = _parse_videos_cell(row.get('videos', ''))
+        if video_id in vids:
+            hits.append({
+                'idx': idx,
+                'city': row.get('city', ''),
+                'state': row.get('state', ''),
+                'country': row.get('country', ''),
+                'iso3': row.get('iso3', ''),
+                'segments': _segments_for_video_in_row(row, video_id),
+            })
+    return hits
+
+
+def _format_segments(segs):
+    if not segs:
+        return "no segments saved"
+    return ", ".join([f"{st} to {et}" for st, et in segs])
+
+
+def build_video_occurrence_note(df, video_id, max_rows=8, exclude_idxs=None):
+    """Build a user facing note listing where the video already exists and its segments."""
+    hits = find_video_occurrences(df, video_id)
+    if exclude_idxs:
+        try:
+            exclude = set(exclude_idxs)
+        except Exception:
+            exclude = set()
+        hits = [h for h in hits if h.get('idx') not in exclude]
+    if not hits:
+        return ""
+
+    parts = []
+    for h in hits[:max_rows]:
+        label = format_city_label(
+            str(h.get('city', '')).strip(),
+            h.get('state', ''),
+            str(h.get('country', '')).strip(),
+            str(h.get('iso3', '')).strip()
+        )
+        parts.append(f"{label}: {_format_segments(h.get('segments', []))}")
+
+    extra = ""
+    if len(hits) > max_rows:
+        extra = f" (plus {len(hits) - max_rows} more)"
+
+    return "Video already exists elsewhere in the mapping file. Existing segments: " + "; ".join(parts) + extra
+
+
+def row_label(row):
+    return format_city_label(
+        str(row.get('city', '')).strip(),
+        row.get('state', ''),
+        str(row.get('country', '')).strip(),
+        str(row.get('iso3', '')).strip()
+    )
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -236,6 +439,11 @@ def form():
             try:
                 yt = YouTube(video_url)
                 video_id = yt.video_id
+
+                # Look for this video id in every row of the mapping file
+                # Only used for displaying existing segments. Do not overwrite the chosen city.
+                video_global_note = build_video_occurrence_note(df, video_id)
+
                 # get info of video
                 # todo: fetching upload date of video fails (with pytubefix?)
                 yt_upload_date = yt.publish_date
@@ -337,6 +545,10 @@ def form():
                                      'gini': get_country_gini(country_data),
                                      'traffic_index': get_traffic_index_lat_lon(lat, lon)}  # alternative is paid Nombeo API  # noqa: E501
 
+            # Always show global video matches note if present, but do not overwrite any fields
+            if 'video_global_note' in locals() and video_global_note:
+                message = (message + " " + video_global_note).strip()
+
         elif 'submit_data' in request.form:
             city = request.form.get('city')
             # check for missing data
@@ -383,6 +595,8 @@ def form():
             try:
                 yt = YouTube(video_url)
                 video_id = yt.video_id
+                # Look for this video id in every row of the mapping file
+                video_matches_anywhere = find_video_occurrences(df, video_id)
                 # get info of video
                 yt_upload_date = yt.publish_date
                 # in case getting upload date fails
@@ -431,139 +645,223 @@ def form():
                         (df['city'] == city) &
                         (df['country'] == country)
                     ].empty
+
+                # Prevent adding the same video id to a different row
+                current_idx = None
                 if check_existing:
                     if state:
-                        idx = df[(df['city'] == city) & (df['state'] == state) & (df['country'] == country)].index[0]
+                        current_idx = df[(df['city'] == city) & (df['state'] == state) & (df['country'] == country)].index[0]
                     else:
-                        idx = df[(df['city'] == city) & (df['country'] == country)].index[0]
-                    # Get the list of videos for the city (and state) and country
-                    videos_list = df.at[idx, 'videos'].split(',') if pd.notna(df.at[idx, 'videos']) else []
-                    # Clean the individual video IDs by stripping any leading or trailing brackets
-                    videos_list = [video.strip('[]') for video in videos_list]
-                    time_of_day_list = eval(df.at[idx, 'time_of_day']) if pd.notna(df.at[idx, 'time_of_day']) else []
-                    start_time_list = eval(df.at[idx, 'start_time']) if pd.notna(df.at[idx, 'start_time']) else []
-                    end_time_list = eval(df.at[idx, 'end_time']) if pd.notna(df.at[idx, 'end_time']) else []
-                    upload_date_list = df.at[idx, 'upload_date'].split(',') if pd.notna(df.at[idx, 'upload_date']) else []  # noqa: E501
-                    upload_date_list = [upload_date.strip('[]') for upload_date in upload_date_list]
-                    channel_list = df.at[idx, 'channel'].split(',') if pd.notna(df.at[idx, 'channel']) else []  # noqa: E501
-                    channel_list = [channel.strip('[]') for channel in channel_list]
-                    vehicle_type_list = df.at[idx, 'vehicle_type'].split(',') if pd.notna(df.at[idx, 'vehicle_type']) else []  # noqa: E501
-                    vehicle_type_list = [vehicle_type.strip('[]') for vehicle_type in vehicle_type_list]
+                        current_idx = df[(df['city'] == city) & (df['country'] == country)].index[0]
 
-                    # Check if the video_id already exists in the list
-                    if video_id not in videos_list:
-                        # If the video doesn't exist, append it to the list
-                        videos_list.append(video_id)
-                        video_index = videos_list.index(video_id)  # Find the index of the existing video ID
-                        time_of_day_list.append([int(time_of_day[-1])])    # Append time of day as integer
-                        start_time_list.append([int(start_time[-1])])      # Append start time as integer
-                        end_time_list.append([int(end_time[-1])])          # Append end time as integer
-                        # Append upload time as integer
-                        if upload_date_video != 'None' and upload_date_video:
-                            upload_date_list.append(int(upload_date_video))
+                global_note_for_display = ""
+                duplicate_elsewhere = [h for h in video_matches_anywhere if h.get('idx') != current_idx]
+
+                if duplicate_elsewhere:
+                    global_note_for_display = build_video_occurrence_note(
+                        df, video_id, exclude_idxs={current_idx} if current_idx is not None else None
+                    )
+
+                # Do not block adding the same video to another row, but do block overlapping segments anywhere
+                try:
+                    new_start_global = int(start_time[-1])
+                    new_end_global = int(end_time[-1])
+                except Exception:
+                    new_start_global = None
+                    new_end_global = None
+
+                overlap_global = None
+                if new_start_global is not None and new_end_global is not None:
+                    overlap_global = find_overlap_across_mapping(
+                        video_matches_anywhere, new_start_global, new_end_global,
+                        exclude_idxs={current_idx} if current_idx is not None else None
+                    )
+
+                if overlap_global:
+                    next_start = int(overlap_global['end'])
+                    message = (
+                        f"Cannot add segment {new_start_global} to {new_end_global} because it overlaps existing segment "
+                        f"{overlap_global['start']} to {overlap_global['end']} for this video in {overlap_global['label']}. "
+                        f"Please use a start time of {next_start} or later."
+                    )
+                    if current_idx is not None:
+                        existing_data_row = df.loc[current_idx].to_dict()
+
+                if not message:
+                    if check_existing:
+                        if state:
+                            idx = df[(df['city'] == city) & (df['state'] == state) & (df['country'] == country)].index[0]
                         else:
-                            upload_date_list.append(None)
-                        channel_list.append(channel_video)
-                        vehicle_type_list.append(int(vehicle_type_video))  # Append vehicle type as integer
-                    else:
-                        # If the video already exists, update the corresponding lists with the new data
-                        video_index = videos_list.index(video_id)  # Find the index of the existing video ID
-                        time_of_day_list[video_index].append(int(time_of_day[-1]))  # Append new time of day
-                        start_time_list[video_index].append(int(start_time[-1]))    # Append new start time
-                        end_time_list[video_index].append(int(end_time[-1]))        # Append new end time
-                        if upload_date_video != 'None' and upload_date_video:
-                            upload_date_list[video_index] = int(upload_date_video)
+                            idx = df[(df['city'] == city) & (df['country'] == country)].index[0]
+                        # Get the list of videos for the city (and state) and country
+                        videos_list = df.at[idx, 'videos'].split(',') if pd.notna(df.at[idx, 'videos']) else []
+                        # Clean the individual video IDs by stripping any leading or trailing brackets
+                        videos_list = [video.strip('[]') for video in videos_list]
+                        time_of_day_list = eval(df.at[idx, 'time_of_day']) if pd.notna(df.at[idx, 'time_of_day']) else []
+                        start_time_list = eval(df.at[idx, 'start_time']) if pd.notna(df.at[idx, 'start_time']) else []
+                        end_time_list = eval(df.at[idx, 'end_time']) if pd.notna(df.at[idx, 'end_time']) else []
+                        upload_date_list = df.at[idx, 'upload_date'].split(',') if pd.notna(df.at[idx, 'upload_date']) else []  # noqa: E501
+                        upload_date_list = [upload_date.strip('[]') for upload_date in upload_date_list]
+                        channel_list = df.at[idx, 'channel'].split(',') if pd.notna(df.at[idx, 'channel']) else []  # noqa: E501
+                        channel_list = [channel.strip('[]') for channel in channel_list]
+                        vehicle_type_list = df.at[idx, 'vehicle_type'].split(',') if pd.notna(df.at[idx, 'vehicle_type']) else []  # noqa: E501
+                        vehicle_type_list = [vehicle_type.strip('[]') for vehicle_type in vehicle_type_list]
+
+                        # Check if the video_id already exists in the list
+                        if video_id not in videos_list:
+                            # If the video doesn't exist, append it to the list
+                            videos_list.append(video_id)
+                            video_index = videos_list.index(video_id)  # Find the index of the existing video ID
+                            time_of_day_list.append([int(time_of_day[-1])])    # Append time of day as integer
+                            start_time_list.append([int(start_time[-1])])      # Append start time as integer
+                            end_time_list.append([int(end_time[-1])])          # Append end time as integer
+                            # Append upload time as integer
+                            if upload_date_video != 'None' and upload_date_video:
+                                upload_date_list.append(int(upload_date_video))
+                            else:
+                                upload_date_list.append(None)
+                            channel_list.append(channel_video)
+                            vehicle_type_list.append(int(vehicle_type_video))  # Append vehicle type as integer
                         else:
-                            upload_date_list[video_index] = None
-                        channel_list[video_index] = channel_video
-                        vehicle_type_list[video_index] = int(vehicle_type_video)
-                    start_time_video = start_time_list[video_index]
-                    end_time_video = end_time_list[video_index]
-                    time_of_day_video = time_of_day_list[video_index]
+                            # If the video already exists, update the corresponding lists with the new data
+                            video_index = videos_list.index(video_id)  # Find the index of the existing video ID
+                            new_start = int(start_time[-1])
+                            new_end = int(end_time[-1])
+                            existing_segs = list(zip(start_time_list[video_index], end_time_list[video_index]))
+                            overlap = _find_overlapping_segment(existing_segs, new_start, new_end)
+                            if overlap:
+                                next_start = int(overlap[1])
+                                message = (
+                                    f"Cannot add segment {new_start} to {new_end} because it overlaps "
+                                    f"existing segment {overlap[0]} to {overlap[1]} for this video in this city. "
+                                    f"Please use a start time of {next_start} or later."
+                                )
+                                existing_data_row = df.loc[idx].to_dict()
+                                start_time_video = start_time_list[video_index]
+                                end_time_video = end_time_list[video_index]
+                                time_of_day_video = time_of_day_list[video_index]
 
-                    # Update the DataFrame row with the modified lists and new data
-                    df.at[idx, 'videos'] = '[' + ','.join(videos_list) + ']'  # Join the list as a string
-                    df.at[idx, 'time_of_day'] = str(time_of_day_list)  # Store as string representation
-                    df.at[idx, 'start_time'] = str(start_time_list)    # Store as string representation
-                    df.at[idx, 'end_time'] = str(end_time_list)        # Store as string representation
-                    df.at[idx, 'gmp'] = to_float_safe(gmp)
-                    df.at[idx, 'population_city'] = to_int_safe(population_city)
-                    df.at[idx, 'population_country'] = to_int_safe(population_country)
-                    df.at[idx, 'traffic_mortality'] = to_float_safe(traffic_mortality)
-                    df.at[idx, 'continent'] = continent
-                    df.at[idx, 'city_aka'] = city_aka
-                    df.at[idx, 'literacy_rate'] = to_float_safe(literacy_rate)
-                    df.at[idx, 'avg_height'] = to_float_safe(avg_height)
-                    df.at[idx, 'med_age'] = to_float_safe(med_age)
-                    df.at[idx, 'lat'] = to_float_safe(lat)
-                    df.at[idx, 'lon'] = to_float_safe(lon)
-                    for i in range(len(upload_date_list)):
-                        if upload_date_list[i] != 'None' and upload_date_list[i]:
-                            upload_date_list[i] = int(upload_date_list[i])
+                                if not upload_date_video and yt_upload_date:
+                                    upload_date_video = yt_upload_date.strftime('%d%m%Y')
+
+                                if not channel_video and yt_channel:
+                                    channel_video = yt_channel
+                                elif not channel_video:
+                                    channel_video = 'None'
+
+                                vehicle_type_video_int = int(vehicle_type_video) if vehicle_type_video is not None else None
+                                time_of_day_last = extract_last_int(time_of_day_video)
+                                time_of_day_last = int(time_of_day_last) if time_of_day_last is not None else None
+
+                                return render_template(
+                                    "add_video.html", message=message, df=df, city=city, country=country, state=state,
+                                    video_url=video_url, video_id=video_id, existing_data=existing_data_row,
+                                    upload_date_video=upload_date_video, channel_video=channel_video,
+                                    timestamp=end_time_input, yt_title=yt_title, yt_description=yt_description,
+                                    yt_upload_date=yt_upload_date, yt_channel=yt_channel,
+                                    start_time_video=start_time_video, end_time_video=end_time_video,
+                                    vehicle_type_video=vehicle_type_video_int, time_of_day_video=time_of_day_video,
+                                    time_of_day_last=time_of_day_last
+                                )
+
+                            time_of_day_list[video_index].append(int(time_of_day[-1]))  # Append new time of day
+                            start_time_list[video_index].append(new_start)    # Append new start time
+                            end_time_list[video_index].append(new_end)        # Append new end time
+                            if upload_date_video != 'None' and upload_date_video:
+                                upload_date_list[video_index] = int(upload_date_video)
+                            else:
+                                upload_date_list[video_index] = None
+                            channel_list[video_index] = channel_video
+                            vehicle_type_list[video_index] = int(vehicle_type_video)
+                        start_time_video = start_time_list[video_index]
+                        end_time_video = end_time_list[video_index]
+                        time_of_day_video = time_of_day_list[video_index]
+
+                        # Update the DataFrame row with the modified lists and new data
+                        df.at[idx, 'videos'] = '[' + ','.join(videos_list) + ']'  # Join the list as a string
+                        df.at[idx, 'time_of_day'] = compact_nested_list(time_of_day_list)
+                        df.at[idx, 'start_time'] = compact_nested_list(start_time_list)
+                        df.at[idx, 'end_time'] = compact_nested_list(end_time_list)
+                        df.at[idx, 'gmp'] = to_float_safe(gmp)
+                        df.at[idx, 'population_city'] = to_int_safe(population_city)
+                        df.at[idx, 'population_country'] = to_int_safe(population_country)
+                        df.at[idx, 'traffic_mortality'] = to_float_safe(traffic_mortality)
+                        df.at[idx, 'continent'] = continent
+                        df.at[idx, 'city_aka'] = city_aka
+                        df.at[idx, 'literacy_rate'] = to_float_safe(literacy_rate)
+                        df.at[idx, 'avg_height'] = to_float_safe(avg_height)
+                        df.at[idx, 'med_age'] = to_float_safe(med_age)
+                        df.at[idx, 'lat'] = to_float_safe(lat)
+                        df.at[idx, 'lon'] = to_float_safe(lon)
+                        for i in range(len(upload_date_list)):
+                            if upload_date_list[i] != 'None' and upload_date_list[i]:
+                                upload_date_list[i] = int(upload_date_list[i])
+                            else:
+                                upload_date_list[i] = None
+                        upload_date_list = str(upload_date_list)
+                        upload_date_list = upload_date_list.replace('\'', '')
+                        upload_date_list = upload_date_list.replace(' ', '')
+                        df.at[idx, 'upload_date'] = upload_date_list
+                        for i in range(len(channel_list)):
+                            if channel_list[i] != 'None':
+                                channel_list[i] = channel_list[i]
+                        channel_list = str(channel_list)
+                        channel_list = channel_list.replace('\'', '')
+                        channel_list = channel_list.replace(' ', '')
+                        df.at[idx, 'channel'] = channel_list
+                        vehicle_type_list = [int(x) for x in vehicle_type_list]
+                        vehicle_type_list = str(vehicle_type_list)
+                        vehicle_type_list = vehicle_type_list.replace('\'', '')
+                        vehicle_type_list = vehicle_type_list.replace(' ', '')
+                        df.at[idx, 'vehicle_type'] = vehicle_type_list
+                        if gini:
+                            df.at[idx, 'gini'] = float(gini)
                         else:
-                            upload_date_list[i] = None
-                    upload_date_list = str(upload_date_list)
-                    upload_date_list = upload_date_list.replace('\'', '')
-                    upload_date_list = upload_date_list.replace(' ', '')
-                    df.at[idx, 'upload_date'] = upload_date_list
-                    for i in range(len(channel_list)):
-                        if channel_list[i] != 'None':
-                            channel_list[i] = channel_list[i]
-                    channel_list = str(channel_list)
-                    channel_list = channel_list.replace('\'', '')
-                    channel_list = channel_list.replace(' ', '')
-                    df.at[idx, 'channel'] = channel_list
-                    vehicle_type_list = [int(x) for x in vehicle_type_list]
-                    vehicle_type_list = str(vehicle_type_list)
-                    vehicle_type_list = vehicle_type_list.replace('\'', '')
-                    vehicle_type_list = vehicle_type_list.replace(' ', '')
-                    df.at[idx, 'vehicle_type'] = vehicle_type_list
-                    if gini:
-                        df.at[idx, 'gini'] = float(gini)
-                    else:
-                        df.at[idx, 'gini'] = 0.0
-                    if traffic_index:
-                        df.at[idx, 'traffic_index'] = float(traffic_index)
-                    else:
-                        df.at[idx, 'traffic_index'] = 0.0
+                            df.at[idx, 'gini'] = 0.0
+                        if traffic_index:
+                            df.at[idx, 'traffic_index'] = float(traffic_index)
+                        else:
+                            df.at[idx, 'traffic_index'] = 0.0
 
-                else:
-                    # Add new row if city and country are not found in the CSV
-                    new_row = {
-                        'id': int(df.iloc[-1]['id']+1),
-                        'city': city,
-                        'city_aka': city_aka,
-                        'state': state,
-                        'country': country,
-                        'iso3': common.get_iso3_country_code(common.correct_country(country)),
-                        'lat': lat,
-                        'lon': lon,
-                        'videos': '[' + video_id + ']',
-                        'time_of_day': str([[int(x) for x in time_of_day]]),  # Store as stringified list of integers
-                        'start_time': str([[int(x) for x in start_time]]),    # Store as stringified list of integers
-                        'end_time': str([[int(x) for x in end_time]]),        # Store as stringified list of integers
-                        'gmp': gmp,
-                        'population_city': population_city,
-                        'population_country': population_country,
-                        'traffic_mortality': traffic_mortality,
-                        'continent': continent,
-                        'literacy_rate': literacy_rate,
-                        'avg_height': avg_height,
-                        'med_age': med_age,
-                        'upload_date': '[' + upload_date_video.strip() + ']',
-                        'channel': '[' + channel_video.strip() + ']',
-                        'vehicle_type': '[' + vehicle_type_video.strip() + ']',
-                        'gini': gini,
-                        'traffic_index': traffic_index,
-                    }
-                    df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
-                    start_time_video = [int(x) for x in start_time]
-                    end_time_video = [int(x) for x in end_time]
-                    time_of_day_video = [int(x) for x in time_of_day]
+                    else:
+                        # Add new row if city and country are not found in the CSV
+                        new_row = {
+                            'id': int(df.iloc[-1]['id']+1),
+                            'city': city,
+                            'city_aka': city_aka,
+                            'state': state,
+                            'country': country,
+                            'iso3': common.get_iso3_country_code(common.correct_country(country)),
+                            'lat': lat,
+                            'lon': lon,
+                            'videos': '[' + video_id + ']',
+                            'time_of_day': compact_nested_list([[int(x) for x in time_of_day]]),
+                            'start_time': compact_nested_list([[int(x) for x in start_time]]),
+                            'end_time': compact_nested_list([[int(x) for x in end_time]]),
+                            'gmp': gmp,
+                            'population_city': population_city,
+                            'population_country': population_country,
+                            'traffic_mortality': traffic_mortality,
+                            'continent': continent,
+                            'literacy_rate': literacy_rate,
+                            'avg_height': avg_height,
+                            'med_age': med_age,
+                            'upload_date': '[' + upload_date_video.strip() + ']',
+                            'channel': '[' + channel_video.strip() + ']',
+                            'vehicle_type': '[' + vehicle_type_video.strip() + ']',
+                            'gini': gini,
+                            'traffic_index': traffic_index,
+                        }
+                        df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+                        start_time_video = [int(x) for x in start_time]
+                        end_time_video = [int(x) for x in end_time]
+                        time_of_day_video = [int(x) for x in time_of_day]
 
-                # Save to CSV
-                save_csv(df, FILE_PATH)
-                message = "Video added/updated successfully."
+                    # Save to CSV
+                    save_csv(df, FILE_PATH)
+                    message = "Video added/updated successfully."
+                    if global_note_for_display:
+                        message = message + " " + global_note_for_display
 
     # Fetch the existing data after submit to display for the city
     if state:
@@ -598,6 +896,17 @@ def form():
         end_time_video=end_time_video, vehicle_type_video=vehicle_type_video, time_of_day_video=time_of_day_video,
         time_of_day_last=time_of_day_last
     )
+
+
+# Compatibility routes: some templates post to these endpoints
+@app.route('/fetch_video', methods=['POST'])
+def fetch_video():
+    return form()
+
+
+@app.route('/submit_data', methods=['POST'])
+def submit_data():
+    return form()
 
 
 # Fetch country data based on its ISO-3 code
