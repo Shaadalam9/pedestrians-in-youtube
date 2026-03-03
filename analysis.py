@@ -385,8 +385,10 @@ def log_rollups(df_mapping: "pl.DataFrame") -> None:
           - Total segment_records == Total time-of-day label entries (the "total_entries" table)
        rather than counting only videos.
 
-    2) Unique uploads by continent uses a *canonical continent per video* (mode continent),
-       so the "Total" unique uploads equals the global unique upload count (no double-counting).
+    2) Unique uploads by continent uses a *canonical continent per upload* to avoid double-counting,
+       so the "Total" unique uploads equals the global unique upload count:
+          - pick the most frequent continent among mapped rows for that upload
+          - if tied, pick the continent with the greatest total mapped duration (seconds)
 
     Assumptions / dependencies
     --------------------------
@@ -854,40 +856,115 @@ def log_rollups(df_mapping: "pl.DataFrame") -> None:
     logger.info(f"\n{_df_full_str(cont_table)}")
 
     # =========================================================================
-    # Build a canonical (video_id -> continent) mapping to avoid double-counting
+    # Build a canonical (video_id -> continent) mapping to avoid double counting
+    #
+    # Note:
+    # - Segment and duration totals in (A) are computed by summing mapping rows within each continent,
+    #   so uploads mapped to multiple continents contribute to every continent to which they are mapped.
+    # - For counts of unique uploads by continent, each upload is assigned to a single continent:
+    #     1) most frequent continent among its mapped rows
+    #     2) if tied, continent with greatest total mapped duration (seconds) for that upload
     # =========================================================================
-    df_vid_cont_candidates = (
+
+    vid_cont_row_dtype = pl.List(
+        pl.Struct(
+            [
+                pl.Field("video_id", pl.Utf8),
+                pl.Field("continent", pl.Utf8),
+                pl.Field("duration_s", pl.Int64),
+            ]
+        )
+    )
+
+    def _expand_vid_cont_dur(row: dict) -> list[dict]:
+        contv = "" if row.get("continent") is None else str(row.get("continent"))
+        vids = row.get("videos_list") or []
+        st_lol = row.get("start_time_lol") or []
+        en_lol = row.get("end_time_lol") or []
+
+        out: list[dict] = []
+        for i, vid in enumerate(vids):
+            if vid is None:
+                continue
+            vid_s = str(vid).strip()
+            if vid_s == "":
+                continue
+
+            dur = 0.0
+            if i < len(st_lol) and i < len(en_lol):
+                st_i = st_lol[i] if isinstance(st_lol[i], list) else [st_lol[i]]
+                en_i = en_lol[i] if isinstance(en_lol[i], list) else [en_lol[i]]
+                for s, e in zip(st_i, en_i):
+                    try:
+                        dur += float(e) - float(s)
+                    except Exception:
+                        continue
+
+            out.append({"video_id": vid_s, "continent": contv, "duration_s": int(dur)})
+
+        return out
+
+    df_vid_rows = (
         df_base
-        .select(["continent", "videos_list"])
-        .explode("videos_list")
-        .rename({"videos_list": "video_id"})
+        .select(["continent", "videos_list", "start_time_lol", "end_time_lol"])
+        .filter(pl.col("continent").is_not_null() & (pl.col("continent") != ""))
+        .with_columns(
+            pl.struct(["continent", "videos_list", "start_time_lol", "end_time_lol"])
+            .map_elements(_expand_vid_cont_dur, return_dtype=vid_cont_row_dtype)
+            .alias("vid_rows")
+        )
+        .explode("vid_rows")
+        .with_columns(
+            [
+                pl.col("vid_rows").struct.field("video_id").alias("video_id"),
+                pl.col("vid_rows").struct.field("continent").alias("continent"),
+                pl.col("vid_rows").struct.field("duration_s").alias("duration_s"),
+            ]
+        )
+        .drop(["vid_rows", "videos_list", "start_time_lol", "end_time_lol"])
         .filter(pl.col("video_id").is_not_null() & (pl.col("video_id") != ""))
         .filter(pl.col("continent").is_not_null() & (pl.col("continent") != ""))
     )
 
-    # how many continents per video (for diagnostics)
-    df_vid_multi = (
-        df_vid_cont_candidates
-        .group_by("video_id")
-        .agg(pl.col("continent").n_unique().alias("n_continents"))
+    # For each upload and continent: row frequency + total mapped duration
+    df_vid_per_cont = (
+        df_vid_rows
+        .group_by(["video_id", "continent"])
+        .agg(
+            [
+                pl.len().alias("n_rows"),
+                pl.sum("duration_s").alias("duration_s"),
+            ]
+        )
+        .fill_null(0)
     )
-    n_multi_cont = int(df_vid_multi.filter(pl.col("n_continents") > 1).height)
 
-    # canonical continent = mode(continent) per video (ties: first mode)
-    df_vid_canon = (
-        df_vid_cont_candidates
-        .group_by("video_id")
-        .agg(pl.col("continent").mode().alias("continent_mode"))
-        .with_columns(pl.col("continent_mode").list.first().alias("continent"))
-        .select(["video_id", "continent"])
+    # Canonical continent selection:
+    # - max n_rows (most frequent)
+    # - tie break by max duration_s
+    # - final deterministic tie break by continent name
+    df_vid_canon_full = (
+        df_vid_per_cont
+        .sort(["video_id", "n_rows", "duration_s", "continent"], descending=[False, True, True, False])
+        .group_by("video_id", maintain_order=True)
+        .agg(
+            [
+                pl.col("continent").first().alias("continent"),
+                pl.col("continent").n_unique().alias("n_continents"),
+            ]
+        )
     )
+
+    n_multi_cont = int(df_vid_canon_full.filter(pl.col("n_continents") > 1).height)
+    df_vid_canon = df_vid_canon_full.select(["video_id", "continent"])
 
     total_unique_global = int(df_vid_canon.select(pl.col("video_id").n_unique()).item() or 0)
 
     if n_multi_cont > 0:
         logger.warning(
-            f"[rollups] {n_multi_cont} videos appear in >1 continent in the mapping. "
-            "Per-continent unique-upload rollups use canonical continent=mode(continent) to keep totals consistent.",
+            f"[rollups] {n_multi_cont} uploads appear in more than one continent in the mapping. "
+            "Segment and duration rollups sum over mapping rows, so those uploads contribute to each mapped continent. "
+            "Unique upload counts assign each upload to one continent using most frequent mapping (ties by mapped duration).",
         )
 
     # =========================================================================
