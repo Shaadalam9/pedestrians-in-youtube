@@ -143,24 +143,11 @@ class Distributions:
                                  title=None):
         """
         Output a histogram of video counts by the month of upload_date, where upload_date is a string list of dates in
-        DDMMYYYY format, potentially including None or 7-digit dates. Each month is a separate bar, with years shown on
-        the x-axis.
+        DDMMYYYY format, potentially including None or 7 digit dates. Each month is a separate bar, with years shown on
+        the x axis.
 
-        Args:
-            df (pandas.DataFrame): DataFrame containing video_count and upload_date columns.
-            video_count_col (str): Column with video counts (default: 'video_count').
-            upload_date_col (str): Column with upload dates as string lists in DDMMYYYY format
-                                   (default: 'upload_date').
-            xaxis_title (str): Title for x-axis (default: 'Upload Month').
-            yaxis_title (str): Title for y-axis (default: 'Number of Videos').
-            file_name (str): Name of file to save (default: None, generates 'video_histogram_by_month').
-            save_file (bool): Flag to save the plot as HTML (default: False).
-            font_family (str): Font family for the figure (default: None, uses 'Arial').
-            font_size (int): Font size for the figure (default: None, uses 12).
-            title (str): Title of the histogram (default: 'Video Count by Upload Month').
-
-        Returns:
-            plotly.graph_objects.Figure: The generated histogram figure, or -1 if an error occurs.
+        This version forces true calendar month bins aligned to the first day of each month by computing monthly counts
+        explicitly and plotting a bar chart on month start timestamps.
         """
         if len(df) == 0:
             logger.error('DataFrame is empty.')
@@ -179,7 +166,7 @@ class Distributions:
         # Log data summary
         logger.info(f'Creating histogram for {video_count_col} by month of {upload_date_col}. Rows: {len(df)}')
 
-        # Clean data: Remove rows with invalid video_count or upload_date
+        # Clean data
         df = df[df[video_count_col].notna() & (df[video_count_col] >= 0)]
         df = df[df[upload_date_col].notna() & (df[upload_date_col] != '')]
         if len(df) == 0:
@@ -189,23 +176,26 @@ class Distributions:
         # Parse and clean upload_date lists
         def parse_date_list(date_str):
             try:
-                # Convert string representation of list to actual list, handling string input
                 if isinstance(date_str, str):
-                    # Remove square brackets and split by comma
                     dates = [d.strip() for d in date_str.strip('[]').split(',') if d.strip()]
                 else:
                     dates = date_str
+
                 valid_dates = []
                 invalid_dates = []
+
                 for d in dates:
                     if d is None or d == 'None':
                         invalid_dates.append('None')
                         continue
-                    d_str = str(d).strip("'").strip('"')  # Remove any quotes
-                    # Fix 7-digit dates by adding leading zero
+
+                    d_str = str(d).strip("'").strip('"')
+
+                    # Fix 7 digit dates by adding leading zero
                     if len(d_str) == 7 and d_str.isdigit():
                         d_str = '0' + d_str
-                    # Validate: 8 digits, numeric, and valid DDMMYYYY
+
+                    # Validate 8 digits and plausible DDMMYYYY
                     if len(d_str) == 8 and d_str.isdigit():
                         try:
                             day, month, year = int(d_str[:2]), int(d_str[2:4]), int(d_str[4:])
@@ -217,7 +207,9 @@ class Distributions:
                             invalid_dates.append(d_str)
                     else:
                         invalid_dates.append(d_str)
+
                 return valid_dates, invalid_dates
+
             except Exception as e:
                 logger.error(f'Error parsing date list {date_str}: {str(e)}')
                 return [], [str(date_str)]
@@ -234,9 +226,9 @@ class Distributions:
 
         # Verify video_count matches length of parsed_dates
         df['date_count'] = df['parsed_dates'].apply(len)
-        mismatches = df[df['video_count'] != df['date_count']]
+        mismatches = df[df[video_count_col] != df['date_count']]
         if not mismatches.empty:
-            logger.warning(f'Mismatch between video_count and parsed_dates length in {len(mismatches)} rows.')
+            logger.warning(f'Mismatch between {video_count_col} and parsed_dates length in {len(mismatches)} rows.')
 
         # Filter rows with at least one valid date
         df = df[df['parsed_dates'].apply(len) > 0]
@@ -247,61 +239,87 @@ class Distributions:
         # Explode parsed_dates to create one row per date
         df_exploded = df.explode('parsed_dates')
         df_exploded = df_exploded[df_exploded['parsed_dates'].notna() & (df_exploded['parsed_dates'] != '')]
-
         if len(df_exploded) == 0:
             logger.error('No valid dates after exploding.')
             return -1
 
-        # Parse DDMMYYYY dates to year-month
+        # Parse DDMMYYYY to datetime
         df_exploded['datetime'] = pd.to_datetime(df_exploded['parsed_dates'], format='%d%m%Y', errors='coerce')
-        df_exploded['year_month'] = df_exploded['datetime'].dt.to_period('M').astype(str)
-        df_exploded['year'] = df_exploded['datetime'].dt.year
-        # Check for invalid year values
-        invalid_years = df_exploded['year'].isna() | (df_exploded['year_month'] == 'NaT')
-        if invalid_years.any():
-            logger.warning(f'Invalid years or dates after parsing in {invalid_years.sum()} rows: ' +
-                           f'{str(df_exploded[invalid_years][["parsed_dates", "year_month", "year"]].head().to_dict("records"))}')  # noqa: E501
-            df_exploded = df_exploded[~invalid_years]
+
+        invalid_dt = df_exploded['datetime'].isna()
+        if invalid_dt.any():
+            logger.warning(
+                f'Invalid dates after parsing in {invalid_dt.sum()} rows: '
+                f'{str(df_exploded[invalid_dt][["parsed_dates"]].head().to_dict("records"))}'
+            )
+            df_exploded = df_exploded[~invalid_dt]
 
         if len(df_exploded) == 0:
             logger.error('No valid dates after parsing.')
             return -1
 
-        if 'year' not in df_exploded.columns or df_exploded['year'].isna().all():
-            logger.error('Year column is missing or contains only NaN values.')
-            return -1
-        video_counts = df_exploded.groupby(['year', 'year_month']).size().reset_index(name='video_count')
-        video_counts['year_month'] = video_counts['year_month'].astype(str)
+        # Month start timestamps (first day of each month at 00:00)
+        df_exploded['month_start'] = df_exploded['datetime'].dt.to_period('M').dt.to_timestamp(how='start')
 
-        # Create histogram
-        try:
-            fig = px.histogram(
-                video_counts,
-                x='year_month',
-                y='video_count',
-                title=title,
-                labels={'year_month': xaxis_title, 'video_count': yaxis_title},
-                nbins=len(video_counts['year_month'].unique())
-            )
-        except Exception as e:
-            logger.error(f'Plotly histogram failed: {str(e)}')
+        # Count per month (each parsed date counts as one video upload instance)
+        month_counts = (
+            df_exploded
+            .groupby('month_start')
+            .size()
+            .rename('video_count')
+            .reset_index()
+            .sort_values('month_start')
+        )
+
+        if len(month_counts) == 0:
+            logger.error('No monthly counts could be computed.')
             return -1
 
-        # Generate year ticks for x-axis
-        unique_years = sorted(df_exploded['year'].dropna().unique())
-        # Set x-axis ticks to show only years
+        # Fill missing months so bins are exact and continuous
+        full_month_index = pd.date_range(
+            start=month_counts['month_start'].min(),
+            end=month_counts['month_start'].max(),
+            freq='MS'
+        )
+        month_counts = (
+            month_counts
+            .set_index('month_start')
+            .reindex(full_month_index, fill_value=0)
+            .rename_axis('month_start')
+            .reset_index()
+        )
+
+        # Build year ticks (label first month present in each year)
+        month_counts['year'] = month_counts['month_start'].dt.year
+        unique_years = sorted(month_counts['year'].dropna().unique())
+
         year_positions = []
         year_labels = []
         for year in unique_years:
-            # Find the first year-month for each year
-            first_ym = video_counts[video_counts['year'] == year]['year_month'].min()
-            if first_ym:
-                year_positions.append(first_ym)
+            first_month_in_year = month_counts.loc[month_counts['year'] == year, 'month_start'].min()
+            if pd.notna(first_month_in_year):
+                year_positions.append(first_month_in_year)
                 year_labels.append(str(int(year)))
+
+        # Create bar chart (exact month bins)
+        try:
+            fig = go.Figure(
+                go.Bar(
+                    x=month_counts['month_start'],
+                    y=month_counts['video_count']
+                )
+            )
+        except Exception as e:
+            logger.error(f'Plotly figure creation failed: {str(e)}')
+            return -1
+
+        if title is None:
+            title = ''
 
         # Update layout
         fig.update_layout(
             template='plotly',
+            title=title,
             xaxis_title=xaxis_title,
             yaxis_title=yaxis_title,
             font=dict(family=font_family or 'Arial', size=font_size or 12),
@@ -309,18 +327,19 @@ class Distributions:
             showlegend=False,
             bargap=0.1,
             xaxis=dict(
+                type='date',
                 tickmode='array',
                 tickvals=year_positions,
                 ticktext=year_labels,
                 tickangle=45,
                 title=dict(font=dict(size=(font_size or 12) + 10)),
-                tickfont=dict(size=(font_size or 12) + 4)
-                ),
+                tickfont=dict(size=(font_size or 12) + 4),
+            ),
             yaxis=dict(
                 title=dict(font=dict(size=(font_size or 12) + 10)),
-                tickfont=dict(size=(font_size or 12) + 4)
-                )
+                tickfont=dict(size=(font_size or 12) + 4),
             )
+        )
 
         # Save or show
         if save_file:

@@ -2,7 +2,7 @@
 """
 remove_offline_videos.py
 
-Interactive tool to delete video information from mapping.csv (no argparse).
+Interactive tool to delete video information from mapping.csv.
 
 Keeps list columns aligned.
 
@@ -20,7 +20,8 @@ Aligned per segment (nested lists per video occurrence):
 - end_time
 - vehicle_type (supports flat list or nested list)
 
-Also prevents doubled quotes for ids containing '-' (YouTube ids, channel ids).
+If a row ends up with zero videos after deletion, the whole row is removed.
+If an id column exists (serial number), it is reassigned sequentially.
 """
 
 from __future__ import annotations
@@ -28,10 +29,55 @@ from __future__ import annotations
 import ast
 import csv
 import json
+import logging
 import math
+import os
 import re
 import sys
 from typing import Any, Dict, List, Optional, Tuple
+
+from custom_logger import CustomLogger
+
+
+def _parse_log_level(name: str) -> int:
+    level_name = (name or "INFO").strip().upper()
+    return getattr(logging, level_name, logging.INFO)
+
+
+def setup_terminal_logging(py_logger: logging.Logger) -> int:
+    """
+    Ensure logs are visible in the terminal.
+
+    Control verbosity with LOG_LEVEL (DEBUG, INFO, WARNING, ERROR, CRITICAL).
+    """
+    level = _parse_log_level(os.getenv("LOG_LEVEL", "INFO"))
+
+    py_logger.setLevel(level)
+    py_logger.propagate = False
+
+    fmt = "%(message)s"
+    if level <= logging.DEBUG:
+        fmt = "%(levelname)s: %(message)s"
+
+    formatter = logging.Formatter(fmt)
+
+    has_stream_handler = any(isinstance(h, logging.StreamHandler) for h in py_logger.handlers)
+    if not has_stream_handler:
+        handler = logging.StreamHandler(stream=sys.stdout)
+        handler.setLevel(level)
+        handler.setFormatter(formatter)
+        py_logger.addHandler(handler)
+    else:
+        for h in py_logger.handlers:
+            if isinstance(h, logging.StreamHandler):
+                h.setLevel(level)
+                h.setFormatter(formatter)
+
+    return level
+
+
+logger = CustomLogger(__name__)
+setup_terminal_logging(logger.logger)
 
 # Allow very large CSV fields
 try:
@@ -196,7 +242,7 @@ def _fmt_atom(x: Any) -> str:
 
     s = str(x)
 
-    # Keep YouTube ids and channel ids unquoted (allows '-')
+    # Keep ids and channel ids unquoted (allows '-' and '_')
     if re.fullmatch(r"[A-Za-z0-9_-]+", s):
         return s
 
@@ -234,13 +280,12 @@ def load_mapping(path: str) -> Tuple[List[str], List[Dict[str, Any]]]:
                 else:
                     vehicle_type = norm_flat_list_int(r.get("vehicle_type"))
 
-            # per video lists aligned with videos
+            # lists aligned with videos
             per_video: Dict[str, Any] = {}
             for col in PER_VIDEO_LIST_COLS:
                 if col not in fieldnames:
                     continue
                 raw_list = safe_eval_list(r.get(col))
-                # store as flat list only if it matches videos length
                 if isinstance(raw_list, list) and len(raw_list) == len(vids):
                     if col in {"upload_date", "views", "date_updated"}:
                         per_video[col] = norm_flat_list_int(r.get(col))
@@ -294,12 +339,11 @@ def _loc_string(raw: Dict[str, str]) -> str:
     parts = [p for p in [city, state, country, cont] if p]
     loc = ", ".join(parts) if parts else "(unknown location)"
     if iso3:
-        loc += f" [{iso3}]"
+        loc += " [" + iso3 + "]"
     return loc
 
 
 def remove_outer_at_index(rd: Dict[str, Any], outer_i: int) -> None:
-    # core
     del rd["videos"][outer_i]
     if outer_i < len(rd["time_of_day"]):
         del rd["time_of_day"][outer_i]
@@ -308,17 +352,12 @@ def remove_outer_at_index(rd: Dict[str, Any], outer_i: int) -> None:
     if outer_i < len(rd["end_time"]):
         del rd["end_time"][outer_i]
 
-    # vehicle_type
     vt = rd.get("vehicle_type")
-    if vt is not None:
-        if outer_i < len(vt):
-            del vt[outer_i]
+    if vt is not None and outer_i < len(vt):
+        del vt[outer_i]
 
-    # per video lists
-    for col, val in rd["per_video"].items():
-        if val is None:
-            continue
-        if outer_i < len(val):
+    for _, val in rd["per_video"].items():
+        if val is not None and outer_i < len(val):
             del val[outer_i]
 
 
@@ -359,7 +398,7 @@ def list_instances(video_id: str, rows: List[Dict[str, Any]]) -> List[Dict[str, 
             vt_nested = bool(rd.get("vehicle_type_is_nested"))
             vt_value = None
             if vt is not None:
-                if vt_nested and isinstance(vt[outer_i], list):
+                if vt_nested and outer_i < len(vt) and isinstance(vt[outer_i], list):
                     vt_value = vt[outer_i]
                 else:
                     vt_value = vt[outer_i] if outer_i < len(vt) else None
@@ -407,93 +446,158 @@ def delete_one(inst: Dict[str, Any], rows: List[Dict[str, Any]]) -> None:
         if outer_i < len(vt) and isinstance(vt[outer_i], list) and inner_i < len(vt[outer_i]):
             del vt[outer_i][inner_i]
 
-    # If no segments remain for this video occurrence, remove the whole occurrence
     starts = rd["start_time"][outer_i] if outer_i < len(rd["start_time"]) else []
     ends = rd["end_time"][outer_i] if outer_i < len(rd["end_time"]) else []
     if min(len(starts), len(ends)) == 0:
         remove_outer_at_index(rd, outer_i)
 
 
+def _prompt(text: str) -> str:
+    logger.info(text)
+    return input("> ").strip()
+
+
+def _detect_id_column(fieldnames: List[str]) -> Optional[str]:
+    preferred = ["id", "ID", "Id", "index", "idx", "serial", "sr_no", "srno"]
+    for name in preferred:
+        if name in fieldnames:
+            return name
+    return None
+
+
+def _reassign_ids(rows: List[Dict[str, Any]], id_col: str) -> None:
+    ints: List[int] = []
+    for rd in rows:
+        iv = _to_int_maybe(rd["raw"].get(id_col))
+        if iv is not None:
+            ints.append(iv)
+
+    start = 0 if ints and min(ints) == 0 else 1
+
+    for i, rd in enumerate(rows):
+        rd["raw"][id_col] = str(start + i)
+
+
+def _prune_empty_rows_and_reindex(fieldnames: List[str], rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    before = len(rows)
+    kept = [rd for rd in rows if len(rd.get("videos", [])) > 0]
+    removed = before - len(kept)
+    if removed > 0:
+        logger.info("Removed {} row(s) with zero videos.", removed)
+
+    id_col = _detect_id_column(fieldnames)
+    if id_col and kept:
+        _reassign_ids(kept, id_col)
+        logger.info("Reassigned {} sequentially.", id_col)
+
+    return kept
+
+
 def main() -> None:
-    mapping_path = input("Enter path to mapping.csv: ").strip()
+    mapping_path = _prompt("Enter path to mapping.csv:")
     if not mapping_path:
-        print("No path provided.")
+        logger.error("No path provided.")
         return
 
     try:
+        logger.info("Loading mapping from {}", mapping_path)
         fieldnames, rows = load_mapping(mapping_path)
     except FileNotFoundError:
-        print(f"File not found: {mapping_path}")
+        logger.error("File not found: {}", mapping_path)
+        return
+    except Exception as e:
+        logger.error("Failed to load mapping: {}", e)
         return
 
-    video_id = input("Enter video_id: ").strip()
+    logger.info("Loaded {} rows with {} columns.", len(rows), len(fieldnames))
+
+    video_id = _prompt("Enter video_id:")
     if not video_id:
-        print("No video_id provided.")
+        logger.error("No video_id provided.")
         return
 
     if not any(video_id in rd["videos"] for rd in rows):
-        print(f"video_id not found: {video_id}")
+        logger.error("video_id not found: {}", video_id)
         return
 
-    print("\nDelete mode:")
-    print("  1) Delete all segments for this video_id (every occurrence)")
-    print("  2) Delete a particular segment instance")
-    mode = input("Select 1 or 2: ").strip()
+    total_occurrences = sum(rd["videos"].count(video_id) for rd in rows)
+    logger.info("Found {} occurrence(s) of {}", total_occurrences, video_id)
+
+    logger.info("")
+    logger.info("Delete mode:")
+    logger.info("  1) Delete all segments for this video_id (every occurrence)")
+    logger.info("  2) Delete a particular segment instance")
+    mode = _prompt("Select 1 or 2:")
 
     if mode == "1":
         removed_slots, removed_segs = delete_all(video_id, rows)
-        print(f"\nRemoved {removed_slots} video occurrences and about {removed_segs} segments for {video_id}.")
+        logger.info(
+            "Removed {} video occurrence(s) and about {} segment(s) for {}.",
+            removed_slots,
+            removed_segs,
+            video_id,
+        )
 
     elif mode == "2":
         instances = list_instances(video_id, rows)
         if not instances:
-            print("No segment instances found for this video_id.")
+            logger.warning("No segment instances found for this video_id.")
             return
 
-        print("\nInstances:")
+        logger.info("")
+        logger.info("Instances:")
         for i, inst in enumerate(instances, start=1):
             tod = inst["time_of_day"]
             veh = inst["vehicle_type"]
             tod_s = "?" if tod is None else str(tod)
-            veh_s = "" if veh is None else f", vehicle_type {veh}"
-            print(
-                f"{i:>4}. {inst['location']} | start {_fmt_float(inst['start'])} end {_fmt_float(inst['end'])} | time_of_day {tod_s}{veh_s}"
+            veh_s = "" if veh is None else ", vehicle_type {}".format(veh)
+            logger.info(
+                "{:>4}. {} | start {} end {} | time_of_day {}{}",
+                i,
+                inst["location"],
+                _fmt_float(inst["start"]),
+                _fmt_float(inst["end"]),
+                tod_s,
+                veh_s,
             )
 
-        sel_raw = input("\nType the number to delete: ").strip()
+        sel_raw = _prompt("Type the number to delete:")
         if not sel_raw.isdigit():
-            print("Invalid selection.")
+            logger.error("Invalid selection.")
             return
         sel = int(sel_raw)
         if sel < 1 or sel > len(instances):
-            print("Selection out of range.")
+            logger.warning("Selection out of range.")
             return
 
         delete_one(instances[sel - 1], rows)
-        print("\nDeleted selected segment instance.")
+        logger.info("Deleted selected segment instance.")
 
     else:
-        print("Invalid choice.")
+        logger.error("Invalid choice.")
         return
 
-    print("\nSave options:")
-    print("  1) Overwrite the existing mapping.csv")
-    print("  2) Save to a new file")
-    save_mode = input("Select 1 or 2: ").strip()
+    rows = _prune_empty_rows_and_reindex(fieldnames, rows)
+
+    logger.info("")
+    logger.info("Save options:")
+    logger.info("  1) Overwrite the existing mapping.csv")
+    logger.info("  2) Save to a new file")
+    save_mode = _prompt("Select 1 or 2:")
 
     if save_mode == "1":
         out_path = mapping_path
     elif save_mode == "2":
-        out_path = input("Enter output csv path: ").strip()
+        out_path = _prompt("Enter output csv path:")
         if not out_path:
-            print("No output path provided.")
+            logger.error("No output path provided.")
             return
     else:
-        print("Invalid choice.")
+        logger.error("Invalid choice.")
         return
 
     write_mapping(out_path, fieldnames, rows)
-    print(f"\nSaved: {out_path}")
+    logger.info("Saved: {}", out_path)
 
 
 if __name__ == "__main__":

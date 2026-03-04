@@ -422,10 +422,8 @@ def classify_rider_type(
     return best
 
 
-def classify_all_persons_and_print(
-    df: pl.DataFrame,
-    **rider_params
-) -> Tuple[Dict[Any, Optional[str]], Dict[Any, dict]]:
+def classify_all_persons_and_print(df: pl.DataFrame,
+                                   **rider_params) -> Tuple[Dict[Any, Optional[str]], Dict[Any, dict]]:
     df = _dedup_per_frame(df)
 
     person_ids = (

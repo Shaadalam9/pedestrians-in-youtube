@@ -176,11 +176,11 @@ CONFIG: Dict[str, Any] = {
     ],
 }
 
-
-
 # =============================================================================
 # Logging / report helpers
 # =============================================================================
+
+
 def _setup_logger(out_dir: Path) -> logging.Logger:
     out_dir.mkdir(parents=True, exist_ok=True)
     logger = logging.getLogger("validate_release")
@@ -513,10 +513,10 @@ def _remove_inner_segment(row: Dict[str, Any], outer_i: int, start: float, end: 
     except Exception:
         return False
 
-    if isinstance(tod_lol, list) and outer_i < len(tod_lol) and isinstance(tod_lol[outer_i], list) and j < len(tod_lol[outer_i]):
+    if isinstance(tod_lol, list) and outer_i < len(tod_lol) and isinstance(tod_lol[outer_i], list) and j < len(tod_lol[outer_i]):  # noqa:E501
         tod_lol[outer_i].pop(j)
 
-    if isinstance(veh_lol, list) and outer_i < len(veh_lol) and isinstance(veh_lol[outer_i], list) and j < len(veh_lol[outer_i]):
+    if isinstance(veh_lol, list) and outer_i < len(veh_lol) and isinstance(veh_lol[outer_i], list) and j < len(veh_lol[outer_i]):  # noqa:E501
         veh_lol[outer_i].pop(j)
 
     if WRITE_MAPPING_LISTS_COMPACT:
@@ -572,7 +572,8 @@ def _maybe_remove_empty_video_outer_entry(row: Dict[str, Any], outer_i: int, fie
     return True
 
 
-def _find_outer_index_for_segment(row: Dict[str, Any], video_id: str, start: float, end: float, eps: float) -> Optional[int]:
+def _find_outer_index_for_segment(row: Dict[str, Any], video_id: str, start: float,
+                                  end: float, eps: float) -> Optional[int]:
     vids = [str(v).strip() for v in safe_eval_list(row.get("videos")) if str(v).strip() != ""]
     if not vids:
         return None
@@ -670,12 +671,12 @@ def interactive_fix_overlaps_in_mapping_csv(
                 b.row_index, round(b.start, 3), round(b.end, 3),
             )
 
-            print()
-            print(f"Video: {vid}")
-            print("Overlap detected. Choose what to delete.")
-            print(f"A) row {a.row_number}  {a.location}  [{a.start} , {a.end}]")
-            print(f"B) row {b.row_number}  {b.location}  [{b.start} , {b.end}]")
-            print("Options: 1 delete A, 2 delete B, 3 delete both, k keep both, q quit")
+            logger.info()
+            logger.info(f"Video: {vid}")
+            logger.info("Overlap detected. Choose what to delete.")
+            logger.info(f"A) row {a.row_number}  {a.location}  [{a.start} , {a.end}]")
+            logger.info(f"B) row {b.row_number}  {b.location}  [{b.start} , {b.end}]")
+            logger.info("Options: 1 delete A, 2 delete B, 3 delete both, k keep both, q quit")
             choice = input("Your choice: ").strip().lower()
 
             if choice == "q":
@@ -692,14 +693,14 @@ def interactive_fix_overlaps_in_mapping_csv(
                 outer_i = _find_outer_index_for_segment(row, target.video, target.start, target.end, eps=eps)
                 if outer_i is None:
                     logger.warning(
-                        f"Could not find segment in row {target.row_number} for deletion: {target.video} [{target.start},{target.end}]"
+                        f"Could not find segment in row {target.row_number} for deletion: {target.video} [{target.start},{target.end}]"  # noqa:E501
                     )
                     return
 
                 ok = _remove_inner_segment(row, outer_i, target.start, target.end, eps=eps)
                 if not ok:
                     logger.warning(
-                        f"Failed to delete segment in row {target.row_number}: {target.video} [{target.start},{target.end}]"
+                        f"Failed to delete segment in row {target.row_number}: {target.video} [{target.start},{target.end}]"  # noqa:E501
                     )
                     return
 
@@ -725,7 +726,7 @@ def interactive_fix_overlaps_in_mapping_csv(
                 _apply_delete(a)
                 _apply_delete(b)
             else:
-                print("Unrecognised choice. Keeping both for now.")
+                logger.warning("Unrecognised choice. Keeping both for now.")
                 skipped_pairs.add(sig)
                 continue
 
@@ -944,7 +945,6 @@ def parse_mapping_csv(path: Path, logger: logging.Logger, report: Report) -> Tup
     n_invalid_med_age = 0
     invalid_med_age_examples: List[Dict[str, Any]] = []
 
-
     # traffic_mortality consistency per country (all rows within a country should share the same traffic_mortality)
     has_traffic_mortality_col = False
     traffic_mortality_col_name = ""
@@ -993,7 +993,6 @@ def parse_mapping_csv(path: Path, logger: logging.Logger, report: Report) -> Tup
             details={"present": has_med_age_col},
             warn=(not has_med_age_col),
         )
-
 
         # traffic_mortality column detection (support a couple of common variants)
         traffic_candidates = ["traffic_mortality", "traffic mortality"]
@@ -1093,7 +1092,6 @@ def parse_mapping_csv(path: Path, logger: logging.Logger, report: Report) -> Tup
                         norm_ma = f"{round(float(num_ma), 6):.6f}".rstrip("0").rstrip(".")
                         country_med_age_values[country].add(norm_ma)
 
-
             # traffic_mortality consistency per country
             if has_traffic_mortality_col and country:
                 country_traffic_mortality_rows[country] += 1
@@ -1132,8 +1130,6 @@ def parse_mapping_csv(path: Path, logger: logging.Logger, report: Report) -> Tup
                         norm_lr = f"{round(float(num_lr), 6):.6f}".rstrip("0").rstrip(".")
                         country_literacy_rate_values[country].add(norm_lr)
 
-
-
             vids = [str(v).strip() for v in safe_eval_list(r.get("videos")) if str(v).strip() != ""]
             tod_lol = norm_list_of_lists_int(r.get("time_of_day"))
             st_lol = norm_list_of_lists_float(r.get("start_time"))
@@ -1145,8 +1141,8 @@ def parse_mapping_csv(path: Path, logger: logging.Logger, report: Report) -> Tup
                 n_rows_zero_videos += 1
                 if len(zero_video_examples) < 25:
                     zero_video_examples.append(
-                        {"row": rows, "continent": continent, "country": country, "state": state, "city": city, "iso3": iso3}
-                    )
+                        {"row": rows, "continent": continent, "country": country,
+                         "state": state, "city": city, "iso3": iso3})
 
             # time_of_day values are only 0 or 1 (scan entire cell content)
             for outer_i, tods in enumerate(tod_lol):
@@ -1218,19 +1214,22 @@ def parse_mapping_csv(path: Path, logger: logging.Logger, report: Report) -> Tup
                     except Exception:
                         n_bad_segment_pairs += 1
                         if len(bad_segment_examples) < 25:
-                            bad_segment_examples.append({"row": rows, "video": vid, "start": s, "end": e, "reason": "non_numeric"})
+                            bad_segment_examples.append({"row": rows, "video": vid, "start": s,
+                                                         "end": e, "reason": "non_numeric"})
                         continue
 
                     if (not math.isfinite(s2)) or (not math.isfinite(e2)):
                         n_bad_segment_pairs += 1
                         if len(bad_segment_examples) < 25:
-                            bad_segment_examples.append({"row": rows, "video": vid, "start": s2, "end": e2, "reason": "non_finite"})
+                            bad_segment_examples.append({"row": rows, "video": vid, "start": s2,
+                                                         "end": e2, "reason": "non_finite"})
                         continue
 
                     if s2 < 0 or e2 < 0 or e2 <= s2:
                         n_bad_segment_pairs += 1
                         if len(bad_segment_examples) < 25:
-                            bad_segment_examples.append({"row": rows, "video": vid, "start": s2, "end": e2, "reason": "invalid_order_or_negative"})
+                            bad_segment_examples.append({"row": rows, "video": vid, "start": s2,
+                                                         "end": e2, "reason": "invalid_order_or_negative"})
                         continue
 
                     row_dur += (e2 - s2)
@@ -1361,7 +1360,8 @@ def parse_mapping_csv(path: Path, logger: logging.Logger, report: Report) -> Tup
     report.add(
         "mapping_csv.time_of_day_values_valid",
         ok=(n_invalid_tod_values == 0),
-        details={"invalid_value_count": n_invalid_tod_values, "examples": invalid_tod_examples, "allowed_values": sorted(list(allowed_tod_vals))},
+        details={"invalid_value_count": n_invalid_tod_values, "examples": invalid_tod_examples,
+                 "allowed_values": sorted(list(allowed_tod_vals))},
         warn=(n_invalid_tod_values > 0),
     )
 
@@ -1378,7 +1378,6 @@ def parse_mapping_csv(path: Path, logger: logging.Logger, report: Report) -> Tup
         details={"duplicate_key_count": len(dups), "examples": dup_examples},
         warn=(len(dups) > 0),
     )
-
 
     # avg_height consistency report (only if the column exists)
     if has_avg_height_col:
@@ -1448,7 +1447,6 @@ def parse_mapping_csv(path: Path, logger: logging.Logger, report: Report) -> Tup
             warn=(n_invalid_med_age > 0),
         )
 
-
     # traffic_mortality consistency report (only if the column exists)
     if has_traffic_mortality_col:
         mismatched_countries: List[str] = []
@@ -1479,7 +1477,8 @@ def parse_mapping_csv(path: Path, logger: logging.Logger, report: Report) -> Tup
         report.add(
             "mapping_csv.traffic_mortality_values_parseable",
             ok=(n_invalid_traffic_mortality == 0),
-            details={"invalid_value_count": n_invalid_traffic_mortality, "examples": invalid_traffic_mortality_examples},
+            details={"invalid_value_count": n_invalid_traffic_mortality,
+                     "examples": invalid_traffic_mortality_examples},
             warn=(n_invalid_traffic_mortality > 0),
         )
 
@@ -1516,7 +1515,6 @@ def parse_mapping_csv(path: Path, logger: logging.Logger, report: Report) -> Tup
             details={"invalid_value_count": n_invalid_literacy_rate, "examples": invalid_literacy_rate_examples},
             warn=(n_invalid_literacy_rate > 0),
         )
-
 
     # ---------------------------------------------------------------------
     # Segment overlap and duplicate location checks (per video)

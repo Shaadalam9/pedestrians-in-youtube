@@ -9,7 +9,7 @@ import requests
 mapping_path = "mapping.csv"
 height_path = "height_data.csv"
 countries_path = "countries.csv"
-OUT_PATH = "mapping_updated_height_med_age_worldbank.csv"
+OUT_PATH = "mapping_updated.csv"
 
 WB_INDICATORS = {
     "SH.STA.TRAF.P5": "traffic_mortality",
@@ -17,6 +17,7 @@ WB_INDICATORS = {
     "SP.POP.TOTL": "population_country",
     "SI.POV.GINI": "gini",
 }
+
 
 def robust_get(url, params=None, timeout=(20, 180), tries=5):
     last = None
@@ -39,6 +40,7 @@ def robust_get(url, params=None, timeout=(20, 180), tries=5):
             last = e
             time.sleep(min(2 ** i, 15))
     raise last
+
 
 def wb_download_indicator_latest(indicator_code: str, cache_dir: str = ".wb_cache") -> pd.DataFrame:
     """
@@ -87,6 +89,7 @@ def wb_download_indicator_latest(indicator_code: str, cache_dir: str = ".wb_cach
     latest = long.sort_values("year").groupby("iso3", as_index=False).tail(1)
     return latest[["iso3", "year", "value"]]
 
+
 # 1) Load mapping and update avg_height
 mapping = pd.read_csv(mapping_path)
 height = pd.read_csv(height_path)
@@ -102,16 +105,16 @@ height["avg_height_new"] = (height["meanHeightMale"] + height["meanHeightFemale"
 
 height_last = (
     height.sort_values(["cca3", "year"])
-         .groupby("cca3", as_index=False)
-         .tail(1)[["cca3", "year", "avg_height_new"]]
+    .groupby("cca3", as_index=False)
+    .tail(1)[["cca3", "year", "avg_height_new"]]
 )
 
 cca2_map = (
     height.sort_values(["cca3", "year"])
-         .groupby("cca3")["cca2"]
-         .apply(lambda s: s.dropna().iloc[-1] if len(s.dropna()) else pd.NA)
-         .rename("cca2")
-         .reset_index()
+    .groupby("cca3")["cca2"]
+    .apply(lambda s: s.dropna().iloc[-1] if len(s.dropna()) else pd.NA)
+    .rename("cca2")
+    .reset_index()
 )
 
 height_latest = height_last.merge(cca2_map, on="cca3", how="left")
