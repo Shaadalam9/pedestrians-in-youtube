@@ -637,7 +637,7 @@
                 </div>
             </form>
 
-            <h3>{{ message }}</h3>
+            <h3>{{ message | safe }}</h3>
 
             {% if existing_data %}
             <!-- Form for submitting additional data -->

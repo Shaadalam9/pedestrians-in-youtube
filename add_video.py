@@ -159,7 +159,6 @@ def save_csv(df, file_path):
     df.to_csv(file_path, index=False)
 
 
-
 def compact_nested_list(value):
     """Serialise nested lists (ints) without spaces, eg [[0],[1,2]]."""
     try:
@@ -167,6 +166,7 @@ def compact_nested_list(value):
     except Exception:
         # Fallback: remove whitespace characters
         return re.sub(r"\s+", "", str(value))
+
 
 # --- Check if city, state and country exist in the CSV, including city_aka ---
 def city_matches(row, city_input):
@@ -185,7 +185,7 @@ def city_matches(row, city_input):
 # --- Global video lookup helpers (across all rows) ---
 def _is_missing(x):
     try:
-        return x is None or (isinstance(x, float) and pd.isna(x)) or (isinstance(x, str) and x.strip() in ["", "None", "nan"])
+        return x is None or (isinstance(x, float) and pd.isna(x)) or (isinstance(x, str) and x.strip() in ["", "None", "nan"])  # noqa: E501
     except Exception:
         return x is None
 
@@ -278,6 +278,7 @@ def _find_overlapping_segment(existing_segs, new_start, new_end):
             continue
     return None
 
+
 def find_overlap_across_mapping(video_hits, new_start, new_end, exclude_idxs=None):
     """Return info about the first overlapping segment found for this video anywhere in the mapping file."""
     if exclude_idxs:
@@ -307,7 +308,6 @@ def find_overlap_across_mapping(video_hits, new_start, new_end, exclude_idxs=Non
             except Exception:
                 continue
     return None
-
 
 
 def find_video_occurrences(df, video_id):
@@ -362,7 +362,8 @@ def build_video_occurrence_note(df, video_id, max_rows=8, exclude_idxs=None):
     if len(hits) > max_rows:
         extra = f" (plus {len(hits) - max_rows} more)"
 
-    return "Video already exists elsewhere in the mapping file. Existing segments: " + "; ".join(parts) + extra
+    return "Video already exists elsewhere in the mapping file. Existing segments: <span style='color: red;'>" + \
+           "; ".join(parts) + extra + "</span>"
 
 
 def row_label(row):
@@ -650,7 +651,7 @@ def form():
                 current_idx = None
                 if check_existing:
                     if state:
-                        current_idx = df[(df['city'] == city) & (df['state'] == state) & (df['country'] == country)].index[0]
+                        current_idx = df[(df['city'] == city) & (df['state'] == state) & (df['country'] == country)].index[0]  # noqa: E501
                     else:
                         current_idx = df[(df['city'] == city) & (df['country'] == country)].index[0]
 
@@ -680,8 +681,8 @@ def form():
                 if overlap_global:
                     next_start = int(overlap_global['end'])
                     message = (
-                        f"Cannot add segment {new_start_global} to {new_end_global} because it overlaps existing segment "
-                        f"{overlap_global['start']} to {overlap_global['end']} for this video in {overlap_global['label']}. "
+                        f"Cannot add segment {new_start_global} to {new_end_global} because it overlaps existing segment "  # noqa: E501
+                        f"{overlap_global['start']} to {overlap_global['end']} for this video in {overlap_global['label']}. "  # noqa: E501
                         f"Please use a start time of {next_start} or later."
                     )
                     if current_idx is not None:
@@ -690,14 +691,14 @@ def form():
                 if not message:
                     if check_existing:
                         if state:
-                            idx = df[(df['city'] == city) & (df['state'] == state) & (df['country'] == country)].index[0]
+                            idx = df[(df['city'] == city) & (df['state'] == state) & (df['country'] == country)].index[0]  # noqa: E501
                         else:
                             idx = df[(df['city'] == city) & (df['country'] == country)].index[0]
                         # Get the list of videos for the city (and state) and country
                         videos_list = df.at[idx, 'videos'].split(',') if pd.notna(df.at[idx, 'videos']) else []
                         # Clean the individual video IDs by stripping any leading or trailing brackets
                         videos_list = [video.strip('[]') for video in videos_list]
-                        time_of_day_list = eval(df.at[idx, 'time_of_day']) if pd.notna(df.at[idx, 'time_of_day']) else []
+                        time_of_day_list = eval(df.at[idx, 'time_of_day']) if pd.notna(df.at[idx, 'time_of_day']) else []  # noqa: E501
                         start_time_list = eval(df.at[idx, 'start_time']) if pd.notna(df.at[idx, 'start_time']) else []
                         end_time_list = eval(df.at[idx, 'end_time']) if pd.notna(df.at[idx, 'end_time']) else []
                         upload_date_list = df.at[idx, 'upload_date'].split(',') if pd.notna(df.at[idx, 'upload_date']) else []  # noqa: E501
@@ -749,7 +750,7 @@ def form():
                                 elif not channel_video:
                                     channel_video = 'None'
 
-                                vehicle_type_video_int = int(vehicle_type_video) if vehicle_type_video is not None else None
+                                vehicle_type_video_int = int(vehicle_type_video) if vehicle_type_video is not None else None  # noqa: E501
                                 time_of_day_last = extract_last_int(time_of_day_video)
                                 time_of_day_last = int(time_of_day_last) if time_of_day_last is not None else None
 
