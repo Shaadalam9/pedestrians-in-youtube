@@ -397,9 +397,6 @@ def log_rollups(df_mapping: "pl.DataFrame") -> None:
       If you don't have `analysis_class`, replace those with your own dicts (vehicle_map/time_map).
     """
 
-    import ast
-    import math
-
     # -----------------------------
     # Helpers
     # -----------------------------
@@ -963,8 +960,8 @@ def log_rollups(df_mapping: "pl.DataFrame") -> None:
     if n_multi_cont > 0:
         logger.warning(
             f"[rollups] {n_multi_cont} uploads appear in more than one continent in the mapping. "
-            "Segment and duration rollups sum over mapping rows, so those uploads contribute to each mapped continent. "
-            "Unique upload counts assign each upload to one continent using most frequent mapping (ties by mapped duration).",
+            "Segment and duration rollups sum over mapping rows, so those uploads contribute to each mapped continent."  # noqa: E501
+            "Unique upload counts assign each upload to one continent using most frequent mapping (ties by mapped duration).",  # noqa: E501
         )
 
     # =========================================================================
@@ -1556,6 +1553,52 @@ def log_rollups(df_mapping: "pl.DataFrame") -> None:
         .with_columns((pl.col("footage_time_s") / 3600).round(2).alias("footage_time_h"))
     )
 
+    # =========================================================================
+    # H1) Max city by duration within each continent
+    # =========================================================================
+    max_city_per_continent_all_ties = (
+        city_rank
+        .filter(pl.col("footage_time_s") > 0)
+        .join(
+            city_rank
+            .group_by("continent")
+            .agg(pl.max("footage_time_s").alias("max_footage_time_s")),
+            on="continent",
+            how="inner",
+        )
+        .filter(pl.col("footage_time_s") == pl.col("max_footage_time_s"))
+        .select(
+            [
+                "continent",
+                "country",
+                "city",
+                "iso3",
+                "upload_count",
+                "segment_count",
+                "footage_time_s",
+                "footage_time_h",
+            ]
+        )
+        .sort(
+            ["continent", "footage_time_s", "segment_count", "upload_count", "city"],
+            descending=[False, True, True, True, False],
+        )
+    )
+
+    logger.info("\n=== [rollups] H1) Max city by duration within each continent (including ties) ===")
+    logger.info(f"\n{_df_full_str(max_city_per_continent_all_ties)}")
+
+    # Exactly one city per continent (tie break by segment_count, then upload_count, then city name)
+    max_city_per_continent_one = (
+        max_city_per_continent_all_ties
+        .unique(subset=["continent"], keep="first")
+        .sort("continent")
+    )
+
+    logger.info("\n=== [rollups] H1) Max city by duration within each continent (one per continent) ===")
+    logger.info(f"\n{_df_full_str(max_city_per_continent_one)}")
+
+
     country_rank = (
         df_base
         .filter(pl.col("country").is_not_null() & (pl.col("country") != ""))
@@ -1745,6 +1788,16 @@ if __name__ == "__main__":
                         hover_name="flag_city",
                         marker_size=4,
                         file_name='mapbox_map_all')
+
+        # map with all cities coloured by footage amount (continuous hue scale) + optional screenshot overlays
+        maps.mapbox_map_footage(df=df.to_pandas(),
+                                footage_col="total_time",
+                                hover_data=hover_data,
+                                hover_name="flag_city",
+                                marker_size=3,
+                                log_colour=True,
+                                show_images=True,
+                                file_name='mapbox_map_all_footage')
 
         # Sort by continent and city, both in ascending order
         df = df.sort(["country", "city"])
