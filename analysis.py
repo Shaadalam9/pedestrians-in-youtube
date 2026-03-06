@@ -1598,7 +1598,6 @@ def log_rollups(df_mapping: "pl.DataFrame") -> None:
     logger.info("\n=== [rollups] H1) Max city by duration within each continent (one per continent) ===")
     logger.info(f"\n{_df_full_str(max_city_per_continent_one)}")
 
-
     country_rank = (
         df_base
         .filter(pl.col("country").is_not_null() & (pl.col("country") != ""))
@@ -3963,7 +3962,6 @@ if __name__ == "__main__":
         os.makedirs(common.output_dir, exist_ok=True)
         df_countries.to_pandas().to_csv(os.path.join(common.output_dir, "mapping_countries.csv"), index=False)
 
-        # Map with images. currently works on a 13" MacBook air screen in chrome, as things are hardcoded...
         maps.map_world(df=df_countries_raw.to_pandas(),
                        color="continent",                # same default as map_political
                        show_cities=True,
