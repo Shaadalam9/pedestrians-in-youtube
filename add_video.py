@@ -58,7 +58,6 @@ def autocomplete_cities():
         city_norm = normalize(city)
         state_norm = normalize(state) if isinstance(state, str) else ""
 
-        # ✅ INCLUDE STATE IN DEDUPLICATION
         key = (city_norm, state_norm, country, iso3)
 
         if q in city_norm and key not in seen:
@@ -101,7 +100,7 @@ def autocomplete_cities():
                             iso3
                         )
                     })
-    # Prefix-first, then alphabetical
+
     results.sort(
         key=lambda x: (
             not normalize(x["city"]).startswith(q),
@@ -125,12 +124,10 @@ def extract_city_autocomplete(file_path):
     cities = set()
 
     for _, row in df.iterrows():
-        # Main city
         city = row.get("city")
         if isinstance(city, str) and city.strip():
             cities.add(city.strip())
 
-        # City aliases (may be [], stringified list, malformed)
         aka = row.get("city_aka")
         if isinstance(aka, str) and aka.strip():
             try:
@@ -149,10 +146,13 @@ def load_csv(file_path):
     if os.path.exists(file_path):
         return pd.read_csv(file_path)
     else:
-        return pd.DataFrame(columns=['city', 'city_aka', 'state', 'country', 'iso3', 'videos', 'time_of_day',
-                                     'vehicle_type', 'start_time', 'end_time', 'gmp', 'population_city',
-                                     'population_country', 'traffic_mortality', 'continent', 'literacy_rate',
-                                     'avg_height', 'med_age', 'upload_date', 'channel', 'gini', 'traffic_index'])
+        return pd.DataFrame(columns=[
+            'city', 'city_aka', 'state', 'country', 'iso3', 'videos',
+            'time_of_day', 'vehicle_type', 'start_time', 'end_time', 'gmp',
+            'population_city', 'population_country', 'traffic_mortality',
+            'continent', 'literacy_rate', 'avg_height', 'med_age',
+            'upload_date', 'channel', 'gini', 'traffic_index'
+        ])
 
 
 def save_csv(df, file_path):
@@ -164,16 +164,21 @@ def compact_nested_list(value):
     try:
         return json.dumps(value, separators=(',', ':'))
     except Exception:
-        # Fallback: remove whitespace characters
         return re.sub(r"\s+", "", str(value))
 
 
-# --- Check if city, state and country exist in the CSV, including city_aka ---
+def compact_flat_list(value):
+    """Serialise flat lists without spaces, eg [0,8,7]."""
+    try:
+        return json.dumps(value, separators=(',', ':'))
+    except Exception:
+        return re.sub(r"\s+", "", str(value))
+
+
 def city_matches(row, city_input):
     city_input = city_input.strip().lower()
     main = str(row['city']).strip().lower()
 
-    # Manually parse city_aka list like "[Kiev,Київ,Киев]"
     aka_raw = str(row.get('city_aka', '')).strip()
     aka_list = []
     if aka_raw.startswith("[") and aka_raw.endswith("]"):
@@ -182,10 +187,13 @@ def city_matches(row, city_input):
     return city_input == main or city_input in aka_list
 
 
-# --- Global video lookup helpers (across all rows) ---
 def _is_missing(x):
     try:
-        return x is None or (isinstance(x, float) and pd.isna(x)) or (isinstance(x, str) and x.strip() in ["", "None", "nan"])  # noqa: E501
+        return x is None or (
+            isinstance(x, float) and pd.isna(x)
+        ) or (
+            isinstance(x, str) and x.strip() in ["", "None", "nan"]
+        )
     except Exception:
         return x is None
 
@@ -211,7 +219,6 @@ def _parse_videos_cell(videos_cell):
         return []
 
     s = str(videos_cell).strip()
-    # Handle variants like: "[id1, id2]", "['id1', 'id2']", "id1,id2"
     if s.startswith('[') and s.endswith(']'):
         parsed = _safe_literal_eval(s, None)
         if isinstance(parsed, list):
@@ -221,7 +228,6 @@ def _parse_videos_cell(videos_cell):
                     continue
                 out.append(str(x).strip().strip('"').strip("'"))
             return [x for x in out if x]
-        # Fall back to manual splitting
         s = s[1:-1]
 
     parts = [p.strip().strip('"').strip("'") for p in s.split(',')]
@@ -254,13 +260,7 @@ def _segments_for_video_in_row(row, video_id):
 
 
 def _segments_overlap_allow_touch(a_start, a_end, b_start, b_end):
-    """Return True if two segments overlap.
-
-    Segments are treated as *half open* for overlap checks: [start, end).
-    This means a segment that starts exactly at another segment's end is allowed.
-
-    Example: existing 11 to 587, new 587 to 590 => NOT overlapping.
-    """
+    """Return True if two segments overlap."""
     a_start = int(a_start)
     a_end = int(a_end)
     b_start = int(b_start)
@@ -362,8 +362,10 @@ def build_video_occurrence_note(df, video_id, max_rows=8, exclude_idxs=None):
     if len(hits) > max_rows:
         extra = f" (plus {len(hits) - max_rows} more)"
 
-    return "Video already exists elsewhere in the mapping file. Existing segments: <span style='color: red;'>" + \
-           "; ".join(parts) + extra + "</span>"
+    return (
+        "Video already exists elsewhere in the mapping file. Existing segments: "
+        "<span style='color: red;'>" + "; ".join(parts) + extra + "</span>"
+    )
 
 
 def row_label(row):
@@ -417,96 +419,96 @@ def form():
     if request.method == 'POST':
         if 'fetch_data' in request.form:
             city = request.form.get('city')
-            # check for missing data
             if city == 'None' or city == 'nan':
                 city = None
             elif city is not None:
                 city = city.strip()
+
             country = request.form.get('country')
-            # check for missing data
             if country == 'None' or country == 'nan':
                 country = None
             elif country is not None:
                 country = country.strip()
+
             state = request.form.get('state')
-            # check for missing data
             if state == 'None' or state == 'nan':
                 state = None
             elif state is not None:
                 state = state.strip()
+
             video_url = request.form.get('video_url')
 
-            # Extract video ID from YouTube URL
             try:
                 yt = YouTube(video_url)
                 video_id = yt.video_id
-
-                # Look for this video id in every row of the mapping file
-                # Only used for displaying existing segments. Do not overwrite the chosen city.
                 video_global_note = build_video_occurrence_note(df, video_id)
 
-                # get info of video
-                # todo: fetching upload date of video fails (with pytubefix?)
                 yt_upload_date = yt.publish_date
-                # in case getting upload date fails
-                # if not yt_upload_date:
-                #     yt_upload_date = 'None'
                 yt_channel = yt.channel_id
-                # todo: fetching title of video fails
-                # for n in range(6):
-                #     try:
-                #         yt_stream = yt.streams.filter(only_audio=True).first()
-                #         yt_stream.download(output_path='_output')
-                #         yt_title = yt.title
-                #     except:  # noqa: E722
-                #         continue
+
                 for n in range(6):
                     try:
                         yt_description = yt.initial_data["engagementPanels"][n]["engagementPanelSectionListRenderer"]["content"]["structuredDescriptionContentRenderer"]["items"][1]["expandableVideoDescriptionBodyRenderer"]["attributedDescriptionBodyText"]["content"]  # noqa: E501
-                    except:  # noqa: E722
+                    except Exception:
                         continue
             except Exception as e:
                 return render_template(
-                    "add_video.html", message=f"Invalid YouTube URL: {e}", df=df, city=city, country=country,
-                    state=state, video_url=video_url, video_id=video_id, existing_data=existing_data_row,
-                    upload_date_video=upload_date_video, channel_video=channel_video,
-                    yt_title=yt_title, yt_description=yt_description, yt_upload_date=yt_upload_date
+                    "add_video.html",
+                    message=f"Invalid YouTube URL: {e}",
+                    df=df,
+                    city=city,
+                    country=country,
+                    state=state,
+                    video_url=video_url,
+                    video_id=video_id,
+                    existing_data=existing_data_row,
+                    upload_date_video=upload_date_video,
+                    channel_video=channel_video,
+                    yt_title=yt_title,
+                    yt_description=yt_description,
+                    yt_upload_date=yt_upload_date
                 )
 
-            # Apply filtering
             if state:
                 filtered_df = df[(df['state'] == state) & (df['country'] == country)]
             else:
                 filtered_df = df[df['country'] == country]
 
-            # Now check if any row matches city name or aliases
             existing_data = filtered_df[filtered_df.apply(lambda row: city_matches(row, city), axis=1)]
 
             if not existing_data.empty:
                 message = "Entry for city found. You can update data."
                 existing_data_row = existing_data.iloc[0].to_dict()
-                # Assign the main city name
                 city = existing_data_row.get('city')
-                # Get the list of videos for the city (state) and country
+
                 videos_list = existing_data_row.get('videos', '').split(',')
                 videos_list = [video.strip('[]') for video in videos_list]
+
                 upload_date_list = existing_data_row.get('upload_date', '').split(',')
                 upload_date_list = [upload_date.strip('[]') for upload_date in upload_date_list]
+
                 channel_list = existing_data_row.get('channel', '').split(',')
                 channel_list = [channel.strip('[]') for channel in channel_list]
+
                 vehicle_type_list = existing_data_row.get('vehicle_type', '').split(',')
                 vehicle_type_list = [vehicle_type.strip('[]') for vehicle_type in vehicle_type_list]
+
                 city_aka_list = existing_data_row.get('city_aka', '').split(',')
                 city_aka_list = [city_aka.strip('[]') for city_aka in city_aka_list]
+
                 if video_id in videos_list:
                     position = videos_list.index(video_id)
                     upload_date_video = upload_date_list[position].strip()
                     channel_video = channel_list[position].strip()
+
                     start_time_list = ast.literal_eval(existing_data_row.get('start_time', ''))
                     start_time_video = start_time_list[position]
+
                     end_time_list = ast.literal_eval(existing_data_row.get('end_time', ''))
                     end_time_video = end_time_list[position]
+
                     vehicle_type_video = vehicle_type_list[position]
+
                     time_of_day_list = ast.literal_eval(existing_data_row.get('time_of_day', ''))
                     time_of_day_video = time_of_day_list[position]
             else:
@@ -515,65 +517,67 @@ def form():
                 iso3_code = common.get_iso3_country_code(common.correct_country(country))
                 country_data = get_country_data(iso3_code)
                 city_data = get_city_data(city, iso2_code)
+
                 if iso2_code == 'XK':
                     country_population = 1578000
                 else:
                     country_population = get_country_population(country_data)
-                # get coordinates
-                lat, lon = get_coordinates(city, state, common.correct_country(country))
-                existing_data_row = {'city': city,
-                                     'city_aka': city_aka,
-                                     'country': country,
-                                     'iso3': iso3_code,
-                                     'lat': lat,
-                                     'lon': lon,
-                                     'state': state,
-                                     'videos': [],
-                                     'time_of_day': [],
-                                     'gmp': 0.0,  # get_gmp(city, state, iso3),
-                                     'population_city': int(get_city_population(city_data)),
-                                     'population_country': country_population,
-                                     'traffic_mortality': get_country_traffic_mortality(iso3_code),
-                                     'start_time': [],
-                                     'end_time': [],
-                                     'continent': get_country_continent(country_data),
-                                     'literacy_rate': get_country_literacy_rate(iso3_code),
-                                     'avg_height': get_country_average_height(iso3_code),
-                                     'med_age': get_country_median_age(iso2_code),
-                                     'upload_date': [],
-                                     'channel': [],
-                                     'vehicle_type': [],
-                                     'gini': get_country_gini(country_data),
-                                     'traffic_index': get_traffic_index_lat_lon(lat, lon)}  # alternative is paid Nombeo API  # noqa: E501
 
-            # Always show global video matches note if present, but do not overwrite any fields
+                lat, lon = get_coordinates(city, state, common.correct_country(country))
+                existing_data_row = {
+                    'city': city,
+                    'city_aka': city_aka,
+                    'country': country,
+                    'iso3': iso3_code,
+                    'lat': lat,
+                    'lon': lon,
+                    'state': state,
+                    'videos': [],
+                    'time_of_day': [],
+                    'gmp': 0.0,
+                    'population_city': int(get_city_population(city_data)),
+                    'population_country': country_population,
+                    'traffic_mortality': get_country_traffic_mortality(iso3_code),
+                    'start_time': [],
+                    'end_time': [],
+                    'continent': get_country_continent(country_data),
+                    'literacy_rate': get_country_literacy_rate(iso3_code),
+                    'avg_height': get_country_average_height(iso3_code),
+                    'med_age': get_country_median_age(iso2_code),
+                    'upload_date': [],
+                    'channel': [],
+                    'vehicle_type': [],
+                    'gini': get_country_gini(country_data),
+                    'traffic_index': get_traffic_index_lat_lon(lat, lon)
+                }
+
             if 'video_global_note' in locals() and video_global_note:
                 message = (message + " " + video_global_note).strip()
 
         elif 'submit_data' in request.form:
             city = request.form.get('city')
-            # check for missing data
             if city == 'None' or city == 'nan':
                 city = None
             elif city is not None:
                 city = city.strip()
+
             country = request.form.get('country')
-            # check for missing data
             if country == 'None' or country == 'nan':
                 country = None
             elif country is not None:
                 country = country.strip()
+
             state = request.form.get('state')
-            # check for missing data
             if state == 'None' or state == 'nan':
                 state = None
             elif state is not None:
                 state = state.strip()
+
             video_url = request.form.get('video_url')
             time_of_day = request.form.getlist('time_of_day')
             start_time = request.form.getlist('start_time')
             end_time = request.form.getlist('end_time')
-            end_time_input = int(end_time[0])  # for starting video at the last end time
+            end_time_input = int(end_time[0])
             gmp = request.form.get('gmp')
             population_city = request.form.get('population_city')
             lat = request.form.get('lat')
@@ -592,49 +596,49 @@ def form():
             gini = request.form.get('gini')
             traffic_index = request.form.get('traffic_index')
 
-            # Extract video ID from YouTube URL
+            try:
+                vehicle_type_video_int = int(vehicle_type_video)
+            except (TypeError, ValueError):
+                vehicle_type_video_int = None
+
             try:
                 yt = YouTube(video_url)
                 video_id = yt.video_id
-                # Look for this video id in every row of the mapping file
                 video_matches_anywhere = find_video_occurrences(df, video_id)
-                # get info of video
                 yt_upload_date = yt.publish_date
-                # in case getting upload date fails
-                # if not yt_upload_date:
-                #     yt_upload_date = 'None'
                 yt_channel = yt.channel_id
-                # for n in range(6):
-                #     try:
-                #         yt_stream = yt.streams.filter(only_audio=True).first()
-                #         yt_stream.download(output_path='_output')
-                #         # getting title is not stable
-                #         yt_title = yt.title
-                #     except:  # noqa: E722
-                #         continue
+
                 for n in range(6):
                     try:
                         yt_description = yt.initial_data["engagementPanels"][n]["engagementPanelSectionListRenderer"]["content"]["structuredDescriptionContentRenderer"]["items"][1]["expandableVideoDescriptionBodyRenderer"]["attributedDescriptionBodyText"]["content"]  # noqa: E501
-                    except:  # noqa: E722
+                    except Exception:
                         continue
             except Exception as e:
                 return render_template(
-                    "add_video.html", message=f"Invalid YouTube URL: {e}", df=df, city=city, country=country,
-                    state=state, video_url=video_url, video_id=video_id, existing_data=existing_data_row,
-                    upload_date_video=upload_date_video, channel_video=channel_video,
-                    yt_title=yt_title, yt_description=yt_description, yt_upload_date=yt_upload_date,
+                    "add_video.html",
+                    message=f"Invalid YouTube URL: {e}",
+                    df=df,
+                    city=city,
+                    country=country,
+                    state=state,
+                    video_url=video_url,
+                    video_id=video_id,
+                    existing_data=existing_data_row,
+                    upload_date_video=upload_date_video,
+                    channel_video=channel_video,
+                    yt_title=yt_title,
+                    yt_description=yt_description,
+                    yt_upload_date=yt_upload_date,
                     yt_channel=yt_channel
                 )
 
-            # Validation checks
             if any(t not in ['0', '1'] for t in time_of_day):
                 message = "Time of day must be either 0 or 1."
-            elif any(v not in ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'] for v in vehicle_type_video):
-                message = "Type of vehicle must be one of: 0, 1, 2, 3, 4."
+            elif vehicle_type_video_int not in range(13):
+                message = "Type of vehicle must be one of: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12."
             elif any(int(et) <= int(st) for st, et in zip(start_time, end_time)):
                 message = "End time must be larger than start time."
             else:
-                # Check if the city is already present in the CSV
                 if state:
                     check_existing = not df[
                         (df['city'] == city) &
@@ -647,23 +651,30 @@ def form():
                         (df['country'] == country)
                     ].empty
 
-                # Prevent adding the same video id to a different row
                 current_idx = None
                 if check_existing:
                     if state:
-                        current_idx = df[(df['city'] == city) & (df['state'] == state) & (df['country'] == country)].index[0]  # noqa: E501
+                        current_idx = df[
+                            (df['city'] == city) &
+                            (df['state'] == state) &
+                            (df['country'] == country)
+                        ].index[0]
                     else:
-                        current_idx = df[(df['city'] == city) & (df['country'] == country)].index[0]
+                        current_idx = df[
+                            (df['city'] == city) &
+                            (df['country'] == country)
+                        ].index[0]
 
                 global_note_for_display = ""
                 duplicate_elsewhere = [h for h in video_matches_anywhere if h.get('idx') != current_idx]
 
                 if duplicate_elsewhere:
                     global_note_for_display = build_video_occurrence_note(
-                        df, video_id, exclude_idxs={current_idx} if current_idx is not None else None
+                        df,
+                        video_id,
+                        exclude_idxs={current_idx} if current_idx is not None else None
                     )
 
-                # Do not block adding the same video to another row, but do block overlapping segments anywhere
                 try:
                     new_start_global = int(start_time[-1])
                     new_end_global = int(end_time[-1])
@@ -674,7 +685,9 @@ def form():
                 overlap_global = None
                 if new_start_global is not None and new_end_global is not None:
                     overlap_global = find_overlap_across_mapping(
-                        video_matches_anywhere, new_start_global, new_end_global,
+                        video_matches_anywhere,
+                        new_start_global,
+                        new_end_global,
                         exclude_idxs={current_idx} if current_idx is not None else None
                     )
 
@@ -691,45 +704,54 @@ def form():
                 if not message:
                     if check_existing:
                         if state:
-                            idx = df[(df['city'] == city) & (df['state'] == state) & (df['country'] == country)].index[0]  # noqa: E501
+                            idx = df[
+                                (df['city'] == city) &
+                                (df['state'] == state) &
+                                (df['country'] == country)
+                            ].index[0]
                         else:
-                            idx = df[(df['city'] == city) & (df['country'] == country)].index[0]
-                        # Get the list of videos for the city (and state) and country
+                            idx = df[
+                                (df['city'] == city) &
+                                (df['country'] == country)
+                            ].index[0]
+
                         videos_list = df.at[idx, 'videos'].split(',') if pd.notna(df.at[idx, 'videos']) else []
-                        # Clean the individual video IDs by stripping any leading or trailing brackets
                         videos_list = [video.strip('[]') for video in videos_list]
+
                         time_of_day_list = eval(df.at[idx, 'time_of_day']) if pd.notna(df.at[idx, 'time_of_day']) else []  # noqa: E501
                         start_time_list = eval(df.at[idx, 'start_time']) if pd.notna(df.at[idx, 'start_time']) else []
                         end_time_list = eval(df.at[idx, 'end_time']) if pd.notna(df.at[idx, 'end_time']) else []
+
                         upload_date_list = df.at[idx, 'upload_date'].split(',') if pd.notna(df.at[idx, 'upload_date']) else []  # noqa: E501
                         upload_date_list = [upload_date.strip('[]') for upload_date in upload_date_list]
-                        channel_list = df.at[idx, 'channel'].split(',') if pd.notna(df.at[idx, 'channel']) else []  # noqa: E501
+
+                        channel_list = df.at[idx, 'channel'].split(',') if pd.notna(df.at[idx, 'channel']) else []
                         channel_list = [channel.strip('[]') for channel in channel_list]
+
                         vehicle_type_list = df.at[idx, 'vehicle_type'].split(',') if pd.notna(df.at[idx, 'vehicle_type']) else []  # noqa: E501
                         vehicle_type_list = [vehicle_type.strip('[]') for vehicle_type in vehicle_type_list]
 
-                        # Check if the video_id already exists in the list
                         if video_id not in videos_list:
-                            # If the video doesn't exist, append it to the list
                             videos_list.append(video_id)
-                            video_index = videos_list.index(video_id)  # Find the index of the existing video ID
-                            time_of_day_list.append([int(time_of_day[-1])])    # Append time of day as integer
-                            start_time_list.append([int(start_time[-1])])      # Append start time as integer
-                            end_time_list.append([int(end_time[-1])])          # Append end time as integer
-                            # Append upload time as integer
+                            video_index = videos_list.index(video_id)
+                            time_of_day_list.append([int(time_of_day[-1])])
+                            start_time_list.append([int(start_time[-1])])
+                            end_time_list.append([int(end_time[-1])])
+
                             if upload_date_video != 'None' and upload_date_video:
                                 upload_date_list.append(int(upload_date_video))
                             else:
                                 upload_date_list.append(None)
+
                             channel_list.append(channel_video)
-                            vehicle_type_list.append(int(vehicle_type_video))  # Append vehicle type as integer
+                            vehicle_type_list.append(vehicle_type_video_int)
                         else:
-                            # If the video already exists, update the corresponding lists with the new data
-                            video_index = videos_list.index(video_id)  # Find the index of the existing video ID
+                            video_index = videos_list.index(video_id)
                             new_start = int(start_time[-1])
                             new_end = int(end_time[-1])
                             existing_segs = list(zip(start_time_list[video_index], end_time_list[video_index]))
                             overlap = _find_overlapping_segment(existing_segs, new_start, new_end)
+
                             if overlap:
                                 next_start = int(overlap[1])
                                 message = (
@@ -750,36 +772,50 @@ def form():
                                 elif not channel_video:
                                     channel_video = 'None'
 
-                                vehicle_type_video_int = int(vehicle_type_video) if vehicle_type_video is not None else None  # noqa: E501
                                 time_of_day_last = extract_last_int(time_of_day_video)
                                 time_of_day_last = int(time_of_day_last) if time_of_day_last is not None else None
 
                                 return render_template(
-                                    "add_video.html", message=message, df=df, city=city, country=country, state=state,
-                                    video_url=video_url, video_id=video_id, existing_data=existing_data_row,
-                                    upload_date_video=upload_date_video, channel_video=channel_video,
-                                    timestamp=end_time_input, yt_title=yt_title, yt_description=yt_description,
-                                    yt_upload_date=yt_upload_date, yt_channel=yt_channel,
-                                    start_time_video=start_time_video, end_time_video=end_time_video,
-                                    vehicle_type_video=vehicle_type_video_int, time_of_day_video=time_of_day_video,
+                                    "add_video.html",
+                                    message=message,
+                                    df=df,
+                                    city=city,
+                                    country=country,
+                                    state=state,
+                                    video_url=video_url,
+                                    video_id=video_id,
+                                    existing_data=existing_data_row,
+                                    upload_date_video=upload_date_video,
+                                    channel_video=channel_video,
+                                    timestamp=end_time_input,
+                                    yt_title=yt_title,
+                                    yt_description=yt_description,
+                                    yt_upload_date=yt_upload_date,
+                                    yt_channel=yt_channel,
+                                    start_time_video=start_time_video,
+                                    end_time_video=end_time_video,
+                                    vehicle_type_video=vehicle_type_video_int,
+                                    time_of_day_video=time_of_day_video,
                                     time_of_day_last=time_of_day_last
                                 )
 
-                            time_of_day_list[video_index].append(int(time_of_day[-1]))  # Append new time of day
-                            start_time_list[video_index].append(new_start)    # Append new start time
-                            end_time_list[video_index].append(new_end)        # Append new end time
+                            time_of_day_list[video_index].append(int(time_of_day[-1]))
+                            start_time_list[video_index].append(new_start)
+                            end_time_list[video_index].append(new_end)
+
                             if upload_date_video != 'None' and upload_date_video:
                                 upload_date_list[video_index] = int(upload_date_video)
                             else:
                                 upload_date_list[video_index] = None
+
                             channel_list[video_index] = channel_video
-                            vehicle_type_list[video_index] = int(vehicle_type_video)
+                            vehicle_type_list[video_index] = vehicle_type_video_int
+
                         start_time_video = start_time_list[video_index]
                         end_time_video = end_time_list[video_index]
                         time_of_day_video = time_of_day_list[video_index]
 
-                        # Update the DataFrame row with the modified lists and new data
-                        df.at[idx, 'videos'] = '[' + ','.join(videos_list) + ']'  # Join the list as a string
+                        df.at[idx, 'videos'] = '[' + ','.join(videos_list) + ']'
                         df.at[idx, 'time_of_day'] = compact_nested_list(time_of_day_list)
                         df.at[idx, 'start_time'] = compact_nested_list(start_time_list)
                         df.at[idx, 'end_time'] = compact_nested_list(end_time_list)
@@ -794,40 +830,35 @@ def form():
                         df.at[idx, 'med_age'] = to_float_safe(med_age)
                         df.at[idx, 'lat'] = to_float_safe(lat)
                         df.at[idx, 'lon'] = to_float_safe(lon)
+
                         for i in range(len(upload_date_list)):
                             if upload_date_list[i] != 'None' and upload_date_list[i]:
                                 upload_date_list[i] = int(upload_date_list[i])
                             else:
                                 upload_date_list[i] = None
-                        upload_date_list = str(upload_date_list)
-                        upload_date_list = upload_date_list.replace('\'', '')
-                        upload_date_list = upload_date_list.replace(' ', '')
-                        df.at[idx, 'upload_date'] = upload_date_list
+                        df.at[idx, 'upload_date'] = compact_flat_list(upload_date_list)
+
                         for i in range(len(channel_list)):
                             if channel_list[i] != 'None':
                                 channel_list[i] = channel_list[i]
-                        channel_list = str(channel_list)
-                        channel_list = channel_list.replace('\'', '')
-                        channel_list = channel_list.replace(' ', '')
-                        df.at[idx, 'channel'] = channel_list
+                        df.at[idx, 'channel'] = compact_flat_list(channel_list)
+
                         vehicle_type_list = [int(x) for x in vehicle_type_list]
-                        vehicle_type_list = str(vehicle_type_list)
-                        vehicle_type_list = vehicle_type_list.replace('\'', '')
-                        vehicle_type_list = vehicle_type_list.replace(' ', '')
-                        df.at[idx, 'vehicle_type'] = vehicle_type_list
+                        df.at[idx, 'vehicle_type'] = compact_flat_list(vehicle_type_list)
+
                         if gini:
                             df.at[idx, 'gini'] = float(gini)
                         else:
                             df.at[idx, 'gini'] = 0.0
+
                         if traffic_index:
                             df.at[idx, 'traffic_index'] = float(traffic_index)
                         else:
                             df.at[idx, 'traffic_index'] = 0.0
 
                     else:
-                        # Add new row if city and country are not found in the CSV
                         new_row = {
-                            'id': int(df.iloc[-1]['id']+1),
+                            'id': int(df.iloc[-1]['id'] + 1),
                             'city': city,
                             'city_aka': city_aka,
                             'state': state,
@@ -847,9 +878,9 @@ def form():
                             'literacy_rate': literacy_rate,
                             'avg_height': avg_height,
                             'med_age': med_age,
-                            'upload_date': '[' + upload_date_video.strip() + ']',
-                            'channel': '[' + channel_video.strip() + ']',
-                            'vehicle_type': '[' + vehicle_type_video.strip() + ']',
+                            'upload_date': compact_flat_list([int(upload_date_video)]) if upload_date_video and upload_date_video != 'None' else '[null]',  # noqa: E501
+                            'channel': compact_flat_list([channel_video.strip()]) if channel_video else '[None]',
+                            'vehicle_type': compact_flat_list([vehicle_type_video_int]),
                             'gini': gini,
                             'traffic_index': traffic_index,
                         }
@@ -858,23 +889,21 @@ def form():
                         end_time_video = [int(x) for x in end_time]
                         time_of_day_video = [int(x) for x in time_of_day]
 
-                    # Save to CSV
                     save_csv(df, FILE_PATH)
-                    message = "Video added/updated successfully."
+                    message = "Video added or updated successfully."
                     if global_note_for_display:
                         message = message + " " + global_note_for_display
 
-    # Fetch the existing data after submit to display for the city
     if state:
         if city and state and country:
             existing_data = df[(df['city'] == city) & (df['state'] == state) & (df['country'] == country)]
             if not existing_data.empty:
-                existing_data_row = existing_data.iloc[0].to_dict()  # Convert to dictionary
+                existing_data_row = existing_data.iloc[0].to_dict()
     else:
         if city and country:
             existing_data = df[(df['city'] == city) & (df['country'] == country)]
             if not existing_data.empty:
-                existing_data_row = existing_data.iloc[0].to_dict()  # Convert to dictionary
+                existing_data_row = existing_data.iloc[0].to_dict()
 
     if not upload_date_video and yt_upload_date:
         upload_date_video = yt_upload_date.strftime('%d%m%Y')
@@ -884,22 +913,35 @@ def form():
     elif not channel_video:
         channel_video = 'None'
 
-    # Cast to int for checks
     vehicle_type_video = int(vehicle_type_video) if vehicle_type_video is not None else None
     time_of_day_last = extract_last_int(time_of_day_video)
     time_of_day_last = int(time_of_day_last) if time_of_day_last is not None else None
 
     return render_template(
-        "add_video.html", message=message, df=df, city=city, country=country, state=state, video_url=video_url,
-        video_id=video_id, existing_data=existing_data_row, upload_date_video=upload_date_video,
-        channel_video=channel_video, timestamp=end_time_input, yt_title=yt_title, yt_description=yt_description,
-        yt_upload_date=yt_upload_date, yt_channel=yt_channel, start_time_video=start_time_video,
-        end_time_video=end_time_video, vehicle_type_video=vehicle_type_video, time_of_day_video=time_of_day_video,
+        "add_video.html",
+        message=message,
+        df=df,
+        city=city,
+        country=country,
+        state=state,
+        video_url=video_url,
+        video_id=video_id,
+        existing_data=existing_data_row,
+        upload_date_video=upload_date_video,
+        channel_video=channel_video,
+        timestamp=end_time_input,
+        yt_title=yt_title,
+        yt_description=yt_description,
+        yt_upload_date=yt_upload_date,
+        yt_channel=yt_channel,
+        start_time_video=start_time_video,
+        end_time_video=end_time_video,
+        vehicle_type_video=vehicle_type_video,
+        time_of_day_video=time_of_day_video,
         time_of_day_last=time_of_day_last
     )
 
 
-# Compatibility routes: some templates post to these endpoints
 @app.route('/fetch_video', methods=['POST'])
 def fetch_video():
     return form()
@@ -910,15 +952,12 @@ def submit_data():
     return form()
 
 
-# Fetch country data based on its ISO-3 code
 def get_country_data(iso3_code):
     try:
-        # REST Countries API URL
         api_url = f"https://restcountries.com/v3.1/alpha/{iso3_code}"
         response = requests.get(api_url)
         if response.status_code == 200:
             country_data = response.json()
-            # return country data
             return country_data
         else:
             return None
@@ -927,7 +966,6 @@ def get_country_data(iso3_code):
         return None
 
 
-# Fetch continents (first in the list) by ISO-3 code
 def get_country_continent(country_data):
     if country_data:
         return country_data[0]['continents'][0]
@@ -935,7 +973,6 @@ def get_country_continent(country_data):
         return ''
 
 
-# Fetch population by ISO-3 code
 def get_country_population(country_data):
     if country_data:
         return country_data[0]['population']
@@ -943,29 +980,24 @@ def get_country_population(country_data):
         return 0.0
 
 
-# Fetch population by ISO-3 code
 def get_country_gini(country_data):
     if country_data:
-        # Extract Gini coefficient (use first key in Gini dict if available)
         gini_data = country_data[0].get('gini', {})
         if gini_data:
-            return list(gini_data.values())[0]  # Use the first available Gini value
+            return list(gini_data.values())[0]
         else:
             return 0.0
     else:
         return 0.0
 
 
-# Fetch literacy rate by ISO-3 code
 def get_country_literacy_rate(iso3_code):
     try:
-        # World Bank API URL for literacy rate
         api_url = f"http://api.worldbank.org/v2/country/{iso3_code}/indicator/SE.ADT.LITR.ZS?format=json"
         response = requests.get(api_url)
         if response.status_code == 200:
             data = response.json()
             if data and len(data) > 1 and data[1]:
-                # Extract the most recent literacy rate
                 for entry in data[1]:
                     if entry['value'] is not None:
                         return round(entry['value'], 2)
@@ -977,16 +1009,13 @@ def get_country_literacy_rate(iso3_code):
         return 0.0
 
 
-# Function to fetch traffic mortality data
 def get_country_traffic_mortality(iso3_code):
     try:
-        # World Bank API URL for literacy rate
         api_url = f"http://api.worldbank.org/v2/country/{iso3_code}/indicator/SH.STA.TRAF.P5?format=json"
         response = requests.get(api_url)
         if response.status_code == 200:
             data = response.json()
             if data and len(data) > 1 and data[1]:
-                # Extract the most recent literacy rate
                 for entry in data[1]:
                     if entry['value'] is not None:
                         return round(entry['value'], 2)
@@ -998,11 +1027,7 @@ def get_country_traffic_mortality(iso3_code):
 
 def get_city_data(city, country_code):
     """
-    Get economic or city-related data from the Geonames API
-
-    :param city: Name of the city
-    :param country_code: 2-letter ISO code of the country
-    :return: City data
+    Get economic or city related data from the Geonames API
     """
     url = f"http://api.geonames.org/searchJSON?q={city}&country={country_code}&username={common.get_secrets('geonames_username')}"  # noqa: E501
     try:
@@ -1019,11 +1044,7 @@ def get_city_data(city, country_code):
 
 def get_city_population(city_data):
     """
-    Get economic or city-related data from the Geonames API
-
-    :param city: Name of the city
-    :param country_code: 2-letter ISO code of the country
-    :return: City data
+    Get population from Geonames city data
     """
     if not city_data:
         return 0
@@ -1039,17 +1060,14 @@ def get_city_population(city_data):
     return 0
 
 
-# Fetch average height by ISO-3 code
 def get_country_average_height(iso3_code):
     try:
-        # Filter the dataset by country name
         row = height_data[height_data['cca3'].str.lower() == iso3_code.lower()]
         if not row.empty:
-            # Return average male and female height
             male_height = row.iloc[0]['meanHeightMale']
             female_height = row.iloc[0]['meanHeightFemale']
             avg_height = (male_height + female_height) / 2
-            return round(avg_height)  # return rounded average height
+            return round(avg_height)
         else:
             return 0.0
     except Exception as e:
@@ -1057,13 +1075,10 @@ def get_country_average_height(iso3_code):
         return 0.0
 
 
-# Fetch average age by ISO-2 code
 def get_country_median_age(iso2_code):
     try:
-        # Filter the dataset by country name
         row = age_data[age_data['iso2'].str.lower() == iso2_code.lower()]
         if not row.empty:
-            # Return median age
             return row.iloc[0]['median_age']
         else:
             return 0.0
@@ -1075,49 +1090,36 @@ def get_country_median_age(iso2_code):
 def get_gmp(city: str, state: str, iso3: str) -> float:
     """
     Fetches Gross Metropolitan Product (GMP) for a given city, state, and ISO3 country code.
-
-    Args:
-        city (str): The city's name.
-        state (str): The state (for U.S. cities).
-        iso3 (str): The 3-letter ISO country code.
-
-    Returns:
-        float: The city's Gross Metropolitan Product (GMP) in USD, or None if not found.
     """
-    # todo: finish with taking state into account and caching received objects (slow API)
     if iso3.upper() == "USA":
-        # Use BEA API for U.S. metro areas
         url = "https://apps.bea.gov/api/data/"
         params = {
             "UserID": common.get_secrets('bea_api_key'),
             "method": "GetData",
             "datasetname": "Regional",
-            "TableName": "CAGDP2",  # GDP for metro areas
-            "LineCode": "1",  # Total GDP
-            "GeoFIPS": "MSA",  # Metropolitan Statistical Areas
+            "TableName": "CAGDP2",
+            "LineCode": "1",
+            "GeoFIPS": "MSA",
             "Year": "2022",
             "ResultFormat": "json"
         }
         response = requests.get(url, params=params)
         data = response.json()
 
-        # Extract GMP for the given city
         for entry in data.get("BEAAPI", {}).get("Results", {}).get("Data", []):
             if city.lower() in entry["GeoName"].lower():
                 return float(entry["DataValue"])
 
     else:
-        # Use OECD API for international cities
         url = f"https://stats.oecd.org/SDMX-JSON/data/CITIES/GDP.METRO.{iso3.upper()}?json-lang=en"
         response = requests.get(url)
         data = response.json()
 
-        # Extract GMP for the given city
         for key, value in data.get("dataSets", [{}])[0].get("observations", {}).items():
             if city.lower() in key.lower():
                 return float(value[0])
 
-    return None  # Return None if no data is found
+    return None
 
 
 def get_traffic_index_lat_lon(lat, lon, api="tomtom"):
@@ -1131,7 +1133,7 @@ def get_traffic_index_lat_lon(lat, lon, api="tomtom"):
                 if "flowSegmentData" in data:
                     current_speed = data["flowSegmentData"]["currentSpeed"]
                     free_flow_speed = data["flowSegmentData"]["freeFlowSpeed"]
-                    try:  # free_flow_speed can be 0
+                    try:
                         traffic_index = round((1 - current_speed / free_flow_speed) * 100, 2)
                     except ZeroDivisionError:
                         traffic_index = 0.0
@@ -1149,10 +1151,9 @@ def get_traffic_index_lat_lon(lat, lon, api="tomtom"):
 
         try:
             response = requests.get(url)
-            response.raise_for_status()  # Raise an exception for HTTP errors
+            response.raise_for_status()
             data = response.json()
 
-            # Extract traffic index or other relevant data
             traffic_index = data.get('trafficIndex', None)
 
             if traffic_index is not None:
@@ -1169,17 +1170,15 @@ def get_traffic_index_lat_lon(lat, lon, api="tomtom"):
 
 
 def get_traffic_index(city, state, country):
-    # API endpoint for Numbeo Traffic Index with city, state, and country
     if state:
         url = f"https://www.numbeo.com/api/traffic?api_key={common.get_secrets('numbeo_api_key')}&city={city}&state={state}&country={country}"  # noqa: E501
     else:
         url = f"https://www.numbeo.com/api/traffic?api_key={common.get_secrets('numbeo_api_key')}&city={city}&country={country}"  # noqa: E501
     try:
         response = requests.get(url)
-        response.raise_for_status()  # Raise an exception for HTTP errors
+        response.raise_for_status()
         data = response.json()
 
-        # Check if the data contains traffic information
         if 'traffic_index' in data:
             traffic_index = data['traffic_index']
             return traffic_index
@@ -1194,69 +1193,61 @@ def get_traffic_index(city, state, country):
 
 def get_coordinates(city, state, country):
     """Get city coordinates."""
-    # Generate a unique user agent with the current date and time
     current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     user_agent = f"my_geocoding_script_{current_time}"
-
-    # Create a geolocator with the dynamically generated user_agent
     geolocator = Nominatim(user_agent=user_agent)
 
     try:
-        # Attempt to geocode the city and country with a longer timeout
         if state and str(state).lower() != 'nan':
-            location_query = f"{city}, {state}, {country}"  # Combine city, state and country
+            location_query = f"{city}, {state}, {country}"
         else:
-            location_query = f"{city}, {country}"  # Combine city and country
-        location = geolocator.geocode(location_query, timeout=2)  # type: ignore # Set a 2-second timeout
+            location_query = f"{city}, {country}"
+
+        location = geolocator.geocode(location_query, timeout=2)
 
         if location:
-            return location.latitude, location.longitude  # type: ignore
+            return location.latitude, location.longitude
         else:
             print(f"Failed to geocode {location_query}")
-            return None, None  # Return None if city is not found
+            return None, None
 
     except GeocoderTimedOut:
         print(f"Geocoding timed out for {location_query}.")
-        return None, None  # Return None if city is not found
+        return None, None
     except GeocoderUnavailable:
         print(f"Geocoding server could not be reached for {location_query}.")
-        return None, None  # Return None if city is not found
+        return None, None
     except GeocoderServiceError:
-        print(f"Non-successful status for {location_query}.")
-        return None, None  # Return None if city is not found
+        print(f"Non successful status for {location_query}.")
+        return None, None
 
 
 def extract_last_int(value):
-    # Case 1: already an int
     if isinstance(value, int):
         return value
 
-    # Case 2: Python list object (not string)
     if isinstance(value, list):
         if len(value) > 0:
             try:
                 return int(value[-1])
-            except:  # noqa: E722
+            except Exception:
                 return None
         return None
 
-    # Case 3: string that may contain list or number
     if isinstance(value, str):
         val = value.strip()
 
-        # If it's something like "3"
         try:
             return int(val)
-        except:  # noqa: E722
+        except Exception:
             pass
 
-        # If it's a list-like string
         try:
             parsed = ast.literal_eval(val)
             if isinstance(parsed, list) and len(parsed) > 0:
                 return int(parsed[-1])
             return None
-        except:  # noqa: E722
+        except Exception:
             return None
 
     return None
@@ -1266,7 +1257,6 @@ def to_int_safe(value):
     if value is None:
         return 0
     try:
-        # Convert floats like "67391582.0"
         f = float(value)
         return int(f)
     except Exception:
