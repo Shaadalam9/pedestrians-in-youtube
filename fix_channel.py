@@ -1,0 +1,29 @@
+import csv
+import sys
+
+csv.field_size_limit(sys.maxsize)
+
+file_path = "mapping.csv"
+temp_path = "mapping_tmp.csv"
+
+new_value = "[UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg,UC3utiWG2__e9T5bfYaA8sbg]"
+
+with open(file_path, "r", encoding="utf-8", newline="") as f_in, \
+     open(temp_path, "w", encoding="utf-8", newline="") as f_out:
+
+    reader = csv.reader(f_in)
+    writer = csv.writer(f_out)
+
+    header = next(reader)
+    writer.writerow(header)
+
+    id_idx = header.index("id")
+    channel_idx = header.index("channel")
+
+    for row in reader:
+        if row[id_idx] == "4119":
+            row[channel_idx] = new_value
+        writer.writerow(row)
+
+import os
+os.replace(temp_path, file_path)
