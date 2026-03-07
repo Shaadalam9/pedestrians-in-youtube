@@ -21,114 +21,115 @@ class Maps:
 
         Notes
         -----
-        * x/y/x_label/y_label are in paper coordinates (0..1).
-        * approx_lon/approx_lat are used as a line anchor on the map.
+        * approx_lon/approx_lat place the screenshot tile on the map.
+        * city/country are used to draw the connector line to the actual city.
+        * label_dlon/label_dlat and video_dlon/video_dlat control text offsets
+          from the tile centre.
+        * file names are assumed to match the screenshots directory.
         """
 
         return [
             {
-                "city": "Tokyo",
-                "country": "Japan",
-                "file": "tokyo.png",
-                "x": 0.933,
-                "y": 0.58,
-                "approx_lon": 165.2,
-                "approx_lat": 7.2,
-                "label": "Tokyo, Japan",
-                "x_label": 0.982,
-                "y_label": 0.641,
-                "video": "oDejyTLYUTE",
-                "x_video": 0.9305,
-                "y_video": 0.521,
+                "city": "Cape Town",
+                "country": "South Africa",
+                "file": "cape_town.jpg",
+                "approx_lon": 30.0,
+                "approx_lat": -48.0,
+                "img_half_width_deg": 16.0,
+                "img_half_height_deg": 8.0,
+                "label": "Cape Town, South Africa",
+                "label_dlon": -10.0,
+                "label_dlat": 9.5,
+                "label_font_size": 9,
+                "video": "0xP7JgDiBb8",
+                "video_dlon": 10.0,
+                "video_dlat": -9.5,
+                "video_font_size": 9,
             },
             {
-                "city": "Nairobi",
-                "country": "Kenya",
-                "file": "nairobi.png",
-                "x": 0.72,
-                "y": 0.38,
-                "approx_lon": 70.2,
-                "approx_lat": -20.0,
-                "label": "Nairobi, Kenya",
-                "x_label": 0.7695,
-                "y_label": 0.442,
-                "video": "VNLqnwoJqmM",
-                "x_video": 0.72129,
-                "y_video": 0.311,
+                "city": "Seoul",
+                "country": "South Korea",
+                "file": "seoul.jpg",
+                "approx_lon": 174.0,
+                "approx_lat": 40.0,
+                "img_half_width_deg": 16.0,
+                "img_half_height_deg": 8.0,
+                "label": "Seoul, South Korea",
+                "label_dlon": -6.0,
+                "label_dlat": 9.5,
+                "label_font_size": 9,
+                "video": "qOx5CwCrN9k",
+                "video_dlon": 8.0,
+                "video_dlat": -9.5,
+                "video_font_size": 9,
             },
             {
-                "city": "Los Angeles",
+                "city": "London",
+                "country": "United Kingdom",
+                "file": "london.jpg",
+                "approx_lon": -32.0,
+                "approx_lat": 50.0,
+                "img_half_width_deg": 16.0,
+                "img_half_height_deg": 6.0,
+                "label": "London, UK",
+                "label_dlon": -10.0,
+                "label_dlat": 7.0,
+                "label_font_size": 9,
+                "video": "QI4_dGvZ5yE",
+                "video_dlon": 10.0,
+                "video_dlat": -7.0,
+                "video_font_size": 9,
+            },
+            {
+                "city": "New York",
                 "country": "United States",
-                "file": "los_angeles.png",
-                "x": 0.12,
-                "y": 0.5,
-                "approx_lon": -121.7,
-                "approx_lat": 0.0,
-                "label": "Los Angeles, CA, USA",
-                "x_label": 0.0705,
-                "y_label": 0.562,
-                "video": "4uhMg5na888",
-                "x_video": 0.126,
-                "y_video": 0.44,
+                "file": "new_york.jpg",
+                "approx_lon": -42.0,
+                "approx_lat": 28.0,
+                "img_half_width_deg": 16.0,
+                "img_half_height_deg": 8.0,
+                "label": "New York, US",
+                "label_dlon": -9.0,
+                "label_dlat": 9.0,
+                "label_font_size": 9,
+                "video": "_Wyg213IZDI",
+                "video_dlon": 9.0,
+                "video_dlat": -9.0,
+                "video_font_size": 9,
             },
             {
-                "city": "Paris",
-                "country": "France",
-                "file": "paris.png",
-                "x": 0.3915,
-                "y": 0.68,
-                "approx_lon": -30.6,
-                "approx_lat": 30.4,
-                "label": "Paris, France",
-                "x_label": 0.366,
-                "y_label": 0.752,
-                "video": "ZTmjk8mSCq8",
-                "x_video": 0.4171,
-                "y_video": 0.62,
-            },
-            {
-                "city": "Rio de Janeiro",
-                "country": "Brazil",
-                "file": "rio_de_janeiro.png",
-                "x": 0.47,
-                "y": 0.2,
-                "approx_lon": -1.8,
-                "approx_lat": -60.2,
-                "label": "Rio de Janeiro, Brazil",
-                "x_label": 0.4815,
-                "y_label": 0.25,
-                "video": "q83bl_GcsCo",
-                "x_video": 0.441,
-                "y_video": 0.131,
-            },
-            {
-                "city": "Melbourne",
+                "city": "Sydney",
                 "country": "Australia",
-                "file": "melbourne.png",
-                "x": 0.74,
-                "y": 0.22,
-                "approx_lon": 90.0,
-                "approx_lat": -52.0,
-                "label": "Melbourne, Australia",
-                "x_label": 0.7893,
-                "y_label": 0.27,
-                "video": "gQ-9mmnfJjE",
-                "x_video": 0.733,
-                "y_video": 0.151,
+                "file": "sydney.jpg",
+                "approx_lon": 118.0,
+                "approx_lat": -46.0,
+                "img_half_width_deg": 16.0,
+                "img_half_height_deg": 8.0,
+                "label": "Sydney, Australia",
+                "label_dlon": -7.5,
+                "label_dlat": 9.5,
+                "label_font_size": 9,
+                "video": "wMu6Va5PhGY",
+                "video_dlon": 9.0,
+                "video_dlat": -9.5,
+                "video_font_size": 9,
             },
-            # YOLO example tile (no arrow)
             {
-                "file": "new_york_yolo.png",
-                "x": 0.2,
-                "y": 0.25,
-                "sizex": 0.2,
-                "sizey": 0.2,
-                "label": "Example of YOLO output (New York, NY, USA)",
-                "x_label": 0.101,
-                "y_label": 0.361,
-                "video": "Wyg213IZDI",
-                "x_video": 0.258,
-                "y_video": 0.131,
+                "city": "Sao Paulo",
+                "country": "Brazil",
+                "file": "sao_paulo.jpg",
+                "approx_lon": -20.0,
+                "approx_lat": -45.0,
+                "img_half_width_deg": 16.0,
+                "img_half_height_deg": 8.0,
+                "label": "Sao Paulo, Brazil",
+                "label_dlon": -7.5,
+                "label_dlat": 8.5,
+                "label_font_size": 9,
+                "video": "Ic2ERD7kt4o",
+                "video_dlon": 10.0,
+                "video_dlat": -8.5,
+                "video_font_size": 9,
             },
         ]
 
@@ -142,85 +143,87 @@ class Maps:
         except Exception:
             return None
 
-    def mapbox_map(self, df, density_col=None, density_radius=30, hover_data=None, hover_name=None,
-                   marker_size=5, file_name="mapbox_map", save_final=True):
-        """Generates a world map of cities using Mapbox, with optional density visualization.
+    @staticmethod
+    def _rect_corners(center_lon: float,
+                      center_lat: float,
+                      half_width_deg: float,
+                      half_height_deg: float):
+        """Return geographic corners for a rectangular image layer."""
+        return [
+            [center_lon - half_width_deg, center_lat + half_height_deg],
+            [center_lon + half_width_deg, center_lat + half_height_deg],
+            [center_lon + half_width_deg, center_lat - half_height_deg],
+            [center_lon - half_width_deg, center_lat - half_height_deg],
+        ]
 
-        This method can create either:
-            1. A simple scatter map showing city locations colored by continent.
-            2. A density map showing intensity values based on a specified column.
+    @staticmethod
+    def _tile_edge_point(
+        center_lon: float,
+        center_lat: float,
+        target_lon: float,
+        target_lat: float,
+        half_width_deg: float,
+        half_height_deg: float,
+    ) -> tuple[float, float]:
+        """Return the point where the line from the tile centre exits the tile rectangle."""
+        dx = target_lon - center_lon
+        dy = target_lat - center_lat
 
-        Args:
-            df (pandas.DataFrame): DataFrame containing mapping information.
-                Required columns: "lat", "lon", "city", "continent".
-            density_col (str, optional): Column name for density values.
-                If provided, a density map is generated. Defaults to None.
-            density_radius (int, optional): The pixel radius for density spread. Defaults to 30.
-            hover_data (list, optional): List of additional DataFrame columns to display when hovering.
-                Defaults to None.
-            hover_name (list, optional): title on top of hover popup.
-            marker_size (int, optional): size of markers.
-            file_name (str, optional): Name of the saved file (without extension). Defaults to "mapbox_map".
-            save_final (bool, optional): If True, saves the figure. Defaults to True.
+        if dx == 0 and dy == 0:
+            return center_lon, center_lat
 
-        Returns:
-            None: The Plotly figure is created, displayed, and optionally saved.
-        """
-        # Draw scatter map if no density column is provided
-        if not density_col:
-            fig = px.scatter_map(
-                df,
-                lat="lat",
-                lon="lon",
-                hover_data=hover_data,
-                hover_name=hover_name,
-                color=df["continent"],
-                zoom=1.3  # pyright: ignore[reportArgumentType]
-            )
+        tx = float("inf") if dx == 0 else half_width_deg / abs(dx)
+        ty = float("inf") if dy == 0 else half_height_deg / abs(dy)
+        t = min(tx, ty)
 
-            # Apply marker size
-            fig.update_traces(marker=dict(size=marker_size))
+        edge_lon = center_lon + t * dx
+        edge_lat = center_lat + t * dy
+        return edge_lon, edge_lat
 
-        # Draw density map if density column is provided
-        else:
-            fig = px.density_mapbox(
-                df,
-                lat="lat",
-                lon="lon",
-                z=density_col,  # Use density column for intensity
-                radius=density_radius,  # Control the spread of density
-                zoom=2.5,  # Initial zoom level for density view # pyright: ignore[reportArgumentType]
-                center=dict(
-                    lat=df["lat"].mean(),
-                    lon=df["lon"].mean()
-                ),  # Center map on mean coordinates
-                mapbox_style="carto-positron",  # Light and clean map style
-                hover_data=hover_data,
-                hover_name=hover_name
-            )
+    @staticmethod
+    def _point_geojson(lon: float, lat: float, text: str, property_name: str = "label") -> dict:
+        """Create a tiny GeoJSON point feature collection for a map symbol layer."""
+        return {
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [lon, lat],
+                    },
+                    "properties": {
+                        property_name: text,
+                    },
+                }
+            ],
+        }
 
-        # Update map layout to improve appearance
-        fig.update_layout(
-            margin=dict(l=0, r=0, t=0, b=0),  # Remove extra margins
-            mapbox=dict(zoom=1.3),
-            font=dict(
-                family=common.get_configs('font_family'),
-                size=common.get_configs('font_size')
+    @staticmethod
+    def _symbol_text_layer(*,
+                           lon: float,
+                           lat: float,
+                           text: str,
+                           font_size: int = 16,
+                           text_color: str = "black",
+                           property_name: str = "label") -> dict | None:
+        """Return a crisp map-attached text layer using a GeoJSON symbol layer."""
+        if not text:
+            return None
+
+        return dict(
+            sourcetype="geojson",
+            source=Maps._point_geojson(lon, lat, text, property_name=property_name),
+            type="symbol",
+            symbol=dict(
+                text="{" + property_name + "}",
+                placement="point",
+                textfont=dict(
+                    size=int(font_size),
+                    color=text_color,
+                ),
             ),
-            legend=dict(
-                x=1,
-                y=1,
-                xanchor='right',
-                yanchor='top',
-                bgcolor='rgba(255,255,255,0.6)',  # Semi-transparent white background
-                bordercolor='rgba(0,0,0,0.1)',   # Light border
-                borderwidth=1
-            ),
-            legend_title_text=""  # Remove legend title
         )
-
-        # Save the figure if requested
-        io_class.save_plotly_figure(fig, file_name, save_final=save_final)
 
     def mapbox_map_footage(self, df: pd.DataFrame, *,
                            footage_col: str = "total_time",
@@ -239,15 +242,7 @@ class Maps:
                            screenshots_dir: str | None = None,
                            file_name: str = "mapbox_map_footage",
                            save_final: bool = True):
-        """Scatter map of cities coloured by footage amount using a continuous hue based scale.
-
-        This colours markers by footage using a rainbow style colourscale (hue changes rather than lightness),
-        so values remain visible without looking like a light to dark gradient.
-
-        Requirements
-        ------------
-        df must contain at least: lat, lon and `footage_col`.
-        """
+        """Scatter map of cities coloured by footage amount using a continuous hue based scale."""
 
         if df is None or len(df) == 0:
             return
@@ -259,28 +254,22 @@ class Maps:
         if footage_col not in df_plot.columns:
             raise KeyError(f"Missing column: {footage_col}")
 
-        # Basic cleaning
         df_plot = df_plot.dropna(subset=["lat", "lon"]).copy()
 
-        # Convert seconds to hours (if already hours, pass an hours column as footage_col)
         df_plot["footage_hours"] = pd.to_numeric(df_plot[footage_col], errors="coerce") / 3600.0
         df_plot["footage_hours"] = df_plot["footage_hours"].fillna(0.0)
 
-        # Colour coding: clip outliers then apply log1p to spread smaller values
         x = df_plot["footage_hours"].clip(lower=0.0)
 
-        # Cap extreme values so a few very large cities do not flatten the colour range
         cap = x.quantile(cap_quantile) if len(x) else 0.0
         if pd.isna(cap) or cap <= 0:
             cap = float(x.max()) if len(x) else 0.0
         x_capped = x.clip(upper=cap)
 
-        # log1p keeps zero well defined
         df_plot["footage_log_capped"] = np.log1p(x_capped)
 
         colour_col = "footage_log_capped" if log_colour else "footage_hours"
 
-        # Robust colour range for better contrast
         if log_colour:
             q = df_plot[colour_col].quantile([range_q_low, range_q_high])
             cmin = float(q.iloc[0]) if len(q) else float(df_plot[colour_col].min())
@@ -295,7 +284,6 @@ class Maps:
         if cmin == cmax:
             cmax = cmin + 1e-9
 
-        # Ensure footage appears on hover
         hover_data_local = hover_data
         if hover_data_local is None:
             hover_data_local = ["footage_hours"]
@@ -314,7 +302,7 @@ class Maps:
                 hover_data_local.setdefault("footage_log_capped", True)
 
         if colorbar_title is None:
-            colorbar_title = "log1p(capped footage hours)" if log_colour else "Footage (hours)"
+            colorbar_title = "" if log_colour else "Footage (hours)"
 
         fig = px.scatter_map(
             df_plot,
@@ -325,14 +313,12 @@ class Maps:
             color=colour_col,
             color_continuous_scale=color_scale,
             range_color=(cmin, cmax),
-            zoom=1.3,  # pyright: ignore[reportArgumentType]
+            zoom=1.3,
             map_style="carto-positron",
         )
 
-        # Main points
         fig.update_traces(marker=dict(size=marker_size, opacity=0.95), selector=dict(type="scattermap"))
 
-        # Black halo layer underneath, to keep points readable on any background
         halo_size = max(marker_size + 2, 2)
         outline_trace = go.Scattermap(
             lat=df_plot["lat"],
@@ -346,9 +332,7 @@ class Maps:
         )
         fig.add_trace(outline_trace)
 
-        # Reorder traces so halo is drawn first (underneath). Plotly only allows permutations.
         data_list = list(fig.data)
-        # last trace is the halo we just added
         data_list = [data_list[-1]] + data_list[:-1]
         fig.data = tuple(data_list)
 
@@ -376,72 +360,108 @@ class Maps:
             ) if show_colorbar else {}
         )
 
-        # ------------------------------
-        # Optional screenshot overlays
-        # ------------------------------
         if show_images:
             if image_items is None:
                 image_items = self._default_city_image_items()
 
-            # Images and labels (paper coordinates)
+            def _item_anchor_lon(item: dict) -> float | None:
+                value = item.get("img_lon", item.get("approx_lon"))
+                return float(value) if value is not None else None
+
+            def _item_anchor_lat(item: dict) -> float | None:
+                value = item.get("img_lat", item.get("approx_lat"))
+                return float(value) if value is not None else None
+
+            def _item_image_corners(item: dict):
+                lon0 = _item_anchor_lon(item)
+                lat0 = _item_anchor_lat(item)
+                if lon0 is None or lat0 is None:
+                    return None
+
+                half_width = float(item.get("img_half_width_deg", 10.0))
+                half_height = float(item.get("img_half_height_deg", 5.0))
+
+                return [
+                    [lon0 - half_width, lat0 + half_height],
+                    [lon0 + half_width, lat0 + half_height],
+                    [lon0 + half_width, lat0 - half_height],
+                    [lon0 - half_width, lat0 - half_height],
+                ]
+
+            map_layers = list(fig.layout.map.layers) if getattr(fig.layout.map, "layers", None) else []
+
             for item in image_items:
                 file_name_img = item.get("file")
-                if file_name_img:
+                corners = _item_image_corners(item)
+
+                if file_name_img and corners is not None:
                     img_path = os.path.join(screenshots_dir, file_name_img)
                     img = self._safe_open_image(img_path)
                     if img is not None:
-                        fig.add_layout_image(
+                        map_layers.append(
                             dict(
+                                sourcetype="image",
                                 source=img,
-                                xref="paper",
-                                yref="paper",
-                                x=item.get("x", 0.5),
-                                y=item.get("y", 0.5),
-                                sizex=item.get("sizex", 0.1),
-                                sizey=item.get("sizey", 0.1),
-                                xanchor=item.get("xanchor", "center"),
-                                yanchor=item.get("yanchor", "middle"),
-                                layer=item.get("layer", "above"),
+                                coordinates=corners,
+                                opacity=float(item.get("opacity", 1.0)),
+                                below=item.get("below", "traces"),
+                            )
+                        )
+                    elif item.get("source") is not None:
+                        map_layers.append(
+                            dict(
+                                sourcetype="image",
+                                source=item["source"],
+                                coordinates=corners,
+                                opacity=float(item.get("opacity", 1.0)),
+                                below=item.get("below", "traces"),
                             )
                         )
 
                 label = item.get("label")
-                if label:
-                    fig.add_annotation(
-                        text=label,
-                        x=item.get("x_label", item.get("x", 0.5)),
-                        y=item.get("y_label", item.get("y", 0.5) + 0.1),
-                        xref="paper",
-                        yref="paper",
-                        showarrow=False,
-                        font=dict(size=12, color="black"),
-                        bgcolor="rgba(255,255,255,0.7)",
-                        bordercolor="black",
-                        borderwidth=1,
+                anchor_lon = _item_anchor_lon(item)
+                anchor_lat = _item_anchor_lat(item)
+
+                if label and anchor_lon is not None and anchor_lat is not None:
+                    fig.add_trace(
+                        go.Scattermap(
+                            lon=[anchor_lon + float(item.get("label_dlon", 0.0))],
+                            lat=[anchor_lat + float(item.get("label_dlat", 6.0))],
+                            mode="text",
+                            text=[label],
+                            textfont=dict(size=int(item.get("label_font_size", 12)), color="black"),
+                            hoverinfo="skip",
+                            showlegend=False,
+                            subplot="map",
+                        )
                     )
 
                 video = item.get("video")
-                if video:
-                    fig.add_annotation(
-                        text=video,
-                        x=item.get("x_video", item.get("x", 0.5)),
-                        y=item.get("y_video", item.get("y", 0.5) - 0.1),
-                        xref="paper",
-                        yref="paper",
-                        showarrow=False,
-                        font=dict(size=10, color="black"),
-                        align="center",
-                        bgcolor="rgba(255,255,255,0.7)",
-                        bordercolor="black",
-                        borderwidth=1,
+                if video and anchor_lon is not None and anchor_lat is not None:
+                    fig.add_trace(
+                        go.Scattermap(
+                            lon=[anchor_lon + float(item.get("video_dlon", 0.0))],
+                            lat=[anchor_lat + float(item.get("video_dlat", -6.0))],
+                            mode="text",
+                            text=[video],
+                            textfont=dict(size=int(item.get("video_font_size", 10)), color="black"),
+                            hoverinfo="skip",
+                            showlegend=False,
+                            subplot="map",
+                        )
                     )
 
-            # Arrows from tile anchor to actual city coordinates
+            if map_layers:
+                fig.update_layout(map=dict(layers=map_layers))
+
             if {"city", "country", "lat", "lon"}.issubset(df_plot.columns):
                 for item in image_items:
                     if not ("city" in item and "country" in item):
                         continue
-                    if not ("approx_lon" in item and "approx_lat" in item):
+
+                    anchor_lon = _item_anchor_lon(item)
+                    anchor_lat = _item_anchor_lat(item)
+                    if anchor_lon is None or anchor_lat is None:
                         continue
 
                     city = str(item["city"]).strip().lower()
@@ -457,10 +477,22 @@ class Maps:
                     lon_city = float(rows["lon"].iloc[0])
                     lat_city = float(rows["lat"].iloc[0])
 
+                    half_w = float(item.get("img_half_width_deg", 10.0))
+                    half_h = float(item.get("img_half_height_deg", 5.0))
+
+                    edge_lon, edge_lat = self._tile_edge_point(
+                        center_lon=anchor_lon,
+                        center_lat=anchor_lat,
+                        target_lon=lon_city,
+                        target_lat=lat_city,
+                        half_width_deg=half_w,
+                        half_height_deg=half_h,
+                    )
+
                     fig.add_trace(
                         go.Scattermap(
-                            lon=[float(item["approx_lon"]), lon_city],
-                            lat=[float(item["approx_lat"]), lat_city],
+                            lon=[edge_lon, lon_city],
+                            lat=[edge_lat, lat_city],
                             mode="lines",
                             line=dict(width=2, color="black"),
                             hoverinfo="skip",
@@ -669,7 +701,6 @@ class Maps:
         )
 
         # --- optional cities ---
-        print(type(df_cities))
         if show_cities and df_cities is not None and {"lat", "lon"}.issubset(df_cities.columns):
             fig.add_trace(go.Scattergeo(
                 lon=df_cities["lon"],
