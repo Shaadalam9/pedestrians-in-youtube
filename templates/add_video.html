@@ -269,39 +269,11 @@
             }
         });
 
-        // Wait for the DOM to fully load
         document.addEventListener('DOMContentLoaded', function() {
-            const fetchDataButton = document.getElementById('fetchDataButton');
-            const embeddedVideo = document.getElementById('embeddedVideo');
-
-            fetchDataButton.addEventListener('click', function () {
-                fetch('/fetch_video', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.video_id) {
-                        console.log("New video fetched:", data.video_id);
-                        embeddedVideo.src = `https://www.youtube.com/embed/${data.video_id}?enablejsapi=1&autoplay=1&mute=1`;
-
-                        // wait for iframe to load before re-initializing player
-                        embeddedVideo.onload = function () {
-                            console.log("Iframe loaded, reinitializing player");
-                            initializePlayer(); // reinitialize player after fetching new video
-                        };
-                    } else {
-                        alert('Failed to fetch video.');
-                    }
-                })
-                .catch(error => console.error('Error:', error));
-            });
-
-            // if the iframe already exists, initialize player immediately
             if (typeof YT !== 'undefined' && YT.Player) {
                 initializePlayer();
             }
-            
+
             let lat = parseFloat("{{ existing_data['lat'] or 52.3676 }}");
             let lon = parseFloat("{{ existing_data['lon'] or 4.9041 }}");
 
@@ -698,7 +670,7 @@
                 </div>
                 <div class="form-group">
                     <label for="channel_video">Channel:</label>
-                    <input type="text" id="channel_video" name="channel_video" value="{{ channel_video }}" required>
+                    <input type="text" id="channel_video" name="channel_video" value="{{ channel_video or '' }}">
                 </div>
                 <!-- <div class="form-group">
                     <label for="fps_video">FPS:</label>

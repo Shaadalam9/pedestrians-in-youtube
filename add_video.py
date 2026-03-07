@@ -159,20 +159,56 @@ def save_csv(df, file_path):
     df.to_csv(file_path, index=False)
 
 
+def _compact_python_literal(value):
+    """Serialise Python values compactly while preserving None as None."""
+    if value is None:
+        return 'None'
+    if isinstance(value, bool):
+        return 'True' if value else 'False'
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return str(value)
+    if isinstance(value, str):
+        return json.dumps(value, ensure_ascii=False)
+    if isinstance(value, list):
+        return '[' + ','.join(_compact_python_literal(item) for item in value) + ']'
+    if isinstance(value, tuple):
+        inner = ','.join(_compact_python_literal(item) for item in value)
+        if len(value) == 1:
+            inner += ','
+        return '(' + inner + ')'
+    if isinstance(value, dict):
+        return '{' + ','.join(
+            f"{_compact_python_literal(k)}:{_compact_python_literal(v)}"
+            for k, v in value.items()
+        ) + '}'
+    return json.dumps(str(value), ensure_ascii=False)
+
+
 def compact_nested_list(value):
-    """Serialise nested lists (ints) without spaces, eg [[0],[1,2]]."""
-    try:
-        return json.dumps(value, separators=(',', ':'))
-    except Exception:
-        return re.sub(r"\s+", "", str(value))
+    """Serialise nested lists without spaces while preserving None as None."""
+    return _compact_python_literal(value)
+
+
+def _compact_flat_token(value):
+    """Serialise flat list items without quoting strings."""
+    if value is None:
+        return 'None'
+    if isinstance(value, bool):
+        return 'True' if value else 'False'
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return str(value)
+
+    text = str(value).strip()
+    return text if text else 'None'
 
 
 def compact_flat_list(value):
-    """Serialise flat lists without spaces, eg [0,8,7]."""
-    try:
-        return json.dumps(value, separators=(',', ':'))
-    except Exception:
-        return re.sub(r"\s+", "", str(value))
+    """Serialise flat lists without spaces and without quoting strings."""
+    if value is None:
+        return 'None'
+    if isinstance(value, list):
+        return '[' + ','.join(_compact_flat_token(item) for item in value) + ']'
+    return _compact_flat_token(value)
 
 
 def city_matches(row, city_input):
@@ -192,7 +228,7 @@ def _is_missing(x):
         return x is None or (
             isinstance(x, float) and pd.isna(x)
         ) or (
-            isinstance(x, str) and x.strip() in ["", "None", "nan"]
+            isinstance(x, str) and x.strip() in ["", "None", "nan", "null"]
         )
     except Exception:
         return x is None
@@ -211,6 +247,50 @@ def _safe_literal_eval(val, default):
         return ast.literal_eval(s)
     except Exception:
         return default
+
+
+def _parse_flat_list_cell(value):
+    """Parse flat list cells that may be JSON, Python literals, or comma separated strings."""
+    if _is_missing(value):
+        return []
+
+    if isinstance(value, list):
+        return value
+
+    s = str(value).strip()
+    if not s:
+        return []
+
+    try:
+        parsed = json.loads(s)
+        if isinstance(parsed, list):
+            return parsed
+    except Exception:
+        pass
+
+    try:
+        parsed = ast.literal_eval(s)
+        if isinstance(parsed, list):
+            return parsed
+    except Exception:
+        pass
+
+    if s.startswith('[') and s.endswith(']'):
+        s = s[1:-1]
+
+    if not s.strip():
+        return []
+
+    return [item.strip().strip('"').strip("'") for item in s.split(',')]
+
+
+def _normalize_optional_text(value):
+    """Return stripped text or None for missing values."""
+    if _is_missing(value):
+        return None
+
+    text = str(value).strip()
+    return text or None
 
 
 def _parse_videos_cell(videos_cell):
@@ -406,10 +486,10 @@ def form():
     gini = ''
     traffic_index = ''
     upload_date_video = ''
-    channel_video = ''
+    channel_video = None
     yt_title = ''
     yt_upload_date = ''
-    yt_channel = ''
+    yt_channel = None
     yt_description = ''
     start_time_video = []
     end_time_video = []
@@ -444,7 +524,7 @@ def form():
                 video_global_note = build_video_occurrence_note(df, video_id)
 
                 yt_upload_date = yt.publish_date
-                yt_channel = yt.channel_id
+                yt_channel = _normalize_optional_text(getattr(yt, 'channel_id', None))
 
                 for n in range(6):
                     try:
@@ -487,8 +567,8 @@ def form():
                 upload_date_list = existing_data_row.get('upload_date', '').split(',')
                 upload_date_list = [upload_date.strip('[]') for upload_date in upload_date_list]
 
-                channel_list = existing_data_row.get('channel', '').split(',')
-                channel_list = [channel.strip('[]') for channel in channel_list]
+                channel_list = _parse_flat_list_cell(existing_data_row.get('channel', ''))
+                channel_list = [_normalize_optional_text(channel) for channel in channel_list]
 
                 vehicle_type_list = existing_data_row.get('vehicle_type', '').split(',')
                 vehicle_type_list = [vehicle_type.strip('[]') for vehicle_type in vehicle_type_list]
@@ -499,7 +579,7 @@ def form():
                 if video_id in videos_list:
                     position = videos_list.index(video_id)
                     upload_date_video = upload_date_list[position].strip()
-                    channel_video = channel_list[position].strip()
+                    channel_video = _normalize_optional_text(channel_list[position]) if position < len(channel_list) else None
 
                     start_time_list = ast.literal_eval(existing_data_row.get('start_time', ''))
                     start_time_video = start_time_list[position]
@@ -590,7 +670,7 @@ def form():
             avg_height = request.form.get('avg_height')
             med_age = request.form.get('med_age')
             upload_date_video = request.form.get('upload_date_video')
-            channel_video = request.form.get('channel_video')
+            channel_video = _normalize_optional_text(request.form.get('channel_video'))
             vehicle_type_video = request.form.get('vehicle_type')
             time_of_day_video = request.form.get('time_of_day')
             gini = request.form.get('gini')
@@ -606,7 +686,7 @@ def form():
                 video_id = yt.video_id
                 video_matches_anywhere = find_video_occurrences(df, video_id)
                 yt_upload_date = yt.publish_date
-                yt_channel = yt.channel_id
+                yt_channel = _normalize_optional_text(getattr(yt, 'channel_id', None))
 
                 for n in range(6):
                     try:
@@ -725,8 +805,8 @@ def form():
                         upload_date_list = df.at[idx, 'upload_date'].split(',') if pd.notna(df.at[idx, 'upload_date']) else []  # noqa: E501
                         upload_date_list = [upload_date.strip('[]') for upload_date in upload_date_list]
 
-                        channel_list = df.at[idx, 'channel'].split(',') if pd.notna(df.at[idx, 'channel']) else []
-                        channel_list = [channel.strip('[]') for channel in channel_list]
+                        channel_list = _parse_flat_list_cell(df.at[idx, 'channel']) if pd.notna(df.at[idx, 'channel']) else []
+                        channel_list = [_normalize_optional_text(channel) for channel in channel_list]
 
                         vehicle_type_list = df.at[idx, 'vehicle_type'].split(',') if pd.notna(df.at[idx, 'vehicle_type']) else []  # noqa: E501
                         vehicle_type_list = [vehicle_type.strip('[]') for vehicle_type in vehicle_type_list]
@@ -767,10 +847,8 @@ def form():
                                 if not upload_date_video and yt_upload_date:
                                     upload_date_video = yt_upload_date.strftime('%d%m%Y')
 
-                                if not channel_video and yt_channel:
+                                if channel_video is None and yt_channel:
                                     channel_video = yt_channel
-                                elif not channel_video:
-                                    channel_video = 'None'
 
                                 time_of_day_last = extract_last_int(time_of_day_video)
                                 time_of_day_last = int(time_of_day_last) if time_of_day_last is not None else None
@@ -808,7 +886,7 @@ def form():
                             else:
                                 upload_date_list[video_index] = None
 
-                            channel_list[video_index] = channel_video
+                            channel_list[video_index] = _normalize_optional_text(channel_video)
                             vehicle_type_list[video_index] = vehicle_type_video_int
 
                         start_time_video = start_time_list[video_index]
@@ -838,9 +916,7 @@ def form():
                                 upload_date_list[i] = None
                         df.at[idx, 'upload_date'] = compact_flat_list(upload_date_list)
 
-                        for i in range(len(channel_list)):
-                            if channel_list[i] != 'None':
-                                channel_list[i] = channel_list[i]
+                        channel_list = [_normalize_optional_text(channel) for channel in channel_list]
                         df.at[idx, 'channel'] = compact_flat_list(channel_list)
 
                         vehicle_type_list = [int(x) for x in vehicle_type_list]
@@ -878,8 +954,8 @@ def form():
                             'literacy_rate': literacy_rate,
                             'avg_height': avg_height,
                             'med_age': med_age,
-                            'upload_date': compact_flat_list([int(upload_date_video)]) if upload_date_video and upload_date_video != 'None' else '[null]',  # noqa: E501
-                            'channel': compact_flat_list([channel_video.strip()]) if channel_video else '[None]',
+                            'upload_date': compact_flat_list([int(upload_date_video)]) if upload_date_video and upload_date_video != 'None' else '[None]',  # noqa: E501
+                            'channel': compact_flat_list([_normalize_optional_text(channel_video)]),
                             'vehicle_type': compact_flat_list([vehicle_type_video_int]),
                             'gini': gini,
                             'traffic_index': traffic_index,
@@ -908,10 +984,8 @@ def form():
     if not upload_date_video and yt_upload_date:
         upload_date_video = yt_upload_date.strftime('%d%m%Y')
 
-    if not channel_video and yt_channel:
+    if channel_video is None and yt_channel:
         channel_video = yt_channel
-    elif not channel_video:
-        channel_video = 'None'
 
     vehicle_type_video = int(vehicle_type_video) if vehicle_type_video is not None else None
     time_of_day_last = extract_last_int(time_of_day_video)
