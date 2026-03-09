@@ -313,7 +313,7 @@ class Maps:
             color=colour_col,
             color_continuous_scale=color_scale,
             range_color=(cmin, cmax),
-            zoom=1.3,
+            zoom=1.3,  # type: ignore
             map_style="carto-positron",
         )
 
@@ -501,6 +501,86 @@ class Maps:
                         )
                     )
 
+        io_class.save_plotly_figure(fig, file_name, save_final=save_final)
+
+    def mapbox_map(self, df, density_col=None, density_radius=30, hover_data=None, hover_name=None,
+                   marker_size=5, file_name="mapbox_map", save_final=True):
+        """Generates a world map of cities using Mapbox, with optional density visualization.
+
+        This method can create either:
+            1. A simple scatter map showing city locations colored by continent.
+            2. A density map showing intensity values based on a specified column.
+
+        Args:
+            df (pandas.DataFrame): DataFrame containing mapping information.
+                Required columns: "lat", "lon", "city", "continent".
+            density_col (str, optional): Column name for density values.
+                If provided, a density map is generated. Defaults to None.
+            density_radius (int, optional): The pixel radius for density spread. Defaults to 30.
+            hover_data (list, optional): List of additional DataFrame columns to display when hovering.
+                Defaults to None.
+            hover_name (list, optional): title on top of hover popup.
+            marker_size (int, optional): size of markers.
+            file_name (str, optional): Name of the saved file (without extension). Defaults to "mapbox_map".
+            save_final (bool, optional): If True, saves the figure. Defaults to True.
+
+        Returns:
+            None: The Plotly figure is created, displayed, and optionally saved.
+        """
+        # Draw scatter map if no density column is provided
+        if not density_col:
+            fig = px.scatter_map(
+                df,
+                lat="lat",
+                lon="lon",
+                hover_data=hover_data,
+                hover_name=hover_name,
+                color=df["continent"],
+                zoom=1.3  # pyright: ignore[reportArgumentType]
+            )
+
+            # Apply marker size
+            fig.update_traces(marker=dict(size=marker_size))
+
+        # Draw density map if density column is provided
+        else:
+            fig = px.density_mapbox(
+                df,
+                lat="lat",
+                lon="lon",
+                z=density_col,  # Use density column for intensity
+                radius=density_radius,  # Control the spread of density
+                zoom=2.5,  # Initial zoom level for density view # pyright: ignore[reportArgumentType]
+                center=dict(
+                    lat=df["lat"].mean(),
+                    lon=df["lon"].mean()
+                ),  # Center map on mean coordinates
+                mapbox_style="carto-positron",  # Light and clean map style
+                hover_data=hover_data,
+                hover_name=hover_name
+            )
+
+        # Update map layout to improve appearance
+        fig.update_layout(
+            margin=dict(l=0, r=0, t=0, b=0),  # Remove extra margins
+            mapbox=dict(zoom=1.3),
+            font=dict(
+                family=common.get_configs('font_family'),
+                size=common.get_configs('font_size')
+            ),
+            legend=dict(
+                x=1,
+                y=1,
+                xanchor='right',
+                yanchor='top',
+                bgcolor='rgba(255,255,255,0.6)',  # Semi-transparent white background
+                bordercolor='rgba(0,0,0,0.1)',   # Light border
+                borderwidth=1
+            ),
+            legend_title_text=""  # Remove legend title
+        )
+
+        # Save the figure if requested
         io_class.save_plotly_figure(fig, file_name, save_final=save_final)
 
     def world_map(self, df_mapping):

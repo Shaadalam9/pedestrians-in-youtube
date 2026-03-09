@@ -352,12 +352,12 @@ class Analysis():
         3: "Two-wheeler",
         4: "Bicycle",
         5: "Automated car",
-        6: "Automated bus",
-        7: "Automated truck",
-        8: "Automated two-wheeler",
-        9: "Electric scooter",
-        10: "Non-electric scooter",
-        11: "Monowheel/unicycle",
+        6: "Electric scooter",
+        7: "Monowheel/unicycle",
+        8: "Automated bus",
+        9: "Automated truck",
+        10: "Automated two-wheeler",
+        11: "Non-electric scooter",
         12: "Pedestrian"
     }
 
@@ -1782,11 +1782,11 @@ if __name__ == "__main__":
         df = df.sort(["continent", "country"])
 
         # map with all cities
-        # maps.mapbox_map(df=df.to_pandas(),
-        #                 hover_data=hover_data,
-        #                 hover_name="flag_city",
-        #                 marker_size=4,
-        #                 file_name='mapbox_map_all')
+        maps.mapbox_map(df=df.to_pandas(),
+                        hover_data=hover_data,
+                        hover_name="flag_city",
+                        marker_size=4,
+                        file_name='mapbox_map_all')
 
         # map with all cities coloured by footage amount (continuous hue scale) + optional screenshot overlays
         maps.mapbox_map_footage(df=df.to_pandas(),
