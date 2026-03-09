@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 import plotly.express as px
-from PIL import Image
+from PIL import Image, ImageFont, ImageDraw, ImageColor
 import common
 from utils.plotting.io import IO
 
@@ -40,11 +40,15 @@ class Maps:
                 "label": "Cape Town, South Africa",
                 "label_dlon": -10.0,
                 "label_dlat": 9.5,
-                "label_font_size": 9,
+                "label_font_size": 60,
+                "label_box_width_deg": 18.0,
+                "label_box_height_deg": 3.5,
                 "video": "0xP7JgDiBb8",
                 "video_dlon": 10.0,
                 "video_dlat": -9.5,
-                "video_font_size": 9,
+                "video_font_size": 60,
+                "video_box_width_deg": 12.0,
+                "video_box_height_deg": 3.5,
             },
             {
                 "city": "Seoul",
@@ -57,11 +61,15 @@ class Maps:
                 "label": "Seoul, South Korea",
                 "label_dlon": -6.0,
                 "label_dlat": 9.5,
-                "label_font_size": 9,
+                "label_font_size": 60,
+                "label_box_width_deg": 16.0,
+                "label_box_height_deg": 3.5,
                 "video": "qOx5CwCrN9k",
                 "video_dlon": 8.0,
                 "video_dlat": -9.5,
-                "video_font_size": 9,
+                "video_font_size": 60,
+                "video_box_width_deg": 12.0,
+                "video_box_height_deg": 3.5,
             },
             {
                 "city": "London",
@@ -74,11 +82,15 @@ class Maps:
                 "label": "London, UK",
                 "label_dlon": -10.0,
                 "label_dlat": 7.0,
-                "label_font_size": 9,
+                "label_font_size": 60,
+                "label_box_width_deg": 12.0,
+                "label_box_height_deg": 3.5,
                 "video": "QI4_dGvZ5yE",
                 "video_dlon": 10.0,
                 "video_dlat": -7.0,
-                "video_font_size": 9,
+                "video_font_size": 60,
+                "video_box_width_deg": 12.0,
+                "video_box_height_deg": 3.5,
             },
             {
                 "city": "New York",
@@ -91,11 +103,15 @@ class Maps:
                 "label": "New York, US",
                 "label_dlon": -9.0,
                 "label_dlat": 9.0,
-                "label_font_size": 9,
+                "label_font_size": 60,
+                "label_box_width_deg": 13.0,
+                "label_box_height_deg": 3.5,
                 "video": "_Wyg213IZDI",
                 "video_dlon": 9.0,
                 "video_dlat": -9.0,
-                "video_font_size": 9,
+                "video_font_size": 60,
+                "video_box_width_deg": 12.0,
+                "video_box_height_deg": 3.5,
             },
             {
                 "city": "Sydney",
@@ -108,11 +124,15 @@ class Maps:
                 "label": "Sydney, Australia",
                 "label_dlon": -7.5,
                 "label_dlat": 9.5,
-                "label_font_size": 9,
+                "label_font_size": 60,
+                "label_box_width_deg": 16.0,
+                "label_box_height_deg": 3.5,
                 "video": "wMu6Va5PhGY",
                 "video_dlon": 9.0,
                 "video_dlat": -9.5,
-                "video_font_size": 9,
+                "video_font_size": 60,
+                "video_box_width_deg": 12.0,
+                "video_box_height_deg": 3.5,
             },
             {
                 "city": "Sao Paulo",
@@ -125,11 +145,15 @@ class Maps:
                 "label": "Sao Paulo, Brazil",
                 "label_dlon": -7.5,
                 "label_dlat": 8.5,
-                "label_font_size": 9,
+                "label_font_size": 60,
+                "label_box_width_deg": 16.0,
+                "label_box_height_deg": 3.5,
                 "video": "Ic2ERD7kt4o",
                 "video_dlon": 10.0,
                 "video_dlat": -8.5,
-                "video_font_size": 9,
+                "video_font_size": 60,
+                "video_box_width_deg": 12.0,
+                "video_box_height_deg": 3.5,
             },
         ]
 
@@ -225,6 +249,321 @@ class Maps:
             ),
         )
 
+    @staticmethod
+    def _candidate_font_paths() -> list[str]:
+        """Return likely scalable font paths across common operating systems."""
+        root_dir = getattr(common, "root_dir", None)
+        root_dir = str(root_dir) if root_dir is not None else ""
+        candidates = [
+            os.environ.get("MAPS_FONT_PATH", ""),
+            os.path.join(root_dir, "fonts", "DejaVuSans-Bold.ttf") if root_dir else "",
+            os.path.join(root_dir, "fonts", "DejaVuSans.ttf") if root_dir else "",
+            "DejaVuSans-Bold.ttf",
+            "DejaVuSans.ttf",
+            "Arial.ttf",
+            "arial.ttf",
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            "/usr/local/share/fonts/DejaVuSans-Bold.ttf",
+            "/usr/local/share/fonts/DejaVuSans.ttf",
+            "/Library/Fonts/Arial.ttf",
+            "/Library/Fonts/Arial Unicode.ttf",
+            "/System/Library/Fonts/Supplemental/Arial.ttf",
+            "C:/Windows/Fonts/arialbd.ttf",
+            "C:/Windows/Fonts/arial.ttf",
+        ]
+        return [candidate for candidate in candidates if candidate]
+
+    @staticmethod
+    def _load_text_font(font_size: int):
+        """Load a scalable font so font_size visibly changes the rendered text."""
+        size = max(int(font_size), 1)
+        for candidate in Maps._candidate_font_paths():
+            try:
+                return ImageFont.truetype(candidate, size)
+            except Exception:
+                continue
+        return ImageFont.load_default()
+
+    @staticmethod
+    def _parse_color_rgba(color_value, default=(255, 255, 255, 0)) -> tuple[int, int, int, int]:
+        """Parse a Pillow colour string into an RGBA tuple."""
+        if color_value is None:
+            return default
+
+        text_value = str(color_value).strip()
+        if not text_value:
+            return default
+
+        try:
+            rgba = ImageColor.getcolor(text_value, "RGBA")
+            if len(rgba) == 4:  # type: ignore
+                return rgba  # type: ignore
+            return rgba + (255,)  # type: ignore
+        except Exception:
+            lower = text_value.lower()
+            if lower.startswith("rgba(") and lower.endswith(")"):
+                parts = [part.strip() for part in text_value[5:-1].split(",")]
+                if len(parts) == 4:
+                    try:
+                        red = int(float(parts[0]))
+                        green = int(float(parts[1]))
+                        blue = int(float(parts[2]))
+                        alpha_raw = float(parts[3])
+                        alpha = int(round(255.0 * alpha_raw)) if alpha_raw <= 1.0 else int(round(alpha_raw))
+                        return (
+                            max(0, min(red, 255)),
+                            max(0, min(green, 255)),
+                            max(0, min(blue, 255)),
+                            max(0, min(alpha, 255)),
+                        )
+                    except Exception:
+                        return default
+        return default
+
+    @staticmethod
+    def _measure_text_pixels(text: str, font_size: int) -> tuple[int, int]:
+        """Measure text width and height in pixels."""
+        text_value = str(text) if text is not None else ""
+        if not text_value:
+            return 1, max(int(font_size), 1)
+
+        font = Maps._load_text_font(font_size)
+        dummy_img = Image.new("RGBA", (1, 1), (255, 255, 255, 0))
+        draw = ImageDraw.Draw(dummy_img)
+        bbox = draw.textbbox((0, 0), text_value, font=font)
+        width_px = max(int(np.ceil(bbox[2] - bbox[0])), 1)
+        height_px = max(int(np.ceil(bbox[3] - bbox[1])), 1)
+        return width_px, height_px
+
+    @staticmethod
+    def _deg_per_px(*, lat: float, zoom: float = 1.3) -> tuple[float, float]:
+        """Approximate geographic degrees per rendered pixel at a latitude."""
+        world_px = 512.0 * (2.0 ** float(zoom))
+        deg_per_px_lon = 360.0 / world_px
+        deg_per_px_lat = deg_per_px_lon * max(float(np.cos(np.deg2rad(lat))), 0.2)
+        return deg_per_px_lon, deg_per_px_lat
+
+    @staticmethod
+    def _text_box_half_sizes(*,
+                             text: str,
+                             font_size: int,
+                             lat: float,
+                             zoom: float = 1.3,
+                             horizontal_padding_px: float = 12.0,
+                             vertical_padding_px: float = 8.0,
+                             min_half_width_deg: float = 2.0,
+                             min_half_height_deg: float = 0.9,
+                             img_half_width_deg: float | None = None,
+                             img_half_height_deg: float | None = None,
+                             img_width_px: int | None = None,
+                             img_height_px: int | None = None) -> tuple[float, float]:
+        """Estimate geographic half sizes for a text box from measured text size."""
+        width_px, height_px = Maps._measure_text_pixels(text=text, font_size=font_size)
+        total_width_px = width_px + 2.0 * float(horizontal_padding_px)
+        total_height_px = height_px + 2.0 * float(vertical_padding_px)
+
+        if (
+            img_half_width_deg is not None and img_half_height_deg is not None
+            and img_width_px is not None and img_height_px is not None
+            and img_half_width_deg > 0 and img_half_height_deg > 0
+            and img_width_px > 0 and img_height_px > 0
+        ):
+            deg_per_px_lon = (2.0 * float(img_half_width_deg)) / float(img_width_px)
+            deg_per_px_lat = (2.0 * float(img_half_height_deg)) / float(img_height_px)
+        else:
+            deg_per_px_lon, deg_per_px_lat = Maps._deg_per_px(lat=lat, zoom=zoom)
+
+        half_width_deg = max(float(min_half_width_deg), 0.5 * total_width_px * deg_per_px_lon)
+        half_height_deg = max(float(min_half_height_deg), 0.5 * total_height_px * deg_per_px_lat)
+        return half_width_deg, half_height_deg
+
+    @staticmethod
+    def _parse_text_position(text_position: str = "top left") -> tuple[str, str]:
+        """Normalise a text position string into vertical and horizontal anchors."""
+        pos = str(text_position).strip().lower().replace("_", " ")
+        parts = pos.split()
+        vertical = "top"
+        horizontal = "left"
+        if len(parts) == 1:
+            if parts[0] in {"left", "center", "right"}:
+                horizontal = "center" if parts[0] == "center" else parts[0]
+                vertical = "middle"
+            elif parts[0] in {"top", "middle", "center", "bottom"}:
+                vertical = "middle" if parts[0] == "center" else parts[0]
+                horizontal = "center"
+        elif len(parts) >= 2:
+            vertical = "middle" if parts[0] == "center" else parts[0]
+            horizontal = "center" if parts[1] == "center" else parts[1]
+        return vertical, horizontal
+
+    @staticmethod
+    def _box_pixel_size(*,
+                        box_width_deg: float,
+                        box_height_deg: float,
+                        img_half_width_deg: float | None = None,
+                        img_half_height_deg: float | None = None,
+                        img_width_px: int | None = None,
+                        img_height_px: int | None = None,
+                        lat: float = 0.0,
+                        zoom: float = 1.3,
+                        min_width_px: int = 80,
+                        min_height_px: int = 36) -> tuple[int, int]:
+        """Convert geographic box dimensions into raster pixel dimensions."""
+        if (
+            img_half_width_deg is not None and img_half_height_deg is not None
+            and img_width_px is not None and img_height_px is not None
+            and img_half_width_deg > 0 and img_half_height_deg > 0
+            and img_width_px > 0 and img_height_px > 0
+        ):
+            px_per_deg_x = float(img_width_px) / (2.0 * float(img_half_width_deg))
+            px_per_deg_y = float(img_height_px) / (2.0 * float(img_half_height_deg))
+        else:
+            deg_per_px_lon, deg_per_px_lat = Maps._deg_per_px(lat=lat, zoom=zoom)
+            px_per_deg_x = 1.0 / max(deg_per_px_lon, 1e-9)
+            px_per_deg_y = 1.0 / max(deg_per_px_lat, 1e-9)
+
+        width_px = max(int(round(float(box_width_deg) * px_per_deg_x)), int(min_width_px))
+        height_px = max(int(round(float(box_height_deg) * px_per_deg_y)), int(min_height_px))
+        return width_px, height_px
+
+    @staticmethod
+    def _render_text_box_image(*,
+                               text: str,
+                               font_size: int,
+                               box_width_px: int,
+                               box_height_px: int,
+                               text_position: str = "top left",
+                               text_pad_x_px: int = 8,
+                               text_pad_y_px: int = 6,
+                               text_color: str = "black",
+                               fill_color: str = "rgba(255,255,255,0.0)",
+                               line_color: str = "black",
+                               line_width: int = 2):
+        """Render a transparent bordered text box as a PIL image."""
+        width_px = max(int(box_width_px), 2)
+        height_px = max(int(box_height_px), 2)
+        img = Image.new("RGBA", (width_px, height_px), (255, 255, 255, 0))
+        draw = ImageDraw.Draw(img)
+
+        fill_rgba = Maps._parse_color_rgba(fill_color, default=(255, 255, 255, 0))
+        outline_rgba = Maps._parse_color_rgba(line_color, default=(0, 0, 0, 255))
+        draw.rectangle(
+            [(0, 0), (width_px - 1, height_px - 1)],
+            outline=outline_rgba,
+            fill=fill_rgba,
+            width=max(int(line_width), 1),
+        )
+
+        text_value = str(text) if text is not None else ""
+        if text_value:
+            font = Maps._load_text_font(font_size)
+            bbox = draw.textbbox((0, 0), text_value, font=font)
+            text_w = max(int(np.ceil(bbox[2] - bbox[0])), 1)
+            text_h = max(int(np.ceil(bbox[3] - bbox[1])), 1)
+            vertical, horizontal = Maps._parse_text_position(text_position)
+
+            if horizontal == "left":
+                x = int(text_pad_x_px)
+            elif horizontal == "right":
+                x = int(width_px - text_pad_x_px - text_w)
+            else:
+                x = int(round((width_px - text_w) / 2.0))
+
+            if vertical == "top":
+                y = int(text_pad_y_px)
+            elif vertical == "bottom":
+                y = int(height_px - text_pad_y_px - text_h)
+            else:
+                y = int(round((height_px - text_h) / 2.0))
+
+            x = max(0, min(x, width_px - text_w))
+            y = max(0, min(y, height_px - text_h))
+            text_x = int(round(x - bbox[0]))
+            text_y = int(round(y - bbox[1]))
+            draw.text(
+                (text_x, text_y),
+                text_value,
+                font=font,
+                fill=Maps._parse_color_rgba(text_color, default=(0, 0, 0, 255)),
+            )
+
+        return img
+
+    def _add_text_box_layer_from_bounds(self, fig, *,
+                                        map_layers: list,
+                                        left: float,
+                                        right: float,
+                                        top: float,
+                                        bottom: float,
+                                        text: str,
+                                        font_size: int,
+                                        text_position: str = "top left",
+                                        text_pad_x_deg: float = 0.5,
+                                        text_pad_y_deg: float = 0.3,
+                                        text_color: str = "black",
+                                        fill_color: str = "rgba(255,255,255,0.0)",
+                                        line_color: str = "black",
+                                        line_width: int = 2,
+                                        img_half_width_deg: float | None = None,
+                                        img_half_height_deg: float | None = None,
+                                        img_width_px: int | None = None,
+                                        img_height_px: int | None = None):
+        """Render a bordered text box as a map image layer."""
+        if not text:
+            return
+
+        zoom = float(getattr(fig.layout.map, "zoom", 1.3) or 1.3)
+        center_lat = 0.5 * (float(top) + float(bottom))
+        box_width_deg = float(right) - float(left)
+        box_height_deg = float(top) - float(bottom)
+        box_width_px, box_height_px = self._box_pixel_size(
+            box_width_deg=box_width_deg,
+            box_height_deg=box_height_deg,
+            img_half_width_deg=img_half_width_deg,
+            img_half_height_deg=img_half_height_deg,
+            img_width_px=img_width_px,
+            img_height_px=img_height_px,
+            lat=center_lat,
+            zoom=zoom,
+        )
+
+        text_pad_x_px = 8
+        text_pad_y_px = 6
+        if box_width_deg > 0:
+            text_pad_x_px = max(int(round(float(text_pad_x_deg) * box_width_px / box_width_deg)), 0)
+        if box_height_deg > 0:
+            text_pad_y_px = max(int(round(float(text_pad_y_deg) * box_height_px / box_height_deg)), 0)
+
+        box_img = self._render_text_box_image(
+            text=str(text),
+            font_size=int(font_size),
+            box_width_px=box_width_px,
+            box_height_px=box_height_px,
+            text_position=text_position,
+            text_pad_x_px=text_pad_x_px,
+            text_pad_y_px=text_pad_y_px,
+            text_color=text_color,
+            fill_color=fill_color,
+            line_color=line_color,
+            line_width=int(line_width),
+        )
+
+        map_layers.append(
+            dict(
+                sourcetype="image",
+                source=box_img,
+                coordinates=[
+                    [float(left), float(top)],
+                    [float(right), float(top)],
+                    [float(right), float(bottom)],
+                    [float(left), float(bottom)],
+                ],
+                opacity=1.0,
+                below="traces",
+            )
+        )
+
     def mapbox_map_footage(self, df: pd.DataFrame, *,
                            footage_col: str = "total_time",
                            hover_data=None,
@@ -255,6 +594,8 @@ class Maps:
             raise KeyError(f"Missing column: {footage_col}")
 
         df_plot = df_plot.dropna(subset=["lat", "lon"]).copy()
+        if df_plot.empty:
+            return
 
         df_plot["footage_hours"] = pd.to_numeric(df_plot[footage_col], errors="coerce") / 3600.0
         df_plot["footage_hours"] = df_plot["footage_hours"].fillna(0.0)
@@ -398,6 +739,7 @@ class Maps:
                     img_path = os.path.join(screenshots_dir, file_name_img)
                     img = self._safe_open_image(img_path)
                     if img is not None:
+                        item["_img_size_px"] = tuple(img.size)
                         map_layers.append(
                             dict(
                                 sourcetype="image",
@@ -408,10 +750,13 @@ class Maps:
                             )
                         )
                     elif item.get("source") is not None:
+                        source_obj = item["source"]
+                        if hasattr(source_obj, "size"):
+                            item["_img_size_px"] = tuple(source_obj.size)
                         map_layers.append(
                             dict(
                                 sourcetype="image",
-                                source=item["source"],
+                                source=source_obj,
                                 coordinates=corners,
                                 opacity=float(item.get("opacity", 1.0)),
                                 below=item.get("below", "traces"),
@@ -422,34 +767,98 @@ class Maps:
                 anchor_lon = _item_anchor_lon(item)
                 anchor_lat = _item_anchor_lat(item)
 
-                if label and anchor_lon is not None and anchor_lat is not None:
-                    fig.add_trace(
-                        go.Scattermap(
-                            lon=[anchor_lon + float(item.get("label_dlon", 0.0))],
-                            lat=[anchor_lat + float(item.get("label_dlat", 6.0))],
-                            mode="text",
-                            text=[label],
-                            textfont=dict(size=int(item.get("label_font_size", 12)), color="black"),
-                            hoverinfo="skip",
-                            showlegend=False,
-                            subplot="map",
-                        )
-                    )
+                if anchor_lon is not None and anchor_lat is not None:
+                    img_half_width_deg = float(item.get("img_half_width_deg", 10.0))
+                    img_half_height_deg = float(item.get("img_half_height_deg", 5.0))
+                    img_left = anchor_lon - img_half_width_deg
+                    img_right = anchor_lon + img_half_width_deg
+                    img_top = anchor_lat + img_half_height_deg
+                    img_bottom = anchor_lat - img_half_height_deg
+                    img_size = item.get("_img_size_px")
+                    img_width_px = None
+                    img_height_px = None
+                    if isinstance(img_size, tuple) and len(img_size) == 2:
+                        img_width_px = int(img_size[0])
+                        img_height_px = int(img_size[1])
 
-                video = item.get("video")
-                if video and anchor_lon is not None and anchor_lat is not None:
-                    fig.add_trace(
-                        go.Scattermap(
-                            lon=[anchor_lon + float(item.get("video_dlon", 0.0))],
-                            lat=[anchor_lat + float(item.get("video_dlat", -6.0))],
-                            mode="text",
-                            text=[video],
-                            textfont=dict(size=int(item.get("video_font_size", 10)), color="black"),
-                            hoverinfo="skip",
-                            showlegend=False,
-                            subplot="map",
+                    if label:
+                        label_font_size = int(item.get("label_font_size", 12))
+                        label_half_w_auto, label_half_h_auto = self._text_box_half_sizes(
+                            text=str(label),
+                            font_size=label_font_size,
+                            lat=img_top,
+                            img_half_width_deg=img_half_width_deg,
+                            img_half_height_deg=img_half_height_deg,
+                            img_width_px=img_width_px,
+                            img_height_px=img_height_px,
                         )
-                    )
+                        label_box_width_deg = float(item.get("label_box_width_deg", 2.0 * label_half_w_auto))
+                        label_box_height_deg = float(item.get("label_box_height_deg", 2.0 * label_half_h_auto))
+                        label_gap_deg = float(item.get("label_box_gap_deg", 0.0))
+                        label_left_offset_deg = float(item.get("label_box_left_offset_deg", 0.0))
+                        label_top_offset_deg = float(item.get("label_box_top_offset_deg", 0.0))
+                        label_text_position = str(item.get("label_text_position", "top left"))
+                        label_text_pad_x_deg = float(item.get("label_text_pad_x_deg", 0.5))
+                        label_text_pad_y_deg = float(item.get("label_text_pad_y_deg", 0.3))
+                        label_left = img_left + label_left_offset_deg
+                        label_top = img_top + label_gap_deg + label_box_height_deg + label_top_offset_deg
+                        self._add_text_box_layer_from_bounds(
+                            fig,
+                            map_layers=map_layers,
+                            left=label_left,
+                            right=label_left + label_box_width_deg,
+                            top=label_top,
+                            bottom=label_top - label_box_height_deg,
+                            text=str(label),
+                            font_size=label_font_size,
+                            text_position=label_text_position,
+                            text_pad_x_deg=label_text_pad_x_deg,
+                            text_pad_y_deg=label_text_pad_y_deg,
+                            img_half_width_deg=img_half_width_deg,
+                            img_half_height_deg=img_half_height_deg,
+                            img_width_px=img_width_px,
+                            img_height_px=img_height_px,
+                        )
+
+                    video = item.get("video")
+                    if video:
+                        video_font_size = int(item.get("video_font_size", 10))
+                        video_half_w_auto, video_half_h_auto = self._text_box_half_sizes(
+                            text=str(video),
+                            font_size=video_font_size,
+                            lat=img_bottom,
+                            img_half_width_deg=img_half_width_deg,
+                            img_half_height_deg=img_half_height_deg,
+                            img_width_px=img_width_px,
+                            img_height_px=img_height_px,
+                        )
+                        video_box_width_deg = float(item.get("video_box_width_deg", 2.0 * video_half_w_auto))
+                        video_box_height_deg = float(item.get("video_box_height_deg", 2.0 * video_half_h_auto))
+                        video_gap_deg = float(item.get("video_box_gap_deg", 0.0))
+                        video_right_offset_deg = float(item.get("video_box_right_offset_deg", 0.0))
+                        video_bottom_offset_deg = float(item.get("video_box_bottom_offset_deg", 0.0))
+                        video_text_position = str(item.get("video_text_position", "top left"))
+                        video_text_pad_x_deg = float(item.get("video_text_pad_x_deg", 0.5))
+                        video_text_pad_y_deg = float(item.get("video_text_pad_y_deg", 0.3))
+                        video_right = img_right - video_right_offset_deg
+                        video_bottom = img_bottom - video_gap_deg - video_box_height_deg - video_bottom_offset_deg
+                        self._add_text_box_layer_from_bounds(
+                            fig,
+                            map_layers=map_layers,
+                            left=video_right - video_box_width_deg,
+                            right=video_right,
+                            top=video_bottom + video_box_height_deg,
+                            bottom=video_bottom,
+                            text=str(video),
+                            font_size=video_font_size,
+                            text_position=video_text_position,
+                            text_pad_x_deg=video_text_pad_x_deg,
+                            text_pad_y_deg=video_text_pad_y_deg,
+                            img_half_width_deg=img_half_width_deg,
+                            img_half_height_deg=img_half_height_deg,
+                            img_width_px=img_width_px,
+                            img_height_px=img_height_px,
+                        )
 
             if map_layers:
                 fig.update_layout(map=dict(layers=map_layers))
@@ -502,6 +911,7 @@ class Maps:
                     )
 
         io_class.save_plotly_figure(fig, file_name, save_final=save_final)
+        return fig
 
     def mapbox_map(self, df, density_col=None, density_radius=30, hover_data=None, hover_name=None,
                    marker_size=5, file_name="mapbox_map", save_final=True):
