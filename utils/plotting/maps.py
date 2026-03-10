@@ -33,7 +33,7 @@ class Maps:
                 "city": "Cape Town",
                 "country": "South Africa",
                 "file": "cape_town.jpg",
-                "approx_lon": 30.0,
+                "approx_lon": 0.0,
                 "approx_lat": -48.0,
                 "img_half_width_deg": 16.0,
                 "img_half_height_deg": 8.0,
@@ -41,28 +41,48 @@ class Maps:
                 "label_dlon": -10.0,
                 "label_dlat": 9.5,
                 "label_font_size": 78,
+                "label_extra_width_px": 40,
+                "label_extra_height_px": 16,
                 "video": "0xP7JgDiBb8",
                 "video_dlon": 10.0,
                 "video_dlat": -9.5,
                 "video_font_size": 78,
+                "video_text_position": "middle right",
+                "video_text_pad_x_deg": 0.8,
+                "video_box_width_deg": 14.2,
+                "video_box_height_deg": 1.75,
+                "video_box_gap_deg": 0.00,
+                "video_bottom_offset_deg": 0.0,
+                "video_right_offset_deg": 0.0,
+                "line_control_point_lon": 0.0,
+                "line_control_point_lat": -35.0,
             },
             {
-                "city": "Seoul",
-                "country": "South Korea",
+                "city": "Tokyo",
+                "country": "Japan",
                 "file": "seoul.jpg",
                 "approx_lon": 174.0,
-                "approx_lat": 40.0,
+                "approx_lat": 20.0,
                 "img_half_width_deg": 16.0,
                 "img_half_height_deg": 8.0,
-                "label": "Seoul, South Korea",
+                "label": "Tokyo, Japan",
                 "label_dlon": -6.0,
                 "label_dlat": 9.5,
                 "label_font_size": 78,
+                "label_extra_width_px": 40,
+                "label_extra_height_px": 16,
                 "video": "qOx5CwCrN9k",
                 "video_dlon": 8.0,
                 "video_dlat": -9.5,
                 "video_font_size": 78,
                 "video_use_full_image_lon_bounds": True,
+                "video_text_position": "middle right",
+                "video_text_pad_x_deg": 0.8,
+                "video_box_width_deg": 14.0,
+                "video_box_height_deg": 1.95,
+                "video_box_gap_deg": 0.00,
+                "video_bottom_offset_deg": 0.0,
+                "video_right_offset_deg": 0.0,
             },
             {
                 "city": "London",
@@ -76,10 +96,18 @@ class Maps:
                 "label_dlon": -10.0,
                 "label_dlat": 7.0,
                 "label_font_size": 78,
+                "label_extra_width_px": 40,
+                "label_extra_height_px": 16,
                 "video": "QI4_dGvZ5yE",
                 "video_dlon": 10.0,
                 "video_dlat": -7.0,
                 "video_font_size": 78,
+                "video_text_position": "middle right",
+                "video_box_width_deg": 13.2,
+                "video_box_height_deg": 1.55,
+                "video_box_gap_deg": 0.00,
+                "video_bottom_offset_deg": 0.0,
+                "video_right_offset_deg": 0.0,
             },
             {
                 "city": "New York",
@@ -93,54 +121,84 @@ class Maps:
                 "label_dlon": -9.0,
                 "label_dlat": 9.0,
                 "label_font_size": 78,
+                "label_extra_width_px": 40,
+                "label_extra_height_px": 16,
                 "video": "_Wyg213IZDI",
                 "video_dlon": 9.0,
                 "video_dlat": -9.0,
                 "video_font_size": 78,
+                "video_text_position": "middle right",
+                "video_box_width_deg": 13.2,
+                "video_box_height_deg": 1.95,
+                "video_box_gap_deg": 0.00,
+                "video_bottom_offset_deg": 0.0,
+                "video_right_offset_deg": 0.0,
             },
             {
-                "city": "Sydney",
+                "city": "Perth",
                 "country": "Australia",
                 "file": "sydney.jpg",
-                "approx_lon": 118.0,
-                "approx_lat": -46.0,
+                "approx_lon": 80.0,
+                "approx_lat": -30.0,
                 "img_half_width_deg": 16.0,
                 "img_half_height_deg": 8.0,
-                "label": "Sydney, Australia",
-                "label_dlon": -7.5,
+                "label": "Perth, Australia",
+                "label_dlon": -6.0,
                 "label_dlat": 9.5,
                 "label_font_size": 78,
-                "video": "wMu6Va5PhGY",
-                "video_dlon": 9.0,
+                "label_extra_width_px": 40,
+                "label_extra_height_px": 16,
+                "video": "_Wyg213IZDI",
+                "video_dlon": 8.0,
                 "video_dlat": -9.5,
                 "video_font_size": 78,
+                "video_text_position": "middle right",
+                "video_text_pad_x_deg": 0.8,
+                "video_box_width_deg": 14.4,
+                "video_box_height_deg": 1.75,
+                "video_box_gap_deg": 0.00,
+                "video_bottom_offset_deg": 0.0,
+                "video_right_offset_deg": 0.0,
             },
             {
                 "city": "Sao Paulo",
                 "country": "Brazil",
                 "file": "sao_paulo.jpg",
                 "approx_lon": -20.0,
-                "approx_lat": -45.0,
+                "approx_lat": -28.0,
                 "img_half_width_deg": 16.0,
                 "img_half_height_deg": 8.0,
                 "label": "Sao Paulo, Brazil",
                 "label_dlon": -7.5,
                 "label_dlat": 8.5,
-                "label_font_size": 78,
+                "label_font_size": 220,
                 "label_box_scale": 1.15,
-                "label_scale_font_with_image_px": True,
-                "label_reference_width_px": 1280.0,
+                "label_extra_width_px": 40,
+                "label_extra_height_px": 20,
+                "label_box_height_deg": 1.8,
+                "label_box_gap_deg": 0.12,
+                "label_scale_font_with_image_px": False,
                 "label_line_width": 10,
                 "label_scale_line_width_with_box": True,
+                "label_render_scale": 4,
+                "label_max_render_font_px": 320,
                 "video": "Ic2ERD7kt4o",
                 "video_dlon": 10.0,
                 "video_dlat": -8.5,
-                "video_font_size": 78,
+                "video_font_size": 220,
                 "video_box_scale": 1.15,
-                "video_scale_font_with_image_px": True,
-                "video_reference_width_px": 1280.0,
+                "video_scale_font_with_image_px": False,
                 "video_line_width": 10,
                 "video_scale_line_width_with_box": True,
+                "video_render_scale": 4,
+                "video_max_render_font_px": 320,
+                "video_text_position": "middle right",
+                "video_text_pad_x_deg": 0.8,
+                "video_box_width_deg": 12.0,
+                "video_box_height_deg": 2.4,
+                "video_box_gap_deg": 0.00,
+                "video_bottom_offset_deg": 0.0,
+                "video_right_offset_deg": 0.0,
             },
         ]
 
@@ -435,7 +493,7 @@ class Maps:
                                          total_height_px: float,
                                          lat: float,
                                          zoom: float = 1.3,
-                                         min_half_height_deg: float = 0.9,
+                                         min_half_height_deg: float = 0.0,
                                          img_half_height_deg: float | None = None,
                                          img_height_px: int | None = None) -> float:
         """Convert a target text box pixel height into geographic degrees."""
@@ -682,20 +740,39 @@ class Maps:
                                fill_color: str = "rgba(255,255,255,0.0)",
                                line_color: str = "black",
                                line_width: int = 2,
-                               render_scale: int = 6):
-        """Render a bordered text box as a high resolution PIL image."""
-        scale = max(int(render_scale), 1)
+                               render_scale: int = 6,
+                               max_render_font_px: int | None = 320):
+        """Render a bordered text box as a high resolution PIL image.
+
+        The visible style stays the same, but the rasterised font size is capped
+        so static PNG export does not turn large labels into black bars.
+        """
+        requested_scale = max(float(render_scale), 1.0)
+
         width_px = max(int(box_width_px), 2)
         height_px = max(int(box_height_px), 2)
-        canvas_width_px = width_px * scale
-        canvas_height_px = height_px * scale
+
+        text_value = str(text) if text is not None else ""
+        base_font_size = max(int(font_size), 1)
+
+        scaled_font_size = max(int(round(base_font_size * requested_scale)), 1)
+        if max_render_font_px is not None:
+            scaled_font_size = min(scaled_font_size, max(int(max_render_font_px), 1))
+
+        # Keep box, padding, and border scaling aligned with the actual raster font size
+        effective_scale = max(float(scaled_font_size) / float(base_font_size), 1.0)
+
+        canvas_width_px = max(int(round(width_px * effective_scale)), 2)
+        canvas_height_px = max(int(round(height_px * effective_scale)), 2)
+
         img = Image.new("RGBA", (canvas_width_px, canvas_height_px), (255, 255, 255, 0))
         draw = ImageDraw.Draw(img)
 
         fill_rgba = Maps._parse_rgba_color(fill_color, default_alpha=0)
         line_rgba = Maps._parse_rgba_color(line_color)
         text_rgba = Maps._parse_rgba_color(text_color)
-        scaled_line_width = max(int(line_width) * scale, 1)
+
+        scaled_line_width = max(int(round(int(line_width) * effective_scale)), 1)
         draw.rectangle(
             [(0, 0), (canvas_width_px - 1, canvas_height_px - 1)],
             outline=line_rgba,
@@ -703,19 +780,19 @@ class Maps:
             width=scaled_line_width,
         )
 
-        text_value = str(text) if text is not None else ""
         if text_value:
-            scaled_font_size = max(int(font_size) * scale, 1)
             font = Maps._load_text_font(scaled_font_size)
             bbox = draw.textbbox((0, 0), text_value, font=font)
+
             bbox_left = int(np.floor(bbox[0]))
             bbox_top = int(np.floor(bbox[1]))
             text_w = max(int(np.ceil(bbox[2] - bbox[0])), 1)
             text_h = max(int(np.ceil(bbox[3] - bbox[1])), 1)
+
             vertical, horizontal = Maps._parse_text_position(text_position)
 
-            scaled_text_pad_x_px = max(int(text_pad_x_px) * scale, 0)
-            scaled_text_pad_y_px = max(int(text_pad_y_px) * scale, 0)
+            scaled_text_pad_x_px = max(int(round(int(text_pad_x_px) * effective_scale)), 0)
+            scaled_text_pad_y_px = max(int(round(int(text_pad_y_px) * effective_scale)), 0)
 
             if horizontal == "left":
                 x_box = scaled_text_pad_x_px
@@ -736,8 +813,10 @@ class Maps:
 
             draw_x = x_box - bbox_left
             draw_y = y_box - bbox_top
-            stroke_width = max(scale, 1)
+
+            stroke_width = max(int(round(effective_scale)), 1)
             stroke_fill = fill_rgba if fill_rgba[3] > 0 else (255, 255, 255, 230)
+
             draw.text(
                 (draw_x, draw_y),
                 text_value,
@@ -765,6 +844,7 @@ class Maps:
                                         line_color: str = "black",
                                         line_width: int = 10,
                                         render_scale: int = 4,
+                                        max_render_font_px: int | None = 320,
                                         scale_line_width_with_box: bool = True,
                                         line_width_reference_px: float = 120.0,
                                         line_width_max_scale: float = 3.0,
@@ -821,6 +901,7 @@ class Maps:
             line_color=line_color,
             line_width=effective_line_width,
             render_scale=int(render_scale),
+            max_render_font_px=max_render_font_px,
         )
 
         self._append_wrapped_rect_image_layers(
@@ -1051,77 +1132,8 @@ class Maps:
                             below=item.get("below", "traces"),
                         )
 
-            uniform_label_box_height_px = None
-            if bool(uniform_label_box_height):
-                label_heights_px = []
-                for item in image_items:
-                    label = item.get("label")
-                    if not label:
-                        continue
-
-                    img_size = item.get("_img_size_px")
-                    img_width_px = None
-                    img_height_px = None
-                    if isinstance(img_size, tuple) and len(img_size) == 2:
-                        img_width_px = int(img_size[0])
-                        img_height_px = int(img_size[1])
-
-                    label_font_size = self._effective_text_font_size(
-                        base_font_size=int(item.get("label_font_size", 60)),
-                        img_width_px=img_width_px,
-                        img_height_px=img_height_px,
-                        scale_with_image_px=bool(item.get("label_scale_font_with_image_px", False)),
-                        reference_width_px=float(item.get("label_reference_width_px", 1280.0)),
-                        reference_height_px=float(item.get("label_reference_height_px", 720.0)),
-                    )
-                    _, label_total_height_px = self._text_box_total_pixel_size(
-                        text=str(label),
-                        font_size=label_font_size,
-                    )
-                    label_heights_px.append(
-                        float(label_total_height_px)
-                        * float(item.get("label_box_scale", 1.0))
-                        * float(label_box_height_scale)
-                    )
-
-                if label_heights_px:
-                    uniform_label_box_height_px = max(label_heights_px)
-
-            uniform_video_box_height_px = None
-            if bool(uniform_video_box_height):
-                video_heights_px = []
-                for item in image_items:
-                    video = item.get("video")
-                    if not video:
-                        continue
-
-                    img_size = item.get("_img_size_px")
-                    img_width_px = None
-                    img_height_px = None
-                    if isinstance(img_size, tuple) and len(img_size) == 2:
-                        img_width_px = int(img_size[0])
-                        img_height_px = int(img_size[1])
-
-                    video_font_size = self._effective_text_font_size(
-                        base_font_size=int(item.get("video_font_size", 78)),
-                        img_width_px=img_width_px,
-                        img_height_px=img_height_px,
-                        scale_with_image_px=bool(item.get("video_scale_font_with_image_px", False)),
-                        reference_width_px=float(item.get("video_reference_width_px", 1280.0)),
-                        reference_height_px=float(item.get("video_reference_height_px", 720.0)),
-                    )
-                    _, video_total_height_px = self._text_box_total_pixel_size(
-                        text=str(video),
-                        font_size=video_font_size,
-                    )
-                    video_heights_px.append(
-                        float(video_total_height_px)
-                        * float(item.get("video_box_scale", 1.0))
-                        * float(video_box_height_scale)
-                    )
-
-                if video_heights_px:
-                    uniform_video_box_height_px = max(video_heights_px)
+            uniform_label_box_height_px = 72 if bool(uniform_label_box_height) else None
+            uniform_video_box_height_px = 72 if bool(uniform_video_box_height) else None
 
             for item in image_items:
                 label = item.get("label")
@@ -1132,9 +1144,11 @@ class Maps:
                     bounds = _item_image_bounds(item)
                     if bounds is None:
                         continue
+
                     img_left, img_right, img_top, img_bottom = bounds
                     img_geo_half_width_deg = 0.5 * (img_right - img_left)
                     img_geo_half_height_deg = 0.5 * (img_top - img_bottom)
+
                     img_size = item.get("_img_size_px")
                     img_width_px = None
                     img_height_px = None
@@ -1144,8 +1158,10 @@ class Maps:
 
                     visible_img_left = max(img_left, -180.0)
                     visible_img_right = min(img_right, 180.0)
+
                     label_use_full_image_lon_bounds = bool(item.get("label_use_full_image_lon_bounds", False))
                     video_use_full_image_lon_bounds = bool(item.get("video_use_full_image_lon_bounds", False))
+
                     label_left_bound = img_left if label_use_full_image_lon_bounds else visible_img_left
                     label_right_bound = img_right if label_use_full_image_lon_bounds else visible_img_right
                     video_left_bound = img_left if video_use_full_image_lon_bounds else visible_img_left
@@ -1160,6 +1176,7 @@ class Maps:
                             reference_width_px=float(item.get("label_reference_width_px", 1280.0)),
                             reference_height_px=float(item.get("label_reference_height_px", 720.0)),
                         )
+
                         label_half_w_auto, label_half_h_auto = self._text_box_half_sizes(
                             text=str(label),
                             font_size=label_font_size,
@@ -1169,8 +1186,17 @@ class Maps:
                             img_width_px=img_width_px,
                             img_height_px=img_height_px,
                         )
+
                         label_box_scale = float(item.get("label_box_scale", 1.0))
-                        label_box_width_deg = float(item.get("label_box_width_deg", 2.0 * label_half_w_auto * label_box_scale))
+                        label_box_width_deg = float(
+                            item.get("label_box_width_deg", 2.0 * label_half_w_auto * label_box_scale)
+                        )
+
+                        label_extra_width_px = float(item.get("label_extra_width_px", 0.0))
+                        if label_extra_width_px > 0 and img_width_px is not None and img_width_px > 0:
+                            deg_per_px_lon = (2.0 * float(img_geo_half_width_deg)) / float(img_width_px)
+                            label_box_width_deg += label_extra_width_px * deg_per_px_lon
+
                         if "label_box_height_deg" in item:
                             label_box_height_deg = float(item["label_box_height_deg"])
                         elif uniform_label_box_height_px is not None:
@@ -1179,23 +1205,38 @@ class Maps:
                                 lat=img_top,
                                 img_half_height_deg=img_geo_half_height_deg,
                                 img_height_px=img_height_px,
+                                min_half_height_deg=0.0,
                             )
                         else:
                             label_box_height_deg = float(
                                 2.0 * label_half_h_auto * label_box_scale * float(label_box_height_scale)
                             )
+
+                        label_extra_height_px = float(item.get("label_extra_height_px", 0.0))
+                        if label_extra_height_px > 0:
+                            label_box_height_deg += self._text_box_height_deg_from_pixels(
+                                total_height_px=label_extra_height_px,
+                                lat=img_top,
+                                img_half_height_deg=img_geo_half_height_deg,
+                                img_height_px=img_height_px,
+                                min_half_height_deg=0.0,
+                            )
+
                         label_gap_deg = float(item.get("label_box_gap_deg", 0.0))
                         label_left_offset_deg = float(item.get("label_box_left_offset_deg", 0.0))
                         label_top_offset_deg = float(item.get("label_box_top_offset_deg", 0.0))
                         label_text_position = str(item.get("label_text_position", "top left"))
                         label_text_pad_x_deg = float(item.get("label_text_pad_x_deg", 0.5))
                         label_text_pad_y_deg = float(item.get("label_text_pad_y_deg", 0.3))
+
                         label_left = max(img_left + label_left_offset_deg, label_left_bound)
                         label_right = label_left + label_box_width_deg
                         if label_right > label_right_bound:
                             label_right = label_right_bound
                             label_left = max(label_right - label_box_width_deg, label_left_bound)
+
                         label_top = img_top + label_gap_deg + label_box_height_deg + label_top_offset_deg
+
                         self._add_text_box_layer_from_bounds(
                             fig,
                             map_layers=map_layers,
@@ -1229,6 +1270,7 @@ class Maps:
                             reference_width_px=float(item.get("video_reference_width_px", 1280.0)),
                             reference_height_px=float(item.get("video_reference_height_px", 720.0)),
                         )
+
                         video_half_w_auto, video_half_h_auto = self._text_box_half_sizes(
                             text=str(video),
                             font_size=video_font_size,
@@ -1238,8 +1280,17 @@ class Maps:
                             img_width_px=img_width_px,
                             img_height_px=img_height_px,
                         )
+
                         video_box_scale = float(item.get("video_box_scale", 1.0))
-                        video_box_width_deg = float(item.get("video_box_width_deg", 2.0 * video_half_w_auto * video_box_scale))
+                        video_box_width_deg = float(
+                            item.get("video_box_width_deg", 2.0 * video_half_w_auto * video_box_scale)
+                        )
+
+                        video_extra_width_px = float(item.get("video_extra_width_px", 0.0))
+                        if video_extra_width_px > 0 and img_width_px is not None and img_width_px > 0:
+                            deg_per_px_lon = (2.0 * float(img_geo_half_width_deg)) / float(img_width_px)
+                            video_box_width_deg += video_extra_width_px * deg_per_px_lon
+
                         if "video_box_height_deg" in item:
                             video_box_height_deg = float(item["video_box_height_deg"])
                         elif uniform_video_box_height_px is not None:
@@ -1248,23 +1299,28 @@ class Maps:
                                 lat=img_bottom,
                                 img_half_height_deg=img_geo_half_height_deg,
                                 img_height_px=img_height_px,
+                                min_half_height_deg=0.0,
                             )
                         else:
                             video_box_height_deg = float(
                                 2.0 * video_half_h_auto * video_box_scale * float(video_box_height_scale)
                             )
+
                         video_gap_deg = float(item.get("video_box_gap_deg", 0.0))
                         video_right_offset_deg = float(item.get("video_box_right_offset_deg", 0.0))
                         video_bottom_offset_deg = float(item.get("video_box_bottom_offset_deg", 0.0))
-                        video_text_position = str(item.get("video_text_position", "top left"))
+                        video_text_position = str(item.get("video_text_position", "middle center"))
                         video_text_pad_x_deg = float(item.get("video_text_pad_x_deg", 0.5))
                         video_text_pad_y_deg = float(item.get("video_text_pad_y_deg", 0.3))
+
                         video_right = min(img_right - video_right_offset_deg, video_right_bound)
                         video_left = video_right - video_box_width_deg
                         if video_left < video_left_bound:
                             video_left = video_left_bound
                             video_right = min(video_left + video_box_width_deg, video_right_bound)
+
                         video_bottom = img_bottom - video_gap_deg - video_box_height_deg - video_bottom_offset_deg
+
                         self._add_text_box_layer_from_bounds(
                             fig,
                             map_layers=map_layers,
@@ -1343,7 +1399,7 @@ class Maps:
                     )
 
         io_class.save_plotly_figure(fig, file_name, save_final=save_final)
-
+    
     def mapbox_map(self, df, density_col=None, density_radius=30, hover_data=None, hover_name=None,
                    marker_size=5, file_name="mapbox_map", save_final=True):
         """Generates a world map of cities using Mapbox, with optional density visualization.
