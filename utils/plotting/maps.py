@@ -62,6 +62,7 @@ class Maps:
                 "video_dlon": 8.0,
                 "video_dlat": -9.5,
                 "video_font_size": 60,
+                "video_use_full_image_lon_bounds": True,
             },
             {
                 "city": "London",
@@ -126,10 +127,16 @@ class Maps:
                 "label_dlon": -7.5,
                 "label_dlat": 8.5,
                 "label_font_size": 60,
+                "label_box_scale": 1.15,
+                "label_scale_font_with_image_px": True,
+                "label_reference_width_px": 1280.0,
                 "video": "Ic2ERD7kt4o",
                 "video_dlon": 10.0,
                 "video_dlat": -8.5,
                 "video_font_size": 60,
+                "video_box_scale": 1.15,
+                "video_scale_font_with_image_px": True,
+                "video_reference_width_px": 1280.0,
             },
         ]
 
@@ -269,6 +276,35 @@ class Maps:
         return width_px, height_px
 
     @staticmethod
+    def _effective_text_font_size(*,
+                                  base_font_size: int,
+                                  img_width_px: int | None = None,
+                                  img_height_px: int | None = None,
+                                  scale_with_image_px: bool = False,
+                                  reference_width_px: float = 1280.0,
+                                  reference_height_px: float | None = 720.0) -> int:
+        """Optionally scale text size to compensate for very high resolution overlay images."""
+        size = max(int(base_font_size), 1)
+        if not scale_with_image_px:
+            return size
+
+        if img_width_px is None or int(img_width_px) <= 0:
+            return size
+
+        scale = float(img_width_px) / max(float(reference_width_px), 1.0)
+
+        if (
+            reference_height_px is not None
+            and img_height_px is not None
+            and float(reference_height_px) > 0
+            and int(img_height_px) > 0
+        ):
+            scale = max(scale, float(img_height_px) / float(reference_height_px))
+
+        scale = max(scale, 1.0)
+        return max(int(round(size * scale)), 1)
+
+    @staticmethod
     def _deg_per_px(*, lat: float, zoom: float = 1.3) -> tuple[float, float]:
         """Approximate geographic degrees per rendered pixel at a latitude."""
         world_px = 512.0 * (2.0 ** float(zoom))
@@ -360,6 +396,62 @@ class Maps:
         return width_px, height_px
 
     @staticmethod
+    def _wrap_longitude_interval(left: float, right: float) -> tuple[float, float]:
+        """Shift a longitude interval into the visible wrapped world span when possible."""
+        left_wrapped = float(left)
+        right_wrapped = float(right)
+
+        if left_wrapped > right_wrapped:
+            left_wrapped, right_wrapped = right_wrapped, left_wrapped
+
+        while left_wrapped > 180.0:
+            left_wrapped -= 360.0
+            right_wrapped -= 360.0
+
+        while right_wrapped < -180.0:
+            left_wrapped += 360.0
+            right_wrapped += 360.0
+
+        return left_wrapped, right_wrapped
+
+    @staticmethod
+    def _parse_rgba_color(color, default_alpha: int = 255):
+        """Parse a colour string or tuple into an RGBA tuple."""
+        if color is None:
+            return (255, 255, 255, default_alpha)
+
+        if isinstance(color, tuple):
+            if len(color) == 4:
+                return tuple(int(v) for v in color)
+            if len(color) == 3:
+                return tuple(int(v) for v in color) + (default_alpha,)
+
+        value = str(color).strip()
+        value_lower = value.lower()
+        if value_lower.startswith("rgba(") and value.endswith(")"):
+            parts = [p.strip() for p in value[5:-1].split(",")]
+            if len(parts) == 4:
+                r = int(float(parts[0]))
+                g = int(float(parts[1]))
+                b = int(float(parts[2]))
+                a_raw = float(parts[3])
+                a = int(round(255.0 * a_raw)) if a_raw <= 1.0 else int(round(a_raw))
+                return (r, g, b, max(0, min(a, 255)))
+
+        if value_lower.startswith("rgb(") and value.endswith(")"):
+            parts = [p.strip() for p in value[4:-1].split(",")]
+            if len(parts) == 3:
+                r = int(float(parts[0]))
+                g = int(float(parts[1]))
+                b = int(float(parts[2]))
+                return (r, g, b, default_alpha)
+
+        rgb = ImageColor.getrgb(value)
+        if len(rgb) == 4:
+            return tuple(int(v) for v in rgb)
+        return tuple(int(v) for v in rgb) + (default_alpha,)
+
+    @staticmethod
     def _render_text_box_image(*,
                                text: str,
                                font_size: int,
@@ -371,24 +463,32 @@ class Maps:
                                text_color: str = "black",
                                fill_color: str = "rgba(255,255,255,0.0)",
                                line_color: str = "black",
-                               line_width: int = 2):
-        """Render a transparent bordered text box as a PIL image."""
+                               line_width: int = 2,
+                               render_scale: int = 4):
+        """Render a bordered text box as a high resolution PIL image."""
+        scale = max(int(render_scale), 1)
         width_px = max(int(box_width_px), 2)
         height_px = max(int(box_height_px), 2)
-        img = Image.new("RGBA", (width_px, height_px), (255, 255, 255, 0))
+        canvas_width_px = width_px * scale
+        canvas_height_px = height_px * scale
+        img = Image.new("RGBA", (canvas_width_px, canvas_height_px), (255, 255, 255, 0))
         draw = ImageDraw.Draw(img)
 
-        fill_rgba = (255, 255, 255, 0)
+        fill_rgba = Maps._parse_rgba_color(fill_color, default_alpha=0)
+        line_rgba = Maps._parse_rgba_color(line_color)
+        text_rgba = Maps._parse_rgba_color(text_color)
+        scaled_line_width = max(int(line_width) * scale, 1)
         draw.rectangle(
-            [(0, 0), (width_px - 1, height_px - 1)],
-            outline=ImageColor.getrgb(line_color),
+            [(0, 0), (canvas_width_px - 1, canvas_height_px - 1)],
+            outline=line_rgba,
             fill=fill_rgba,
-            width=max(int(line_width), 1),
+            width=scaled_line_width,
         )
 
         text_value = str(text) if text is not None else ""
         if text_value:
-            font = Maps._load_text_font(font_size)
+            scaled_font_size = max(int(font_size) * scale, 1)
+            font = Maps._load_text_font(scaled_font_size)
             bbox = draw.textbbox((0, 0), text_value, font=font)
             bbox_left = int(np.floor(bbox[0]))
             bbox_top = int(np.floor(bbox[1]))
@@ -396,26 +496,38 @@ class Maps:
             text_h = max(int(np.ceil(bbox[3] - bbox[1])), 1)
             vertical, horizontal = Maps._parse_text_position(text_position)
 
+            scaled_text_pad_x_px = max(int(text_pad_x_px) * scale, 0)
+            scaled_text_pad_y_px = max(int(text_pad_y_px) * scale, 0)
+
             if horizontal == "left":
-                x_box = int(text_pad_x_px)
+                x_box = scaled_text_pad_x_px
             elif horizontal == "right":
-                x_box = int(width_px - text_pad_x_px - text_w)
+                x_box = int(canvas_width_px - scaled_text_pad_x_px - text_w)
             else:
-                x_box = int(round((width_px - text_w) / 2.0))
+                x_box = int(round((canvas_width_px - text_w) / 2.0))
 
             if vertical == "top":
-                y_box = int(text_pad_y_px)
+                y_box = scaled_text_pad_y_px
             elif vertical == "bottom":
-                y_box = int(height_px - text_pad_y_px - text_h)
+                y_box = int(canvas_height_px - scaled_text_pad_y_px - text_h)
             else:
-                y_box = int(round((height_px - text_h) / 2.0))
+                y_box = int(round((canvas_height_px - text_h) / 2.0))
 
-            x_box = max(0, min(x_box, max(width_px - text_w, 0)))
-            y_box = max(0, min(y_box, max(height_px - text_h, 0)))
+            x_box = max(0, min(x_box, max(canvas_width_px - text_w, 0)))
+            y_box = max(0, min(y_box, max(canvas_height_px - text_h, 0)))
 
             draw_x = x_box - bbox_left
             draw_y = y_box - bbox_top
-            draw.text((draw_x, draw_y), text_value, font=font, fill=ImageColor.getrgb(text_color))
+            stroke_width = max(scale // 2, 0)
+            stroke_fill = fill_rgba if fill_rgba[3] > 0 else (255, 255, 255, 230)
+            draw.text(
+                (draw_x, draw_y),
+                text_value,
+                font=font,
+                fill=text_rgba,
+                stroke_width=stroke_width,
+                stroke_fill=stroke_fill,
+            )
 
         return img
 
@@ -478,15 +590,17 @@ class Maps:
             line_width=int(line_width),
         )
 
+        wrapped_left, wrapped_right = self._wrap_longitude_interval(left=float(left), right=float(right))
+
         map_layers.append(
             dict(
                 sourcetype="image",
                 source=box_img,
                 coordinates=[
-                    [float(left), float(top)],
-                    [float(right), float(top)],
-                    [float(right), float(bottom)],
-                    [float(left), float(bottom)],
+                    [wrapped_left, float(top)],
+                    [wrapped_right, float(top)],
+                    [wrapped_right, float(bottom)],
+                    [wrapped_left, float(bottom)],
                 ],
                 opacity=1.0,
                 below="traces",
@@ -708,8 +822,24 @@ class Maps:
                         img_width_px = int(img_size[0])
                         img_height_px = int(img_size[1])
 
+                    visible_img_left = max(img_left, -180.0)
+                    visible_img_right = min(img_right, 180.0)
+                    label_use_full_image_lon_bounds = bool(item.get("label_use_full_image_lon_bounds", False))
+                    video_use_full_image_lon_bounds = bool(item.get("video_use_full_image_lon_bounds", False))
+                    label_left_bound = img_left if label_use_full_image_lon_bounds else visible_img_left
+                    label_right_bound = img_right if label_use_full_image_lon_bounds else visible_img_right
+                    video_left_bound = img_left if video_use_full_image_lon_bounds else visible_img_left
+                    video_right_bound = img_right if video_use_full_image_lon_bounds else visible_img_right
+
                     if label:
-                        label_font_size = int(item.get("label_font_size", 60))
+                        label_font_size = self._effective_text_font_size(
+                            base_font_size=int(item.get("label_font_size", 60)),
+                            img_width_px=img_width_px,
+                            img_height_px=img_height_px,
+                            scale_with_image_px=bool(item.get("label_scale_font_with_image_px", False)),
+                            reference_width_px=float(item.get("label_reference_width_px", 1280.0)),
+                            reference_height_px=float(item.get("label_reference_height_px", 720.0)),
+                        )
                         label_half_w_auto, label_half_h_auto = self._text_box_half_sizes(
                             text=str(label),
                             font_size=label_font_size,
@@ -719,21 +849,26 @@ class Maps:
                             img_width_px=img_width_px,
                             img_height_px=img_height_px,
                         )
-                        label_box_width_deg = float(item.get("label_box_width_deg", 2.0 * label_half_w_auto))
-                        label_box_height_deg = float(item.get("label_box_height_deg", 2.0 * label_half_h_auto))
+                        label_box_scale = float(item.get("label_box_scale", 1.0))
+                        label_box_width_deg = float(item.get("label_box_width_deg", 2.0 * label_half_w_auto * label_box_scale))
+                        label_box_height_deg = float(item.get("label_box_height_deg", 2.0 * label_half_h_auto * label_box_scale))
                         label_gap_deg = float(item.get("label_box_gap_deg", 0.0))
                         label_left_offset_deg = float(item.get("label_box_left_offset_deg", 0.0))
                         label_top_offset_deg = float(item.get("label_box_top_offset_deg", 0.0))
                         label_text_position = str(item.get("label_text_position", "top left"))
                         label_text_pad_x_deg = float(item.get("label_text_pad_x_deg", 0.5))
                         label_text_pad_y_deg = float(item.get("label_text_pad_y_deg", 0.3))
-                        label_left = img_left + label_left_offset_deg
+                        label_left = max(img_left + label_left_offset_deg, label_left_bound)
+                        label_right = label_left + label_box_width_deg
+                        if label_right > label_right_bound:
+                            label_right = label_right_bound
+                            label_left = max(label_right - label_box_width_deg, label_left_bound)
                         label_top = img_top + label_gap_deg + label_box_height_deg + label_top_offset_deg
                         self._add_text_box_layer_from_bounds(
                             fig,
                             map_layers=map_layers,
                             left=label_left,
-                            right=label_left + label_box_width_deg,
+                            right=label_right,
                             top=label_top,
                             bottom=label_top - label_box_height_deg,
                             text=str(label),
@@ -749,7 +884,14 @@ class Maps:
 
                     video = item.get("video")
                     if video:
-                        video_font_size = int(item.get("video_font_size", 10))
+                        video_font_size = self._effective_text_font_size(
+                            base_font_size=int(item.get("video_font_size", 10)),
+                            img_width_px=img_width_px,
+                            img_height_px=img_height_px,
+                            scale_with_image_px=bool(item.get("video_scale_font_with_image_px", False)),
+                            reference_width_px=float(item.get("video_reference_width_px", 1280.0)),
+                            reference_height_px=float(item.get("video_reference_height_px", 720.0)),
+                        )
                         video_half_w_auto, video_half_h_auto = self._text_box_half_sizes(
                             text=str(video),
                             font_size=video_font_size,
@@ -759,20 +901,25 @@ class Maps:
                             img_width_px=img_width_px,
                             img_height_px=img_height_px,
                         )
-                        video_box_width_deg = float(item.get("video_box_width_deg", 2.0 * video_half_w_auto))
-                        video_box_height_deg = float(item.get("video_box_height_deg", 2.0 * video_half_h_auto))
+                        video_box_scale = float(item.get("video_box_scale", 1.0))
+                        video_box_width_deg = float(item.get("video_box_width_deg", 2.0 * video_half_w_auto * video_box_scale))
+                        video_box_height_deg = float(item.get("video_box_height_deg", 2.0 * video_half_h_auto * video_box_scale))
                         video_gap_deg = float(item.get("video_box_gap_deg", 0.0))
                         video_right_offset_deg = float(item.get("video_box_right_offset_deg", 0.0))
                         video_bottom_offset_deg = float(item.get("video_box_bottom_offset_deg", 0.0))
                         video_text_position = str(item.get("video_text_position", "top left"))
                         video_text_pad_x_deg = float(item.get("video_text_pad_x_deg", 0.5))
                         video_text_pad_y_deg = float(item.get("video_text_pad_y_deg", 0.3))
-                        video_right = img_right - video_right_offset_deg
+                        video_right = min(img_right - video_right_offset_deg, video_right_bound)
+                        video_left = video_right - video_box_width_deg
+                        if video_left < video_left_bound:
+                            video_left = video_left_bound
+                            video_right = min(video_left + video_box_width_deg, video_right_bound)
                         video_bottom = img_bottom - video_gap_deg - video_box_height_deg - video_bottom_offset_deg
                         self._add_text_box_layer_from_bounds(
                             fig,
                             map_layers=map_layers,
-                            left=video_right - video_box_width_deg,
+                            left=video_left,
                             right=video_right,
                             top=video_bottom + video_box_height_deg,
                             bottom=video_bottom,
