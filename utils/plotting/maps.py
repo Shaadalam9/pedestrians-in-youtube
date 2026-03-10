@@ -40,11 +40,11 @@ class Maps:
                 "label": "Cape Town, South Africa",
                 "label_dlon": -10.0,
                 "label_dlat": 9.5,
-                "label_font_size": 60,
+                "label_font_size": 78,
                 "video": "0xP7JgDiBb8",
                 "video_dlon": 10.0,
                 "video_dlat": -9.5,
-                "video_font_size": 60,
+                "video_font_size": 78,
             },
             {
                 "city": "Seoul",
@@ -57,11 +57,11 @@ class Maps:
                 "label": "Seoul, South Korea",
                 "label_dlon": -6.0,
                 "label_dlat": 9.5,
-                "label_font_size": 60,
+                "label_font_size": 78,
                 "video": "qOx5CwCrN9k",
                 "video_dlon": 8.0,
                 "video_dlat": -9.5,
-                "video_font_size": 60,
+                "video_font_size": 78,
                 "video_use_full_image_lon_bounds": True,
             },
             {
@@ -75,11 +75,11 @@ class Maps:
                 "label": "London, UK",
                 "label_dlon": -10.0,
                 "label_dlat": 7.0,
-                "label_font_size": 60,
+                "label_font_size": 78,
                 "video": "QI4_dGvZ5yE",
                 "video_dlon": 10.0,
                 "video_dlat": -7.0,
-                "video_font_size": 60,
+                "video_font_size": 78,
             },
             {
                 "city": "New York",
@@ -92,11 +92,11 @@ class Maps:
                 "label": "New York, US",
                 "label_dlon": -9.0,
                 "label_dlat": 9.0,
-                "label_font_size": 60,
+                "label_font_size": 78,
                 "video": "_Wyg213IZDI",
                 "video_dlon": 9.0,
                 "video_dlat": -9.0,
-                "video_font_size": 60,
+                "video_font_size": 78,
             },
             {
                 "city": "Sydney",
@@ -109,11 +109,11 @@ class Maps:
                 "label": "Sydney, Australia",
                 "label_dlon": -7.5,
                 "label_dlat": 9.5,
-                "label_font_size": 60,
+                "label_font_size": 78,
                 "video": "wMu6Va5PhGY",
                 "video_dlon": 9.0,
                 "video_dlat": -9.5,
-                "video_font_size": 60,
+                "video_font_size": 78,
             },
             {
                 "city": "Sao Paulo",
@@ -126,17 +126,21 @@ class Maps:
                 "label": "Sao Paulo, Brazil",
                 "label_dlon": -7.5,
                 "label_dlat": 8.5,
-                "label_font_size": 60,
+                "label_font_size": 78,
                 "label_box_scale": 1.15,
                 "label_scale_font_with_image_px": True,
                 "label_reference_width_px": 1280.0,
+                "label_line_width": 10,
+                "label_scale_line_width_with_box": True,
                 "video": "Ic2ERD7kt4o",
                 "video_dlon": 10.0,
                 "video_dlat": -8.5,
-                "video_font_size": 60,
+                "video_font_size": 78,
                 "video_box_scale": 1.15,
                 "video_scale_font_with_image_px": True,
                 "video_reference_width_px": 1280.0,
+                "video_line_width": 10,
+                "video_scale_line_width_with_box": True,
             },
         ]
 
@@ -461,6 +465,20 @@ class Maps:
         return width_px, height_px
 
     @staticmethod
+    def _effective_box_line_width(*,
+                                  line_width: int,
+                                  box_width_px: int,
+                                  box_height_px: int,
+                                  reference_min_dim_px: float = 120.0,
+                                  max_scale: float = 3.0) -> int:
+        """Scale border thickness with box size so oversized boxes do not look thinner."""
+        base_line_width = max(int(line_width), 1)
+        min_dim_px = max(min(int(box_width_px), int(box_height_px)), 1)
+        scale = max(float(min_dim_px) / max(float(reference_min_dim_px), 1.0), 1.0)
+        scale = min(scale, max(float(max_scale), 1.0))
+        return max(int(round(base_line_width * scale)), 1)
+
+    @staticmethod
     def _wrap_longitude_interval(left: float, right: float) -> tuple[float, float]:
         """Shift a longitude interval near the visible wrapped world span."""
         left_wrapped = float(left)
@@ -627,7 +645,7 @@ class Maps:
                                fill_color: str = "rgba(255,255,255,0.0)",
                                line_color: str = "black",
                                line_width: int = 2,
-                               render_scale: int = 4):
+                               render_scale: int = 6):
         """Render a bordered text box as a high resolution PIL image."""
         scale = max(int(render_scale), 1)
         width_px = max(int(box_width_px), 2)
@@ -681,7 +699,7 @@ class Maps:
 
             draw_x = x_box - bbox_left
             draw_y = y_box - bbox_top
-            stroke_width = max(scale // 2, 0)
+            stroke_width = max(scale, 1)
             stroke_fill = fill_rgba if fill_rgba[3] > 0 else (255, 255, 255, 230)
             draw.text(
                 (draw_x, draw_y),
@@ -708,7 +726,11 @@ class Maps:
                                         text_color: str = "black",
                                         fill_color: str = "rgba(255,255,255,0.0)",
                                         line_color: str = "black",
-                                        line_width: int = 2,
+                                        line_width: int = 10,
+                                        render_scale: int = 4,
+                                        scale_line_width_with_box: bool = True,
+                                        line_width_reference_px: float = 120.0,
+                                        line_width_max_scale: float = 3.0,
                                         img_half_width_deg: float | None = None,
                                         img_half_height_deg: float | None = None,
                                         img_width_px: int | None = None,
@@ -739,6 +761,16 @@ class Maps:
         if box_height_deg > 0:
             text_pad_y_px = max(int(round(float(text_pad_y_deg) * box_height_px / box_height_deg)), 0)
 
+        effective_line_width = max(int(line_width), 1)
+        if bool(scale_line_width_with_box):
+            effective_line_width = self._effective_box_line_width(
+                line_width=effective_line_width,
+                box_width_px=box_width_px,
+                box_height_px=box_height_px,
+                reference_min_dim_px=float(line_width_reference_px),
+                max_scale=float(line_width_max_scale),
+            )
+
         box_img = self._render_text_box_image(
             text=str(text),
             font_size=int(font_size),
@@ -750,7 +782,8 @@ class Maps:
             text_color=text_color,
             fill_color=fill_color,
             line_color=line_color,
-            line_width=int(line_width),
+            line_width=effective_line_width,
+            render_scale=int(render_scale),
         )
 
         self._append_wrapped_rect_image_layers(
@@ -1051,6 +1084,11 @@ class Maps:
                             text_position=label_text_position,
                             text_pad_x_deg=label_text_pad_x_deg,
                             text_pad_y_deg=label_text_pad_y_deg,
+                            line_width=int(item.get("label_line_width", 10)),
+                            render_scale=int(item.get("label_render_scale", 4)),
+                            scale_line_width_with_box=bool(item.get("label_scale_line_width_with_box", True)),
+                            line_width_reference_px=float(item.get("label_line_width_reference_px", 120.0)),
+                            line_width_max_scale=float(item.get("label_line_width_max_scale", 3.0)),
                             img_half_width_deg=img_geo_half_width_deg,
                             img_half_height_deg=img_geo_half_height_deg,
                             img_width_px=img_width_px,
@@ -1060,7 +1098,7 @@ class Maps:
                     video = item.get("video")
                     if video:
                         video_font_size = self._effective_text_font_size(
-                            base_font_size=int(item.get("video_font_size", 10)),
+                            base_font_size=int(item.get("video_font_size", 78)),
                             img_width_px=img_width_px,
                             img_height_px=img_height_px,
                             scale_with_image_px=bool(item.get("video_scale_font_with_image_px", False)),
@@ -1103,6 +1141,11 @@ class Maps:
                             text_position=video_text_position,
                             text_pad_x_deg=video_text_pad_x_deg,
                             text_pad_y_deg=video_text_pad_y_deg,
+                            line_width=int(item.get("video_line_width", 10)),
+                            render_scale=int(item.get("video_render_scale", 4)),
+                            scale_line_width_with_box=bool(item.get("video_scale_line_width_with_box", True)),
+                            line_width_reference_px=float(item.get("video_line_width_reference_px", 120.0)),
+                            line_width_max_scale=float(item.get("video_line_width_max_scale", 3.0)),
                             img_half_width_deg=img_geo_half_width_deg,
                             img_half_height_deg=img_geo_half_height_deg,
                             img_width_px=img_width_px,
