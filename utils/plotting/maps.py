@@ -397,22 +397,120 @@ class Maps:
 
     @staticmethod
     def _wrap_longitude_interval(left: float, right: float) -> tuple[float, float]:
-        """Shift a longitude interval into the visible wrapped world span when possible."""
+        """Shift a longitude interval near the visible wrapped world span."""
         left_wrapped = float(left)
         right_wrapped = float(right)
 
         if left_wrapped > right_wrapped:
             left_wrapped, right_wrapped = right_wrapped, left_wrapped
 
-        while left_wrapped > 180.0:
-            left_wrapped -= 360.0
-            right_wrapped -= 360.0
-
-        while right_wrapped < -180.0:
+        while left_wrapped < -180.0 and right_wrapped < -180.0:
             left_wrapped += 360.0
             right_wrapped += 360.0
 
+        while left_wrapped > 180.0 and right_wrapped > 180.0:
+            left_wrapped -= 360.0
+            right_wrapped -= 360.0
+
         return left_wrapped, right_wrapped
+
+    @staticmethod
+    def _split_longitude_interval_for_map(left: float,
+                                          right: float) -> list[tuple[float, float, float, float]]:
+        """Split a longitude interval into one or two visible map segments.
+
+        Returns tuples of:
+            (segment_left, segment_right, source_x_start_frac, source_x_end_frac)
+
+        This preserves overlays that cross the antimeridian by splitting them into
+        two map aligned pieces and cropping the image source accordingly.
+        """
+        left_wrapped, right_wrapped = Maps._wrap_longitude_interval(left=left, right=right)
+        width = float(right_wrapped) - float(left_wrapped)
+
+        if width <= 0:
+            return []
+
+        if width >= 360.0:
+            return [(-180.0, 180.0, 0.0, 1.0)]
+
+        if -180.0 <= left_wrapped and right_wrapped <= 180.0:
+            return [(left_wrapped, right_wrapped, 0.0, 1.0)]
+
+        if right_wrapped > 180.0:
+            split_frac = (180.0 - left_wrapped) / width
+            return [
+                (left_wrapped, 180.0, 0.0, split_frac),
+                (-180.0, right_wrapped - 360.0, split_frac, 1.0),
+            ]
+
+        if left_wrapped < -180.0:
+            split_frac = (-180.0 - left_wrapped) / width
+            return [
+                (left_wrapped + 360.0, 180.0, 0.0, split_frac),
+                (-180.0, right_wrapped, split_frac, 1.0),
+            ]
+
+        return [(left_wrapped, right_wrapped, 0.0, 1.0)]
+
+    @staticmethod
+    def _crop_image_source_horizontally(source,
+                                        start_frac: float,
+                                        end_frac: float):
+        """Crop a PIL like image source horizontally using fractional x bounds."""
+        start = max(0.0, min(float(start_frac), 1.0))
+        end = max(start, min(float(end_frac), 1.0))
+
+        if start <= 0.0 and end >= 1.0:
+            return source
+
+        if not hasattr(source, "crop") or not hasattr(source, "size"):
+            return None
+
+        width_px, height_px = source.size
+        if width_px <= 1 or height_px <= 0:
+            return source
+
+        left_px = max(int(np.floor(start * width_px)), 0)
+        right_px = min(int(np.ceil(end * width_px)), int(width_px))
+        right_px = max(right_px, left_px + 1)
+        return source.crop((left_px, 0, right_px, int(height_px)))
+
+    @staticmethod
+    def _append_wrapped_rect_image_layers(*,
+                                          map_layers: list,
+                                          source,
+                                          left: float,
+                                          right: float,
+                                          top: float,
+                                          bottom: float,
+                                          opacity: float = 1.0,
+                                          below: str = "traces") -> None:
+        """Append one or two image layers so rectangles crossing the antimeridian stay visible."""
+        segments = Maps._split_longitude_interval_for_map(left=left, right=right)
+        for seg_left, seg_right, src_start_frac, src_end_frac in segments:
+            seg_source = Maps._crop_image_source_horizontally(
+                source=source,
+                start_frac=src_start_frac,
+                end_frac=src_end_frac,
+            )
+            if seg_source is None:
+                continue
+
+            map_layers.append(
+                dict(
+                    sourcetype="image",
+                    source=seg_source,
+                    coordinates=[
+                        [float(seg_left), float(top)],
+                        [float(seg_right), float(top)],
+                        [float(seg_right), float(bottom)],
+                        [float(seg_left), float(bottom)],
+                    ],
+                    opacity=float(opacity),
+                    below=below,
+                )
+            )
 
     @staticmethod
     def _parse_rgba_color(color, default_alpha: int = 255):
@@ -590,21 +688,15 @@ class Maps:
             line_width=int(line_width),
         )
 
-        wrapped_left, wrapped_right = self._wrap_longitude_interval(left=float(left), right=float(right))
-
-        map_layers.append(
-            dict(
-                sourcetype="image",
-                source=box_img,
-                coordinates=[
-                    [wrapped_left, float(top)],
-                    [wrapped_right, float(top)],
-                    [wrapped_right, float(bottom)],
-                    [wrapped_left, float(bottom)],
-                ],
-                opacity=1.0,
-                below="traces",
-            )
+        self._append_wrapped_rect_image_layers(
+            map_layers=map_layers,
+            source=box_img,
+            left=float(left),
+            right=float(right),
+            top=float(top),
+            bottom=float(bottom),
+            opacity=1.0,
+            below="traces",
         )
 
     def mapbox_map_footage(self, df: pd.DataFrame, *,
@@ -781,27 +873,29 @@ class Maps:
                     img = self._safe_open_image(img_path)
                     if img is not None:
                         item["_img_size_px"] = tuple(img.size)
-                        map_layers.append(
-                            dict(
-                                sourcetype="image",
-                                source=img,
-                                coordinates=corners,
-                                opacity=float(item.get("opacity", 1.0)),
-                                below=item.get("below", "traces"),
-                            )
+                        self._append_wrapped_rect_image_layers(
+                            map_layers=map_layers,
+                            source=img,
+                            left=float(corners[0][0]),
+                            right=float(corners[1][0]),
+                            top=float(corners[0][1]),
+                            bottom=float(corners[2][1]),
+                            opacity=float(item.get("opacity", 1.0)),
+                            below=item.get("below", "traces"),
                         )
                     elif item.get("source") is not None:
                         source_obj = item["source"]
                         if hasattr(source_obj, "size"):
                             item["_img_size_px"] = tuple(source_obj.size)
-                        map_layers.append(
-                            dict(
-                                sourcetype="image",
-                                source=source_obj,
-                                coordinates=corners,
-                                opacity=float(item.get("opacity", 1.0)),
-                                below=item.get("below", "traces"),
-                            )
+                        self._append_wrapped_rect_image_layers(
+                            map_layers=map_layers,
+                            source=source_obj,
+                            left=float(corners[0][0]),
+                            right=float(corners[1][0]),
+                            top=float(corners[0][1]),
+                            bottom=float(corners[2][1]),
+                            opacity=float(item.get("opacity", 1.0)),
+                            below=item.get("below", "traces"),
                         )
 
                 label = item.get("label")
