@@ -382,6 +382,18 @@ class Maps:
         return deg_per_px_lon, deg_per_px_lat
 
     @staticmethod
+    def _text_box_total_pixel_size(*,
+                                   text: str,
+                                   font_size: int,
+                                   horizontal_padding_px: float = 12.0,
+                                   vertical_padding_px: float = 8.0) -> tuple[float, float]:
+        """Return total text box width and height in pixels including padding."""
+        width_px, height_px = Maps._measure_text_pixels(text=text, font_size=font_size)
+        total_width_px = width_px + 2.0 * float(horizontal_padding_px)
+        total_height_px = height_px + 2.0 * float(vertical_padding_px)
+        return float(total_width_px), float(total_height_px)
+
+    @staticmethod
     def _text_box_half_sizes(*,
                              text: str,
                              font_size: int,
@@ -396,9 +408,12 @@ class Maps:
                              img_width_px: int | None = None,
                              img_height_px: int | None = None) -> tuple[float, float]:
         """Estimate geographic half sizes for a text box from measured text size."""
-        width_px, height_px = Maps._measure_text_pixels(text=text, font_size=font_size)
-        total_width_px = width_px + 2.0 * float(horizontal_padding_px)
-        total_height_px = height_px + 2.0 * float(vertical_padding_px)
+        total_width_px, total_height_px = Maps._text_box_total_pixel_size(
+            text=text,
+            font_size=font_size,
+            horizontal_padding_px=horizontal_padding_px,
+            vertical_padding_px=vertical_padding_px,
+        )
 
         if (
             img_half_width_deg is not None and img_half_height_deg is not None
@@ -414,6 +429,28 @@ class Maps:
         half_width_deg = max(float(min_half_width_deg), 0.5 * total_width_px * deg_per_px_lon)
         half_height_deg = max(float(min_half_height_deg), 0.5 * total_height_px * deg_per_px_lat)
         return half_width_deg, half_height_deg
+
+    @staticmethod
+    def _text_box_height_deg_from_pixels(*,
+                                         total_height_px: float,
+                                         lat: float,
+                                         zoom: float = 1.3,
+                                         min_half_height_deg: float = 0.9,
+                                         img_half_height_deg: float | None = None,
+                                         img_height_px: int | None = None) -> float:
+        """Convert a target text box pixel height into geographic degrees."""
+        if (
+            img_half_height_deg is not None
+            and img_height_px is not None
+            and img_half_height_deg > 0
+            and img_height_px > 0
+        ):
+            deg_per_px_lat = (2.0 * float(img_half_height_deg)) / float(img_height_px)
+        else:
+            _, deg_per_px_lat = Maps._deg_per_px(lat=lat, zoom=zoom)
+
+        half_height_deg = max(float(min_half_height_deg), 0.5 * float(total_height_px) * deg_per_px_lat)
+        return 2.0 * half_height_deg
 
     @staticmethod
     def _parse_text_position(text_position: str = "top left") -> tuple[str, str]:
@@ -810,6 +847,10 @@ class Maps:
                            range_q_low: float = 0.02,
                            range_q_high: float = 0.98,
                            show_images: bool = False,
+                           uniform_label_box_height: bool = True,
+                           uniform_video_box_height: bool = True,
+                           label_box_height_scale: float = 0.5,
+                           video_box_height_scale: float = 0.5,
                            image_items: list[dict] | None = None,
                            screenshots_dir: str | None = None,
                            file_name: str = "mapbox_map_footage",
@@ -1010,13 +1051,84 @@ class Maps:
                             below=item.get("below", "traces"),
                         )
 
+            uniform_label_box_height_px = None
+            if bool(uniform_label_box_height):
+                label_heights_px = []
+                for item in image_items:
+                    label = item.get("label")
+                    if not label:
+                        continue
+
+                    img_size = item.get("_img_size_px")
+                    img_width_px = None
+                    img_height_px = None
+                    if isinstance(img_size, tuple) and len(img_size) == 2:
+                        img_width_px = int(img_size[0])
+                        img_height_px = int(img_size[1])
+
+                    label_font_size = self._effective_text_font_size(
+                        base_font_size=int(item.get("label_font_size", 60)),
+                        img_width_px=img_width_px,
+                        img_height_px=img_height_px,
+                        scale_with_image_px=bool(item.get("label_scale_font_with_image_px", False)),
+                        reference_width_px=float(item.get("label_reference_width_px", 1280.0)),
+                        reference_height_px=float(item.get("label_reference_height_px", 720.0)),
+                    )
+                    _, label_total_height_px = self._text_box_total_pixel_size(
+                        text=str(label),
+                        font_size=label_font_size,
+                    )
+                    label_heights_px.append(
+                        float(label_total_height_px)
+                        * float(item.get("label_box_scale", 1.0))
+                        * float(label_box_height_scale)
+                    )
+
+                if label_heights_px:
+                    uniform_label_box_height_px = max(label_heights_px)
+
+            uniform_video_box_height_px = None
+            if bool(uniform_video_box_height):
+                video_heights_px = []
+                for item in image_items:
+                    video = item.get("video")
+                    if not video:
+                        continue
+
+                    img_size = item.get("_img_size_px")
+                    img_width_px = None
+                    img_height_px = None
+                    if isinstance(img_size, tuple) and len(img_size) == 2:
+                        img_width_px = int(img_size[0])
+                        img_height_px = int(img_size[1])
+
+                    video_font_size = self._effective_text_font_size(
+                        base_font_size=int(item.get("video_font_size", 78)),
+                        img_width_px=img_width_px,
+                        img_height_px=img_height_px,
+                        scale_with_image_px=bool(item.get("video_scale_font_with_image_px", False)),
+                        reference_width_px=float(item.get("video_reference_width_px", 1280.0)),
+                        reference_height_px=float(item.get("video_reference_height_px", 720.0)),
+                    )
+                    _, video_total_height_px = self._text_box_total_pixel_size(
+                        text=str(video),
+                        font_size=video_font_size,
+                    )
+                    video_heights_px.append(
+                        float(video_total_height_px)
+                        * float(item.get("video_box_scale", 1.0))
+                        * float(video_box_height_scale)
+                    )
+
+                if video_heights_px:
+                    uniform_video_box_height_px = max(video_heights_px)
+
+            for item in image_items:
                 label = item.get("label")
                 anchor_lon = _item_anchor_lon(item)
                 anchor_lat = _item_anchor_lat(item)
 
                 if anchor_lon is not None and anchor_lat is not None:
-                    img_half_width_deg = float(item.get("img_half_width_deg", 10.0))
-                    img_half_height_deg = float(item.get("img_half_height_deg", 5.0))
                     bounds = _item_image_bounds(item)
                     if bounds is None:
                         continue
@@ -1059,7 +1171,19 @@ class Maps:
                         )
                         label_box_scale = float(item.get("label_box_scale", 1.0))
                         label_box_width_deg = float(item.get("label_box_width_deg", 2.0 * label_half_w_auto * label_box_scale))
-                        label_box_height_deg = float(item.get("label_box_height_deg", 2.0 * label_half_h_auto * label_box_scale))
+                        if "label_box_height_deg" in item:
+                            label_box_height_deg = float(item["label_box_height_deg"])
+                        elif uniform_label_box_height_px is not None:
+                            label_box_height_deg = self._text_box_height_deg_from_pixels(
+                                total_height_px=uniform_label_box_height_px,
+                                lat=img_top,
+                                img_half_height_deg=img_geo_half_height_deg,
+                                img_height_px=img_height_px,
+                            )
+                        else:
+                            label_box_height_deg = float(
+                                2.0 * label_half_h_auto * label_box_scale * float(label_box_height_scale)
+                            )
                         label_gap_deg = float(item.get("label_box_gap_deg", 0.0))
                         label_left_offset_deg = float(item.get("label_box_left_offset_deg", 0.0))
                         label_top_offset_deg = float(item.get("label_box_top_offset_deg", 0.0))
@@ -1116,7 +1240,19 @@ class Maps:
                         )
                         video_box_scale = float(item.get("video_box_scale", 1.0))
                         video_box_width_deg = float(item.get("video_box_width_deg", 2.0 * video_half_w_auto * video_box_scale))
-                        video_box_height_deg = float(item.get("video_box_height_deg", 2.0 * video_half_h_auto * video_box_scale))
+                        if "video_box_height_deg" in item:
+                            video_box_height_deg = float(item["video_box_height_deg"])
+                        elif uniform_video_box_height_px is not None:
+                            video_box_height_deg = self._text_box_height_deg_from_pixels(
+                                total_height_px=uniform_video_box_height_px,
+                                lat=img_bottom,
+                                img_half_height_deg=img_geo_half_height_deg,
+                                img_height_px=img_height_px,
+                            )
+                        else:
+                            video_box_height_deg = float(
+                                2.0 * video_half_h_auto * video_box_scale * float(video_box_height_scale)
+                            )
                         video_gap_deg = float(item.get("video_box_gap_deg", 0.0))
                         video_right_offset_deg = float(item.get("video_box_right_offset_deg", 0.0))
                         video_bottom_offset_deg = float(item.get("video_box_bottom_offset_deg", 0.0))
