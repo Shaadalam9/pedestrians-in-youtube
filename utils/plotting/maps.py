@@ -71,7 +71,7 @@ class Maps:
                 "approx_lon": -32.0,
                 "approx_lat": 50.0,
                 "img_half_width_deg": 16.0,
-                "img_half_height_deg": 6.0,
+                "img_half_height_deg": 8.0,
                 "label": "London, UK",
                 "label_dlon": -10.0,
                 "label_dlat": 7.0,
@@ -164,28 +164,93 @@ class Maps:
         ]
 
     @staticmethod
-    def _tile_edge_point(
+    def _mercator_lat_to_y(lat: float) -> float:
+        """Convert latitude in degrees to Web Mercator y."""
+        lat_clamped = max(min(float(lat), 85.05112878), -85.05112878)
+        lat_rad = np.deg2rad(lat_clamped)
+        return float(np.log(np.tan(np.pi / 4.0 + lat_rad / 2.0)))
+
+    @staticmethod
+    def _mercator_y_to_lat(y: float) -> float:
+        """Convert Web Mercator y back to latitude in degrees."""
+        lat_rad = 2.0 * np.arctan(np.exp(float(y))) - (np.pi / 2.0)
+        lat_deg = np.rad2deg(lat_rad)
+        return float(max(min(lat_deg, 85.05112878), -85.05112878))
+
+    @staticmethod
+    def _constant_screen_geo_bounds(center_lon: float,
+                                    center_lat: float,
+                                    half_width_deg: float,
+                                    half_height_deg: float,
+                                    keep_screen_size_constant: bool = True) -> tuple[float, float, float, float]:
+        """Return geographic bounds for a tile.
+
+        When keep_screen_size_constant is True, the longitude span remains fixed and
+        the latitude span is adjusted in Web Mercator space so the tile keeps the
+        same rendered screen height regardless of its latitude.
+        """
+        left = float(center_lon) - float(half_width_deg)
+        right = float(center_lon) + float(half_width_deg)
+
+        if not keep_screen_size_constant:
+            top = float(center_lat) + float(half_height_deg)
+            bottom = float(center_lat) - float(half_height_deg)
+            return left, right, top, bottom
+
+        nominal_half_height = max(float(half_height_deg), 0.0)
+        half_y = abs(Maps._mercator_lat_to_y(nominal_half_height) - Maps._mercator_lat_to_y(0.0))
+        center_y = Maps._mercator_lat_to_y(center_lat)
+        top = Maps._mercator_y_to_lat(center_y + half_y)
+        bottom = Maps._mercator_y_to_lat(center_y - half_y)
+        return left, right, top, bottom
+
+    @staticmethod
+    def _tile_edge_point_from_bounds(
         center_lon: float,
         center_lat: float,
         target_lon: float,
         target_lat: float,
-        half_width_deg: float,
-        half_height_deg: float,
+        left: float,
+        right: float,
+        top: float,
+        bottom: float,
     ) -> tuple[float, float]:
-        """Return the point where the line from the tile centre exits the tile rectangle."""
-        dx = target_lon - center_lon
-        dy = target_lat - center_lat
+        """Return the point where the line from the tile centre exits a rectangle."""
+        dx = float(target_lon) - float(center_lon)
+        dy = float(target_lat) - float(center_lat)
 
         if dx == 0 and dy == 0:
-            return center_lon, center_lat
+            return float(center_lon), float(center_lat)
 
-        tx = float("inf") if dx == 0 else half_width_deg / abs(dx)
-        ty = float("inf") if dy == 0 else half_height_deg / abs(dy)
-        t = min(tx, ty)
+        candidates: list[tuple[float, float, float]] = []
 
-        edge_lon = center_lon + t * dx
-        edge_lat = center_lat + t * dy
-        return edge_lon, edge_lat
+        if dx > 0:
+            t = (float(right) - float(center_lon)) / dx
+            y = float(center_lat) + t * dy
+            if t >= 0 and float(bottom) - 1e-9 <= y <= float(top) + 1e-9:
+                candidates.append((t, float(right), y))
+        elif dx < 0:
+            t = (float(left) - float(center_lon)) / dx
+            y = float(center_lat) + t * dy
+            if t >= 0 and float(bottom) - 1e-9 <= y <= float(top) + 1e-9:
+                candidates.append((t, float(left), y))
+
+        if dy > 0:
+            t = (float(top) - float(center_lat)) / dy
+            x = float(center_lon) + t * dx
+            if t >= 0 and float(left) - 1e-9 <= x <= float(right) + 1e-9:
+                candidates.append((t, x, float(top)))
+        elif dy < 0:
+            t = (float(bottom) - float(center_lat)) / dy
+            x = float(center_lon) + t * dx
+            if t >= 0 and float(left) - 1e-9 <= x <= float(right) + 1e-9:
+                candidates.append((t, x, float(bottom)))
+
+        if not candidates:
+            return float(center_lon), float(center_lat)
+
+        _, edge_lon, edge_lat = min(candidates, key=lambda row: row[0])
+        return float(edge_lon), float(edge_lat)
 
     @staticmethod
     def _point_geojson(lon: float, lat: float, text: str, property_name: str = "label") -> dict:
@@ -846,7 +911,7 @@ class Maps:
                 value = item.get("img_lat", item.get("approx_lat"))
                 return float(value) if value is not None else None
 
-            def _item_image_corners(item: dict):
+            def _item_image_bounds(item: dict):
                 lon0 = _item_anchor_lon(item)
                 lat0 = _item_anchor_lat(item)
                 if lon0 is None or lat0 is None:
@@ -854,12 +919,26 @@ class Maps:
 
                 half_width = float(item.get("img_half_width_deg", 10.0))
                 half_height = float(item.get("img_half_height_deg", 5.0))
+                keep_screen_size_constant = bool(item.get("keep_screen_size_constant", True))
+                return self._constant_screen_geo_bounds(
+                    center_lon=lon0,
+                    center_lat=lat0,
+                    half_width_deg=half_width,
+                    half_height_deg=half_height,
+                    keep_screen_size_constant=keep_screen_size_constant,
+                )
 
+            def _item_image_corners(item: dict):
+                bounds = _item_image_bounds(item)
+                if bounds is None:
+                    return None
+
+                left, right, top, bottom = bounds
                 return [
-                    [lon0 - half_width, lat0 + half_height],
-                    [lon0 + half_width, lat0 + half_height],
-                    [lon0 + half_width, lat0 - half_height],
-                    [lon0 - half_width, lat0 - half_height],
+                    [left, top],
+                    [right, top],
+                    [right, bottom],
+                    [left, bottom],
                 ]
 
             map_layers = list(fig.layout.map.layers) if getattr(fig.layout.map, "layers", None) else []
@@ -905,10 +984,12 @@ class Maps:
                 if anchor_lon is not None and anchor_lat is not None:
                     img_half_width_deg = float(item.get("img_half_width_deg", 10.0))
                     img_half_height_deg = float(item.get("img_half_height_deg", 5.0))
-                    img_left = anchor_lon - img_half_width_deg
-                    img_right = anchor_lon + img_half_width_deg
-                    img_top = anchor_lat + img_half_height_deg
-                    img_bottom = anchor_lat - img_half_height_deg
+                    bounds = _item_image_bounds(item)
+                    if bounds is None:
+                        continue
+                    img_left, img_right, img_top, img_bottom = bounds
+                    img_geo_half_width_deg = 0.5 * (img_right - img_left)
+                    img_geo_half_height_deg = 0.5 * (img_top - img_bottom)
                     img_size = item.get("_img_size_px")
                     img_width_px = None
                     img_height_px = None
@@ -938,8 +1019,8 @@ class Maps:
                             text=str(label),
                             font_size=label_font_size,
                             lat=img_top,
-                            img_half_width_deg=img_half_width_deg,
-                            img_half_height_deg=img_half_height_deg,
+                            img_half_width_deg=img_geo_half_width_deg,
+                            img_half_height_deg=img_geo_half_height_deg,
                             img_width_px=img_width_px,
                             img_height_px=img_height_px,
                         )
@@ -970,8 +1051,8 @@ class Maps:
                             text_position=label_text_position,
                             text_pad_x_deg=label_text_pad_x_deg,
                             text_pad_y_deg=label_text_pad_y_deg,
-                            img_half_width_deg=img_half_width_deg,
-                            img_half_height_deg=img_half_height_deg,
+                            img_half_width_deg=img_geo_half_width_deg,
+                            img_half_height_deg=img_geo_half_height_deg,
                             img_width_px=img_width_px,
                             img_height_px=img_height_px,
                         )
@@ -990,8 +1071,8 @@ class Maps:
                             text=str(video),
                             font_size=video_font_size,
                             lat=img_bottom,
-                            img_half_width_deg=img_half_width_deg,
-                            img_half_height_deg=img_half_height_deg,
+                            img_half_width_deg=img_geo_half_width_deg,
+                            img_half_height_deg=img_geo_half_height_deg,
                             img_width_px=img_width_px,
                             img_height_px=img_height_px,
                         )
@@ -1022,8 +1103,8 @@ class Maps:
                             text_position=video_text_position,
                             text_pad_x_deg=video_text_pad_x_deg,
                             text_pad_y_deg=video_text_pad_y_deg,
-                            img_half_width_deg=img_half_width_deg,
-                            img_half_height_deg=img_half_height_deg,
+                            img_half_width_deg=img_geo_half_width_deg,
+                            img_half_height_deg=img_geo_half_height_deg,
                             img_width_px=img_width_px,
                             img_height_px=img_height_px,
                         )
@@ -1054,16 +1135,20 @@ class Maps:
                     lon_city = float(rows["lon"].iloc[0])
                     lat_city = float(rows["lat"].iloc[0])
 
-                    half_w = float(item.get("img_half_width_deg", 10.0))
-                    half_h = float(item.get("img_half_height_deg", 5.0))
+                    bounds = _item_image_bounds(item)
+                    if bounds is None:
+                        continue
+                    img_left, img_right, img_top, img_bottom = bounds
 
-                    edge_lon, edge_lat = self._tile_edge_point(
+                    edge_lon, edge_lat = self._tile_edge_point_from_bounds(
                         center_lon=anchor_lon,
                         center_lat=anchor_lat,
                         target_lon=lon_city,
                         target_lat=lat_city,
-                        half_width_deg=half_w,
-                        half_height_deg=half_h,
+                        left=img_left,
+                        right=img_right,
+                        top=img_top,
+                        bottom=img_bottom,
                     )
 
                     fig.add_trace(
