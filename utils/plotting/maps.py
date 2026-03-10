@@ -41,14 +41,10 @@ class Maps:
                 "label_dlon": -10.0,
                 "label_dlat": 9.5,
                 "label_font_size": 60,
-                "label_box_width_deg": 18.0,
-                "label_box_height_deg": 3.5,
                 "video": "0xP7JgDiBb8",
                 "video_dlon": 10.0,
                 "video_dlat": -9.5,
                 "video_font_size": 60,
-                "video_box_width_deg": 12.0,
-                "video_box_height_deg": 3.5,
             },
             {
                 "city": "Seoul",
@@ -62,14 +58,10 @@ class Maps:
                 "label_dlon": -6.0,
                 "label_dlat": 9.5,
                 "label_font_size": 60,
-                "label_box_width_deg": 16.0,
-                "label_box_height_deg": 3.5,
                 "video": "qOx5CwCrN9k",
                 "video_dlon": 8.0,
                 "video_dlat": -9.5,
                 "video_font_size": 60,
-                "video_box_width_deg": 12.0,
-                "video_box_height_deg": 3.5,
             },
             {
                 "city": "London",
@@ -83,14 +75,10 @@ class Maps:
                 "label_dlon": -10.0,
                 "label_dlat": 7.0,
                 "label_font_size": 60,
-                "label_box_width_deg": 12.0,
-                "label_box_height_deg": 3.5,
                 "video": "QI4_dGvZ5yE",
                 "video_dlon": 10.0,
                 "video_dlat": -7.0,
                 "video_font_size": 60,
-                "video_box_width_deg": 12.0,
-                "video_box_height_deg": 3.5,
             },
             {
                 "city": "New York",
@@ -104,14 +92,10 @@ class Maps:
                 "label_dlon": -9.0,
                 "label_dlat": 9.0,
                 "label_font_size": 60,
-                "label_box_width_deg": 13.0,
-                "label_box_height_deg": 3.5,
                 "video": "_Wyg213IZDI",
                 "video_dlon": 9.0,
                 "video_dlat": -9.0,
                 "video_font_size": 60,
-                "video_box_width_deg": 12.0,
-                "video_box_height_deg": 3.5,
             },
             {
                 "city": "Sydney",
@@ -125,14 +109,10 @@ class Maps:
                 "label_dlon": -7.5,
                 "label_dlat": 9.5,
                 "label_font_size": 60,
-                "label_box_width_deg": 16.0,
-                "label_box_height_deg": 3.5,
                 "video": "wMu6Va5PhGY",
                 "video_dlon": 9.0,
                 "video_dlat": -9.5,
                 "video_font_size": 60,
-                "video_box_width_deg": 12.0,
-                "video_box_height_deg": 3.5,
             },
             {
                 "city": "Sao Paulo",
@@ -146,14 +126,10 @@ class Maps:
                 "label_dlon": -7.5,
                 "label_dlat": 8.5,
                 "label_font_size": 60,
-                "label_box_width_deg": 16.0,
-                "label_box_height_deg": 3.5,
                 "video": "Ic2ERD7kt4o",
                 "video_dlon": 10.0,
                 "video_dlat": -8.5,
                 "video_font_size": 60,
-                "video_box_width_deg": 12.0,
-                "video_box_height_deg": 3.5,
             },
         ]
 
@@ -250,76 +226,32 @@ class Maps:
         )
 
     @staticmethod
-    def _candidate_font_paths() -> list[str]:
-        """Return likely scalable font paths across common operating systems."""
-        root_dir = getattr(common, "root_dir", None)
-        root_dir = str(root_dir) if root_dir is not None else ""
+    def _load_text_font(font_size: int):
+        """Load a scalable font with sensible cross platform fallbacks."""
+        size = max(int(font_size), 1)
+
         candidates = [
-            os.environ.get("MAPS_FONT_PATH", ""),
-            os.path.join(root_dir, "fonts", "DejaVuSans-Bold.ttf") if root_dir else "",
-            os.path.join(root_dir, "fonts", "DejaVuSans.ttf") if root_dir else "",
             "DejaVuSans-Bold.ttf",
             "DejaVuSans.ttf",
-            "Arial.ttf",
-            "arial.ttf",
+            "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
+            "/System/Library/Fonts/Supplemental/Arial.ttf",
+            "/Library/Fonts/Arial.ttf",
+            "/System/Library/Fonts/SFNS.ttf",
             "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
             "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-            "/usr/local/share/fonts/DejaVuSans-Bold.ttf",
-            "/usr/local/share/fonts/DejaVuSans.ttf",
-            "/Library/Fonts/Arial.ttf",
-            "/Library/Fonts/Arial Unicode.ttf",
-            "/System/Library/Fonts/Supplemental/Arial.ttf",
-            "C:/Windows/Fonts/arialbd.ttf",
             "C:/Windows/Fonts/arial.ttf",
+            "C:/Windows/Fonts/ARIAL.TTF",
         ]
-        return [candidate for candidate in candidates if candidate]
 
-    @staticmethod
-    def _load_text_font(font_size: int):
-        """Load a scalable font so font_size visibly changes the rendered text."""
-        size = max(int(font_size), 1)
-        for candidate in Maps._candidate_font_paths():
+        for path in candidates:
             try:
-                return ImageFont.truetype(candidate, size)
+                return ImageFont.truetype(path, size)
             except Exception:
-                continue
-        return ImageFont.load_default()
+                pass
 
-    @staticmethod
-    def _parse_color_rgba(color_value, default=(255, 255, 255, 0)) -> tuple[int, int, int, int]:
-        """Parse a Pillow colour string into an RGBA tuple."""
-        if color_value is None:
-            return default
-
-        text_value = str(color_value).strip()
-        if not text_value:
-            return default
-
-        try:
-            rgba = ImageColor.getcolor(text_value, "RGBA")
-            if len(rgba) == 4:  # type: ignore
-                return rgba  # type: ignore
-            return rgba + (255,)  # type: ignore
-        except Exception:
-            lower = text_value.lower()
-            if lower.startswith("rgba(") and lower.endswith(")"):
-                parts = [part.strip() for part in text_value[5:-1].split(",")]
-                if len(parts) == 4:
-                    try:
-                        red = int(float(parts[0]))
-                        green = int(float(parts[1]))
-                        blue = int(float(parts[2]))
-                        alpha_raw = float(parts[3])
-                        alpha = int(round(255.0 * alpha_raw)) if alpha_raw <= 1.0 else int(round(alpha_raw))
-                        return (
-                            max(0, min(red, 255)),
-                            max(0, min(green, 255)),
-                            max(0, min(blue, 255)),
-                            max(0, min(alpha, 255)),
-                        )
-                    except Exception:
-                        return default
-        return default
+        raise RuntimeError(
+            "No scalable TrueType font found. Install DejaVu Sans or Arial, or add a valid font path."
+        )
 
     @staticmethod
     def _measure_text_pixels(text: str, font_size: int) -> tuple[int, int]:
@@ -446,11 +378,10 @@ class Maps:
         img = Image.new("RGBA", (width_px, height_px), (255, 255, 255, 0))
         draw = ImageDraw.Draw(img)
 
-        fill_rgba = Maps._parse_color_rgba(fill_color, default=(255, 255, 255, 0))
-        outline_rgba = Maps._parse_color_rgba(line_color, default=(0, 0, 0, 255))
+        fill_rgba = (255, 255, 255, 0)
         draw.rectangle(
             [(0, 0), (width_px - 1, height_px - 1)],
-            outline=outline_rgba,
+            outline=ImageColor.getrgb(line_color),
             fill=fill_rgba,
             width=max(int(line_width), 1),
         )
@@ -459,34 +390,32 @@ class Maps:
         if text_value:
             font = Maps._load_text_font(font_size)
             bbox = draw.textbbox((0, 0), text_value, font=font)
+            bbox_left = int(np.floor(bbox[0]))
+            bbox_top = int(np.floor(bbox[1]))
             text_w = max(int(np.ceil(bbox[2] - bbox[0])), 1)
             text_h = max(int(np.ceil(bbox[3] - bbox[1])), 1)
             vertical, horizontal = Maps._parse_text_position(text_position)
 
             if horizontal == "left":
-                x = int(text_pad_x_px)
+                x_box = int(text_pad_x_px)
             elif horizontal == "right":
-                x = int(width_px - text_pad_x_px - text_w)
+                x_box = int(width_px - text_pad_x_px - text_w)
             else:
-                x = int(round((width_px - text_w) / 2.0))
+                x_box = int(round((width_px - text_w) / 2.0))
 
             if vertical == "top":
-                y = int(text_pad_y_px)
+                y_box = int(text_pad_y_px)
             elif vertical == "bottom":
-                y = int(height_px - text_pad_y_px - text_h)
+                y_box = int(height_px - text_pad_y_px - text_h)
             else:
-                y = int(round((height_px - text_h) / 2.0))
+                y_box = int(round((height_px - text_h) / 2.0))
 
-            x = max(0, min(x, width_px - text_w))
-            y = max(0, min(y, height_px - text_h))
-            text_x = int(round(x - bbox[0]))
-            text_y = int(round(y - bbox[1]))
-            draw.text(
-                (text_x, text_y),
-                text_value,
-                font=font,
-                fill=Maps._parse_color_rgba(text_color, default=(0, 0, 0, 255)),
-            )
+            x_box = max(0, min(x_box, max(width_px - text_w, 0)))
+            y_box = max(0, min(y_box, max(height_px - text_h, 0)))
+
+            draw_x = x_box - bbox_left
+            draw_y = y_box - bbox_top
+            draw.text((draw_x, draw_y), text_value, font=font, fill=ImageColor.getrgb(text_color))
 
         return img
 
@@ -594,8 +523,6 @@ class Maps:
             raise KeyError(f"Missing column: {footage_col}")
 
         df_plot = df_plot.dropna(subset=["lat", "lon"]).copy()
-        if df_plot.empty:
-            return
 
         df_plot["footage_hours"] = pd.to_numeric(df_plot[footage_col], errors="coerce") / 3600.0
         df_plot["footage_hours"] = df_plot["footage_hours"].fillna(0.0)
@@ -782,7 +709,7 @@ class Maps:
                         img_height_px = int(img_size[1])
 
                     if label:
-                        label_font_size = int(item.get("label_font_size", 12))
+                        label_font_size = int(item.get("label_font_size", 60))
                         label_half_w_auto, label_half_h_auto = self._text_box_half_sizes(
                             text=str(label),
                             font_size=label_font_size,
@@ -911,7 +838,6 @@ class Maps:
                     )
 
         io_class.save_plotly_figure(fig, file_name, save_final=save_final)
-        return fig
 
     def mapbox_map(self, df, density_col=None, density_radius=30, hover_data=None, hover_name=None,
                    marker_size=5, file_name="mapbox_map", save_final=True):
