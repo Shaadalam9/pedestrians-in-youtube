@@ -3,6 +3,7 @@ import pickle
 import numpy as np
 import pandas as pd
 import plotly.express as px
+import plotly.io as pio
 import plotly.graph_objects as go
 from custom_logger import CustomLogger
 from utils.core.metadata import MetaData
@@ -11,6 +12,7 @@ from utils.plotting.io import IO
 logger = CustomLogger(__name__)  # use custom logger
 metadata_class = MetaData()
 io_class = IO()
+pio.kaleido.scope.mathjax = None
 
 
 class Distributions:
@@ -69,7 +71,12 @@ class Distributions:
             all_values = []
             for key, values in nested_dict.items():
                 city, lat, long, cond = key.split("_")
-                country = metadata_class.get_value(df_mapping, "city", city, "lat", float(lat), "country")
+                country = metadata_class.get_value(df_mapping,  # type: ignore
+                                                   "city",
+                                                   city,
+                                                   "lat",
+                                                   float(lat),
+                                                   "country")
                 if country is not None:
                     if no_of_crossing[f"{country}_{cond}"] >= common.get_configs("min_crossing_detect"):
                         all_values.extend(values)
@@ -138,16 +145,18 @@ class Distributions:
             fig.show()
 
     def video_histogram_by_month(self, df, video_count_col='video_count', upload_date_col='upload_date',
-                                 xaxis_title='Upload Month', yaxis_title='Number of Videos',
+                                 xaxis_title='Upload Year', yaxis_title='Number of Videos',
                                  file_name=None, save_file=False, font_family=None, font_size=None,
                                  title=None):
         """
-        Output a histogram of video counts by the month of upload_date, where upload_date is a string list of dates in
-        DDMMYYYY format, potentially including None or 7 digit dates. Each month is a separate bar, with years shown on
-        the x axis.
+        Output a histogram of video counts by 3 month bins of upload_date, where upload_date is a string list of dates
+        in DDMMYYYY format, potentially including None or 7 digit dates.
 
-        This version forces true calendar month bins aligned to the first day of each month by computing monthly counts
-        explicitly and plotting a bar chart on month start timestamps.
+        Each bar represents a calendar 3 month period:
+        Jan to Mar, Apr to Jun, Jul to Sep, Oct to Dec
+
+        The y axis is logarithmic, but the plotted values are the absolute video counts.
+        Note: zero counts cannot be displayed on a true log axis.
         """
         if len(df) == 0:
             logger.error('DataFrame is empty.')
@@ -164,7 +173,7 @@ class Distributions:
         df = df.copy()
 
         # Log data summary
-        logger.info(f'Creating histogram for {video_count_col} by month of {upload_date_col}. Rows: {len(df)}')
+        logger.info(f'Creating histogram for {video_count_col} by 3 month bins of {upload_date_col}. Rows: {len(df)}')
 
         # Clean data
         df = df[df[video_count_col].notna() & (df[video_count_col] >= 0)]
@@ -258,55 +267,99 @@ class Distributions:
             logger.error('No valid dates after parsing.')
             return -1
 
-        # Month start timestamps (first day of each month at 00:00)
-        df_exploded['month_start'] = df_exploded['datetime'].dt.to_period('M').dt.to_timestamp(how='start')
+        # Quarter start timestamps aligned to Jan, Apr, Jul, Oct
+        df_exploded['quarter_start'] = df_exploded['datetime'].dt.to_period('Q').dt.start_time
 
-        # Count per month (each parsed date counts as one video upload instance)
-        month_counts = (
+        # Count per 3 month bin
+        quarter_counts = (
             df_exploded
-            .groupby('month_start')
+            .groupby('quarter_start')
             .size()
             .rename('video_count')
             .reset_index()
-            .sort_values('month_start')
+            .sort_values('quarter_start')
         )
 
-        if len(month_counts) == 0:
-            logger.error('No monthly counts could be computed.')
+        if len(quarter_counts) == 0:
+            logger.error('No 3 month counts could be computed.')
             return -1
 
-        # Fill missing months so bins are exact and continuous
-        full_month_index = pd.date_range(
-            start=month_counts['month_start'].min(),
-            end=month_counts['month_start'].max(),
-            freq='MS'
+        # Fill missing quarter bins so bins are exact and continuous
+        full_quarter_index = pd.date_range(
+            start=quarter_counts['quarter_start'].min(),
+            end=quarter_counts['quarter_start'].max(),
+            freq='QS'
         )
-        month_counts = (
-            month_counts
-            .set_index('month_start')
-            .reindex(full_month_index, fill_value=0)
-            .rename_axis('month_start')
+        quarter_counts = (
+            quarter_counts
+            .set_index('quarter_start')
+            .reindex(full_quarter_index, fill_value=0)
+            .rename_axis('quarter_start')
             .reset_index()
         )
 
-        # Build year ticks (label first month present in each year)
-        month_counts['year'] = month_counts['month_start'].dt.year
-        unique_years = sorted(month_counts['year'].dropna().unique())
+        # Build year ticks at each year
+        min_year = int(quarter_counts['quarter_start'].dt.year.min())
+        max_year = int(quarter_counts['quarter_start'].dt.year.max())
 
-        year_positions = []
-        year_labels = []
-        for year in unique_years:
-            first_month_in_year = month_counts.loc[month_counts['year'] == year, 'month_start'].min()
-            if pd.notna(first_month_in_year):
-                year_positions.append(first_month_in_year)
-                year_labels.append(str(int(year)))
+        year_positions = pd.date_range(
+            start=f'{min_year}-01-01',
+            end=f'{max_year}-01-01',
+            freq='YS'
+        ).tolist()
+        year_labels = [str(d.year) for d in year_positions]
 
-        # Create bar chart (exact month bins)
+        # Hover label
+        quarter_counts['quarter_end'] = quarter_counts['quarter_start'] + pd.DateOffset(months=2)
+        quarter_counts['hover_label'] = quarter_counts.apply(
+            lambda row: f"{row['quarter_start'].strftime('%b')} to {row['quarter_end'].strftime('%b %Y')}",
+            axis=1
+        )
+
+        # True log axis cannot display zero
+        zero_bins = int((quarter_counts['video_count'] == 0).sum())
+        if zero_bins > 0:
+            logger.warning(
+                f'{zero_bins} three month bins have zero count and cannot be displayed on a logarithmic axis.'
+            )
+
+        quarter_counts['plot_count'] = quarter_counts['video_count'].where(
+            quarter_counts['video_count'] > 0,
+            np.nan
+        )
+
+        # Build custom y axis log ticks with full labels: 1, 2, 5, 10, 20, 50, 100, 200, 500, ...
+        positive_counts = quarter_counts.loc[quarter_counts['video_count'] > 0, 'video_count']
+        if len(positive_counts) == 0:
+            logger.error('No positive counts available for logarithmic plotting.')
+            return -1
+
+        max_count = int(positive_counts.max())
+        max_power = int(np.floor(np.log10(max_count))) if max_count > 0 else 0
+
+        y_tickvals = []
+        for power in range(max_power + 2):
+            for multiplier in [1, 2, 5]:
+                tick_value = multiplier * (10 ** power)
+                if tick_value <= max_count:
+                    y_tickvals.append(tick_value)
+
+        if not y_tickvals:
+            y_tickvals = [1]
+
+        y_ticktext = [str(int(v)) for v in y_tickvals]
+
+        # Create bar chart
         try:
             fig = go.Figure(
                 go.Bar(
-                    x=month_counts['month_start'],
-                    y=month_counts['video_count']
+                    x=quarter_counts['quarter_start'],
+                    y=quarter_counts['plot_count'],
+                    customdata=quarter_counts[['video_count', 'hover_label']],
+                    hovertemplate=(
+                        'Period: %{customdata[1]}<br>'
+                        'Video count: %{customdata[0]}<extra></extra>'
+                    )
                 )
             )
         except Exception as e:
@@ -316,9 +369,9 @@ class Distributions:
         if title is None:
             title = ''
 
-        # Update layout
+        # Update layout using the original sizing logic
         fig.update_layout(
-            template='plotly',
+            template='simple_white',
             title=title,
             xaxis_title=xaxis_title,
             yaxis_title=yaxis_title,
@@ -326,18 +379,38 @@ class Distributions:
             margin=dict(l=10, r=10, t=50, b=10),
             showlegend=False,
             bargap=0.1,
+            plot_bgcolor='white',
+            paper_bgcolor='white',
             xaxis=dict(
                 type='date',
                 tickmode='array',
                 tickvals=year_positions,
                 ticktext=year_labels,
-                tickangle=45,
-                title=dict(font=dict(size=(font_size or 12) + 10)),
-                tickfont=dict(size=(font_size or 12) + 4),
+                tickangle=0,
+                ticks='outside',
+                ticklen=5,
+                tickwidth=1,
+                showline=True,
+                linecolor='black',
+                linewidth=1,
+                title=dict(font=dict(size=(font_size or 12) + 15)),
+                tickfont=dict(size=(font_size or 12) + 9),
+                showgrid=False
             ),
             yaxis=dict(
-                title=dict(font=dict(size=(font_size or 12) + 10)),
-                tickfont=dict(size=(font_size or 12) + 4),
+                type='log',
+                tickmode='array',
+                tickvals=y_tickvals,
+                ticktext=y_ticktext,
+                ticks='outside',
+                ticklen=5,
+                tickwidth=1,
+                showline=True,
+                linecolor='black',
+                linewidth=1,
+                showgrid=True,
+                title=dict(font=dict(size=(font_size or 12) + 15)),
+                tickfont=dict(size=(font_size or 12) + 9)
             )
         )
 
