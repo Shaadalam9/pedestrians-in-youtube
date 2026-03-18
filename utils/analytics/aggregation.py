@@ -12,20 +12,20 @@ class Aggregation:
         Drops unnecessary location-specific columns before processing.
 
         Parameters:
-            df (pd.DataFrame): Original DataFrame with city-level traffic and demographic data.
+            df (pd.DataFrame): Original DataFrame with locality-level traffic and demographic data.
 
         Returns:
             pd.DataFrame: Aggregated DataFrame grouped by ISO3 codes.
         """
 
         # Drop location-specific columns
-        drop_columns = ['id', 'city', 'city_aka', 'state', 'lat', 'lon', 'gmp', 'population_city', 'traffic_index',
-                        'upload_date', 'speed_crossing_day_city', 'speed_crossing_night_city',
-                        'speed_crossing_day_night_city_avg', 'time_crossing_day_city',
-                        'time_crossing_night_city', 'time_crossing_day_night_city_avg',
-                        'with_trf_light_day_city', 'with_trf_light_night_city',
-                        'without_trf_light_day_city', 'without_trf_light_night_city',
-                        'crossing_detected_city', 'channel']
+        drop_columns = ['id', 'locality', 'locality_aka', 'state', 'lat', 'lon', 'gmp', 'population_locality',
+                        'traffic_index', 'upload_date', 'speed_crossing_day_locality', 'speed_crossing_night_locality',
+                        'speed_crossing_day_night_locality_avg', 'time_crossing_day_locality',
+                        'time_crossing_night_locality', 'time_crossing_day_night_locality_avg',
+                        'with_trf_light_day_locality', 'with_trf_light_night_locality',
+                        'without_trf_light_day_locality', 'without_trf_light_night_locality',
+                        'crossing_detected_locality', 'channel']
 
         static_columns = [
             'country', 'continent', 'population_country', 'traffic_mortality',

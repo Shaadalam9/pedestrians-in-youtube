@@ -50,29 +50,29 @@ class Tools():
             channel_list = [ch.strip() for ch in channel_list]
             return len(set(channel_list))
 
-    def compute_avg_variable_city(self, variable_city):
-        """Computes the average value for each city-condition entry in a nested dictionary.
+    def compute_avg_variable_locality(self, variable_locality):
+        """Computes the average value for each locality-condition entry in a nested dictionary.
 
-        This method processes a dictionary where each key represents a city-condition
-        (e.g., "{city}_{lat}_{long}_{condition}") and each value is another dictionary
+        This method processes a dictionary where each key represents a locality-condition
+        (e.g., "{locality}_{lat}_{long}_{condition}") and each value is another dictionary
         containing numeric measurements. It calculates the average of the inner
         dictionary's values and stores it in a new dictionary under the same key.
 
         Args:
-            variable_city (dict): Dictionary of city-condition data, where:
-                - Keys (str): "{city}_{lat}_{long}_{condition}".
+            variable_locality (dict): Dictionary of locality-condition data, where:
+                - Keys (str): "{locality}_{lat}_{long}_{condition}".
                 - Values (dict): Inner dictionary containing numeric measurements.
 
         Returns:
-            dict: A dictionary with the same keys as `variable_city`, but with
+            dict: A dictionary with the same keys as `variable_locality`, but with
             average values (float) instead of dictionaries.
 
         Example:
-            >>> variable_city = {
+            >>> variable_locality = {
             ...     "Paris_48.85_2.35_0": {"a": 10, "b": 20},
             ...     "Paris_48.85_2.35_1": {"a": 30, "b": 50}
             ... }
-            >>> compute_avg_variable_city(variable_city)
+            >>> compute_avg_variable_locality(variable_locality)
             {
                 "Paris_48.85_2.35_0": 15.0,
                 "Paris_48.85_2.35_1": 40.0
@@ -80,8 +80,8 @@ class Tools():
         """
         avg_dict = {}
 
-        # Loop through each city-condition key and its inner dictionary
-        for key, inner_dict in variable_city.items():
+        # Loop through each locality-condition key and its inner dictionary
+        for key, inner_dict in variable_locality.items():
             # Extract the numeric values from the inner dictionary
             values = list(inner_dict.values())
 

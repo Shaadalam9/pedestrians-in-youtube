@@ -49,7 +49,7 @@ class Distributions:
         nested_dict = data_tuple[data_index]
 
         if name == "speed" and raw is True:
-            all_values = [speed for city in nested_dict.values() for video in city.values() for speed in video.values()]  # noqa:E501
+            all_values = [speed for locality in nested_dict.values() for video in locality.values() for speed in video.values()]  # noqa:E501
             all_values = [value for value in all_values
                           if (min_threshold is None or value >= min_threshold)
                           and (max_threshold is None or value <= max_threshold)]
@@ -70,10 +70,10 @@ class Distributions:
             no_of_crossing = data_tuple[35]
             all_values = []
             for key, values in nested_dict.items():
-                city, lat, long, cond = key.split("_")
+                locality, lat, long, cond = key.split("_")
                 country = metadata_class.get_value(df_mapping,  # type: ignore
-                                                   "city",
-                                                   city,
+                                                   "locality",
+                                                   locality,
                                                    "lat",
                                                    float(lat),
                                                    "country")
@@ -231,7 +231,7 @@ class Distributions:
         if not invalid_rows.empty:
             logger.warning(f'Invalid dates found in {len(invalid_rows)} rows. Sample invalid dates:')
             for idx, row in invalid_rows.head().iterrows():
-                logger.warning(f'Row {idx}, city {row.get("city", "unknown")}: Invalid dates {row["invalid_dates"]}')
+                logger.warning(f'Row {idx}, locality {row.get("locality", "unknown")}: Invalid dates {row["invalid_dates"]}')  # noqa:E501
 
         # Verify video_count matches length of parsed_dates
         df['date_count'] = df['parsed_dates'].apply(len)
@@ -436,7 +436,7 @@ class Distributions:
 
         This method loads results from a pickle file, extracts values per country,
         and creates violin plots for visualizing distributions.
-        It groups the data by country (based on a city-lat mapping) and displays
+        It groups the data by country (based on a locality-lat mapping) and displays
         box-and-mean lines within each violin.
 
         Args:
@@ -444,7 +444,7 @@ class Distributions:
             name (str): Name associated with the dataset or plot.
             min_threshold (float): Minimum value filter for data (currently unused).
             max_threshold (float): Maximum value filter for data (currently unused).
-            df_mapping (pandas.DataFrame): DataFrame for mapping city/lat to country.
+            df_mapping (pandas.DataFrame): DataFrame for mapping locality/lat to country.
             color (str, optional): Color for violin plots. Defaults to None.
             pretty_text (bool, optional): If True, formats axis labels nicely. Defaults to False.
             xaxis_title (str, optional): Custom title for the x-axis. Defaults to "Country".
@@ -471,11 +471,11 @@ class Distributions:
 
         values = {}
 
-        # Loop through each (city, lat, ...) key and collect values grouped by country
-        for city_lat_long_cond, inner_dict in nested_dict.items():
-            city, lat, _, _ = city_lat_long_cond.split("_")
+        # Loop through each (locality, lat, ...) key and collect values grouped by country
+        for locality_lat_long_cond, inner_dict in nested_dict.items():
+            locality, lat, _, _ = locality_lat_long_cond.split("_")
             # Get country from mapping DataFrame
-            country = metadata_class.get_value(df_mapping, "city", city, "lat", float(lat), "country")
+            country = metadata_class.get_value(df_mapping, "locality", locality, "lat", float(lat), "country")
             if country not in values:
                 values[country] = []  # Initialize a list for each country
             # Collect all values from the nested structure

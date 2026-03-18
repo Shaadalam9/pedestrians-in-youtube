@@ -14,9 +14,9 @@ class Geo:
         pass
 
     @staticmethod
-    def find_city_id(df, video_id, start_time):
+    def find_locality_id(df, video_id, start_time):
         """
-        Find the city identifier (row 'id') associated with a given video ID and start time.
+        Find the locality identifier (row 'id') associated with a given video ID and start time.
 
         This function iterates through a DataFrame where each row may reference multiple videos and
         corresponding start times (stored as lists). It returns the 'id' value from the row where both
@@ -26,14 +26,14 @@ class Geo:
             df (pd.DataFrame): DataFrame containing at least:
                                - 'videos': a string representing a list of video IDs.
                                - 'start_time': a string representing a list of lists of start times.
-                               - 'id': unique identifier for each row (e.g., city or condition group).
+                               - 'id': unique identifier for each row (e.g., locality or condition group).
             video_id (str): The video filename or identifier to search for.
             start_time (float or int): The specific start time to match within the corresponding list.
 
         Returns:
             The value of the 'id' field in the matching row, or None if no match is found.
         """
-        logger.debug(f"{video_id}: looking for city, start_time={start_time}.")
+        logger.debug(f"{video_id}: looking for locality, start_time={start_time}.")
 
         # Iterate rows (Polars)
         for row in df.select(["id", "videos", "start_time"]).iter_rows(named=True):
@@ -83,16 +83,16 @@ class Geo:
         return None
 
     @staticmethod
-    def get_coordinates(city, state, country):
+    def get_coordinates(locality, state, country):
         """
-        Retrieve geographic coordinates (latitude and longitude) for a given city, state, and country.
+        Retrieve geographic coordinates (latitude and longitude) for a given locality, state, and country.
 
         The function uses the Nominatim geocoding service from the geopy library. It first constructs a location
-        query string based on the provided city, optional state, and country. A unique user-agent is generated
+        query string based on the provided locality, optional state, and country. A unique user-agent is generated
         for each call to avoid getting blocked by the server.
 
         Args:
-            city (str): Name of the city.
+            locality (str): Name of the locality.
             state (str or None): Name of the state or province. Optional; can be None or 'nan'.
             country (str): Name of the country.
 
@@ -113,16 +113,16 @@ class Geo:
         try:
             # Form the query string depending on whether a valid state value is provided
             if state and str(state).lower() != 'nan':
-                location_query = f"{city}, {state}, {country}"  # Combine city, state and country
+                location_query = f"{locality}, {state}, {country}"  # Combine locality, state and country
             else:
-                location_query = f"{city}, {country}"  # Combine city and country
+                location_query = f"{locality}, {country}"  # Combine locality and country
             location = geolocator.geocode(location_query, timeout=2)  # type: ignore # Set a 2-second timeout
 
             if location:
                 return location.latitude, location.longitude  # type: ignore
             else:
                 logger.error(f"Failed to geocode {location_query}")
-                return None, None  # Return None if city is not found
+                return None, None  # Return None if locality is not found
 
         except GeocoderTimedOut:
             # Handle timeout errors when the request takes too long
@@ -130,4 +130,4 @@ class Geo:
         except GeocoderUnavailable:
             # Handle cases where the geocoding service is not available
             logger.error(f"Geocoding server could not be reached for {location_query}.")
-            return None, None  # Return None if city is not found
+            return None, None  # Return None if locality is not found

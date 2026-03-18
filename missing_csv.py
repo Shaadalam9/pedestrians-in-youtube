@@ -34,7 +34,7 @@ BBOX_OUTPUT_DIRS = common.get_configs("data")
 # =========================
 # FLAG: print removed cities
 # =========================
-PRINT_REMOVED_CITIES = False  # set True to print which city rows are dropped
+PRINT_REMOVED_CITIES = False  # set True to print which locality rows are dropped
 
 
 # =========================
@@ -177,9 +177,9 @@ def build_remaining() -> None:
         if c not in df.columns:
             raise ValueError(f"Missing required column: {c}")
 
-    # Only enforce city column if printing is enabled (keeps change minimal)
-    if PRINT_REMOVED_CITIES and "city" not in df.columns:
-        raise ValueError("Missing required column: city (required when PRINT_REMOVED_CITIES=True)")
+    # Only enforce locality column if printing is enabled (keeps change minimal)
+    if PRINT_REMOVED_CITIES and "locality" not in df.columns:
+        raise ValueError("Missing required column: locality (required when PRINT_REMOVED_CITIES=True)")
 
     has_vehicle = "vehicle_type" in df.columns
     has_upload = "upload_date" in df.columns
@@ -190,7 +190,7 @@ def build_remaining() -> None:
     kept_segments = 0
     dropped_rows = 0
 
-    removed_cities: List[str] = []  # collects city names of dropped rows (optional)
+    removed_cities: List[str] = []  # collects locality names of dropped rows (optional)
 
     for _, row in df.iterrows():
         videos = parse_bracketed_str_list(row.get("videos", ""))
@@ -198,7 +198,7 @@ def build_remaining() -> None:
         if n == 0:
             dropped_rows += 1
             if PRINT_REMOVED_CITIES:
-                removed_cities.append(str(row.get("city", "")).strip())
+                removed_cities.append(str(row.get("locality", "")).strip())
             continue
 
         st_ll = normalize_len(parse_list_of_lists(row.get("start_time", "")), n, [])
@@ -264,7 +264,7 @@ def build_remaining() -> None:
         if not new_videos:
             dropped_rows += 1
             if PRINT_REMOVED_CITIES:
-                removed_cities.append(str(row.get("city", "")).strip())
+                removed_cities.append(str(row.get("locality", "")).strip())
             continue
 
         out_row = dict(row)
@@ -297,7 +297,7 @@ def build_remaining() -> None:
         # Print unique cities while preserving first-seen order
         seen: Set[str] = set()
         for c in removed_cities:
-            c = c or "(missing city)"
+            c = c or "(missing locality)"
             if c in seen:
                 continue
             seen.add(c)

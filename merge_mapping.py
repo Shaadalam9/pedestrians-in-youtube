@@ -65,8 +65,8 @@ for file in glob.glob('mapping-*.csv'):
             new_df[col] = new_df[col].apply(parse_flat_list)
 
     for _, new_row in new_df.iterrows():
-        city = new_row['city']
-        match = main_df[main_df['city'] == city]
+        locality = new_row['locality']
+        match = main_df[main_df['locality'] == locality]
 
         if not match.empty:
             idx = match.index[0]

@@ -32,7 +32,7 @@ class Duration:
         and saves both the trimmed segment and an annotated version with bounding boxes.
 
         Args:
-            var_dict (dict): Nested dictionary of speed values by city/state/condition, video ID, and unique object ID.
+            var_dict (dict): Nested dictionary of speed values by locality/state/condition, video ID, and unique object ID.  # noqa: E501
             dfs (dict): Dictionary mapping video_start_time keys to DataFrames with tracking data.
             df_mapping (pd.DataFrame): A mapping DataFrame that includes metadata like FPS per video ID.
             num (int): Number of top-speed entries to process.
@@ -47,8 +47,8 @@ class Duration:
 
         for segment_type in ["max", "min"]:
             if segment_type in data:
-                for city_data in data[segment_type].values():
-                    for video_start_time, inner_value in city_data.items():
+                for locality_data in data[segment_type].values():
+                    for video_start_time, inner_value in locality_data.items():
                         video_name, start_offset = video_start_time.rsplit("_", 1)
                         start_offset = int(start_offset)
 
@@ -229,13 +229,13 @@ class Duration:
         Find the top and bottom N videos based on speed values from a nested dictionary structure.
 
         The function flattens a deeply nested dictionary containing speed values associated with
-        unique identifiers for videos in various city/state/condition groupings. It then extracts
+        unique identifiers for videos in various locality/state/condition groupings. It then extracts
         the `num` largest and smallest speed values and reconstructs a dictionary preserving the original structure.
 
         Args:
             var_dict (dict): A nested dictionary in the format:
                             {
-                                'City_State_Condition': {
+                                'locality_state_condition': {
                                     'video_id': {
                                         'unique_id': speed_value
                                     }
@@ -250,21 +250,21 @@ class Duration:
                 Each follows the original nested structure.
         """
         all_speeds = []
-        for city_lat_long_cond, videos in var_dict.items():
+        for locality_lat_long_cond, videos in var_dict.items():
             for video_id, unique_dict in videos.items():
                 for unique_id, speed in unique_dict.items():
-                    all_speeds.append((speed, city_lat_long_cond, video_id, unique_id))
+                    all_speeds.append((speed, locality_lat_long_cond, video_id, unique_id))
 
         top_n = heapq.nlargest(num, all_speeds, key=lambda x: x[0])
         bottom_n = heapq.nsmallest(num, all_speeds, key=lambda x: x[0])
 
         def format_result(entries):
             temp_result = defaultdict(lambda: defaultdict(dict))
-            for speed, city_lat_long_cond, video_id, unique_id in entries:
-                temp_result[city_lat_long_cond][video_id][unique_id] = speed
+            for speed, locality_lat_long_cond, video_id, unique_id in entries:
+                temp_result[locality_lat_long_cond][video_id][unique_id] = speed
             return {
-                city: {video: dict(uniq) for video, uniq in videos.items()}
-                for city, videos in temp_result.items()
+                locality: {video: dict(uniq) for video, uniq in videos.items()}
+                for locality, videos in temp_result.items()
             }
 
         return {"max": format_result(top_n), "min": format_result(bottom_n)}

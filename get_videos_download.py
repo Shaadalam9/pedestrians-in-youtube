@@ -32,8 +32,8 @@ df['filtered_videos'] = df['videos'].apply(filter_videos)
 df_filtered = df[df['filtered_videos'].map(len) > 0]
 
 df_filtered = df_filtered[['id',
-                           'city',
-                           'city_aka',
+                           'locality',
+                           'locality_aka',
                            'state',
                            'country',
                            'iso3',

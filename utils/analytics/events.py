@@ -44,7 +44,7 @@ class Events:
 
         For each video and crossing, counts are computed for crossings where
         relevant traffic equipment was present or absent during the crossing.
-        Aggregates counts and total video durations by city/condition and country/condition.
+        Aggregates counts and total video durations by locality/condition and country/condition.
 
         Args:
             df_mapping (dict): Mapping of video keys to relevant metadata.
@@ -52,10 +52,10 @@ class Events:
 
         Returns:
             tuple: (
-                crossings_with_traffic_equipment_city (dict): Counts of crossings with equipment per city/condition,
-                crossings_without_traffic_equipment_city (dict):
-                        Counts of crossings without equipment per city/condition,
-                total_duration_by_city (dict): Total duration (seconds) per city/condition,
+                crossings_with_traffic_equipment_locality (dict): Counts of crossings with equipment per locality/condition,  # noqa:E501
+                crossings_without_traffic_equipment_locality (dict):
+                        Counts of crossings without equipment per locality/condition,
+                total_duration_by_locality (dict): Total duration (seconds) per locality/condition,
                 crossings_with_traffic_equipment_country (dict):
                         Counts of crossings with equipment per country/condition,
                 crossings_without_traffic_equipment_country (dict):
@@ -63,11 +63,11 @@ class Events:
                 total_duration_by_country (dict): Total duration (seconds) per country/condition
             )
         """
-        total_duration_by_city = {}
+        total_duration_by_locality = {}
         total_duration_by_country = {}
-        crossings_with_traffic_equipment_city = {}
+        crossings_with_traffic_equipment_locality = {}
         crossings_with_traffic_equipment_country = {}
-        crossings_without_traffic_equipment_city = {}
+        crossings_without_traffic_equipment_locality = {}
         crossings_without_traffic_equipment_country = {}
 
         for video_key, crossings in tqdm(data.items(), total=len(data)):
@@ -79,12 +79,12 @@ class Events:
             start_time = result[1]
             end_time = result[2]
             condition = result[3]
-            city = result[4]
+            locality = result[4]
             latitude = result[6]
             longitude = result[7]
             country = result[8]
 
-            location_key_city = f"{city}_{latitude}_{longitude}_{condition}"
+            location_key_locality = f"{locality}_{latitude}_{longitude}_{condition}"
             location_key_country = f"{country}_{condition}"
 
             # Update total duration per location/condition
@@ -93,7 +93,7 @@ class Events:
             except Exception:
                 continue
 
-            total_duration_by_city[location_key_city] = total_duration_by_city.get(location_key_city, 0) + duration
+            total_duration_by_locality[location_key_locality] = total_duration_by_locality.get(location_key_locality, 0) + duration  # noqa: E501
             total_duration_by_country[location_key_country] = total_duration_by_country.get(location_key_country, 0) + duration  # noqa: E501
 
             # Load detection CSV
@@ -134,12 +134,12 @@ class Events:
                 else:
                     count_without_equipment += 1
 
-            # Aggregate by city/condition
-            crossings_with_traffic_equipment_city[location_key_city] = (
-                crossings_with_traffic_equipment_city.get(location_key_city, 0) + count_with_equipment
+            # Aggregate by locality/condition
+            crossings_with_traffic_equipment_locality[location_key_locality] = (
+                crossings_with_traffic_equipment_locality.get(location_key_locality, 0) + count_with_equipment
             )
-            crossings_without_traffic_equipment_city[location_key_city] = (
-                crossings_without_traffic_equipment_city.get(location_key_city, 0) + count_without_equipment
+            crossings_without_traffic_equipment_locality[location_key_locality] = (
+                crossings_without_traffic_equipment_locality.get(location_key_locality, 0) + count_without_equipment
             )
 
             # Aggregate by country/condition
@@ -151,9 +151,9 @@ class Events:
             )
 
         return (
-            crossings_with_traffic_equipment_city,
-            crossings_without_traffic_equipment_city,
-            total_duration_by_city,
+            crossings_with_traffic_equipment_locality,
+            crossings_without_traffic_equipment_locality,
+            total_duration_by_locality,
             crossings_with_traffic_equipment_country,
             crossings_without_traffic_equipment_country,
             total_duration_by_country,
@@ -184,7 +184,7 @@ class Events:
             start = result[1]
             end = result[2]
             condition = result[3]
-            city = result[4]
+            locality = result[4]
             lat = result[6]
             long = result[7]
 
@@ -231,14 +231,14 @@ class Events:
                 var_exist[key] = 0
                 var_nt_exist[key] = 0
 
-            city_id_format = f"{city}_{lat}_{long}_{condition}"
-            counter_1[city_id_format] = counter_1.get(city_id_format, 0) + var_exist[key]
-            counter_2[city_id_format] = counter_2.get(city_id_format, 0) + var_nt_exist[key]
+            locality_id_format = f"{locality}_{lat}_{long}_{condition}"
+            counter_1[locality_id_format] = counter_1.get(locality_id_format, 0) + var_exist[key]
+            counter_2[locality_id_format] = counter_2.get(locality_id_format, 0) + var_nt_exist[key]
 
-            denom = counter_1[city_id_format] + counter_2[city_id_format]
+            denom = counter_1[locality_id_format] + counter_2[locality_id_format]
             if denom == 0:
                 continue
 
-            ratio[city_id_format] = (counter_2[city_id_format] * 100) / denom
+            ratio[locality_id_format] = (counter_2[locality_id_format] * 100) / denom
 
         return ratio

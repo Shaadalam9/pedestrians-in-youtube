@@ -307,7 +307,7 @@ def load_mapping(path: str) -> Tuple[List[str], List[Dict[str, Any]]]:
                 }
             )
 
-    return fieldnames, rows
+    return fieldnames, rows  # type: ignore
 
 
 def write_mapping(path: str, fieldnames: List[str], rows: List[Dict[str, Any]]) -> None:
@@ -334,9 +334,9 @@ def _loc_string(raw: Dict[str, str]) -> str:
     cont = (raw.get("continent") or "").strip()
     country = (raw.get("country") or "").strip()
     state = (raw.get("state") or "").strip()
-    city = (raw.get("city") or "").strip()
+    locality = (raw.get("locality") or "").strip()
     iso3 = (raw.get("iso3") or "").strip()
-    parts = [p for p in [city, state, country, cont] if p]
+    parts = [p for p in [locality, state, country, cont] if p]
     loc = ", ".join(parts) if parts else "(unknown location)"
     if iso3:
         loc += " [" + iso3 + "]"

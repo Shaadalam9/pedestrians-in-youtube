@@ -10,7 +10,7 @@ logger = CustomLogger(__name__)  # use custom logger
 # load mapping file
 df = pd.read_csv(common.get_configs("mapping"))
 
-for col in ["population_country", "population_city"]:
+for col in ["population_country", "population_locality"]:
     if col in df.columns:
         df[col] = (
             pd.to_numeric(df[col], errors="coerce")
@@ -20,4 +20,4 @@ for col in ["population_country", "population_city"]:
 
 # save back
 df.to_csv(common.get_configs("mapping"), index=False)
-print("✅ population_country and population_city converted to int and saved.")
+print("✅ population_country and population_locality converted to int and saved.")

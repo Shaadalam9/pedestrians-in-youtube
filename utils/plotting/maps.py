@@ -16,13 +16,13 @@ class Maps:
         pass
 
     @staticmethod
-    def _default_city_image_items() -> list[dict]:
+    def _default_locality_image_items() -> list[dict]:
         """Default overlay pack used for screenshot tiles and arrows.
 
         Notes
         -----
         * approx_lon/approx_lat place the screenshot tile on the map.
-        * city/country are used to draw the connector line to the actual city.
+        * locality/country are used to draw the connector line to the actual locality.
         * label_dlon/label_dlat and video_dlon/video_dlat control text offsets
           from the tile centre.
         * file names are assumed to match the screenshots directory.
@@ -30,7 +30,7 @@ class Maps:
 
         return [
             {
-                "city": "Cape Town",
+                "locality": "Cape Town",
                 "country": "South Africa",
                 "file": "cape_town.jpg",
                 "approx_lon": 0.0,
@@ -58,7 +58,7 @@ class Maps:
                 "line_control_point_lat": -35.0,
             },
             {
-                "city": "Tokyo",
+                "locality": "Tokyo",
                 "country": "Japan",
                 "file": "seoul.jpg",
                 "approx_lon": 174.0,
@@ -85,7 +85,7 @@ class Maps:
                 "video_right_offset_deg": 0.0,
             },
             {
-                "city": "London",
+                "locality": "London",
                 "country": "United Kingdom",
                 "file": "london.jpg",
                 "approx_lon": -32.0,
@@ -110,7 +110,7 @@ class Maps:
                 "video_right_offset_deg": 0.0,
             },
             {
-                "city": "New York",
+                "locality": "New York",
                 "country": "United States",
                 "file": "new_york.jpg",
                 "approx_lon": -42.0,
@@ -135,7 +135,7 @@ class Maps:
                 "video_right_offset_deg": 0.0,
             },
             {
-                "city": "Perth",
+                "locality": "Perth",
                 "country": "Australia",
                 "file": "sydney.jpg",
                 "approx_lon": 80.0,
@@ -161,7 +161,7 @@ class Maps:
                 "video_right_offset_deg": 0.0,
             },
             {
-                "city": "Sao Paulo",
+                "locality": "Sao Paulo",
                 "country": "Brazil",
                 "file": "sao_paulo.jpg",
                 "approx_lon": -20.0,
@@ -1056,7 +1056,7 @@ class Maps:
 
         if show_images:
             if image_items is None:
-                image_items = self._default_city_image_items()
+                image_items = self._default_locality_image_items()
 
             def _item_anchor_lon(item: dict) -> float | None:
                 value = item.get("img_lon", item.get("approx_lon"))
@@ -1347,9 +1347,9 @@ class Maps:
             if map_layers:
                 fig.update_layout(map=dict(layers=map_layers))
 
-            if {"city", "country", "lat", "lon"}.issubset(df_plot.columns):
+            if {"locality", "country", "lat", "lon"}.issubset(df_plot.columns):
                 for item in image_items:
-                    if not ("city" in item and "country" in item):
+                    if not ("locality" in item and "country" in item):
                         continue
 
                     anchor_lon = _item_anchor_lon(item)
@@ -1357,18 +1357,18 @@ class Maps:
                     if anchor_lon is None or anchor_lat is None:
                         continue
 
-                    city = str(item["city"]).strip().lower()
+                    locality = str(item["locality"]).strip().lower()
                     country = str(item["country"]).strip().lower()
 
                     rows = df_plot[
-                        (df_plot["city"].astype(str).str.strip().str.lower() == city)
+                        (df_plot["locality"].astype(str).str.strip().str.lower() == locality)
                         & (df_plot["country"].astype(str).str.strip().str.lower() == country)
                     ]
                     if rows.empty:
                         continue
 
-                    lon_city = float(rows["lon"].iloc[0])
-                    lat_city = float(rows["lat"].iloc[0])
+                    lon_locality = float(rows["lon"].iloc[0])
+                    lat_locality = float(rows["lat"].iloc[0])
 
                     bounds = _item_image_bounds(item)
                     if bounds is None:
@@ -1378,8 +1378,8 @@ class Maps:
                     edge_lon, edge_lat = self._tile_edge_point_from_bounds(
                         center_lon=anchor_lon,
                         center_lat=anchor_lat,
-                        target_lon=lon_city,
-                        target_lat=lat_city,
+                        target_lon=lon_locality,
+                        target_lat=lat_locality,
                         left=img_left,
                         right=img_right,
                         top=img_top,
@@ -1388,8 +1388,8 @@ class Maps:
 
                     fig.add_trace(
                         go.Scattermap(
-                            lon=[edge_lon, lon_city],
-                            lat=[edge_lat, lat_city],
+                            lon=[edge_lon, lon_locality],
+                            lat=[edge_lat, lat_locality],
                             mode="lines",
                             line=dict(width=2, color="black"),
                             hoverinfo="skip",
@@ -1399,18 +1399,422 @@ class Maps:
                     )
 
         io_class.save_plotly_figure(fig, file_name, save_final=save_final)
-    
+
+    def world_map_ss(
+        self,
+        df,
+        *,
+        title=None,
+        projection="natural earth",
+        df_mapping=None,
+        show_images=False,
+        hover_data=None,
+        save_file=False,
+        save_final=False,
+        name_file=None,
+        show_colorbar=True,
+        colorbar_title="Footage (hours)",
+        color_scale="Turbo",
+        marker_size=3,
+        filter_zero=True,
+    ):
+        """
+        World map with locality dots shown in a single red colour.
+
+        Cities with lower footage hours are more transparent.
+        Cities with higher footage hours are less transparent.
+
+        Expected input:
+            df must be locality level data and contain:
+                - locality
+                - country
+                - either:
+                    a) lat, lon
+                    b) or df_mapping with locality, country, lat, lon
+                - either:
+                    a) footage_hours
+                    b) or total_time in seconds
+
+        Notes:
+            - No choropleth is drawn.
+            - All markers use the same red colour.
+            - Marker transparency depends on raw footage_hours.
+            - Hover text shows raw footage hours.
+            - No colourbar is shown because colour is fixed.
+        """
+
+        df_plot = df.copy()
+
+        if "locality" not in df_plot.columns or "country" not in df_plot.columns:
+            raise ValueError("`df` must contain 'locality' and 'country' columns.")
+
+        country_name_map = {"Türkiye": "Turkey"}
+        df_plot["country"] = df_plot["country"].replace(country_name_map)
+
+        # Build raw footage hours from total_time if needed
+        if "footage_hours" not in df_plot.columns:
+            if "total_time" not in df_plot.columns:
+                raise ValueError("`df` must contain either 'footage_hours' or 'total_time'.")
+            df_plot["footage_hours"] = pd.to_numeric(df_plot["total_time"], errors="coerce") / 3600.0
+
+        # Add coordinates from df_mapping if lat lon are missing
+        if not {"lat", "lon"}.issubset(df_plot.columns):
+            if df_mapping is None:
+                raise ValueError("`df` must contain 'lat' and 'lon', or you must pass `df_mapping`.")
+            df_mapping_local = df_mapping.copy()
+            df_mapping_local["country"] = df_mapping_local["country"].replace(country_name_map)
+
+            df_plot = df_plot.merge(
+                df_mapping_local[["locality", "country", "lat", "lon"]].drop_duplicates(),
+                on=["locality", "country"],
+                how="left",
+            )
+
+        # Keep only rows with valid coordinates and footage
+        df_plot["lat"] = pd.to_numeric(df_plot["lat"], errors="coerce")
+        df_plot["lon"] = pd.to_numeric(df_plot["lon"], errors="coerce")
+        df_plot["footage_hours"] = pd.to_numeric(df_plot["footage_hours"], errors="coerce")
+
+        if filter_zero:
+            df_plot = df_plot[
+                df_plot["footage_hours"].notna()
+                & (df_plot["footage_hours"] > 0)
+                & df_plot["lat"].notna()
+                & df_plot["lon"].notna()
+            ].copy()
+        else:
+            df_plot = df_plot[
+                df_plot["footage_hours"].notna()
+                & (df_plot["footage_hours"] >= 0)
+                & df_plot["lat"].notna()
+                & df_plot["lon"].notna()
+            ].copy()
+
+        if df_plot.empty:
+            raise ValueError("No valid locality rows remain after filtering.")
+
+        # If there are duplicate locality rows, aggregate to one row per locality
+        agg_cols = {
+            "lat": "first",
+            "lon": "first",
+            "footage_hours": "sum",
+        }
+
+        extra_hover_cols = []
+        for col in (hover_data or []):
+            if col in df_plot.columns and col not in {"locality", "country", "lat", "lon", "footage_hours"}:
+                if pd.api.types.is_numeric_dtype(df_plot[col]):
+                    agg_cols[col] = "sum"
+                else:
+                    agg_cols[col] = "first"
+                extra_hover_cols.append(col)
+
+        df_plot = (
+            df_plot.groupby(["locality", "country"], as_index=False)
+            .agg(agg_cols)
+            .copy()
+        )
+
+        # Keep only non negative hours
+        df_plot = df_plot[df_plot["footage_hours"] >= 0].copy()
+
+        if df_plot.empty:
+            raise ValueError("No valid non negative 'footage_hours' values remain.")
+
+        # opacity based on raw footage hours
+        hours_min = float(df_plot["footage_hours"].min())
+        hours_max = float(df_plot["footage_hours"].max())
+
+        if hours_max == hours_min:
+            df_plot["marker_opacity"] = 0.9
+        else:
+            norm = (df_plot["footage_hours"] - hours_min) / (hours_max - hours_min)
+            df_plot["marker_opacity"] = 0.20 + 0.80 * np.sqrt(norm)
+
+        fig = go.Figure()
+
+        # Build hover text
+        customdata_parts = [
+            df_plot["country"].to_numpy(),
+            df_plot["footage_hours"].to_numpy(),
+        ]
+
+        for col in extra_hover_cols:
+            customdata_parts.append(df_plot[col].to_numpy())
+
+        customdata = np.column_stack(customdata_parts)
+
+        hover_lines = [
+            "<b>%{text}</b>",
+            "Country: %{customdata[0]}",
+            "Footage: %{customdata[1]:.2f} hours",
+        ]
+        for i, col in enumerate(extra_hover_cols, start=2):
+            hover_lines.append(f"{col}: " + "%{customdata[" + str(i) + "]}")
+        hovertemplate = "<br>".join(hover_lines) + "<extra></extra>"
+
+        fig.add_trace(
+            go.Scattergeo(
+                lon=df_plot["lon"],
+                lat=df_plot["lat"],
+                text=df_plot["locality"],
+                customdata=customdata,
+                mode="markers",
+                hovertemplate=hovertemplate,
+                marker=dict(
+                    size=marker_size,
+                    color="#d62728",
+                    opacity=df_plot["marker_opacity"],
+                    line=dict(width=0),
+                    showscale=False,
+                ),
+                showlegend=False,
+                name="cities",
+            )
+        )
+
+        if title:
+            fig.update_layout(
+                title=dict(
+                    text=title,
+                    x=0.5,
+                    xanchor="center",
+                )
+            )
+
+        fig.update_layout(
+            font=dict(
+                family=common.get_configs("font_family"),
+                size=common.get_configs("font_size"),
+            ),
+            margin=dict(l=0, r=0, t=30 if title else 0, b=0),
+            showlegend=False,
+        )
+
+        fig.update_geos(
+            projection_type=projection,
+            showland=True,
+            landcolor="rgb(240,240,240)",
+            showcountries=True,
+            countrycolor="white",
+            showocean=True,
+            oceancolor="rgb(230,245,255)",
+            showcoastlines=False,
+            showframe=False,
+        )
+
+        if show_images:
+            locality_images = [
+                {
+                    "locality": "Tokyo",
+                    "country": "Japan",
+                    "file": "tokyo.png",
+                    "x": 0.933, "y": 0.58,
+                    "approx_lon": 165.2, "approx_lat": 7.2,
+                    "label": "Tokyo, Japan",
+                    "x_label": 0.982, "y_label": 0.641,
+                    "video": "-YNLQlmPnqA",
+                    "x_video": 0.9305, "y_video": 0.521,
+                },
+                {
+                    "locality": "Cape Town",
+                    "country": "South Africa",
+                    "file": "cape_town.jpg",
+                    "x": 0.69, "y": 0.29,
+                    "approx_lon": 54.0, "approx_lat": -38.0,
+                    "label": "Cape Town, South Africa",
+                    "x_label": 0.745, "y_label": 0.35,
+                    "video": "0xP7JgDiBb8",
+                    "x_video": 0.69, "y_video": 0.22,
+                },
+                {
+                    "locality": "San Francisco",
+                    "country": "United States",
+                    "file": "san_francisco.png",
+                    "x": 0.11, "y": 0.56,
+                    "approx_lon": -123.5, "approx_lat": 8.0,
+                    "label": "San Francisco, CA, USA",
+                    "x_label": 0.07, "y_label": 0.62,
+                    "video": "6F6YWRjHD0Y",
+                    "x_video": 0.12, "y_video": 0.49,
+                },
+                {
+                    "locality": "London",
+                    "country": "United Kingdom",
+                    "file": "london.png",
+                    "x": 0.375, "y": 0.72,
+                    "approx_lon": -36.0, "approx_lat": 37.0,
+                    "label": "London, UK",
+                    "x_label": 0.35, "y_label": 0.79,
+                    "video": "Bs3MZ4wWMQs",
+                    "x_video": 0.40, "y_video": 0.66,
+                },
+                {
+                    "locality": "Sao Paulo",
+                    "country": "Brazil",
+                    "file": "sao_paulo.jpg",
+                    "x": 0.43, "y": 0.27,
+                    "approx_lon": -41.0, "approx_lat": -36.0,
+                    "label": "Sao Paulo, Brazil",
+                    "x_label": 0.413, "y_label": 0.32,
+                    "video": "Ic2ERD7kt4o",
+                    "x_video": 0.46, "y_video": 0.20,
+                },
+                {
+                    "locality": "Perth",
+                    "country": "Australia",
+                    "file": "perth.png",
+                    "x": 0.69, "y": 0.20,
+                    "approx_lon": 76.0, "approx_lat": -53.0,
+                    "label": "Perth, Australia",
+                    "x_label": 0.74, "y_label": 0.25,
+                    "video": "xTDUhnnj3q4",
+                    "x_video": 0.68, "y_video": 0.13,
+                },
+
+            ]
+
+            path_screenshots = os.path.join(common.root_dir, "screenshots")
+
+            def _img(path):
+                try:
+                    return Image.open(path)
+                except FileNotFoundError:
+                    return None
+
+            for item in locality_images:
+                img_path = os.path.join(path_screenshots, item["file"])
+                img = _img(img_path)
+                if img is None:
+                    continue
+
+                fig.add_layout_image(
+                    dict(
+                        source=img,
+                        xref="paper",
+                        yref="paper",
+                        x=item["x"],
+                        y=item["y"],
+                        sizex=0.1,
+                        sizey=0.1,
+                        xanchor="center",
+                        yanchor="middle",
+                        layer="above",
+                    )
+                )
+
+                fig.add_annotation(
+                    text=item["label"],
+                    x=item["x_label"],
+                    y=item["y_label"],
+                    xref="paper",
+                    yref="paper",
+                    showarrow=False,
+                    font=dict(size=12, color="black"),
+                    bgcolor="rgba(255,255,255,0.7)",
+                    bordercolor="black",
+                    borderwidth=1,
+                )
+
+                fig.add_annotation(
+                    text=item["video"],
+                    x=item["x_video"],
+                    y=item["y_video"],
+                    xref="paper",
+                    yref="paper",
+                    showarrow=False,
+                    font=dict(size=10, color="black"),
+                    align="center",
+                    bgcolor="rgba(255,255,255,0.7)",
+                    bordercolor="black",
+                    borderwidth=1,
+                )
+
+            # Connector lines from screenshot area to actual locality
+            locality_lookup = df_plot.copy()
+            locality_lookup["locality_lower"] = locality_lookup["locality"].str.lower()
+            locality_lookup["country_lower"] = locality_lookup["country"].str.lower()
+
+            for item in locality_images:
+                row = locality_lookup[
+                    (locality_lookup["locality_lower"] == item["locality"].lower())
+                    & (locality_lookup["country_lower"] == item["country"].lower())
+                ]
+                if row.empty:
+                    continue
+
+                fig.add_trace(
+                    go.Scattergeo(
+                        lon=[item["approx_lon"], row["lon"].iloc[0]],
+                        lat=[item["approx_lat"], row["lat"].iloc[0]],
+                        mode="lines",
+                        line=dict(width=2, color="black"),
+                        hoverinfo="skip",
+                        showlegend=False,
+                    )
+                )
+
+            yolo_img = _img(os.path.join(path_screenshots, "new_york_yolo.png"))
+            if yolo_img is not None:
+                fig.add_layout_image(
+                    dict(
+                        source=yolo_img,
+                        xref="paper",
+                        yref="paper",
+                        x=0.2,
+                        y=0.25,
+                        sizex=0.2,
+                        sizey=0.2,
+                        xanchor="center",
+                        yanchor="middle",
+                        layer="above",
+                    )
+                )
+
+                fig.add_annotation(
+                    text="Example of YOLO output (New York, NY, USA)",
+                    x=0.101,
+                    y=0.361,
+                    xref="paper",
+                    yref="paper",
+                    showarrow=False,
+                    font=dict(size=12, color="black"),
+                    align="center",
+                    bgcolor="rgba(255,255,255,0.7)",
+                    bordercolor="black",
+                    borderwidth=1,
+                )
+
+                fig.add_annotation(
+                    text="Wyg213IZDI",
+                    x=0.258,
+                    y=0.131,
+                    xref="paper",
+                    yref="paper",
+                    showarrow=False,
+                    font=dict(size=10, color="black"),
+                    align="center",
+                    bgcolor="rgba(255,255,255,0.7)",
+                    bordercolor="black",
+                    borderwidth=1,
+                )
+
+        if name_file is None:
+            name_file = "world_map_locality_footage"
+
+        io_class.save_plotly_figure(fig, name_file, save_final=save_final)
+
     def mapbox_map(self, df, density_col=None, density_radius=30, hover_data=None, hover_name=None,
                    marker_size=5, file_name="mapbox_map", save_final=True):
         """Generates a world map of cities using Mapbox, with optional density visualization.
 
         This method can create either:
-            1. A simple scatter map showing city locations colored by continent.
+            1. A simple scatter map showing locality locations colored by continent.
             2. A density map showing intensity values based on a specified column.
 
         Args:
             df (pandas.DataFrame): DataFrame containing mapping information.
-                Required columns: "lat", "lon", "city", "continent".
+                Required columns: "lat", "lon", "locality", "continent".
             density_col (str, optional): Column name for density values.
                 If provided, a density map is generated. Defaults to None.
             density_radius (int, optional): The pixel radius for density spread. Defaults to 30.
@@ -1485,20 +1889,20 @@ class Maps:
         Generate a world map with highlighted countries and red markers for cities using Plotly.
 
         - Highlights countries based on the cities present in the dataset.
-        - Adds scatter points for each city with detailed socioeconomic and traffic-related hover info.
+        - Adds scatter points for each locality with detailed socioeconomic and traffic-related hover info.
         - Adjusts map appearance to improve clarity and remove irrelevant regions like Antarctica.
 
         Args:
             df_mapping (pd.DataFrame): A DataFrame with columns:
-                ['city', 'state', 'country', 'lat', 'lon', 'continent',
-                 'gmp', 'population_city', 'population_country',
+                ['locality', 'state', 'country', 'lat', 'lon', 'continent',
+                 'gmp', 'population_locality', 'population_country',
                  'traffic_mortality', 'literacy_rate', 'avg_height',
                  'gini', 'traffic_index']
 
         Returns:
             None. Saves and displays the interactive map to disk.
         """
-        cities = df_mapping["city"]
+        cities = df_mapping["locality"]
         states = df_mapping["state"]
         countries = df_mapping["country"]
         coords_lat = df_mapping["lat"]
@@ -1543,21 +1947,21 @@ class Maps:
             paper_bgcolor='rgb(173, 216, 230)'  # Set the paper background to match the ocean color
         )
 
-        # Process each city and its corresponding country
-        city_coords = []
-        for i, (city, state, lat, lon) in enumerate(tqdm(zip(cities, states, coords_lat, coords_lon), total=len(cities))):  # noqa: E501
+        # Process each locality and its corresponding country
+        locality_coords = []
+        for i, (locality, state, lat, lon) in enumerate(tqdm(zip(cities, states, coords_lat, coords_lon), total=len(cities))):  # noqa: E501
             if not state or str(state).lower() == 'nan':
                 state = 'N/A'
             if lat and lon:
-                city_coords.append({
-                    'City': city,
+                locality_coords.append({
+                    'locality': locality,
                     'State': state,
                     'Country': df_mapping["country"].iloc[i],
                     'Continent': df_mapping["continent"].iloc[i],
                     'lat': lat,
                     'lon': lon,
                     'GDP (Billion USD)': df_mapping["gmp"].iloc[i],
-                    'City population (thousands)': df_mapping["population_city"].iloc[i] / 1000.0,
+                    'locality population (thousands)': df_mapping["population_locality"].iloc[i] / 1000.0,
                     'Country population (thousands)': df_mapping["population_country"].iloc[i] / 1000.0,
                     'Traffic mortality rate (per 100,000)': df_mapping["traffic_mortality"].iloc[i],
                     'Literacy rate': df_mapping["literacy_rate"].iloc[i],
@@ -1566,18 +1970,18 @@ class Maps:
                     'Traffic index': df_mapping["traffic_index"].iloc[i],
                 })
 
-        if city_coords:
-            city_df = pd.DataFrame(city_coords)
-            # city_df["City"] = city_df["city"]  # Format city name with "City:"
-            city_trace = px.scatter_geo(
-                city_df, lat='lat', lon='lon',
+        if locality_coords:
+            locality_df = pd.DataFrame(locality_coords)
+            # locality_df["locality"] = locality_df["locality"]  # Format locality name with "locality:"
+            locality_trace = px.scatter_geo(
+                locality_df, lat='lat', lon='lon',
                 hover_data={
-                    'City': True,
+                    'locality': True,
                     'State': True,
                     'Country': True,
                     'Continent': True,
                     'GDP (Billion USD)': True,
-                    'City population (thousands)': True,
+                    'locality population (thousands)': True,
                     'Country population (thousands)': True,
                     'Traffic mortality rate (per 100,000)': True,
                     'Literacy rate': True,
@@ -1588,11 +1992,11 @@ class Maps:
                     'lon': False  # Hide lat and lon
                 }
             )
-            # Update the city markers to be red and adjust size
-            city_trace.update_traces(marker=dict(color="red", size=5))
+            # Update the locality markers to be red and adjust size
+            locality_trace.update_traces(marker=dict(color="red", size=5))
 
             # Add the scatter_geo trace to the choropleth map
-            fig.add_trace(city_trace.data[0])
+            fig.add_trace(locality_trace.data[0])
 
         # update font family
         fig.update_layout(font=dict(family=common.get_configs('font_family')))
@@ -1602,7 +2006,7 @@ class Maps:
 
     def map_world(self, df, *, color, title=None, projection="natural earth", hover_name="country", hover_data=None,
                   show_colorbar=False, colorbar_title=None, colorbar_kwargs=None, color_scale="YlOrRd",
-                  show_cities=False, df_cities=None, city_marker_size=3, show_images=False, image_items=None,
+                  show_cities=False, df_cities=None, locality_marker_size=3, show_images=False, image_items=None,
                   denmark_greenland=False, save_file=False, save_final=False, file_name="map",
                   filter_zero_nan=True, country_name_map=None):
         """
@@ -1619,9 +2023,9 @@ class Maps:
             colorbar_title (str|None): Title for color bar (defaults to `color`).
             colorbar_kwargs (dict|None): Extra layout props for the color bar (merged with sensible defaults).
             color_scale (str|list): Plotly color scale.
-            show_cities (bool): Add city markers from `df_cities`.
-            df_cities (pd.DataFrame|None): Needs columns 'lat' and 'lon'; optional 'city','country'.
-            city_marker_size (int|float): Marker size for cities.
+            show_cities (bool): Add locality markers from `df_cities`.
+            df_cities (pd.DataFrame|None): Needs columns 'lat' and 'lon'; optional 'locality','country'.
+            locality_marker_size (int|float): Marker size for cities.
             show_images (bool): Add overlay images/arrows/labels from `image_items`.
             image_items (list[dict]|None): Same schema you used before.
             denmark_greenland (bool): If True, duplicate Denmark’s value for Greenland.
@@ -1682,10 +2086,10 @@ class Maps:
             fig.add_trace(go.Scattergeo(
                 lon=df_cities["lon"],
                 lat=df_cities["lat"],
-                text=df_cities.get("city", None),
+                text=df_cities.get("locality", None),
                 mode="markers",
                 hoverinfo="skip",
-                marker=dict(size=city_marker_size, color="black", opacity=0.7, symbol="circle"),
+                marker=dict(size=locality_marker_size, color="black", opacity=0.7, symbol="circle"),
                 name="cities",
             ))
 
@@ -1719,13 +2123,13 @@ class Maps:
                         borderwidth=1,
                     )
 
-            # lines to actual city coords (if df_cities available)
-            if df_cities is not None and {"lat", "lon", "city", "country"}.issubset(df_cities.columns):
+            # lines to actual locality coords (if df_cities available)
+            if df_cities is not None and {"lat", "lon", "locality", "country"}.issubset(df_cities.columns):
                 for item in image_items:
-                    if "city" in item and "country" in item and \
+                    if "locality" in item and "country" in item and \
                        "approx_lon" in item and "approx_lat" in item:
                         row = df_cities[
-                            (df_cities["city"].str.lower() == item["city"].lower()) &
+                            (df_cities["locality"].str.lower() == item["locality"].lower()) &
                             (df_cities["country"].str.lower() == item["country"].lower())
                         ]
                         if not row.empty:

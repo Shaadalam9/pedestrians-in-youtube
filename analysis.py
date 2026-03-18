@@ -76,7 +76,7 @@ aggregation = Aggregation()
 # Constants
 # ---------------------------------------------------------------------
 
-# File to store the city coordinates.
+# File to store the locality coordinates.
 file_results: str = "results.pickle"
 
 video_paths = common.get_configs("videos")
@@ -656,7 +656,7 @@ def log_rollups(df_mapping: "pl.DataFrame") -> None:
     # -----------------------------
     # Required columns check
     # -----------------------------
-    required_cols = {"continent", "country", "city", "iso3", "videos", "start_time", "end_time"}
+    required_cols = {"continent", "country", "locality", "iso3", "videos", "start_time", "end_time"}
     missing_cols = sorted(list(required_cols - set(df_mapping.columns)))
     if missing_cols:
         logger.warning(f"[rollups] Missing columns in df_mapping: {missing_cols}. Some rollups may be incomplete.")
@@ -1537,12 +1537,12 @@ def log_rollups(df_mapping: "pl.DataFrame") -> None:
         logger.info(f"\n{_df_full_str(cont_veh_tod)}")
 
     # =========================================================================
-    # H) Coverage extremes: max/min city and country by uploads, segments, and duration
+    # H) Coverage extremes: max/min locality and country by uploads, segments, and duration
     # =========================================================================
-    city_rank = (
+    locality_rank = (
         df_base
-        .filter(pl.col("city").is_not_null() & (pl.col("city") != ""))
-        .group_by(["continent", "country", "city", "iso3"])
+        .filter(pl.col("locality").is_not_null() & (pl.col("locality") != ""))
+        .group_by(["continent", "country", "locality", "iso3"])
         .agg(
             [
                 pl.sum("upload_records").alias("upload_count"),
@@ -1554,13 +1554,13 @@ def log_rollups(df_mapping: "pl.DataFrame") -> None:
     )
 
     # =========================================================================
-    # H1) Max city by duration within each continent
+    # H1) Max locality by duration within each continent
     # =========================================================================
-    max_city_per_continent_all_ties = (
-        city_rank
+    max_locality_per_continent_all_ties = (
+        locality_rank
         .filter(pl.col("footage_time_s") > 0)
         .join(
-            city_rank
+            locality_rank
             .group_by("continent")
             .agg(pl.max("footage_time_s").alias("max_footage_time_s")),
             on="continent",
@@ -1571,7 +1571,7 @@ def log_rollups(df_mapping: "pl.DataFrame") -> None:
             [
                 "continent",
                 "country",
-                "city",
+                "locality",
                 "iso3",
                 "upload_count",
                 "segment_count",
@@ -1580,23 +1580,23 @@ def log_rollups(df_mapping: "pl.DataFrame") -> None:
             ]
         )
         .sort(
-            ["continent", "footage_time_s", "segment_count", "upload_count", "city"],
+            ["continent", "footage_time_s", "segment_count", "upload_count", "locality"],
             descending=[False, True, True, True, False],
         )
     )
 
-    logger.info("\n=== [rollups] H1) Max city by duration within each continent (including ties) ===")
-    logger.info(f"\n{_df_full_str(max_city_per_continent_all_ties)}")
+    logger.info("\n=== [rollups] H1) Max locality by duration within each continent (including ties) ===")
+    logger.info(f"\n{_df_full_str(max_locality_per_continent_all_ties)}")
 
-    # Exactly one city per continent (tie break by segment_count, then upload_count, then city name)
-    max_city_per_continent_one = (
-        max_city_per_continent_all_ties
+    # Exactly one locality per continent (tie break by segment_count, then upload_count, then locality name)
+    max_locality_per_continent_one = (
+        max_locality_per_continent_all_ties
         .unique(subset=["continent"], keep="first")
         .sort("continent")
     )
 
-    logger.info("\n=== [rollups] H1) Max city by duration within each continent (one per continent) ===")
-    logger.info(f"\n{_df_full_str(max_city_per_continent_one)}")
+    logger.info("\n=== [rollups] H1) Max locality by duration within each continent (one per continent) ===")
+    logger.info(f"\n{_df_full_str(max_locality_per_continent_one)}")
 
     country_rank = (
         df_base
@@ -1617,22 +1617,22 @@ def log_rollups(df_mapping: "pl.DataFrame") -> None:
         bot = df.filter(pl.col(col) > 0).sort(col).head(1)
         return top, bot
 
-    top_city_u, bot_city_u = _top_bottom(city_rank, "upload_count")
-    top_city_s, bot_city_s = _top_bottom(city_rank, "segment_count")
-    top_city_t, bot_city_t = _top_bottom(city_rank, "footage_time_s")
+    top_locality_u, bot_locality_u = _top_bottom(locality_rank, "upload_count")
+    top_locality_s, bot_locality_s = _top_bottom(locality_rank, "segment_count")
+    top_locality_t, bot_locality_t = _top_bottom(locality_rank, "footage_time_s")
 
     top_ctry_u, bot_ctry_u = _top_bottom(country_rank, "upload_count")
     top_ctry_s, bot_ctry_s = _top_bottom(country_rank, "segment_count")
     top_ctry_t, bot_ctry_t = _top_bottom(country_rank, "footage_time_s")
 
-    logger.info("\n=== [rollups] H) Max/Min CITY by upload_count ===")
-    logger.info(f"\nMAX:\n{_df_full_str(top_city_u)}\nMIN (non-zero):\n{_df_full_str(bot_city_u)}")
+    logger.info("\n=== [rollups] H) Max/Min locality by upload_count ===")
+    logger.info(f"\nMAX:\n{_df_full_str(top_locality_u)}\nMIN (non-zero):\n{_df_full_str(bot_locality_u)}")
 
-    logger.info("\n=== [rollups] H) Max/Min CITY by segment_count ===")
-    logger.info(f"\nMAX:\n{_df_full_str(top_city_s)}\nMIN (non-zero):\n{_df_full_str(bot_city_s)}")
+    logger.info("\n=== [rollups] H) Max/Min locality by segment_count ===")
+    logger.info(f"\nMAX:\n{_df_full_str(top_locality_s)}\nMIN (non-zero):\n{_df_full_str(bot_locality_s)}")
 
-    logger.info("\n=== [rollups] H) Max/Min CITY by duration ===")
-    logger.info(f"\nMAX:\n{_df_full_str(top_city_t)}\nMIN (non-zero):\n{_df_full_str(bot_city_t)}")
+    logger.info("\n=== [rollups] H) Max/Min locality by duration ===")
+    logger.info(f"\nMAX:\n{_df_full_str(top_locality_t)}\nMIN (non-zero):\n{_df_full_str(bot_locality_t)}")
 
     logger.info("\n=== [rollups] H) Max/Min COUNTRY by upload_count ===")
     logger.info(f"\nMAX:\n{_df_full_str(top_ctry_u)}\nMIN (non-zero):\n{_df_full_str(bot_ctry_u)}")
@@ -1661,38 +1661,38 @@ if __name__ == "__main__":
              cellphone_counter,                             # 7
              traffic_light_counter,                         # 8
              stop_sign_counter,                             # 9
-             pedestrian_cross_city,                         # 10
+             pedestrian_cross_locality,                         # 10
              pedestrian_crossing_count,                     # 11
-             person_city,                                   # 12
-             bicycle_city,                                  # 13
-             car_city,                                      # 14
-             motorcycle_city,                               # 15
-             bus_city,                                      # 16
-             truck_city,                                    # 17
-             cross_evnt_city,                               # 18
-             vehicle_city,                                  # 19
-             cellphone_city,                                # 20
-             traffic_sign_city,                             # 21
+             person_locality,                                   # 12
+             bicycle_locality,                                  # 13
+             car_locality,                                      # 14
+             motorcycle_locality,                               # 15
+             bus_locality,                                      # 16
+             truck_locality,                                    # 17
+             cross_evnt_locality,                               # 18
+             vehicle_locality,                                  # 19
+             cellphone_locality,                                # 20
+             traffic_sign_locality,                             # 21
              all_speed,                                     # 22
              all_time,                                      # 23
-             avg_time_city,                                 # 24
-             avg_speed_city,                                # 25
+             avg_time_locality,                                 # 24
+             avg_speed_locality,                                # 25
              df_mapping,                                    # 26
              avg_speed_country,                             # 27
              avg_time_country,                              # 28
-             crossings_with_traffic_equipment_city,         # 29
-             crossings_without_traffic_equipment_city,      # 30
+             crossings_with_traffic_equipment_locality,         # 29
+             crossings_without_traffic_equipment_locality,      # 30
              crossings_with_traffic_equipment_country,      # 31
              crossings_without_traffic_equipment_country,   # 32
              min_max_speed,                                 # 33
              min_max_time,                                  # 34
              pedestrian_cross_country,                      # 35
-             all_speed_city,                                # 36
-             all_time_city,                                 # 37
+             all_speed_locality,                                # 36
+             all_time_locality,                                 # 37
              all_speed_country,                             # 38
              all_time_country,                              # 39
              df_mapping_raw,                                # 40
-             pedestrian_cross_city_all,                     # 41
+             pedestrian_cross_locality_all,                     # 41
              pedestrian_cross_country_all                   # 42
              ) = pickle.load(file)
 
@@ -1706,8 +1706,8 @@ if __name__ == "__main__":
         df = df_mapping.clone()  # copy df to manipulate for output
         df = df.with_columns(pl.col("state").fill_null("NA").alias("state"))
 
-        # Sort by continent and city, both in ascending order
-        df = df.sort(by=["continent", "city"])
+        # Sort by continent and locality, both in ascending order
+        df = df.sort(by=["continent", "locality"])
 
         # Count of videos (handles: [id], "[id1,id2]", and [] -> 0)
         videos_clean = (
@@ -1760,7 +1760,7 @@ if __name__ == "__main__":
               .alias("total_time")
         )
 
-        # create flag_city column
+        # create flag_locality column
         flag_expr = pl.col("iso3").map_elements(
             lambda x: analysis_class.iso3_to_flag.get(x, "🏳️"),
             return_dtype=pl.Utf8,
@@ -1768,23 +1768,23 @@ if __name__ == "__main__":
 
         # Create a new country label with emoji flag + country name
         df = df.with_columns([
-            pl.concat_str([flag_expr, pl.col("city").cast(pl.Utf8)], separator=" ").alias("flag_city"),
+            pl.concat_str([flag_expr, pl.col("locality").cast(pl.Utf8)], separator=" ").alias("flag_locality"),
             pl.concat_str([flag_expr, pl.col("country").cast(pl.Utf8)], separator=" ").alias("flag_country"),
         ])
 
         # Data to avoid showing on hover in scatter plots
         columns_remove = ['videos', 'time_of_day', 'start_time', 'end_time', 'upload_date', 'vehicle_type', 'channel',
-                          'display_label', 'flag_city', 'flag_country']
+                          'display_label', 'flag_locality', 'flag_country']
 
         hover_data = sorted(list(set(df.columns) - set(columns_remove)))
 
-        # Sort by continent and city, both in ascending order
+        # Sort by continent and locality, both in ascending order
         df = df.sort(["continent", "country"])
 
         # map with all cities
         maps.mapbox_map(df=df.to_pandas(),
                         hover_data=hover_data,
-                        hover_name="flag_city",
+                        hover_name="flag_locality",
                         marker_size=4,
                         file_name='mapbox_map_all')
 
@@ -1792,28 +1792,38 @@ if __name__ == "__main__":
         maps.mapbox_map_footage(df=df.to_pandas(),
                                 footage_col="total_time",
                                 hover_data=hover_data,
-                                hover_name="flag_city",
+                                hover_name="flag_locality",
                                 marker_size=3,
                                 log_colour=True,
                                 show_images=True,
                                 file_name='mapbox_map_all_footage')
 
-        # Sort by continent and city, both in ascending order
-        df = df.sort(["country", "city"])
+        maps.world_map_ss(
+            df=df.to_pandas(),
+            df_mapping=df_mapping.to_pandas(),
+            show_images=True,
+            hover_data=["total_time"],
+            save_file=False,
+            show_colorbar=True,
+            colorbar_title="Footage (hours)",
+        )
+
+        # Sort by continent and locality, both in ascending order
+        df = df.sort(["country", "locality"])
 
         # scatter plot for cities with number of videos over total time
         bivariate.scatter(df=df,
                           x="total_time",
                           y="video_count",
                           color="flag_country",
-                          text="flag_city",
+                          text="flag_locality",
                           xaxis_title='Total time of footage (s)',
                           yaxis_title='Number of videos',
                           pretty_text=False,
                           marker_size=10,
                           save_file=True,
                           hover_data=hover_data,
-                          hover_name="flag_city",
+                          hover_name="flag_locality",
                           legend_title="",
                           # legend_x=0.01,
                           # legend_y=1.0,
@@ -1823,7 +1833,7 @@ if __name__ == "__main__":
                           file_name='scatter_all_total_time-video_count')  # type: ignore
         # scatter plot for countries with number of videos over total time
 
-        # compute total time per city first
+        # compute total time per locality first
         videos_raw = pl.col("videos").cast(pl.Utf8).str.strip_chars()
         videos_unquoted = videos_raw.str.strip_chars("\"'")
 
@@ -1837,14 +1847,14 @@ if __name__ == "__main__":
             .str.strip_chars()
         )
 
-        city_video_count_expr = (
+        locality_video_count_expr = (
             pl.when(videos_is_list & (videos_inner != ""))
               .then(
                   videos_inner
                   .str.split(",")
                   .list.filter(pl.element() != "")
                   .list.len()
-              ).otherwise(0).cast(pl.Int64).alias("city_video_count")
+              ).otherwise(0).cast(pl.Int64).alias("locality_video_count")
         )
 
         # Normalize end_time string and sum all numbers found (nested-safe)
@@ -1852,7 +1862,7 @@ if __name__ == "__main__":
         end_unquoted = end_raw.str.strip_chars("\"'")
         end_is_list = end_unquoted.str.starts_with("[")
 
-        city_total_time_expr = (
+        locality_total_time_expr = (
             pl.when(end_is_list)
               .then(
                   end_unquoted
@@ -1860,17 +1870,17 @@ if __name__ == "__main__":
                   .list.eval(pl.element().cast(pl.Int64))
                   .list.sum()
                   .fill_null(0)
-              ).otherwise(0).cast(pl.Int64).alias("city_total_time")
+              ).otherwise(0).cast(pl.Int64).alias("locality_total_time")
         )
 
-        df = df.with_columns([city_video_count_expr, city_total_time_expr])
+        df = df.with_columns([locality_video_count_expr, locality_total_time_expr])
 
         # ---------- Aggregate to country level ----------
         df_country = (
             df.group_by(["country", "iso3", "continent"])
               .agg([
-                  pl.col("city_total_time").sum().alias("total_time"),
-                  pl.col("city_video_count").sum().alias("video_count"),
+                  pl.col("locality_total_time").sum().alias("total_time"),
+                  pl.col("locality_video_count").sum().alias("video_count"),
               ])
         )
 
@@ -1917,14 +1927,14 @@ if __name__ == "__main__":
         distribution.video_histogram_by_month(df=df.to_pandas(),
                                               video_count_col='video_count',
                                               upload_date_col='upload_date',
-                                              xaxis_title='Upload month (year-month)',
+                                              xaxis_title='Year',
                                               yaxis_title='Number of videos',
                                               save_file=True)
 
         # maps with all cities and population heatmap
         maps.mapbox_map(df=df.to_pandas(),
                         hover_data=hover_data,
-                        density_col='population_city',
+                        density_col='population_locality',
                         density_radius=10,
                         file_name='mapbox_map_all_pop')
 
@@ -2227,13 +2237,13 @@ if __name__ == "__main__":
         country, number, _ = metrics_cache.get_unique_values(df_mapping, "iso3")
         logger.info(f"Total number of countries and territories before filtering: {number}.")
 
-        city_state_iso3, number, dup_report = metrics_cache.get_unique_values(
+        locality_state_iso3, number, dup_report = metrics_cache.get_unique_values(
             df_mapping,
-            ["city", "state", "iso3"],
+            ["locality", "state", "iso3"],
             return_duplicates=True,
         )
 
-        logger.info(f"Total number of unique city+state+iso3 keys: {number}.")
+        logger.info(f"Total number of unique locality+state+iso3 keys: {number}.")
 
         if dup_report is not None and dup_report.height > 0:
             logger.warning(f"Duplicated keys:\n{dup_report}")
@@ -2245,7 +2255,7 @@ if __name__ == "__main__":
         log_rollups(df_mapping)
 
         # Make a dict for all columns
-        city_country_cols = {
+        locality_country_cols = {
             # Object columns
             'person': 0, 'bicycle': 0, 'car': 0, 'motorcycle': 0, 'airplane': 0, 'bus': 0, 'train': 0,
             'truck': 0, 'boat': 0, 'traffic_light': 0, 'fire_hydrant': 0, 'stop_sign': 0, 'parking_meter': 0,
@@ -2263,23 +2273,23 @@ if __name__ == "__main__":
             'total_time': 0,
             'total_crossing_detect': 0,
 
-            # City-level columns
-            'speed_crossing_day_city': math.nan,
-            'speed_crossing_night_city': math.nan,
-            'speed_crossing_day_night_city_avg': math.nan,
-            'time_crossing_day_city': math.nan,
-            'time_crossing_night_city': math.nan,
-            'time_crossing_day_night_city_avg': math.nan,
-            'with_trf_light_day_city': 0.0,
-            'with_trf_light_night_city': 0.0,
-            'without_trf_light_day_city': 0.0,
-            'without_trf_light_night_city': 0.0,
-            'crossing_detected_city': 0,
-            'crossing_detected_city_day': 0,
-            'crossing_detected_city_night': 0,
-            'crossing_detected_city_all': 0,
-            'crossing_detected_city_all_day': 0,
-            'crossing_detected_city_all_night': 0,
+            # locality-level columns
+            'speed_crossing_day_locality': math.nan,
+            'speed_crossing_night_locality': math.nan,
+            'speed_crossing_day_night_locality_avg': math.nan,
+            'time_crossing_day_locality': math.nan,
+            'time_crossing_night_locality': math.nan,
+            'time_crossing_day_night_locality_avg': math.nan,
+            'with_trf_light_day_locality': 0.0,
+            'with_trf_light_night_locality': 0.0,
+            'without_trf_light_day_locality': 0.0,
+            'without_trf_light_night_locality': 0.0,
+            'crossing_detected_locality': 0,
+            'crossing_detected_locality_day': 0,
+            'crossing_detected_locality_night': 0,
+            'crossing_detected_locality_all': 0,
+            'crossing_detected_locality_all_day': 0,
+            'crossing_detected_locality_all_night': 0,
 
             # Country-level columns
             'speed_crossing_day_country': math.nan,
@@ -2302,13 +2312,13 @@ if __name__ == "__main__":
 
         # Efficiently add all columns at once
         df_mapping = df_mapping.with_columns(
-            [pl.lit(v).alias(k) for k, v in city_country_cols.items()]
+            [pl.lit(v).alias(k) for k, v in locality_country_cols.items()]
         )
 
         # Precompute fast lookup once (place this immediately before the loops)
         id_to_place: dict[int, tuple[str, str, str]] = {
-            int(row_id): (city, state, country)
-            for row_id, city, state, country in df_mapping.select(["id", "city", "state", "country"]).iter_rows()
+            int(row_id): (locality, state, country)
+            for row_id, locality, state, country in df_mapping.select(["id", "locality", "state", "country"]).iter_rows()  # noqa: E501
         }
 
         all_speed = {}
@@ -2365,15 +2375,15 @@ if __name__ == "__main__":
                         logger.warning(f"Unexpected filename format: {filename_no_ext}")
                         continue
 
-                    video_city_id = geo.find_city_id(df_mapping, video_id, int(start_index))
+                    video_locality_id = geo.find_locality_id(df_mapping, video_id, int(start_index))
 
-                    place = id_to_place.get(int(video_city_id)) if video_city_id is not None else None
+                    place = id_to_place.get(int(video_locality_id)) if video_locality_id is not None else None
                     if place is None:
-                        logger.warning(f"{file_str}: no mapping row found for id={video_city_id}.")
+                        logger.warning(f"{file_str}: no mapping row found for id={video_locality_id}.")
                         continue
 
-                    video_city, video_state, video_country = place
-                    logger.debug(f"{file_str}: found values {video_city}, {video_state}, {video_country}.")
+                    video_locality, video_state, video_country = place
+                    logger.debug(f"{file_str}: found values {video_locality}, {video_state}, {video_country}.")
 
                     # Get the number of number and unique id of the object crossing the road
                     # ids give the unique of the person who cross the road after applying the filter, while
@@ -2442,9 +2452,9 @@ if __name__ == "__main__":
                     id_to_count = {int(r["yolo-id"]): int(r["count"]) for r in counts_df.to_dicts()}
                     counters = {class_name: int(id_to_count.get(i, 0)) for i, class_name in enumerate(coco_classes)}
 
-                    # --- Update df_mapping for the given video_city_id ---
+                    # --- Update df_mapping for the given video_locality_id ---
                     df_mapping = df_mapping.with_columns([
-                        pl.when(pl.col("id") == video_city_id)
+                        pl.when(pl.col("id") == video_locality_id)
                           .then(pl.col(class_name) + pl.lit(counters[class_name]))
                           .otherwise(pl.col(class_name))
                           .alias(class_name)
@@ -2454,7 +2464,7 @@ if __name__ == "__main__":
                     # Add duration of segment
                     time_video = duration.get_duration(df_mapping, video_id, int(start_index))
                     df_mapping = df_mapping.with_columns(
-                        pl.when(pl.col("id") == video_city_id)
+                        pl.when(pl.col("id") == video_locality_id)
                           .then(pl.col("total_time") + pl.lit(time_video))
                           .otherwise(pl.col("total_time"))
                           .alias("total_time")
@@ -2462,7 +2472,7 @@ if __name__ == "__main__":
 
                     # Add total crossing detected
                     df_mapping = df_mapping.with_columns(
-                        pl.when(pl.col("id") == video_city_id)
+                        pl.when(pl.col("id") == video_locality_id)
                           .then(pl.col("total_crossing_detect") + pl.lit(len(ids)).cast(pl.Int64))
                           .otherwise(pl.col("total_crossing_detect"))
                           .alias("total_crossing_detect")
@@ -2505,78 +2515,78 @@ if __name__ == "__main__":
         # Output in real world seconds
         avg_time_country, all_time_country = metrics.avg_time_to_start_cross_country(df_mapping, all_time)
 
-        # Record the average speed and time of crossing on city basis
-        avg_speed_city, all_speed_city = metrics.avg_speed_of_crossing_city(df_mapping, all_speed)
-        avg_time_city, all_time_city = metrics.avg_time_to_start_cross_city(df_mapping, all_time)
+        # Record the average speed and time of crossing on locality basis
+        avg_speed_locality, all_speed_locality = metrics.avg_speed_of_crossing_locality(df_mapping, all_speed)
+        avg_time_locality, all_time_locality = metrics.avg_time_to_start_cross_locality(df_mapping, all_time)
 
         # Kill the program if there is no data to analyse
-        if len(avg_time_city) == 0 or len(avg_speed_city) == 0:
+        if len(avg_time_locality) == 0 or len(avg_speed_locality) == 0:
             logger.error("No speed and time data to analyse.")
             exit()
 
         logger.info("Calculating counts of detected traffic signs.")
-        traffic_sign_city = metrics_cache.calculate_traffic_signs(df_mapping)
+        traffic_sign_locality = metrics_cache.calculate_traffic_signs(df_mapping)
 
         logger.info("Calculating counts of detected mobile phones.")
-        cellphone_city = metrics_cache.calculate_cellphones(df_mapping)
+        cellphone_locality = metrics_cache.calculate_cellphones(df_mapping)
 
         logger.info("Calculating counts of detected vehicles.")
-        vehicle_city = metrics_cache.calculate_traffic(df_mapping, motorcycle=True, car=True, bus=True, truck=True)
+        vehicle_locality = metrics_cache.calculate_traffic(df_mapping, motorcycle=True, car=True, bus=True, truck=True)
 
         logger.info("Calculating counts of detected bicycles.")
-        bicycle_city = metrics_cache.calculate_traffic(df_mapping, bicycle=True)
+        bicycle_locality = metrics_cache.calculate_traffic(df_mapping, bicycle=True)
 
         logger.info("Calculating counts of detected cars (subset of vehicles).")
-        car_city = metrics_cache.calculate_traffic(df_mapping, car=True)
+        car_locality = metrics_cache.calculate_traffic(df_mapping, car=True)
 
         logger.info("Calculating counts of detected motorcycles (subset of vehicles).")
-        motorcycle_city = metrics_cache.calculate_traffic(df_mapping, motorcycle=True)
+        motorcycle_locality = metrics_cache.calculate_traffic(df_mapping, motorcycle=True)
 
         logger.info("Calculating counts of detected buses (subset of vehicles).")
-        bus_city = metrics_cache.calculate_traffic(df_mapping, bus=True)
+        bus_locality = metrics_cache.calculate_traffic(df_mapping, bus=True)
 
         logger.info("Calculating counts of detected trucks (subset of vehicles).")
-        truck_city = metrics_cache.calculate_traffic(df_mapping, truck=True)
+        truck_locality = metrics_cache.calculate_traffic(df_mapping, truck=True)
 
         logger.info("Calculating counts of detected persons.")
-        person_city = metrics_cache.calculate_traffic(df_mapping, person=True)
+        person_locality = metrics_cache.calculate_traffic(df_mapping, person=True)
 
         logger.info("Calculating counts of detected crossing events with traffic lights.")
-        cross_evnt_city = events.crossing_event_wt_traffic_light(df_mapping, data)
+        cross_evnt_locality = events.crossing_event_wt_traffic_light(df_mapping, data)
 
         logger.info("Calculating counts of crossing events in cities.")
 
-        pedestrian_cross_city = dataset_stats.pedestrian_cross_per_city(pedestrian_crossing_count, df_mapping)
-        pedestrian_cross_city_all = dataset_stats.pedestrian_cross_per_city(pedestrian_crossing_count_all,
-                                                                            df_mapping)
+        pedestrian_cross_locality = dataset_stats.pedestrian_cross_per_locality(pedestrian_crossing_count, df_mapping)
+        pedestrian_cross_locality_all = dataset_stats.pedestrian_cross_per_locality(pedestrian_crossing_count_all,
+                                                                                    df_mapping)
 
         logger.info("Calculating counts of crossing events in countries.")
-        pedestrian_cross_country = dataset_stats.pedestrian_cross_per_country(pedestrian_cross_city, df_mapping)
-        pedestrian_cross_country_all = dataset_stats.pedestrian_cross_per_country(pedestrian_cross_city_all,
+        pedestrian_cross_country = dataset_stats.pedestrian_cross_per_country(pedestrian_cross_locality, df_mapping)
+        pedestrian_cross_country_all = dataset_stats.pedestrian_cross_per_country(pedestrian_cross_locality_all,
                                                                                   df_mapping)
 
         # Jaywalking data
         logger.info("Calculating parameters for detection of jaywalking.")
 
         (
-            crossings_with_traffic_equipment_city,
-            crossings_without_traffic_equipment_city,
-            total_duration_by_city,
+            crossings_with_traffic_equipment_locality,
+            crossings_without_traffic_equipment_locality,
+            total_duration_by_locality,
             crossings_with_traffic_equipment_country,
             crossings_without_traffic_equipment_country,
             total_duration_by_country,
         ) = events.crossing_event_with_traffic_equipment(df_mapping, data)
 
         # ----------------------------------------------------------------------
-        # Add city-level crossing counts for with and without traffic equipment
+        # Add locality-level crossing counts for with and without traffic equipment
         # ----------------------------------------------------------------------
 
         # Ensure target columns exist (init as 0.0 or null; choose 0.0 for counts)
         needed_cols = [
-            "with_trf_light_day_city",
-            "with_trf_light_night_city",
-            "without_trf_light_day_city",
-            "without_trf_light_night_city",
+            "with_trf_light_day_locality",
+            "with_trf_light_night_locality",
+            "without_trf_light_day_locality",
+            "without_trf_light_night_locality",
         ]
         for c in needed_cols:
             if c not in df_mapping.columns:
@@ -2593,44 +2603,44 @@ if __name__ == "__main__":
 
         # ---- WITH equipment ----
         with_rows = []
-        for key, value in crossings_with_traffic_equipment_city.items():
+        for key, value in crossings_with_traffic_equipment_locality.items():
             parts = key.split("_")
             if len(parts) < 4:
                 continue
-            city = parts[0]
+            locality = parts[0]
             lat = float(parts[1])
             lon = float(parts[2])
             tod = int(parts[3])  # 0 day, 1 night
-            with_rows.append({"city": city, "lat": lat, "lon": lon, "_tod": tod, "_val": float(value)})
+            with_rows.append({"locality": locality, "lat": lat, "lon": lon, "_tod": tod, "_val": float(value)})
 
         if with_rows:
             df_with = pl.DataFrame(with_rows)
 
-            # bring in state from mapping (first non-null state for city+lat+lon, else null)
+            # bring in state from mapping (first non-null state for locality+lat+lon, else null)
             if "state" in df_mapping.columns:
                 state_lookup = (
                     df_mapping
-                    .select(["city", "lat", "lon", "state"])
-                    .group_by(["city", "lat", "lon"])
+                    .select(["locality", "lat", "lon", "state"])
+                    .group_by(["locality", "lat", "lon"])
                     .agg(pl.col("state").drop_nulls().first().alias("_state"))
                 )
-                df_with = df_with.join(state_lookup, on=["city", "lat", "lon"], how="left")
+                df_with = df_with.join(state_lookup, on=["locality", "lat", "lon"], how="left")
             else:
                 df_with = df_with.with_columns(pl.lit(None).cast(pl.Utf8).alias("_state"))
 
             df_with = df_with.with_columns([
                 pl.when(pl.col("_tod") == 0).then(pl.col("_val")).otherwise(None).alias("_with_day"),
                 pl.when(pl.col("_tod") == 1).then(pl.col("_val")).otherwise(None).alias("_with_night"),
-            ]).group_by(["city", "lat", "lon", "_state"]).agg([
-                pl.col("_with_day").drop_nulls().last().alias("with_trf_light_day_city"),
-                pl.col("_with_night").drop_nulls().last().alias("with_trf_light_night_city"),
+            ]).group_by(["locality", "lat", "lon", "_state"]).agg([
+                pl.col("_with_day").drop_nulls().last().alias("with_trf_light_day_locality"),
+                pl.col("_with_night").drop_nulls().last().alias("with_trf_light_night_locality"),
             ])
 
-            # Join updates to mapping by city+lat+lon, then only apply if state matches OR both missing
+            # Join updates to mapping by locality+lat+lon, then only apply if state matches OR both missing
             df_mapping = df_mapping.join(
-                df_with.select(["city", "lat", "lon", "_state",
-                                "with_trf_light_day_city", "with_trf_light_night_city"]),
-                on=["city", "lat", "lon"],
+                df_with.select(["locality", "lat", "lon", "_state",
+                                "with_trf_light_day_locality", "with_trf_light_night_locality"]),
+                on=["locality", "lat", "lon"],
                 how="left",
                 suffix="_upd",
             )
@@ -2644,27 +2654,27 @@ if __name__ == "__main__":
                 state_match = pl.lit(True)
 
             df_mapping = df_mapping.with_columns([
-                pl.when(state_match & pl.col("with_trf_light_day_city_upd").is_not_null())
-                  .then(pl.col("with_trf_light_day_city_upd"))
-                  .otherwise(pl.col("with_trf_light_day_city"))
-                  .alias("with_trf_light_day_city"),
-                pl.when(state_match & pl.col("with_trf_light_night_city_upd").is_not_null())
-                  .then(pl.col("with_trf_light_night_city_upd"))
-                  .otherwise(pl.col("with_trf_light_night_city"))
-                  .alias("with_trf_light_night_city"),
-            ]).drop(["with_trf_light_day_city_upd", "with_trf_light_night_city_upd", "_state"])
+                pl.when(state_match & pl.col("with_trf_light_day_locality_upd").is_not_null())
+                  .then(pl.col("with_trf_light_day_locality_upd"))
+                  .otherwise(pl.col("with_trf_light_day_locality"))
+                  .alias("with_trf_light_day_locality"),
+                pl.when(state_match & pl.col("with_trf_light_night_locality_upd").is_not_null())
+                  .then(pl.col("with_trf_light_night_locality_upd"))
+                  .otherwise(pl.col("with_trf_light_night_locality"))
+                  .alias("with_trf_light_night_locality"),
+            ]).drop(["with_trf_light_day_locality_upd", "with_trf_light_night_locality_upd", "_state"])
 
         # ---- WITHOUT equipment ----
         without_rows = []
-        for key, value in crossings_without_traffic_equipment_city.items():
+        for key, value in crossings_without_traffic_equipment_locality.items():
             parts = key.split("_")
             if len(parts) < 4:
                 continue
-            city = parts[0]
+            locality = parts[0]
             lat = float(parts[1])
             lon = float(parts[2])
             tod = int(parts[3])
-            without_rows.append({"city": city, "lat": lat, "lon": lon, "_tod": tod, "_val": float(value)})
+            without_rows.append({"locality": locality, "lat": lat, "lon": lon, "_tod": tod, "_val": float(value)})
 
         if without_rows:
             df_wo = pl.DataFrame(without_rows)
@@ -2672,31 +2682,31 @@ if __name__ == "__main__":
             if "state" in df_mapping.columns:
                 state_lookup = (
                     df_mapping
-                    .select(["city", "lat", "lon", "state"])
-                    .group_by(["city", "lat", "lon"])
+                    .select(["locality", "lat", "lon", "state"])
+                    .group_by(["locality", "lat", "lon"])
                     .agg(pl.col("state").drop_nulls().first().alias("_state"))
                 )
-                df_wo = df_wo.join(state_lookup, on=["city", "lat", "lon"], how="left")
+                df_wo = df_wo.join(state_lookup, on=["locality", "lat", "lon"], how="left")
             else:
                 df_wo = df_wo.with_columns(pl.lit(None).cast(pl.Utf8).alias("_state"))
 
             df_wo = df_wo.with_columns([
                 pl.when(pl.col("_tod") == 0).then(pl.col("_val")).otherwise(None).alias("_wo_day"),
                 pl.when(pl.col("_tod") == 1).then(pl.col("_val")).otherwise(None).alias("_wo_night"),
-            ]).group_by(["city", "lat", "lon", "_state"]).agg([
-                pl.col("_wo_day").drop_nulls().last().alias("without_trf_light_day_city"),
-                pl.col("_wo_night").drop_nulls().last().alias("without_trf_light_night_city"),
+            ]).group_by(["locality", "lat", "lon", "_state"]).agg([
+                pl.col("_wo_day").drop_nulls().last().alias("without_trf_light_day_locality"),
+                pl.col("_wo_night").drop_nulls().last().alias("without_trf_light_night_locality"),
             ])
 
             df_mapping = df_mapping.join(
-                df_wo.select(["city",
+                df_wo.select(["locality",
                               "lat",
                               "lon",
                               "_state",
-                              "without_trf_light_day_city",
-                              "without_trf_light_night_city"]),
+                              "without_trf_light_day_locality",
+                              "without_trf_light_night_locality"]),
 
-                on=["city", "lat", "lon"],
+                on=["locality", "lat", "lon"],
                 how="left",
                 suffix="_upd",
             )
@@ -2710,15 +2720,15 @@ if __name__ == "__main__":
                 state_match = pl.lit(True)
 
             df_mapping = df_mapping.with_columns([
-                pl.when(state_match & pl.col("without_trf_light_day_city_upd").is_not_null())
-                  .then(pl.col("without_trf_light_day_city_upd"))
-                  .otherwise(pl.col("without_trf_light_day_city"))
-                  .alias("without_trf_light_day_city"),
-                pl.when(state_match & pl.col("without_trf_light_night_city_upd").is_not_null())
-                  .then(pl.col("without_trf_light_night_city_upd"))
-                  .otherwise(pl.col("without_trf_light_night_city"))
-                  .alias("without_trf_light_night_city"),
-            ]).drop(["without_trf_light_day_city_upd", "without_trf_light_night_city_upd", "_state"])
+                pl.when(state_match & pl.col("without_trf_light_day_locality_upd").is_not_null())
+                  .then(pl.col("without_trf_light_day_locality_upd"))
+                  .otherwise(pl.col("without_trf_light_day_locality"))
+                  .alias("without_trf_light_day_locality"),
+                pl.when(state_match & pl.col("without_trf_light_night_locality_upd").is_not_null())
+                  .then(pl.col("without_trf_light_night_locality_upd"))
+                  .otherwise(pl.col("without_trf_light_night_locality"))
+                  .alias("without_trf_light_night_locality"),
+            ]).drop(["without_trf_light_day_locality_upd", "without_trf_light_night_locality_upd", "_state"])
 
         # ----------------------------------------------------------------------
         # Add country-level crossing counts for with and without traffic equipment
@@ -2816,112 +2826,117 @@ if __name__ == "__main__":
             )
 
         # ---------------------------------------
-        # Add city-level crossing counts detected
+        # Add locality-level crossing counts detected
         # ---------------------------------------
 
-        # Ensure city-level columns exist
-        needed_city_cols = [
-            "crossing_detected_city_day",
-            "crossing_detected_city_night",
-            "crossing_detected_city_all_day",
-            "crossing_detected_city_all_night",
-            "crossing_detected_city",
-            "crossing_detected_city_all",
+        # Ensure locality-level columns exist
+        needed_locality_cols = [
+            "crossing_detected_locality_day",
+            "crossing_detected_locality_night",
+            "crossing_detected_locality_all_day",
+            "crossing_detected_locality_all_night",
+            "crossing_detected_locality",
+            "crossing_detected_locality_all",
         ]
-        for c in needed_city_cols:
+        for c in needed_locality_cols:
             if c not in df_mapping.columns:
                 df_mapping = df_mapping.with_columns(pl.lit(0.0).alias(c))
 
-        # City day/night (filtered ids)
-        rows_city = []
-        for city_lat_long_cond, value in pedestrian_cross_city.items():
-            parts = city_lat_long_cond.split("_")
+        # locality day/night (filtered ids)
+        rows_locality = []
+        for locality_lat_long_cond, value in pedestrian_cross_locality.items():
+            parts = locality_lat_long_cond.split("_")
             if len(parts) < 4:
                 continue
-            city, lat_s, lon_s, cond = parts[0], parts[1], parts[2], parts[3]
+            locality, lat_s, lon_s, cond = parts[0], parts[1], parts[2], parts[3]
             try:
                 lat = float(lat_s)
             except Exception:
                 continue
             if cond == "0":
-                rows_city.append({"city": city, "lat": lat, "crossing_detected_city_day": float(value),
-                                  "crossing_detected_city_night": None})
+                rows_locality.append({"locality": locality, "lat": lat, "crossing_detected_locality_day": float(value),
+                                      "crossing_detected_locality_night": None})
             elif cond == "1":
-                rows_city.append({"city": city, "lat": lat, "crossing_detected_city_day": None,
-                                  "crossing_detected_city_night": float(value)})
+                rows_locality.append({"locality": locality, "lat": lat, "crossing_detected_locality_day": None,
+                                      "crossing_detected_locality_night": float(value)})
 
-        if rows_city:
-            upd_city = (
-                pl.DataFrame(rows_city)
-                .group_by(["city", "lat"])
+        if rows_locality:
+            upd_locality = (
+                pl.DataFrame(rows_locality)
+                .group_by(["locality", "lat"])
                 .agg([
-                    pl.col("crossing_detected_city_day").drop_nulls().last().alias("crossing_detected_city_day"),
-                    pl.col("crossing_detected_city_night").drop_nulls().last().alias("crossing_detected_city_night"),
+                    pl.col("crossing_detected_locality_day").drop_nulls().last()
+                    .alias("crossing_detected_locality_day"),
+                    pl.col("crossing_detected_locality_night").drop_nulls().last()
+                    .alias("crossing_detected_locality_night"),
                 ])
             )
 
             df_mapping = (
                 df_mapping
-                .join(upd_city, on=["city", "lat"], how="left", suffix="_upd")
+                .join(upd_locality, on=["locality", "lat"], how="left", suffix="_upd")
                 .with_columns([
-                    pl.coalesce([pl.col("crossing_detected_city_day_upd"), pl.col("crossing_detected_city_day")])
-                      .alias("crossing_detected_city_day"),
-                    pl.coalesce([pl.col("crossing_detected_city_night_upd"), pl.col("crossing_detected_city_night")])
-                      .alias("crossing_detected_city_night"),
+                    pl.coalesce([pl.col("crossing_detected_locality_day_upd"),
+                                 pl.col("crossing_detected_locality_day")])
+                      .alias("crossing_detected_locality_day"),
+                    pl.coalesce([pl.col("crossing_detected_locality_night_upd"),
+                                 pl.col("crossing_detected_locality_night")])
+                      .alias("crossing_detected_locality_night"),
                 ])
-                .drop(["crossing_detected_city_day_upd", "crossing_detected_city_night_upd"])
+                .drop(["crossing_detected_locality_day_upd", "crossing_detected_locality_night_upd"])
             )
 
-        # City day/night (all ids)
-        rows_city_all = []
-        for city_lat_long_cond, value in pedestrian_cross_city_all.items():
-            parts = city_lat_long_cond.split("_")
+        # locality day/night (all ids)
+        rows_locality_all = []
+        for locality_lat_long_cond, value in pedestrian_cross_locality_all.items():
+            parts = locality_lat_long_cond.split("_")
             if len(parts) < 4:
                 continue
-            city, lat_s, lon_s, cond = parts[0], parts[1], parts[2], parts[3]
+            locality, lat_s, lon_s, cond = parts[0], parts[1], parts[2], parts[3]
             try:
                 lat = float(lat_s)
             except Exception:
                 continue
             if cond == "0":
-                rows_city_all.append({"city": city, "lat": lat, "crossing_detected_city_all_day": float(value),
-                                      "crossing_detected_city_all_night": None})
+                rows_locality_all.append({"locality": locality, "lat": lat,
+                                          "crossing_detected_locality_all_day": float(value),
+                                          "crossing_detected_locality_all_night": None})
             elif cond == "1":
-                rows_city_all.append({"city": city, "lat": lat, "crossing_detected_city_all_day": None,
-                                      "crossing_detected_city_all_night": float(value)})
+                rows_locality_all.append({"locality": locality, "lat": lat, "crossing_detected_locality_all_day": None,
+                                          "crossing_detected_locality_all_night": float(value)})
 
-        if rows_city_all:
-            upd_city_all = (
-                pl.DataFrame(rows_city_all)
-                .group_by(["city", "lat"])
+        if rows_locality_all:
+            upd_locality_all = (
+                pl.DataFrame(rows_locality_all)
+                .group_by(["locality", "lat"])
                 .agg([
-                    pl.col("crossing_detected_city_all_day").drop_nulls().last()
-                    .alias("crossing_detected_city_all_day"),
-                    pl.col("crossing_detected_city_all_night").drop_nulls().last()
-                    .alias("crossing_detected_city_all_night"),
+                    pl.col("crossing_detected_locality_all_day").drop_nulls().last()
+                    .alias("crossing_detected_locality_all_day"),
+                    pl.col("crossing_detected_locality_all_night").drop_nulls().last()
+                    .alias("crossing_detected_locality_all_night"),
                 ])
             )
 
             df_mapping = (
                 df_mapping
-                .join(upd_city_all, on=["city", "lat"], how="left", suffix="_upd")
+                .join(upd_locality_all, on=["locality", "lat"], how="left", suffix="_upd")
                 .with_columns([
-                    pl.coalesce([pl.col("crossing_detected_city_all_day_upd"),
-                                 pl.col("crossing_detected_city_all_day")])
-                      .alias("crossing_detected_city_all_day"),
-                    pl.coalesce([pl.col("crossing_detected_city_all_night_upd"),
-                                 pl.col("crossing_detected_city_all_night")])
-                      .alias("crossing_detected_city_all_night"),
+                    pl.coalesce([pl.col("crossing_detected_locality_all_day_upd"),
+                                 pl.col("crossing_detected_locality_all_day")])
+                      .alias("crossing_detected_locality_all_day"),
+                    pl.coalesce([pl.col("crossing_detected_locality_all_night_upd"),
+                                 pl.col("crossing_detected_locality_all_night")])
+                      .alias("crossing_detected_locality_all_night"),
                 ])
-                .drop(["crossing_detected_city_all_day_upd", "crossing_detected_city_all_night_upd"])
+                .drop(["crossing_detected_locality_all_day_upd", "crossing_detected_locality_all_night_upd"])
             )
 
         # Totals (same semantics as fillna(0) + fillna(0))
         df_mapping = df_mapping.with_columns([
-            (pl.col("crossing_detected_city_day").fill_null(0.0) + pl.col("crossing_detected_city_night")
-             .fill_null(0.0)).alias("crossing_detected_city"),
-            (pl.col("crossing_detected_city_all_day").fill_null(0.0) + pl.col("crossing_detected_city_all_night")
-             .fill_null(0.0)).alias("crossing_detected_city_all"),
+            (pl.col("crossing_detected_locality_day").fill_null(0.0) + pl.col("crossing_detected_locality_night")
+             .fill_null(0.0)).alias("crossing_detected_locality"),
+            (pl.col("crossing_detected_locality_all_day").fill_null(0.0) + pl.col("crossing_detected_locality_all_night")  # noqa: E501
+             .fill_null(0.0)).alias("crossing_detected_locality_all"),
         ])
 
         # ---------------------------------------
@@ -3052,7 +3067,7 @@ if __name__ == "__main__":
         lat_list = df_mapping.get_column("lat").to_list()
         lon_list = df_mapping.get_column("lon").to_list()
 
-        city_list = df_mapping.get_column("city").to_list()
+        locality_list = df_mapping.get_column("locality").to_list()
         state_list = df_mapping.get_column("state").to_list() if "state" in df_mapping.columns else [None] * df_mapping.height  # noqa: E501
         country_list = df_mapping.get_column("country").to_list()
 
@@ -3064,7 +3079,7 @@ if __name__ == "__main__":
             lon_missing = (lon is None) or (isinstance(lon, float) and lon != lon)
 
             if lat_missing or lon_missing:
-                new_lat, new_lon = geo.get_coordinates(city_list[i], state_list[i], common.correct_country(country_list[i]))  # type: ignore  # noqa: E501
+                new_lat, new_lon = geo.get_coordinates(locality_list[i], state_list[i], common.correct_country(country_list[i]))  # type: ignore  # noqa: E501
                 lat_list[i] = new_lat
                 lon_list[i] = new_lon
 
@@ -3080,7 +3095,7 @@ if __name__ == "__main__":
         # df_mapping_raw cleanup + save
         # ----------------------------------------------------------------------
 
-        drop_cols = ['gmp', 'population_city', 'population_country', 'traffic_mortality',
+        drop_cols = ['gmp', 'population_locality', 'population_country', 'traffic_mortality',
                      'literacy_rate', 'avg_height', 'med_age', 'gini', 'traffic_index', 'videos',
                      'time_of_day', 'start_time', 'end_time', 'vehicle_type', 'upload_date']
 
@@ -3095,24 +3110,24 @@ if __name__ == "__main__":
                 ).alias("channel")
             )
 
-        df_mapping_raw.write_csv(os.path.join(common.output_dir, "mapping_city_raw.csv"))
+        df_mapping_raw.write_csv(os.path.join(common.output_dir, "mapping_locality_raw.csv"))
 
         # ----------------------------------------------------------------------
         # Filters (population thresholds)
         # ----------------------------------------------------------------------
 
         population_threshold = common.get_configs("population_threshold")
-        min_percentage = common.get_configs("min_city_population_percentage")
+        min_percentage = common.get_configs("min_locality_population_percentage")
 
         # Ensure numeric types (coerce invalid to null)
         df_mapping = df_mapping.with_columns([
-            pl.col("population_city").cast(pl.Float64, strict=False).alias("population_city"),
+            pl.col("population_locality").cast(pl.Float64, strict=False).alias("population_locality"),
             pl.col("population_country").cast(pl.Float64, strict=False).alias("population_country"),
         ])
 
         df_mapping = df_mapping.filter(
-            (pl.col("population_city") >= float(population_threshold)) |
-            (pl.col("population_city") >= float(min_percentage) * pl.col("population_country"))
+            (pl.col("population_locality") >= float(population_threshold)) |
+            (pl.col("population_locality") >= float(min_percentage) * pl.col("population_country"))
         )
 
         # Remove the rows of the cities where the footage recorded is less than threshold
@@ -3138,24 +3153,24 @@ if __name__ == "__main__":
         country, number, _ = metrics_cache.get_unique_values(df_mapping, "iso3")
         logger.info(f"Total number of countries and territories after filtering: {number}.")
 
-        city_state_iso3, number, dup_report = metrics_cache.get_unique_values(
+        locality_state_iso3, number, dup_report = metrics_cache.get_unique_values(
             df_mapping,
-            ["city", "state", "iso3"],
+            ["locality", "state", "iso3"],
             return_duplicates=True,
         )
 
-        logger.info(f"Total number of unique city+state+iso3 keys after filtering: {number}.")
+        logger.info(f"Total number of unique locality+state+iso3 keys after filtering: {number}.")
 
         if dup_report is not None and dup_report.height > 0:
             logger.warning(f"Duplicated keys:\n{dup_report}")
 
         df_mapping = mapping_enrich.add_speed_and_time_to_mapping(
             df_mapping=df_mapping,
-            avg_speed_city=avg_speed_city,
+            avg_speed_locality=avg_speed_locality,
             avg_speed_country=avg_speed_country,
-            avg_time_city=avg_time_city,
+            avg_time_locality=avg_time_locality,
             avg_time_country=avg_time_country,
-            pedestrian_cross_city=pedestrian_cross_city,
+            pedestrian_cross_locality=pedestrian_cross_locality,
             pedestrian_cross_country=pedestrian_cross_country,
         )
 
@@ -3177,38 +3192,38 @@ if __name__ == "__main__":
                     cellphone_counter,                            # 7
                     traffic_light_counter,                        # 8
                     stop_sign_counter,                            # 9
-                    pedestrian_cross_city,                        # 10
+                    pedestrian_cross_locality,                        # 10
                     pedestrian_crossing_count,                    # 11
-                    person_city,                                  # 12
-                    bicycle_city,                                 # 13
-                    car_city,                                     # 14
-                    motorcycle_city,                              # 15
-                    bus_city,                                     # 16
-                    truck_city,                                   # 17
-                    cross_evnt_city,                              # 18
-                    vehicle_city,                                 # 19
-                    cellphone_city,                               # 20
-                    traffic_sign_city,                            # 21
+                    person_locality,                                  # 12
+                    bicycle_locality,                                 # 13
+                    car_locality,                                     # 14
+                    motorcycle_locality,                              # 15
+                    bus_locality,                                     # 16
+                    truck_locality,                                   # 17
+                    cross_evnt_locality,                              # 18
+                    vehicle_locality,                                 # 19
+                    cellphone_locality,                               # 20
+                    traffic_sign_locality,                            # 21
                     all_speed,                                    # 22
                     all_time,                                     # 23
-                    avg_time_city,                                # 24
-                    avg_speed_city,                               # 25
+                    avg_time_locality,                                # 24
+                    avg_speed_locality,                               # 25
                     df_mapping,                                   # 26
                     avg_speed_country,                            # 27
                     avg_time_country,                             # 28
-                    crossings_with_traffic_equipment_city,        # 29
-                    crossings_without_traffic_equipment_city,     # 30
+                    crossings_with_traffic_equipment_locality,        # 29
+                    crossings_without_traffic_equipment_locality,     # 30
                     crossings_with_traffic_equipment_country,     # 31
                     crossings_without_traffic_equipment_country,  # 32
                     min_max_speed,                                # 33
                     min_max_time,                                 # 34
                     pedestrian_cross_country,                     # 35
-                    all_speed_city,                               # 36
-                    all_time_city,                                # 37
+                    all_speed_locality,                               # 36
+                    all_time_locality,                                # 37
                     all_speed_country,                            # 38
                     all_time_country,                             # 39
                     df_mapping_raw,                               # 40
-                    pedestrian_cross_city_all,                    # 41
+                    pedestrian_cross_locality_all,                    # 41
                     pedestrian_cross_country_all,                 # 42
                 ),
                 file,
@@ -3225,21 +3240,21 @@ if __name__ == "__main__":
         # NOTE: if your Metrics/Mapping_Enrich now expect polars, keep as-is;
         # if any still expects pandas, convert inside those functions (not here).
         avg_speed_country = metrics.avg_speed_of_crossing_country(df_mapping, all_speed)
-        avg_speed_city = metrics.avg_speed_of_crossing_city(df_mapping, all_speed)
+        avg_speed_locality = metrics.avg_speed_of_crossing_locality(df_mapping, all_speed)
         df_mapping = mapping_enrich.add_speed_and_time_to_mapping(
             df_mapping=df_mapping,
-            avg_speed_city=avg_speed_city,
-            avg_time_city=None,
+            avg_speed_locality=avg_speed_locality,
+            avg_time_locality=None,
             avg_speed_country=avg_speed_country,
             avg_time_country=None,
-            pedestrian_cross_city=pedestrian_cross_city,
+            pedestrian_cross_locality=pedestrian_cross_locality,
             pedestrian_cross_country=pedestrian_cross_country,
         )
         # --- Update avg speed values in the pickle file ---
         with open(file_results, "rb") as file:
             results = pickle.load(file)
         results_list = list(results)
-        results_list[25] = avg_speed_city     # Update city speed
+        results_list[25] = avg_speed_locality     # Update locality speed
         results_list[27] = avg_speed_country  # Update country speed
         results_list[26] = df_mapping         # Update mapping (polars)
         with open(file_results, "wb") as file:
@@ -3249,21 +3264,21 @@ if __name__ == "__main__":
     # --- Check if reanalysis of waiting time is required ---
     if common.get_configs("reanalyse_waiting_time"):
         avg_time_country = metrics.avg_time_to_start_cross_country(df_mapping, all_time)
-        avg_time_city = metrics.avg_time_to_start_cross_city(df_mapping, all_time)
+        avg_time_locality = metrics.avg_time_to_start_cross_locality(df_mapping, all_time)
         df_mapping = mapping_enrich.add_speed_and_time_to_mapping(
             df_mapping=df_mapping,
-            avg_time_city=avg_time_city,
-            avg_speed_city=avg_speed_city,
+            avg_time_locality=avg_time_locality,
+            avg_speed_locality=avg_speed_locality,
             avg_time_country=avg_time_country,
             avg_speed_country=avg_speed_country,
-            pedestrian_cross_city=pedestrian_cross_city,
+            pedestrian_cross_locality=pedestrian_cross_locality,
             pedestrian_cross_country=pedestrian_cross_country,
         )
         # --- Update avg time values in the pickle file ---
         with open(file_results, "rb") as file:
             results = pickle.load(file)
         results_list = list(results)
-        results_list[24] = avg_time_city     # Update city waiting time
+        results_list[24] = avg_time_locality     # Update locality waiting time
         results_list[28] = avg_time_country  # Update country waiting time
         results_list[26] = df_mapping        # Update mapping
         with open(file_results, "wb") as file:
@@ -3292,8 +3307,8 @@ if __name__ == "__main__":
         else:
             df_mapping = df_mapping.head(0)  # no countries meet threshold
 
-    # Sort by continent and city, both in ascending order
-    df_mapping = df_mapping.sort(["continent", "city"])
+    # Sort by continent and locality, both in ascending order
+    df_mapping = df_mapping.sort(["continent", "locality"])
 
     # Save updated mapping file in output
     os.makedirs(common.output_dir, exist_ok=True)
@@ -3385,21 +3400,21 @@ if __name__ == "__main__":
                       save_file=True,
                       data_file=file_results)
 
-    if common.get_configs("analysis_level") == "city":
+    if common.get_configs("analysis_level") == "locality":
 
         # Amount of footage
         bivariate.scatter(df=df,
                           x="total_time",
                           y="person",
                           color="continent",
-                          text="city",
+                          text="locality",
                           xaxis_title='Total time of footage (s)',
                           yaxis_title='Number of detected pedestrians',
                           pretty_text=False,
                           marker_size=10,
                           save_file=True,
                           hover_data=hover_data,
-                          hover_name="city",
+                          hover_name="locality",
                           legend_title="",
                           legend_x=0.01,
                           legend_y=1.0,
@@ -3547,10 +3562,11 @@ if __name__ == "__main__":
                            right_margin=10
                            )
 
-        correlation.correlation_matrix(df_mapping, pedestrian_cross_city, person_city, bicycle_city,
-                                       car_city, motorcycle_city, bus_city, truck_city, cross_evnt_city,
-                                       vehicle_city, cellphone_city, traffic_sign_city, all_speed, all_time,
-                                       avg_time_city, avg_speed_city)
+        correlation.correlation_matrix(df_mapping, pedestrian_cross_locality, person_locality, bicycle_locality,
+                                       car_locality, motorcycle_locality, bus_locality, truck_locality,
+                                       cross_evnt_locality, vehicle_locality, cellphone_locality,
+                                       traffic_sign_locality, all_speed, all_time, avg_time_locality,
+                                       avg_speed_locality)
 
         # Speed of crossing vs time to start crossing
         df = (df_mapping.filter(
@@ -3563,14 +3579,14 @@ if __name__ == "__main__":
                           x="speed_crossing",
                           y="time_crossing",
                           color="continent",
-                          text="city",
+                          text="locality",
                           xaxis_title='Speed of crossing (in m/s)',
                           yaxis_title='Crossing initiation time (in s)',
                           pretty_text=False,
                           marker_size=10,
                           save_file=True,
                           hover_data=hover_data,
-                          hover_name="city",
+                          hover_name="locality",
                           legend_title="",
                           legend_x=0.01,
                           legend_y=1.0,
@@ -3587,14 +3603,14 @@ if __name__ == "__main__":
                           x="speed_crossing_day",
                           y="time_crossing_day",
                           color="continent",
-                          text="city",
+                          text="locality",
                           xaxis_title='Crossing speed during daytime (in m/s)',
                           yaxis_title='Crossing initiation time during daytime (in s)',
                           pretty_text=False,
                           marker_size=10,
                           save_file=True,
                           hover_data=hover_data,
-                          hover_name="city",
+                          hover_name="locality",
                           legend_title="",
                           legend_x=0.01,
                           legend_y=1.0,
@@ -3610,14 +3626,14 @@ if __name__ == "__main__":
                           x="speed_crossing_night",
                           y="time_crossing_night",
                           color="continent",
-                          text="city",
+                          text="locality",
                           xaxis_title='Crossing speed during night time (in m/s)',
                           yaxis_title='Crossing initiation time during night time (in s)',
                           pretty_text=False,
                           marker_size=10,
                           save_file=True,
                           hover_data=hover_data,
-                          hover_name="city",
+                          hover_name="locality",
                           legend_title="",
                           legend_x=0.87,
                           legend_y=1.0,
@@ -3625,22 +3641,22 @@ if __name__ == "__main__":
                           marginal_x=None,  # type: ignore
                           marginal_y=None)  # type: ignore
 
-        # Time to start crossing vs population of city
+        # Time to start crossing vs population of locality
         df = df_mapping[df_mapping["time_crossing"] != 0].copy()
-        df = df[(df["population_city"].notna()) & (df["population_city"] != 0)]
+        df = df[(df["population_locality"].notna()) & (df["population_locality"] != 0)]
         df['state'] = df['state'].fillna('NA')
         bivariate.scatter(df=df,
                           x="time_crossing",
-                          y="population_city",
+                          y="population_locality",
                           color="continent",
-                          text="city",
+                          text="locality",
                           xaxis_title='Crossing initiation time (in s)',
-                          yaxis_title='Population of city',
+                          yaxis_title='Population of locality',
                           pretty_text=False,
                           marker_size=10,
                           save_file=True,
                           hover_data=hover_data,
-                          hover_name="city",
+                          hover_name="locality",
                           legend_title="",
                           legend_x=0.87,
                           legend_y=1.0,
@@ -3648,22 +3664,22 @@ if __name__ == "__main__":
                           marginal_x=None,  # type: ignore
                           marginal_y=None)  # type: ignore
 
-        # Speed of crossing vs population of city
+        # Speed of crossing vs population of locality
         df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
-        df = df[(df["population_city"].notna()) & (df["population_city"] != 0)]
+        df = df[(df["population_locality"].notna()) & (df["population_locality"] != 0)]
         df['state'] = df['state'].fillna('NA')
         bivariate.scatter(df=df,
                           x="speed_crossing",
-                          y="population_city",
+                          y="population_locality",
                           color="continent",
-                          text="city",
+                          text="locality",
                           xaxis_title='Mean speed of crossing (in m/s)',
-                          yaxis_title='Population of city',
+                          yaxis_title='Population of locality',
                           pretty_text=False,
                           marker_size=10,
                           save_file=True,
                           hover_data=hover_data,
-                          hover_name="city",
+                          hover_name="locality",
                           legend_title="",
                           legend_x=0.87,
                           legend_y=1.0,
@@ -3671,7 +3687,7 @@ if __name__ == "__main__":
                           marginal_x=None,  # type: ignore
                           marginal_y=None)  # type: ignore
 
-        # Time to start crossing vs population of city
+        # Time to start crossing vs population of locality
         df = df_mapping[df_mapping["time_crossing"] != 0].copy()
         df = df[(df["traffic_mortality"].notna()) & (df["traffic_mortality"] != 0)]
         df['state'] = df['state'].fillna('NA')
@@ -3679,14 +3695,14 @@ if __name__ == "__main__":
                           x="time_crossing",
                           y="traffic_mortality",
                           color="continent",
-                          text="city",
+                          text="locality",
                           xaxis_title='Crossing initiation time (in s)',
                           yaxis_title='National traffic mortality rate (per 100,000 of population)',
                           pretty_text=False,
                           marker_size=10,
                           save_file=True,
                           hover_data=hover_data,
-                          hover_name="city",
+                          hover_name="locality",
                           legend_title="",
                           legend_x=0.87,
                           legend_y=1.0,
@@ -3694,7 +3710,7 @@ if __name__ == "__main__":
                           marginal_x=None,  # type: ignore
                           marginal_y=None)  # type: ignore
 
-        # Speed of crossing vs population of city
+        # Speed of crossing vs population of locality
         df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
         df = df[(df["traffic_mortality"].notna()) & (df["traffic_mortality"] != 0)]
         df['state'] = df['state'].fillna('NA')
@@ -3702,14 +3718,14 @@ if __name__ == "__main__":
                           x="speed_crossing",
                           y="traffic_mortality",
                           color="continent",
-                          text="city",
+                          text="locality",
                           xaxis_title='Mean speed of crossing (in m/s)',
                           yaxis_title='National traffic mortality rate (per 100,000 of population)',
                           pretty_text=False,
                           marker_size=10,
                           save_file=True,
                           hover_data=hover_data,
-                          hover_name="city",
+                          hover_name="locality",
                           legend_title="",
                           legend_x=0.87,
                           legend_y=1.0,
@@ -3717,7 +3733,7 @@ if __name__ == "__main__":
                           marginal_x=None,  # type: ignore
                           marginal_y=None)  # type: ignore
 
-        # Time to start crossing vs population of city
+        # Time to start crossing vs population of locality
         df = df_mapping[df_mapping["time_crossing"] != 0].copy()
         df = df[(df["literacy_rate"].notna()) & (df["literacy_rate"] != 0)]
         df['state'] = df['state'].fillna('NA')
@@ -3725,14 +3741,14 @@ if __name__ == "__main__":
                           x="time_crossing",
                           y="literacy_rate",
                           color="continent",
-                          text="city",
+                          text="locality",
                           xaxis_title='Crossing initiation time (in s)',
                           yaxis_title='Literacy rate',
                           pretty_text=False,
                           marker_size=10,
                           save_file=True,
                           hover_data=hover_data,
-                          hover_name="city",
+                          hover_name="locality",
                           legend_title="",
                           legend_x=0.87,
                           legend_y=0.01,
@@ -3740,7 +3756,7 @@ if __name__ == "__main__":
                           marginal_x=None,  # type: ignore
                           marginal_y=None)  # type: ignore
 
-        # Speed of crossing vs population of city
+        # Speed of crossing vs population of locality
         df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
         df = df[(df["literacy_rate"].notna()) & (df["literacy_rate"] != 0)]
         df['state'] = df['state'].fillna('NA')
@@ -3748,14 +3764,14 @@ if __name__ == "__main__":
                           x="speed_crossing",
                           y="literacy_rate",
                           color="continent",
-                          text="city",
+                          text="locality",
                           xaxis_title='Mean speed of crossing (in m/s)',
                           yaxis_title='Literacy rate',
                           pretty_text=False,
                           marker_size=10,
                           save_file=True,
                           hover_data=hover_data,
-                          hover_name="city",
+                          hover_name="locality",
                           legend_title="",
                           legend_x=0.87,
                           legend_y=0.01,
@@ -3763,7 +3779,7 @@ if __name__ == "__main__":
                           marginal_x=None,  # type: ignore
                           marginal_y=None)  # type: ignore
 
-        # Time to start crossing vs population of city
+        # Time to start crossing vs population of locality
         df = df_mapping[df_mapping["time_crossing"] != 0].copy()
         df = df[(df["gini"].notna()) & (df["gini"] != 0)]
         df['state'] = df['state'].fillna('NA')
@@ -3771,14 +3787,14 @@ if __name__ == "__main__":
                           x="time_crossing",
                           y="gini",
                           color="continent",
-                          text="city",
+                          text="locality",
                           xaxis_title='Crossing initiation time (in s)',
                           yaxis_title='Gini coefficient',
                           pretty_text=False,
                           marker_size=10,
                           save_file=True,
                           hover_data=hover_data,
-                          hover_name="city",
+                          hover_name="locality",
                           legend_title="",
                           legend_x=0.87,
                           legend_y=1.0,
@@ -3786,7 +3802,7 @@ if __name__ == "__main__":
                           marginal_x=None,  # type: ignore
                           marginal_y=None)  # type: ignore
 
-        # Speed of crossing vs population of city
+        # Speed of crossing vs population of locality
         df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
         df = df[(df["gini"].notna()) & (df["gini"] != 0)]
         df['state'] = df['state'].fillna('NA')
@@ -3794,14 +3810,14 @@ if __name__ == "__main__":
                           x="speed_crossing",
                           y="gini",
                           color="continent",
-                          text="city",
+                          text="locality",
                           xaxis_title='Mean speed of crossing (in m/s)',
                           yaxis_title='Gini coefficient',
                           pretty_text=False,
                           marker_size=10,
                           save_file=True,
                           hover_data=hover_data,
-                          hover_name="city",
+                          hover_name="locality",
                           legend_title="",
                           legend_x=0.87,
                           legend_y=1.0,
@@ -3809,7 +3825,7 @@ if __name__ == "__main__":
                           marginal_x=None,  # type: ignore
                           marginal_y=None)  # type: ignore
 
-        # Time to start crossing vs population of city
+        # Time to start crossing vs population of locality
         df = df_mapping[df_mapping["time_crossing"] != 0].copy()
         df = df[(df["traffic_index"].notna()) & (df["traffic_index"] != 0)]
         df['state'] = df['state'].fillna('NA')
@@ -3817,7 +3833,7 @@ if __name__ == "__main__":
                           x="time_crossing",
                           y="traffic_index",
                           color="continent",
-                          text="city",
+                          text="locality",
                           # size="gmp",
                           xaxis_title='Crossing initiation time (in s)',
                           yaxis_title='Traffic index',
@@ -3825,7 +3841,7 @@ if __name__ == "__main__":
                           marker_size=10,
                           save_file=True,
                           hover_data=hover_data,
-                          hover_name="city",
+                          hover_name="locality",
                           legend_title="",
                           legend_x=0.87,
                           legend_y=1.0,
@@ -3833,7 +3849,7 @@ if __name__ == "__main__":
                           marginal_x=None,  # type: ignore
                           marginal_y=None)  # type: ignore
 
-        # Speed of crossing vs population of city
+        # Speed of crossing vs population of locality
         df = df_mapping[df_mapping["speed_crossing"] != 0].copy()
         df = df[df["traffic_index"] != 0]
         df['state'] = df['state'].fillna('NA')
@@ -3841,14 +3857,14 @@ if __name__ == "__main__":
                           x="speed_crossing",
                           y="traffic_index",
                           color="continent",
-                          text="city",
+                          text="locality",
                           xaxis_title='Mean speed of crossing (in m/s)',
                           yaxis_title='Traffic index',
                           pretty_text=False,
                           marker_size=10,
                           save_file=True,
                           hover_data=hover_data,
-                          hover_name="city",
+                          hover_name="locality",
                           legend_title="",
                           legend_x=0.87,
                           legend_y=1.0,
@@ -3864,14 +3880,14 @@ if __name__ == "__main__":
                           x="time_crossing",
                           y="cellphone_normalised",
                           color="continent",
-                          text="city",
+                          text="locality",
                           xaxis_title='Crossing initiation time (in s)',
                           yaxis_title='Mobile phones detected (normalised over time)',
                           pretty_text=False,
                           marker_size=10,
                           save_file=True,
                           hover_data=hover_data,
-                          hover_name="city",
+                          hover_name="locality",
                           legend_title="",
                           legend_x=0.87,
                           legend_y=1.0,
@@ -3887,14 +3903,14 @@ if __name__ == "__main__":
                           x="speed_crossing",
                           y="cellphone_normalised",
                           color="continent",
-                          text="city",
+                          text="locality",
                           xaxis_title='Mean speed of crossing (in m/s)',
                           yaxis_title='Mobile phones detected (normalised over time)',
                           pretty_text=False,
                           marker_size=10,
                           save_file=True,
                           hover_data=hover_data,
-                          hover_name="city",
+                          hover_name="locality",
                           legend_title="",
                           legend_x=0.87,
                           legend_y=1.0,
@@ -3919,20 +3935,20 @@ if __name__ == "__main__":
         # Crossing with and without traffic lights
         df = df_mapping.copy()
         df['state'] = df['state'].fillna('NA')
-        df['with_trf_light_norm'] = (df['with_trf_light_day'] + df['with_trf_light_night']) / df['total_time'] / df['population_city']  # noqa: E501
-        df['without_trf_light_norm'] = (df['without_trf_light_day'] + df['without_trf_light_night']) / df['total_time'] / df['population_city']  # noqa: E501
+        df['with_trf_light_norm'] = (df['with_trf_light_day'] + df['with_trf_light_night']) / df['total_time'] / df['population_locality']  # noqa: E501
+        df['without_trf_light_norm'] = (df['without_trf_light_day'] + df['without_trf_light_night']) / df['total_time'] / df['population_locality']  # noqa: E501
         bivariate.scatter(df=df,
                           x="with_trf_light_norm",
                           y="without_trf_light_norm",
                           color="continent",
-                          text="city",
+                          text="locality",
                           xaxis_title='Crossing events with traffic lights (normalised)',
                           yaxis_title='Crossing events without traffic lights (normalised)',
                           pretty_text=False,
                           marker_size=10,
                           save_file=True,
                           hover_data=hover_data,
-                          hover_name="city",
+                          hover_name="locality",
                           legend_title="",
                           legend_x=0.87,
                           legend_y=1.0,
@@ -3951,7 +3967,7 @@ if __name__ == "__main__":
         remove_set = set(columns_remove)
         hover_data = [c for c in df_countries.columns if c not in remove_set]
 
-        columns_remove_raw = ['gini', 'traffic_mortality', 'avg_height', 'population_country', 'population_city',
+        columns_remove_raw = ['gini', 'traffic_mortality', 'avg_height', 'population_country', 'population_locality',
                               'med_age', 'literacy_rate']
         remove_raw_set = remove_set | set(columns_remove_raw)
         hover_data_raw = [c for c in df_countries.columns if c not in remove_raw_set]
@@ -4005,8 +4021,8 @@ if __name__ == "__main__":
             pl.col("state").fill_null("NA").alias("state")
         )
 
-        # Sort by continent and city, both in ascending order
-        df = df.sort(["continent", "city"])
+        # Sort by continent and locality, both in ascending order
+        df = df.sort(["continent", "locality"])
 
         maps.map_world(df=df_countries_raw.to_pandas(),
                        color="log_total_time",
@@ -4289,11 +4305,11 @@ if __name__ == "__main__":
                                                        legend_y=0.04,
                                                        legend_spacing=0.01)
 
-        correlation.correlation_matrix_country(df_mapping, df_countries, pedestrian_cross_city, person_city,
-                                               bicycle_city, car_city, motorcycle_city, bus_city, truck_city,
-                                               cross_evnt_city, vehicle_city, cellphone_city, traffic_sign_city,
-                                               avg_speed_country, avg_time_country,
-                                               crossings_without_traffic_equipment_country)
+        correlation.correlation_matrix_country(df_mapping, df_countries, pedestrian_cross_locality, person_locality,
+                                               bicycle_locality, car_locality, motorcycle_locality, bus_locality,
+                                               truck_locality, cross_evnt_locality, vehicle_locality,
+                                               cellphone_locality, traffic_sign_locality, avg_speed_country,
+                                               avg_time_country, crossings_without_traffic_equipment_country)
 
         # Speed of crossing vs Crossing initiation time
         df = (
@@ -4366,7 +4382,7 @@ if __name__ == "__main__":
                           marginal_x=None,  # type: ignore
                           marginal_y=None)  # type: ignore
 
-        # Time to start crossing vs population of city
+        # Time to start crossing vs population of locality
         df = (df_countries
               .filter(pl.col("time_crossing_day_night_country_avg") != 0)
               .filter(pl.col("population_country").is_not_null() & (pl.col("population_country") != 0)))
@@ -4412,7 +4428,7 @@ if __name__ == "__main__":
                           marginal_x=None,  # type: ignore
                           marginal_y=None)  # type: ignore
 
-        # Time to start crossing vs population of city
+        # Time to start crossing vs population of locality
         df = (df_countries
               .filter(pl.col("time_crossing_day_night_country_avg") != 0)
               .filter(pl.col("traffic_mortality").is_not_null() & (pl.col("traffic_mortality") != 0)))
@@ -4435,7 +4451,7 @@ if __name__ == "__main__":
                           marginal_x=None,  # type: ignore
                           marginal_y=None)  # type: ignore
 
-        # Speed of crossing vs population of city
+        # Speed of crossing vs population of locality
         df = (df_countries
               .filter(pl.col("speed_crossing_day_night_country_avg") != 0)
               .filter(pl.col("traffic_mortality").is_not_null() & (pl.col("traffic_mortality") != 0)))
@@ -4458,7 +4474,7 @@ if __name__ == "__main__":
                           marginal_x=None,  # type: ignore
                           marginal_y=None)  # type: ignore
 
-        # Time to start crossing vs population of city
+        # Time to start crossing vs population of locality
         df = (df_countries
               .filter(pl.col("time_crossing_day_night_country_avg") != 0)
               .filter(pl.col("literacy_rate").is_not_null() & (pl.col("literacy_rate") != 0)))
@@ -4481,7 +4497,7 @@ if __name__ == "__main__":
                           marginal_x=None,  # type: ignore
                           marginal_y=None)  # type: ignore
 
-        # Speed of crossing vs population of city
+        # Speed of crossing vs population of locality
         df = (df_countries
               .filter(pl.col("speed_crossing_day_night_country_avg") != 0)
               .filter(pl.col("literacy_rate").is_not_null() & (pl.col("literacy_rate") != 0)))
@@ -4504,7 +4520,7 @@ if __name__ == "__main__":
                           marginal_x=None,  # type: ignore
                           marginal_y=None)  # type: ignore
 
-        # Time to start crossing vs population of city
+        # Time to start crossing vs population of locality
         df = (df_countries
               .filter(pl.col("time_crossing_day_night_country_avg") != 0)
               .filter(pl.col("gini").is_not_null() & (pl.col("gini") != 0)))
@@ -4527,7 +4543,7 @@ if __name__ == "__main__":
                           marginal_x=None,  # type: ignore
                           marginal_y=None)  # type: ignore
 
-        # Speed of crossing vs population of city
+        # Speed of crossing vs population of locality
         df = (df_countries
               .filter(pl.col("speed_crossing_day_night_country_avg") != 0)
               .filter(pl.col("gini").is_not_null() & (pl.col("gini") != 0)))
@@ -4550,7 +4566,7 @@ if __name__ == "__main__":
                           marginal_x=None,  # type: ignore
                           marginal_y=None)  # type: ignore
 
-        # Time to start crossing vs population of city
+        # Time to start crossing vs population of locality
         df = (df_countries
               .filter(pl.col("time_crossing_day_night_country_avg") != 0)
               .filter(pl.col("med_age").is_not_null() & (pl.col("med_age") != 0)))
@@ -4574,7 +4590,7 @@ if __name__ == "__main__":
                           marginal_x=None,  # type: ignore
                           marginal_y=None)  # type: ignore
 
-        # Speed of crossing vs population of city
+        # Speed of crossing vs population of locality
         df = (df_countries
               .filter(pl.col("speed_crossing_day_night_country_avg") != 0)
               .filter(pl.col("med_age") != 0))

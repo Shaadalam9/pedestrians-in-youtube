@@ -21,7 +21,7 @@ grouping_class = Grouping()
 plots_io_class = IO()
 logger = CustomLogger(__name__)  # use custom logger
 
-# File to store the city coordinates
+# File to store the locality coordinates
 file_results = 'results.pickle'
 
 
@@ -29,7 +29,7 @@ class Stacked:
     def __init__(self) -> None:
         pass
 
-    def stack_plot(self, df_mapping, order_by, metric, data_view, title_text, filename, analysis_level="city",
+    def stack_plot(self, df_mapping, order_by, metric, data_view, title_text, filename, analysis_level="locality",
                    font_size_captions=40, x_axis_title_height=110, legend_x=0.92, legend_y=0.015, legend_spacing=0.02,
                    left_margin=10, right_margin=10):
         """
@@ -75,7 +75,7 @@ class Stacked:
             logger.info(message)
 
         # Map metric names to their index in the data tuple
-        if analysis_level == "city":
+        if analysis_level == "locality":
             metric_index_map = {
                 "speed": 25,
                 "time": 24
@@ -103,25 +103,25 @@ class Stacked:
             if not (isinstance(value, float) and math.isnan(value))
         }
 
-        if analysis_level == "city":
-            # Now populate the final_dict with city-wise speed data
-            for city_condition, _ in tqdm(metric_data.items()):
-                city, lat, long, condition = city_condition.split('_')
+        if analysis_level == "locality":
+            # Now populate the final_dict with locality-wise speed data
+            for locality_condition, _ in tqdm(metric_data.items()):
+                locality, lat, long, condition = locality_condition.split('_')
 
-                # Get the country from the previously stored city_country_map
-                country = metadata_class.get_value(df_mapping, "city", city, "lat", float(lat), "country")
-                iso_code = metadata_class.get_value(df_mapping, "city", city, "lat", float(lat), "iso3")
+                # Get the country from the previously stored locality_country_map
+                country = metadata_class.get_value(df_mapping, "locality", locality, "lat", float(lat), "country")
+                iso_code = metadata_class.get_value(df_mapping, "locality", locality, "lat", float(lat), "iso3")
 
                 if country or iso_code is not None:
-                    # Initialise the city's dictionary if not already present
-                    if f'{city}_{lat}_{long}' not in final_dict:
-                        final_dict[f'{city}_{lat}_{long}'] = {f"{metric}_0": None,
-                                                              f"{metric}_1": None,
-                                                              "country": country,
-                                                              "iso": iso_code}
+                    # Initialise the locality's dictionary if not already present
+                    if f'{locality}_{lat}_{long}' not in final_dict:
+                        final_dict[f'{locality}_{lat}_{long}'] = {f"{metric}_0": None,
+                                                                  f"{metric}_1": None,
+                                                                  "country": country,
+                                                                  "iso": iso_code}
 
                     # Populate the corresponding speed based on the condition
-                    final_dict[f'{city}_{lat}_{long}'][f"{metric}_{condition}"] = _
+                    final_dict[f'{locality}_{lat}_{long}'][f"{metric}_{condition}"] = _
 
         if analysis_level == "country":
             for country_condition, _ in tqdm(metric_data.items()):
@@ -136,7 +136,7 @@ class Stacked:
                                                     target_column="iso3")
 
                 if country is not None or iso_code is not None:
-                    # Initialise the city's dictionary if not already present
+                    # Initialise the locality's dictionary if not already present
                     if f'{country}' not in final_dict:
                         final_dict[f'{country}'] = {f"{metric}_0": None, f"{metric}_1": None,
                                                     "country": country, "iso3": iso_code}
@@ -147,57 +147,57 @@ class Stacked:
             if data_view == "day":
                 cities_ordered = sorted(
                     [
-                        city for city in final_dict.keys()
-                        if (final_dict[city].get(f"{metric}_0") or 0) >= 0.005
+                        locality for locality in final_dict.keys()
+                        if (final_dict[locality].get(f"{metric}_0") or 0) >= 0.005
                     ],
-                    key=lambda city: (final_dict[city].get("iso") or "")
+                    key=lambda locality: (final_dict[locality].get("iso") or "")
                 )
             elif data_view == "night":
                 cities_ordered = sorted(
                     [
-                        city for city in final_dict.keys()
-                        if (final_dict[city].get(f"{metric}_1") or 0) >= 0.005
+                        locality for locality in final_dict.keys()
+                        if (final_dict[locality].get(f"{metric}_1") or 0) >= 0.005
                     ],
-                    key=lambda city: (final_dict[city].get("iso") or "")
+                    key=lambda locality: (final_dict[locality].get("iso") or "")
                 )
             else:
                 cities_ordered = sorted(
                     [
-                        city for city in final_dict.keys()
-                        if (((final_dict[city].get(f"{metric}_0") or 0) + (final_dict[city].get(f"{metric}_1") or 0)) / 2) >= 0.005  # noqa:E501
+                        locality for locality in final_dict.keys()
+                        if (((final_dict[locality].get(f"{metric}_0") or 0) + (final_dict[locality].get(f"{metric}_1") or 0)) / 2) >= 0.005  # noqa:E501
                     ],
-                    key=lambda city: (final_dict[city].get("iso") or "")
+                    key=lambda locality: (final_dict[locality].get("iso") or "")
                 )
 
         elif order_by == "average":
             if data_view == "day":
                 cities_ordered = sorted(
                     [
-                        city for city in final_dict.keys()
-                        if (final_dict[city].get(f"{metric}_0") or 0) >= 0.005
+                        locality for locality in final_dict.keys()
+                        if (final_dict[locality].get(f"{metric}_0") or 0) >= 0.005
                     ],
-                    key=lambda city: final_dict[city].get(f"{metric}_0") or 0,
+                    key=lambda locality: final_dict[locality].get(f"{metric}_0") or 0,
                     reverse=True
                 )
 
             elif data_view == "night":
                 cities_ordered = sorted(
                     [
-                        city for city in final_dict.keys()
-                        if (final_dict[city].get(f"{metric}_1") or 0) >= 0.005
+                        locality for locality in final_dict.keys()
+                        if (final_dict[locality].get(f"{metric}_1") or 0) >= 0.005
                     ],
-                    key=lambda city: final_dict[city].get(f"{metric}_1") or 0,
+                    key=lambda locality: final_dict[locality].get(f"{metric}_1") or 0,
                     reverse=True
                 )
 
             else:
                 cities_ordered = sorted(
                     [
-                        city for city in final_dict.keys()
-                        if (((final_dict[city].get(f"{metric}_0") or 0) + (final_dict[city].get(f"{metric}_1") or 0)) / 2) >= 0.005  # noqa:E501  # type: ignore
+                        locality for locality in final_dict.keys()
+                        if (((final_dict[locality].get(f"{metric}_0") or 0) + (final_dict[locality].get(f"{metric}_1") or 0)) / 2) >= 0.005  # noqa:E501  # type: ignore
                     ],
-                    key=lambda city: (
-                        ((final_dict[city].get(f"{metric}_0") or 0) + (final_dict[city].get(f"{metric}_1") or 0)) / 2  # noqa:E501  # type: ignore
+                    key=lambda locality: (
+                        ((final_dict[locality].get(f"{metric}_0") or 0) + (final_dict[locality].get(f"{metric}_1") or 0)) / 2  # noqa:E501  # type: ignore
                     ), reverse=True
                 )
 
@@ -232,13 +232,13 @@ class Stacked:
         )
 
         # Plot left column (first half of cities)
-        for i, city in enumerate(cities_ordered[:num_cities_per_col]):
-            city_new, lat, long = city.split('_')
-            city = grouping_class.process_city_string(city, df_mapping)
+        for i, locality in enumerate(cities_ordered[:num_cities_per_col]):
+            locality_new, lat, long = locality.split('_')
+            locality = grouping_class.process_locality_string(locality, df_mapping)
 
             if order_by == "average":
-                iso_code = metadata_class.get_value(df_mapping, "city", city_new, "lat", float(lat), "iso3")
-                city = iso_class.iso2_to_flag(iso_class.iso3_to_iso2(iso_code)) + " " + city  # type: ignore
+                iso_code = metadata_class.get_value(df_mapping, "locality", locality_new, "lat", float(lat), "iso3")
+                locality = iso_class.iso2_to_flag(iso_class.iso3_to_iso2(iso_code)) + " " + locality  # type: ignore
 
             # Row for speed (Day and Night)
             row = i + 1
@@ -250,9 +250,9 @@ class Stacked:
 
                 fig.add_trace(go.Bar(
                     x=[day_values[i]],
-                    y=[f'{city} {value:.2f}'],
+                    y=[f'{locality} {value:.2f}'],
                     orientation='h',
-                    name=f"{city} {metric} during day",
+                    name=f"{locality} {metric} during day",
                     marker=dict(color=C.BAR_COLOR_1),
                     text=[''],
                     textposition='inside',
@@ -265,9 +265,9 @@ class Stacked:
 
                 fig.add_trace(go.Bar(
                     x=[night_values[i]],
-                    y=[f'{city} {value:.2f}'],
+                    y=[f'{locality} {value:.2f}'],
                     orientation='h',
-                    name=f"{city} {metric} during night",
+                    name=f"{locality} {metric} during night",
                     marker=dict(color=C.BAR_COLOR_2),
                     text=[''],
                     textposition='inside',
@@ -279,9 +279,9 @@ class Stacked:
                 value = day_values[i]
                 fig.add_trace(go.Bar(
                     x=[day_values[i]],
-                    y=[f'{city} {value:.2f}'],
+                    y=[f'{locality} {value:.2f}'],
                     orientation='h',
-                    name=f"{city} {metric} during day",
+                    name=f"{locality} {metric} during day",
                     marker=dict(color=C.BAR_COLOR_1),
                     text=[''],
                     textposition='inside',
@@ -296,9 +296,9 @@ class Stacked:
                 value = night_values[i]
                 fig.add_trace(go.Bar(
                     x=[night_values[i]],
-                    y=[f'{city} {value:.2f}'],
+                    y=[f'{locality} {value:.2f}'],
                     orientation='h',
-                    name=f"{city} {metric} during night",
+                    name=f"{locality} {metric} during night",
                     marker=dict(color=C.BAR_COLOR_2),
                     text=[''],
                     textposition='inside',
@@ -310,13 +310,13 @@ class Stacked:
                                   col=1)
 
         # Plot right column (second half of cities)
-        for i, city in enumerate(cities_ordered[num_cities_per_col:]):
-            city_new, lat, long = city.split('_')
-            city = grouping_class.process_city_string(city, df_mapping)
+        for i, locality in enumerate(cities_ordered[num_cities_per_col:]):
+            locality_new, lat, long = locality.split('_')
+            locality = grouping_class.process_locality_string(locality, df_mapping)
 
             if order_by == "average":
-                iso_code = metadata_class.get_value(df_mapping, "city", city_new, "lat", float(lat), "iso3")
-                city = iso_class.iso2_to_flag(iso_class.iso3_to_iso2(iso_code)) + " " + city  # type: ignore
+                iso_code = metadata_class.get_value(df_mapping, "locality", locality_new, "lat", float(lat), "iso3")
+                locality = iso_class.iso2_to_flag(iso_class.iso3_to_iso2(iso_code)) + " " + locality  # type: ignore
 
             # Row for speed (Day and Night)
             row = i + 1
@@ -329,9 +329,9 @@ class Stacked:
 
                 fig.add_trace(go.Bar(
                     x=[day_values[idx]],
-                    y=[f'{city} {value:.2f}'],
+                    y=[f'{locality} {value:.2f}'],
                     orientation='h',
-                    name=f"{city} {metric} during day",
+                    name=f"{locality} {metric} during day",
                     marker=dict(color=C.BAR_COLOR_1),
                     text=[''],
                     textposition='inside',
@@ -344,9 +344,9 @@ class Stacked:
 
                 fig.add_trace(go.Bar(
                     x=[night_values[idx]],
-                    y=[f'{city} {value:.2f}'],
+                    y=[f'{locality} {value:.2f}'],
                     orientation='h',
-                    name=f"{city} {metric} during night",
+                    name=f"{locality} {metric} during night",
                     marker=dict(color=C.BAR_COLOR_2),
                     text=[''],
                     textposition='inside',
@@ -358,9 +358,9 @@ class Stacked:
                 value = day_values[idx]
                 fig.add_trace(go.Bar(
                     x=[day_values[idx]],
-                    y=[f'{city} {value:.2f}'],
+                    y=[f'{locality} {value:.2f}'],
                     orientation='h',
-                    name=f"{city} {metric} during day",
+                    name=f"{locality} {metric} during day",
                     marker=dict(color=C.BAR_COLOR_1),
                     text=[''],
                     textposition='inside',
@@ -375,9 +375,9 @@ class Stacked:
                 value = night_values[idx]
                 fig.add_trace(go.Bar(
                     x=[night_values[idx]],
-                    y=[f'{city} {value:.2f}'],
+                    y=[f'{locality} {value:.2f}'],
                     orientation='h',
-                    name=f"{city} {metric} during night",
+                    name=f"{locality} {metric} during night",
                     marker=dict(color=C.BAR_COLOR_2),
                     text=[''],
                     textposition='inside',
@@ -395,7 +395,7 @@ class Stacked:
             for i in range(len(cities_ordered))
         ]) if cities_ordered else 0
 
-        # Identify the last row for each column where the last city is plotted
+        # Identify the last row for each column where the last locality is plotted
         last_row_left_column = num_cities_per_col * 2  # The last row in the left column
         last_row_right_column = (len(cities_ordered) - num_cities_per_col) * 2  # The last row in the right column
         first_row_left_column = 1  # The first row in the left column
@@ -560,12 +560,12 @@ class Stacked:
         )
 
         # Create an ordered list of unique countries based on the cities in final_dict
-        country_city_map = {}
-        for city, info in final_dict.items():
+        country_locality_map = {}
+        for locality, info in final_dict.items():
             country = info['iso']  # type: ignore
-            if country not in country_city_map:
-                country_city_map[country] = []
-            country_city_map[country].append(city)
+            if country not in country_locality_map:
+                country_locality_map[country] = []
+            country_locality_map[country].append(locality)
 
         if order_by == "alphabetical":
             # Split cities into left and right columns
@@ -584,22 +584,22 @@ class Stacked:
             y_position_map_right = {}  # Store y positions for each country (right column)
 
             # Calculate the y positions dynamically for the left column
-            for city in left_column_cities:
-                country = final_dict[city]['iso']
+            for locality in left_column_cities:
+                country = final_dict[locality]['iso']
 
                 if country not in y_position_map_left:  # Add the country label once per country
                     y_position_map_left[country] = 1 - (current_row_left - 1) / ((len(left_column_cities)-1.12) * 2)
 
-                current_row_left += 2  # Increment the row for each city (speed and time take two rows)
+                current_row_left += 2  # Increment the row for each locality (speed and time take two rows)
 
             # Calculate the y positions dynamically for the right column
-            for city in right_column_cities:
-                country = final_dict[city]['iso']
+            for locality in right_column_cities:
+                country = final_dict[locality]['iso']
 
                 if country not in y_position_map_right:  # Add the country label once per country
                     y_position_map_right[country] = 1 - (current_row_right - 1) / ((len(right_column_cities)-1.12) * 2)
 
-                current_row_right += 2  # Increment the row for each city (speed and time take two rows)
+                current_row_right += 2  # Increment the row for each locality (speed and time take two rows)
 
             # Add annotations for country names dynamically for the left column
             for country, y_position in y_position_map_left.items():
@@ -607,7 +607,7 @@ class Stacked:
                 country = country + iso_class.iso2_to_flag(iso2)
                 fig.add_annotation(
                     x=x_position_left,  # Left column x position
-                    y=y_position,  # Calculated y position based on the city order
+                    y=y_position,  # Calculated y position based on the locality order
                     xref="paper",
                     yref="paper",
                     text=country,  # Country name
@@ -625,7 +625,7 @@ class Stacked:
                 country = country + iso_class.iso2_to_flag(iso2)
                 fig.add_annotation(
                     x=x_position_right,  # Right column x position
-                    y=y_position,  # Calculated y position based on the city order
+                    y=y_position,  # Calculated y position based on the locality order
                     xref="paper",
                     yref="paper",
                     text=country,  # Country name
@@ -639,7 +639,7 @@ class Stacked:
 
         fig.update_yaxes(
             tickfont=dict(size=C.TEXT_SIZE, color="black"),
-            showticklabels=True,  # Ensure city names are visible
+            showticklabels=True,  # Ensure locality names are visible
             ticklabelposition='inside',  # Move the tick labels inside the bars
         )
         fig.update_xaxes(
@@ -887,7 +887,7 @@ class Stacked:
         # Plot left column (first half of countries)
         for i, country in enumerate(countries_ordered[:num_countries_per_col]):
 
-            # city = wrapper_class.process_city_string(city, df_mapping)
+            # locality = wrapper_class.process_locality_string(locality, df_mapping)
             iso_code = metadata_class.get_value(df_mapping, "country", country, None, None, "iso3")
 
             # build up textual label for left column
@@ -973,7 +973,7 @@ class Stacked:
 
         # Plot right column (second half of cities)
         for i, country in enumerate(countries_ordered[num_countries_per_col:]):
-            # city = wrapper_class.process_city_string(city, df_mapping)
+            # locality = wrapper_class.process_locality_string(locality, df_mapping)
             iso_code = metadata_class.get_value(df_mapping, "country", country, None, None, "iso3")
 
             # build up textual label for left column
@@ -1070,7 +1070,7 @@ class Stacked:
             for i in range(len(countries_ordered))
         ]) if countries_ordered else 0
 
-        # Identify the last row for each column where the last city is plotted
+        # Identify the last row for each column where the last locality is plotted
         last_row_left_column = num_countries_per_col * 2  # The last row in the left column
         last_row_right_column = (len(countries_ordered) - num_countries_per_col) * 2  # Last row in the right column
         first_row_left_column = 1  # The first row in the left column
@@ -1234,16 +1234,16 @@ class Stacked:
         )
 
         # Create an ordered list of unique countries based on the cities in final_dict
-        country_city_map = {}
-        for city, info in final_dict.items():
+        country_locality_map = {}
+        for locality, info in final_dict.items():
             country = info['iso3']  # type: ignore
-            if country not in country_city_map:
-                country_city_map[country] = []
-            country_city_map[country].append(city)
+            if country not in country_locality_map:
+                country_locality_map[country] = []
+            country_locality_map[country].append(locality)
 
         fig.update_yaxes(
             tickfont=dict(size=C.TEXT_SIZE, color="black"),
-            showticklabels=True,  # Ensure city names are visible
+            showticklabels=True,  # Ensure locality names are visible
             ticklabelposition='inside',  # Move the tick labels inside the bars
         )
         fig.update_xaxes(

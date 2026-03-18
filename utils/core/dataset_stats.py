@@ -80,12 +80,12 @@ class Dataset_Stats:
     # ----------------------------
     # Public methods (Polars inputs)
     # ----------------------------
-    def calculate_total_seconds_for_city(self, df: pl.DataFrame, city_name: str, state_name: str) -> int:
-        """Calculates the total number of seconds of video for a given city and state.
+    def calculate_total_seconds_for_locality(self, df: pl.DataFrame, locality_name: str, state_name: str) -> int:
+        """Calculates the total number of seconds of video for a given locality and state.
 
         Args:
-            df (pl.DataFrame): Must include `city`, `state`, `start_time`, `end_time`.
-            city_name (str): City to match.
+            df (pl.DataFrame): Must include `locality`, `state`, `start_time`, `end_time`.
+            locality_name (str): locality to match.
             state_name (str): State to match; if "unknown", matches null/empty/"NA".
 
         Returns:
@@ -93,7 +93,7 @@ class Dataset_Stats:
         """
         if state_name.lower() == "unknown":
             mask = (
-                (pl.col("city") == city_name)
+                (pl.col("locality") == locality_name)
                 & (
                     pl.col("state").is_null()
                     | (pl.col("state").cast(pl.Utf8).str.strip_chars() == "")
@@ -101,7 +101,7 @@ class Dataset_Stats:
                 )
             )
         else:
-            mask = (pl.col("city") == city_name) & (pl.col("state") == state_name)
+            mask = (pl.col("locality") == locality_name) & (pl.col("state") == state_name)
 
         row = df.filter(mask).select(["start_time", "end_time"]).head(1)
         if row.height == 0:
@@ -186,8 +186,8 @@ class Dataset_Stats:
         )
         return int(out.item())
 
-    def pedestrian_cross_per_city(self, pedestrian_crossing_count: dict, df_mapping: pl.DataFrame) -> dict:
-        """Aggregates pedestrian crossing counts per city-condition key.
+    def pedestrian_cross_per_locality(self, pedestrian_crossing_count: dict, df_mapping: pl.DataFrame) -> dict:
+        """Aggregates pedestrian crossing counts per locality-condition key.
 
         Keeps your existing MetaData lookup:
             metadata.find_values_with_video_id(...)
@@ -199,7 +199,7 @@ class Dataset_Stats:
             df_mapping (pl.DataFrame): mapping data
 
         Returns:
-            dict: { "{city}_{lat}_{long}_{condition}": total_count }
+            dict: { "{locality}_{lat}_{long}_{condition}": total_count }
         """
         final: dict[str, int] = {}
 
@@ -211,17 +211,17 @@ class Dataset_Stats:
 
             if result is not None:
                 condition = result[3]
-                city = result[4]
+                locality = result[4]
                 lat = result[6]
                 long = result[7]
 
-                city_time_key = f"{city}_{lat}_{long}_{condition}"
-                final[city_time_key] = final.get(city_time_key, 0) + total_events
+                locality_time_key = f"{locality}_{lat}_{long}_{condition}"
+                final[locality_time_key] = final.get(locality_time_key, 0) + total_events
 
         return final
 
-    def pedestrian_cross_per_country(self, pedestrian_cross_city: dict, df_mapping: pl.DataFrame) -> dict:
-        """Aggregates pedestrian crossing counts from city level to country level.
+    def pedestrian_cross_per_country(self, pedestrian_cross_locality: dict, df_mapping: pl.DataFrame) -> dict:
+        """Aggregates pedestrian crossing counts from locality level to country level.
 
         Keeps your existing MetaData lookup:
             metadata.get_value(...)
@@ -229,7 +229,7 @@ class Dataset_Stats:
         Note: df_mapping is Polars; it is converted once to pandas for the MetaData helper.
 
         Args:
-            pedestrian_cross_city (dict): { "{city}_{lat}_{long}_{condition}": count }
+            pedestrian_cross_locality (dict): { "{locality}_{lat}_{long}_{condition}": count }
             df_mapping (pl.DataFrame): mapping data
 
         Returns:
@@ -237,14 +237,14 @@ class Dataset_Stats:
         """
         final: dict[str, int] = {}
 
-        for city_lat_long_cond, value in pedestrian_cross_city.items():
+        for locality_lat_long_cond, value in pedestrian_cross_locality.items():
             try:
-                city, lat, _lon, cond = city_lat_long_cond.split("_")
+                locality, lat, _lon, cond = locality_lat_long_cond.split("_")
                 lat_f = float(lat)
             except Exception:
                 continue
 
-            country = metadata.get_value(df_mapping, "city", city, "lat", lat_f, "country")
+            country = metadata.get_value(df_mapping, "locality", locality, "lat", lat_f, "country")
             country_key = f"{country}_{cond}"
             final[country_key] = final.get(country_key, 0) + int(value)
 

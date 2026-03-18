@@ -10,26 +10,26 @@ class Mapping_Enrich:
     def __init__(self) -> None:
         pass
 
-    def add_speed_and_time_to_mapping(self, df_mapping, avg_speed_city, avg_time_city, avg_speed_country,
-                                      avg_time_country, pedestrian_cross_city, pedestrian_cross_country,
+    def add_speed_and_time_to_mapping(self, df_mapping, avg_speed_locality, avg_time_locality, avg_speed_country,
+                                      avg_time_country, pedestrian_cross_locality, pedestrian_cross_country,
                                       threshold=common.get_configs("min_crossing_detect")):
         """
-        Adds city/country-level average speeds and/or times (day/night) to df_mapping DataFrame,
+        Adds locality/country-level average speeds and/or times (day/night) to df_mapping DataFrame,
         depending on which dicts are provided. Missing columns are created and initialised with NaN.
         For country-level data, values are only added if pedestrian_cross_country[country_cond] < value.
         """
         configs = []
-        if avg_speed_city is not None:
+        if avg_speed_locality is not None:
             configs.append(dict(
-                label="city",
-                avg_dict=avg_speed_city,
+                label="locality",
+                avg_dict=avg_speed_locality,
                 value_type="speed",
                 col_prefix="speed_crossing",
             ))
-        if avg_time_city is not None:
+        if avg_time_locality is not None:
             configs.append(dict(
-                label="city",
-                avg_dict=avg_time_city,
+                label="locality",
+                avg_dict=avg_time_locality,
                 value_type="time",
                 col_prefix="time_crossing",
             ))
@@ -74,22 +74,22 @@ class Mapping_Enrich:
                 total=len(avg_dict),
             )
 
-            if label == "city":
-                # key format: "{city}_{lat}_{long}_{condition}"
+            if label == "locality":
+                # key format: "{locality}_{lat}_{long}_{condition}"
                 for key, value in iterator:
                     try:
                         parts = key.split("_")
-                        city = parts[0]
+                        locality = parts[0]
                         lat = float(parts[1])
                         time_of_day = int(parts[3])
                     except Exception:
                         continue
 
                     # state lookup, same semantics as pandas version
-                    state = metadata_class.get_value(out, "city", city, "lat", lat, "state")
+                    state = metadata_class.get_value(out, "locality", locality, "lat", lat, "state")
 
                     updates_rows.append({
-                        "city": city,
+                        "locality": locality,
                         "lat": float(lat),
                         "_state_lookup": state,
                         "_tod": int(time_of_day),
@@ -107,10 +107,10 @@ class Mapping_Enrich:
                     pl.when(pl.col("_tod") == 1).then(pl.col("_val")).otherwise(None).alias("_night"),
                 ])
 
-                # Aggregate in case multiple entries per city/lat/state (take last non-null)
+                # Aggregate in case multiple entries per locality/lat/state (take last non-null)
                 updates = (
                     updates
-                    .group_by(["city", "lat", "_state_lookup"])
+                    .group_by(["locality", "lat", "_state_lookup"])
                     .agg([
                         pl.col("_day").drop_nulls().last().alias(day_col),
                         pl.col("_night").drop_nulls().last().alias(night_col),
@@ -130,10 +130,10 @@ class Mapping_Enrich:
                     pl.col("_state_lookup").cast(pl.Utf8, strict=False).alias("_state_str_upd"),
                 ])
 
-                # Join by city+lat first (as the strong keys), then conditionally apply based on state match.
+                # Join by locality+lat first (as the strong keys), then conditionally apply based on state match.
                 out = out.join(
-                    updates.select(["city", "lat", "_state_str_upd", day_col, night_col]),
-                    on=["city", "lat"],
+                    updates.select(["locality", "lat", "_state_str_upd", day_col, night_col]),
+                    on=["locality", "lat"],
                     how="left",
                 )
 

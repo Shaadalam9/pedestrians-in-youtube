@@ -39,7 +39,7 @@ def robust_get(url, params=None, timeout=(20, 180), tries=5):
         ) as e:
             last = e
             time.sleep(min(2 ** i, 15))
-    raise last
+    raise last  # type: ignore
 
 
 def wb_download_indicator_latest(indicator_code: str, cache_dir: str = ".wb_cache") -> pd.DataFrame:

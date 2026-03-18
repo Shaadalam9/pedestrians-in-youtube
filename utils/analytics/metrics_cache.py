@@ -4,7 +4,7 @@ metrics_cache.py
 Purpose
 -------
 Compute and cache per-video detection metrics derived from YOLO CSV outputs, then wrap/aggregate
-those metrics via Grouping.city_country_wrapper() using the mapping dataframe.
+those metrics via Grouping.locality_country_wrapper() using the mapping dataframe.
 
 Key design points
 -----------------
@@ -75,7 +75,7 @@ class MetricsCache:
 
     Cache format
     ------------
-    _all_metrics_cache is a dictionary mapping metric name -> wrapped output from Grouping.city_country_wrapper().
+    _all_metrics_cache is a dictionary mapping metric name -> wrapped output from Grouping.locality_country_wrapper().
     Example keys:
       "cellphones", "traffic_signs", "vehicles", "bicycles", "cars", "motorcycles", "buses", "trucks", "persons"
     """
@@ -346,7 +346,7 @@ class MetricsCache:
 
         for idx, (name, layer) in enumerate(metric_layers, start=1):
             _LOGGER.info("[%s/%s] Wrapping '%s' ...", idx, len(metric_layers), name)
-            wrapped = _GROUPING.city_country_wrapper(
+            wrapped = _GROUPING.locality_country_wrapper(
                 input_dict=layer,
                 mapping=df_mapping,
                 show_progress=True,

@@ -12,11 +12,11 @@ class Grouping:
     def __init__(self) -> None:
         pass
 
-    def city_country_wrapper(self, input_dict, mapping: pl.DataFrame, show_progress: bool = False):
+    def locality_country_wrapper(self, input_dict, mapping: pl.DataFrame, show_progress: bool = False):
         """
         Processes an input dictionary of video IDs and their corresponding values, maps each video ID to metadata
-        using a provided mapping function, and builds an output dictionary keyed by city and condition.
-        Wrapes in the form of {city_condition: {video-id_start-time: {unique-id: parameter}}}
+        using a provided mapping function, and builds an output dictionary keyed by locality and condition.
+        Wrapes in the form of {locality_condition: {video-id_start-time: {unique-id: parameter}}}
 
         Args:
             input_dict (dict): A dictionary where keys are video IDs and values are associated data.
@@ -24,7 +24,7 @@ class Grouping:
                  possibly used internally by Analysis.find_values_with_video_id).
 
         Returns:
-            dict: A dictionary where each key is a string formatted as "City_Condition" and
+            dict: A dictionary where each key is a string formatted as "locality_condition" and
                   each value is a dictionary of the original key-value pair from input_dict.
         """
 
@@ -32,7 +32,7 @@ class Grouping:
 
         iterator = input_dict.items()
         if show_progress:
-            iterator = tqdm(iterator, desc="Wrapping by city/condition", total=len(input_dict))
+            iterator = tqdm(iterator, desc="Wrapping by locality/condition", total=len(input_dict))
 
         for key, value in iterator:
             result = metadata_class.find_values_with_video_id(mapping, key)
@@ -40,11 +40,11 @@ class Grouping:
                 continue
 
             condition = result[3]
-            city = result[4]
+            locality = result[4]
             lat = result[6]
             long = result[7]
 
-            grouping_key = f"{city}_{lat}_{long}_{condition}"
+            grouping_key = f"{locality}_{lat}_{long}_{condition}"
             if grouping_key not in output:
                 output[grouping_key] = {}
 
@@ -52,38 +52,38 @@ class Grouping:
 
         return output
 
-    def process_city_string(self, city: str, df_mapping: pl.DataFrame):
+    def process_locality_string(self, locality: str, df_mapping: pl.DataFrame):
         """
-        Splits a city string into its components, retrieves the state using provided helper classes,
-        and formats the city string with its state.
+        Splits a locality string into its components, retrieves the state using provided helper classes,
+        and formats the locality string with its state.
 
         Args:
-            city (str): The city string in the format "city_lat_long", e.g., "Chicago_41.8781_-87.6298".
+            locality (str): The locality string in the format "locality_lat_long", e.g., "Chicago_41.8781_-87.6298".
             df_mapping: The DataFrame or mapping object required by values_class.get_value.
             values_class: An object/class with a get_value method to retrieve data such as state.
-            wrapper_class: An object/class with a format_city_lat_lon method to format the city string.
+            wrapper_class: An object/class with a format_locality_lat_lon method to format the locality string.
 
         Returns:
-            str: The formatted city string with its state, as returned by wrapper_class.format_city_lat_lon.
+            str: The formatted locality string with its state, as returned by wrapper_class.format_locality_lat_lon.
         """
-        # Split the city string into city name, latitude, and longitude
-        city_new, lat, long = city.split("_")
+        # Split the locality string into locality name, latitude, and longitude
+        locality_new, lat, long = locality.split("_")
 
-        # Use values_class to retrieve the state associated with the city and coordinates
-        state = metadata_class.get_value(df_mapping, "city", city_new, "lat", float(lat), "state")
+        # Use values_class to retrieve the state associated with the locality and coordinates
+        state = metadata_class.get_value(df_mapping, "locality", locality_new, "lat", float(lat), "state")
 
-        # Use wrapper_class to format the city string with state (ignoring type checking if needed)
-        formatted_city = self.format_city_lat_lon(city, state)  # type: ignore
+        # Use wrapper_class to format the locality string with state (ignoring type checking if needed)
+        formatted_locality = self.format_locality_lat_lon(locality, state)  # type: ignore
 
-        return formatted_city
+        return formatted_locality
 
-    def format_city_lat_lon(self, city_lat_lon, state):
+    def format_locality_lat_lon(self, locality_lat_lon, state):
         """
-        Formats the city from a city_latitude_longitude string or list,
-        returning '{city}, {state}' if state is provided and not nan, else just '{city}'.
+        Formats the locality from a locality_latitude_longitude string or list,
+        returning '{locality}, {state}' if state is provided and not nan, else just '{locality}'.
 
         Args:
-            city_lat_lon (str or list): String or list of 'City_Latitude_Longitude'.
+            locality_lat_lon (str or list): String or list of 'locality_Latitude_Longitude'.
             state (str or list): Corresponding state(s), can be 'nan'.
 
         Returns:
@@ -99,53 +99,53 @@ class Grouping:
                 or (isinstance(value, str) and value.strip().lower() in missing)
             )
 
-        def format_single(city_entry, state_entry):
-            city = city_entry.split("_")[0] if "_" in city_entry else city_entry
+        def format_single(locality_entry, state_entry):
+            locality = locality_entry.split("_")[0] if "_" in locality_entry else locality_entry
             if not is_nan(state_entry):
-                return f"{city}, {state_entry}"
+                return f"{locality}, {state_entry}"
             else:
-                return city
+                return locality
 
-        if isinstance(city_lat_lon, str):
+        if isinstance(locality_lat_lon, str):
             # Expecting state as str as well
-            return format_single(city_lat_lon, state)
+            return format_single(locality_lat_lon, state)
 
-        elif isinstance(city_lat_lon, list):
+        elif isinstance(locality_lat_lon, list):
             # Expecting state as list
-            if not isinstance(state, list) or len(city_lat_lon) != len(state):
-                raise ValueError("city_lat_lon and state must both be lists of the same length.")
-            return [format_single(c, s) for c, s in zip(city_lat_lon, state)]
+            if not isinstance(state, list) or len(locality_lat_lon) != len(state):
+                raise ValueError("locality_lat_lon and state must both be lists of the same length.")
+            return [format_single(c, s) for c, s in zip(locality_lat_lon, state)]
 
         else:
-            raise TypeError("city_lat_lon must be a string or a list of strings.")
+            raise TypeError("locality_lat_lon must be a string or a list of strings.")
 
-    def format_city_state(self, city_state):
+    def format_locality_state(self, locality_state):
         """
-        Formats a city_state string or a list of strings in the format 'City_State'.
-        If the state is 'unknown', only the city is returned.
+        Formats a locality_state string or a list of strings in the format 'locality_State'.
+        If the state is 'unknown', only the locality is returned.
         Handles cases where the format is incorrect or missing the '_'.
 
         Args:
-            city_state (str or list): A single string or list of strings in the format 'City_State'.
+            locality_state (str or list): A single string or list of strings in the format 'locality_State'.
 
         Returns:
-            str or list: A formatted string or list of formatted strings in the format 'City, State' or 'City'.
+            str or list: A formatted string or list of formatted strings in the format 'locality, State' or 'locality'.
         """
-        if isinstance(city_state, str):  # If input is a single string
-            if "_" in city_state:
-                city, state = city_state.split("_", 1)
-                return f"{city}, {state}" if state.lower() != "unknown" else city
+        if isinstance(locality_state, str):  # If input is a single string
+            if "_" in locality_state:
+                locality, state = locality_state.split("_", 1)
+                return f"{locality}, {state}" if state.lower() != "unknown" else locality
             else:
-                return city_state  # Return as-is if no '_' in string
-        elif isinstance(city_state, list):  # If input is a list
+                return locality_state  # Return as-is if no '_' in string
+        elif isinstance(locality_state, list):  # If input is a list
             formatted_list = []
-            for cs in city_state:
+            for cs in locality_state:
                 if "_" in cs:
-                    city, state = cs.split("_", 1)
+                    locality, state = cs.split("_", 1)
                     if state.lower() != "unknown":
-                        formatted_list.append(f"{city}, {state}")
+                        formatted_list.append(f"{locality}, {state}")
                     else:
-                        formatted_list.append(city)
+                        formatted_list.append(locality)
                 else:
                     formatted_list.append(cs)  # Append as-is if no '_'
             return formatted_list
@@ -153,18 +153,18 @@ class Grouping:
             raise TypeError("Input must be a string or a list of strings.")
 
     def country_averages_from_nested(self, var_dict, df_mapping: pl.DataFrame):
-        """Aggregates nested city-level values into country-level averages by condition.
+        """Aggregates nested locality-level values into country-level averages by condition.
 
         This method processes a dictionary where keys are formatted as
-        `"{city}_{lat}_{long}_{condition}"` and values are dictionaries of measurements.
+        `"{locality}_{lat}_{long}_{condition}"` and values are dictionaries of measurements.
         It groups all measurements by `country_condition` (e.g., `"USA_0"`, `"USA_1"`)
         and computes the average for each group.
 
         Args:
-            var_dict (dict): Dictionary of city-condition data, where:
-                - Keys (str): "{city}_{lat}_{long}_{condition}".
-                - Values (dict): Inner dictionary of measurements for that city-condition.
-            df_mapping (pd.DataFrame): Mapping DataFrame containing city-to-country info.
+            var_dict (dict): Dictionary of locality-condition data, where:
+                - Keys (str): "{locality}_{lat}_{long}_{condition}".
+                - Values (dict): Inner dictionary of measurements for that locality-condition.
+            df_mapping (pd.DataFrame): Mapping DataFrame containing locality-to-country info.
 
         Returns:
             dict: A dictionary mapping "country_condition" → average value (float).
@@ -175,7 +175,7 @@ class Grouping:
             ...     "Paris_48.85_2.35_1": {"a": 30, "b": 50}
             ... }
             >>> df_mapping
-               city     lat  country
+               locality     lat  country
             0  Paris  48.85  France
             >>> country_averages_from_nested(var_dict, df_mapping)
             {'France_0': 15.0, 'France_1': 40.0}
@@ -184,11 +184,11 @@ class Grouping:
         country_condition_values = defaultdict(list)
 
         for k, inner_dict in var_dict.items():
-            city, lat, long, condition = k.rsplit("_", 3)
+            locality, lat, long, condition = k.rsplit("_", 3)
             lat_f = float(lat)
             condition_i = int(condition)
 
-            country = metadata_class.get_value(df_mapping, "city", city, "lat", lat_f, "country")
+            country = metadata_class.get_value(df_mapping, "locality", locality, "lat", lat_f, "country")
             if country:
                 key = f"{country}_{condition_i}"
                 country_condition_values[key].extend(inner_dict.values())
@@ -196,18 +196,18 @@ class Grouping:
         return {key: sum(vals) / len(vals) for key, vals in country_condition_values.items() if vals}
 
     def country_averages_from_flat(self, var_dict, df_mapping: pl.DataFrame):
-        """Aggregates flat city-level values into country-level averages by condition.
+        """Aggregates flat locality-level values into country-level averages by condition.
 
         This method processes a dictionary where keys are formatted as
-        `"{city}_{lat}_{long}_{condition}"` and values are numeric measurements.
+        `"{locality}_{lat}_{long}_{condition}"` and values are numeric measurements.
         It groups all measurements by `country_condition` (e.g., `"USA_0"`, `"USA_1"`)
         and computes the average for each group.
 
         Args:
-            var_dict (dict): Dictionary of city-condition values, where:
-                - Keys (str): "{city}_{lat}_{long}_{condition}".
-                - Values (float or int): Numeric measurement for that city-condition.
-            df_mapping (pd.DataFrame): Mapping DataFrame containing city-to-country info.
+            var_dict (dict): Dictionary of locality-condition values, where:
+                - Keys (str): "{locality}_{lat}_{long}_{condition}".
+                - Values (float or int): Numeric measurement for that locality-condition.
+            df_mapping (pd.DataFrame): Mapping DataFrame containing locality-to-country info.
 
         Returns:
             dict: A dictionary mapping "country_condition" → average value (float).
@@ -218,7 +218,7 @@ class Grouping:
             ...     "Paris_48.85_2.35_1": 30
             ... }
             >>> df_mapping
-               city     lat  country
+               locality     lat  country
             0  Paris  48.85  France
             >>> country_averages_from_flat(var_dict, df_mapping)
             {'France_0': 10.0, 'France_1': 30.0}
@@ -227,11 +227,11 @@ class Grouping:
         country_condition_values = defaultdict(list)
 
         for k, v in var_dict.items():
-            city, lat, long, condition = k.rsplit("_", 3)
+            locality, lat, long, condition = k.rsplit("_", 3)
             lat_f = float(lat)
             condition_i = int(condition)
 
-            country = metadata_class.get_value(df_mapping, "city", city, "lat", lat_f, "country")
+            country = metadata_class.get_value(df_mapping, "locality", locality, "lat", lat_f, "country")
             if country:
                 key = f"{country}_{condition_i}"
                 country_condition_values[key].append(v)
@@ -239,18 +239,18 @@ class Grouping:
         return {key: sum(vals) / len(vals) for key, vals in country_condition_values.items() if vals}
 
     def country_sum_from_cities(self, var_dict, df_mapping: pl.DataFrame):
-        """Aggregates city-level numeric values into country-level sums by condition.
+        """Aggregates locality-level numeric values into country-level sums by condition.
 
         This method processes a dictionary where keys are formatted as
-        `"{city}_{lat}_{long}_{condition}"` and values are numeric measurements.
+        `"{locality}_{lat}_{long}_{condition}"` and values are numeric measurements.
         It groups all measurements by `country_condition` (e.g., `"USA_0"`, `"USA_1"`)
         and computes the sum for each group.
 
         Args:
-            var_dict (dict): Dictionary of city-condition values, where:
-                - Keys (str): "{city}_{lat}_{long}_{condition}".
-                - Values (float or int): Numeric measurement for that city-condition.
-            df_mapping (pd.DataFrame): Mapping DataFrame containing city-to-country info.
+            var_dict (dict): Dictionary of locality-condition values, where:
+                - Keys (str): "{locality}_{lat}_{long}_{condition}".
+                - Values (float or int): Numeric measurement for that locality-condition.
+            df_mapping (pd.DataFrame): Mapping DataFrame containing locality-to-country info.
 
         Returns:
             dict: A dictionary mapping "country_condition" → summed value (float or int).
@@ -261,7 +261,7 @@ class Grouping:
             ...     "Paris_48.85_2.35_1": 7
             ... }
             >>> df_mapping
-               city     lat  country
+               locality     lat  country
             0  Paris  48.85  France
             >>> country_sum_from_cities(var_dict, df_mapping)
             {'France_0': 5, 'France_1': 7}
@@ -270,11 +270,11 @@ class Grouping:
         country_condition_values = defaultdict(list)
 
         for k, v in var_dict.items():
-            city, lat, long, condition = k.rsplit("_", 3)
+            locality, lat, long, condition = k.rsplit("_", 3)
             lat_f = float(lat)
             condition_i = int(condition)
 
-            country = metadata_class.get_value(df_mapping, "city", city, "lat", lat_f, "country")
+            country = metadata_class.get_value(df_mapping, "locality", locality, "lat", lat_f, "country")
             if country:
                 key = f"{country}_{condition_i}"
                 country_condition_values[key].append(v)

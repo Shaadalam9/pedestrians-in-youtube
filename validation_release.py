@@ -5,8 +5,8 @@ Release validator for the dataset layout you actually have:
 
 INPUTS (no parquet required)
 ---------------------------
-1) mapping CSV (city/state rows) containing list-like columns:
-   - videos, time_of_day, start_time, end_time, vehicle_type, upload_date, channel, continent, country, city, iso3, ...
+1) mapping CSV (locality/state rows) containing list-like columns:
+   - videos, time_of_day, start_time, end_time, vehicle_type, upload_date, channel, continent, country, locality, iso3
 
 2) mapping_metadata.csv (per-video metadata):
    - id, video, title, upload_date, channel, views, description, chapters, segments, date_updated
@@ -155,7 +155,7 @@ CONFIG: Dict[str, Any] = {
         "segment_records": 41595,
         "upload_records": 35132,
         "countries": 238,
-        "rows_city_state_iso3": 5945,
+        "rows_locality_state_iso3": 5945,
     },
 
     # OPTIONAL: LaTeX number checks (works only if you set paths.main_tex)
@@ -301,7 +301,7 @@ class _SegOcc:
     video: str
     row_index: int      # 0 based data row index
     row_number: int     # 1 based data row number (excluding header)
-    location: str       # city|state|country
+    location: str       # locality|state|country
     start: float
     end: float
 
@@ -348,7 +348,7 @@ def export_overlaps_found_csv(mapping_path: Path, out_csv_path: Path, logger: lo
     if not rows:
         return 0
 
-    by_vid = _build_occurrences_for_all_videos(rows, fieldnames)
+    by_vid = _build_occurrences_for_all_videos(rows, fieldnames)  # type: ignore
 
     out_csv_path.parent.mkdir(parents=True, exist_ok=True)
     n_pairs = 0
@@ -411,9 +411,9 @@ def _build_occurrences_for_all_videos(rows: List[Dict[str, Any]], fieldnames: Li
     for ridx, r in enumerate(rows):
         rownum = ridx + 1
         country = (r.get("country") or "").strip()
-        city = (r.get("city") or "").strip()
+        locality = (r.get("locality") or "").strip()
         state = (r.get("state") or "").strip()
-        loc = f"{city}|{state}|{country}"
+        loc = f"{locality}|{state}|{country}"
 
         vids = [str(v).strip() for v in safe_eval_list(r.get("videos")) if str(v).strip() != ""]
         st_lol = safe_eval_list(r.get("start_time"))
@@ -626,7 +626,7 @@ def interactive_fix_overlaps_in_mapping_csv(
         logger.info("mapping.csv is empty, nothing to fix.")
         return mapping_path
 
-    by_vid = _build_occurrences_for_all_videos(rows, fieldnames)
+    by_vid = _build_occurrences_for_all_videos(rows, fieldnames)  # type: ignore
 
     vids_with_overlaps = []
     for vid, occs in by_vid.items():
@@ -671,7 +671,7 @@ def interactive_fix_overlaps_in_mapping_csv(
                 b.row_index, round(b.start, 3), round(b.end, 3),
             )
 
-            logger.info()
+            logger.info("")
             logger.info(f"Video: {vid}")
             logger.info("Overlap detected. Choose what to delete.")
             logger.info(f"A) row {a.row_number}  {a.location}  [{a.start} , {a.end}]")
@@ -704,7 +704,7 @@ def interactive_fix_overlaps_in_mapping_csv(
                     )
                     return
 
-                removed_outer = _maybe_remove_empty_video_outer_entry(row, outer_i, fieldnames)
+                removed_outer = _maybe_remove_empty_video_outer_entry(row, outer_i, fieldnames)  # type: ignore
 
                 if removed_outer:
                     by_vid[target.video] = [o for o in by_vid.get(target.video, []) if o.row_index != target.row_index]
@@ -866,7 +866,7 @@ class VideoAgg:
 @dataclass
 class MappingAgg:
     rows: int
-    unique_city_state_iso3: int
+    unique_locality_state_iso3: int
     unique_countries: int
     upload_records: int
     unique_videos: int
@@ -895,7 +895,7 @@ def parse_mapping_csv(path: Path, logger: logging.Logger, report: Report) -> Tup
     cols: List[str] = []
 
     rows = 0
-    city_state_iso3_keys: Set[str] = set()
+    locality_state_iso3_keys: Set[str] = set()
     countries: Set[str] = set()
 
     upload_records = 0
@@ -922,11 +922,11 @@ def parse_mapping_csv(path: Path, logger: logging.Logger, report: Report) -> Tup
     n_invalid_tod_values = 0
     invalid_tod_examples: List[Dict[str, Any]] = []
 
-    # Duplicate city keys (city + state + country)
-    city_state_country_counts: Counter[str] = Counter()
+    # Duplicate locality keys (locality + state + country)
+    locality_state_country_counts: Counter[str] = Counter()
 
     # Per-video segment occurrences with location info (for overlap / duplicate checks)
-    # Stored as (start_s, end_s, city|state|country, row_number)
+    # Stored as (start_s, end_s, locality|state|country, row_number)
     video_segment_details: Dict[str, List[Tuple[float, float, str, int]]] = defaultdict(list)
 
     # avg_height consistency per country (all rows within a country should share the same avg_height)
@@ -968,7 +968,7 @@ def parse_mapping_csv(path: Path, logger: logging.Logger, report: Report) -> Tup
     with path.open("r", encoding="utf-8", newline="") as f:
         reader = csv.DictReader(f)
         cols = reader.fieldnames or []  # type: ignore
-        required = {"continent", "country", "city", "iso3", "videos", "time_of_day", "start_time", "end_time"}
+        required = {"continent", "country", "locality", "iso3", "videos", "time_of_day", "start_time", "end_time"}
         missing = sorted(list(required - set(cols)))
         report.add(
             "mapping_csv.required_columns",
@@ -1027,20 +1027,20 @@ def parse_mapping_csv(path: Path, logger: logging.Logger, report: Report) -> Tup
             rows += 1
             continent = (r.get("continent") or "").strip()
             country = (r.get("country") or "").strip()
-            city = (r.get("city") or "").strip()
+            locality = (r.get("locality") or "").strip()
             iso3 = (r.get("iso3") or "").strip()
             state = (r.get("state") or "").strip()
 
-            loc_key_csc = f"{city}|{state}|{country}"
+            loc_key_csc = f"{locality}|{state}|{country}"
 
             if country:
                 countries.add(country)
-            if city and iso3:
-                city_state_iso3_keys.add(f"{city}|{state}|{iso3}")
+            if locality and iso3:
+                locality_state_iso3_keys.add(f"{locality}|{state}|{iso3}")
 
-            # Duplicate key count (city + state + country)
-            if city and country:
-                city_state_country_counts[f"{city}|{state}|{country}"] += 1
+            # Duplicate key count (locality + state + country)
+            if locality and country:
+                locality_state_country_counts[f"{locality}|{state}|{country}"] += 1
 
             # avg_height consistency per country
             if has_avg_height_col and country:
@@ -1059,7 +1059,7 @@ def parse_mapping_csv(path: Path, logger: logging.Logger, report: Report) -> Tup
                                     "row": rows,
                                     "country": country,
                                     "state": state,
-                                    "city": city,
+                                    "locality": locality,
                                     "value": raw_h,
                                 }
                             )
@@ -1084,7 +1084,7 @@ def parse_mapping_csv(path: Path, logger: logging.Logger, report: Report) -> Tup
                                     "row": rows,
                                     "country": country,
                                     "state": state,
-                                    "city": city,
+                                    "locality": locality,
                                     "value": raw_ma,
                                 }
                             )
@@ -1105,7 +1105,8 @@ def parse_mapping_csv(path: Path, logger: logging.Logger, report: Report) -> Tup
                         country_traffic_mortality_values[country].add(raw_tm)
                         if len(invalid_traffic_mortality_examples) < 25:
                             invalid_traffic_mortality_examples.append(
-                                {"row": rows, "country": country, "state": state, "city": city, "value": raw_tm}
+                                {"row": rows, "country": country, "state": state,
+                                 "locality": locality, "value": raw_tm}
                             )
                     else:
                         norm_tm = f"{round(float(num_tm), 6):.6f}".rstrip("0").rstrip(".")
@@ -1124,7 +1125,8 @@ def parse_mapping_csv(path: Path, logger: logging.Logger, report: Report) -> Tup
                         country_literacy_rate_values[country].add(raw_lr)
                         if len(invalid_literacy_rate_examples) < 25:
                             invalid_literacy_rate_examples.append(
-                                {"row": rows, "country": country, "state": state, "city": city, "value": raw_lr}
+                                {"row": rows, "country": country,
+                                 "state": state, "locality": locality, "value": raw_lr}
                             )
                     else:
                         norm_lr = f"{round(float(num_lr), 6):.6f}".rstrip("0").rstrip(".")
@@ -1142,7 +1144,7 @@ def parse_mapping_csv(path: Path, logger: logging.Logger, report: Report) -> Tup
                 if len(zero_video_examples) < 25:
                     zero_video_examples.append(
                         {"row": rows, "continent": continent, "country": country,
-                         "state": state, "city": city, "iso3": iso3})
+                         "state": state, "locality": locality, "iso3": iso3})
 
             # time_of_day values are only 0 or 1 (scan entire cell content)
             for outer_i, tods in enumerate(tod_lol):
@@ -1156,7 +1158,7 @@ def parse_mapping_csv(path: Path, logger: logging.Logger, report: Report) -> Tup
                                     "continent": continent,
                                     "country": country,
                                     "state": state,
-                                    "city": city,
+                                    "locality": locality,
                                     "iso3": iso3,
                                     "outer_index": outer_i,
                                     "inner_index": inner_i,
@@ -1312,7 +1314,7 @@ def parse_mapping_csv(path: Path, logger: logging.Logger, report: Report) -> Tup
 
     agg = MappingAgg(
         rows=rows,
-        unique_city_state_iso3=len(city_state_iso3_keys),
+        unique_locality_state_iso3=len(locality_state_iso3_keys),
         unique_countries=len(countries),
         upload_records=upload_records,
         unique_videos=len(video_aggs),
@@ -1365,15 +1367,15 @@ def parse_mapping_csv(path: Path, logger: logging.Logger, report: Report) -> Tup
         warn=(n_invalid_tod_values > 0),
     )
 
-    dups = [(k, v) for k, v in city_state_country_counts.items() if v > 1]
+    dups = [(k, v) for k, v in locality_state_country_counts.items() if v > 1]
     dups_sorted = sorted(dups, key=lambda kv: (-kv[1], kv[0]))[:25]
     dup_examples: List[Dict[str, Any]] = []
     for k, v in dups_sorted:
         c, s, co = k.split("|", 2)
-        dup_examples.append({"city": c, "state": s, "country": co, "rows": v})
+        dup_examples.append({"locality": c, "state": s, "country": co, "rows": v})
 
     report.add(
-        "mapping_csv.duplicate_city_state_country",
+        "mapping_csv.duplicate_locality_state_country",
         ok=(len(dups) == 0),
         details={"duplicate_key_count": len(dups), "examples": dup_examples},
         warn=(len(dups) > 0),
@@ -1519,7 +1521,7 @@ def parse_mapping_csv(path: Path, logger: logging.Logger, report: Report) -> Tup
     # ---------------------------------------------------------------------
     # Segment overlap and duplicate location checks (per video)
     # A given video should not have overlapping segments. Also, the same segment
-    # (start,end) should not appear under multiple city|state|country locations.
+    # (start,end) should not appear under multiple locality|state|country locations.
     # ---------------------------------------------------------------------
     n_overlapping_pairs = 0
     overlap_examples: List[Dict[str, Any]] = []
@@ -2047,7 +2049,7 @@ def _extract_numbers_from_latex(tex_path: Path, checks: List[Tuple[str, str, str
 def _print_mapping_summary(agg: MappingAgg, logger: logging.Logger) -> None:
     logger.info("\n=== Dataset summary (from mapping.csv) ===")
     logger.info(f"Rows (mapping): {fmt_int(agg.rows)}")
-    logger.info(f"Unique city+state+iso3 keys: {fmt_int(agg.unique_city_state_iso3)}")
+    logger.info(f"Unique locality+state+iso3 keys: {fmt_int(agg.unique_locality_state_iso3)}")
     logger.info(f"Unique countries/territories: {fmt_int(agg.unique_countries)}")
     logger.info(f"Upload records (sum of videos per row): {fmt_int(agg.upload_records)}")
     logger.info(f"Unique videos (global uploads): {fmt_int(agg.unique_videos)}")
@@ -2280,7 +2282,7 @@ def main() -> int:
     _cmp("duration_s", int(round(mapping_agg.duration_s)), "duration_s")
     _cmp("duration_h", round(mapping_agg.duration_s / 3600.0, 2), "duration_h", tol=0.01)
     _cmp("countries", mapping_agg.unique_countries, "countries")
-    _cmp("rows_city_state_iso3", mapping_agg.unique_city_state_iso3, "rows_city_state_iso3")
+    _cmp("rows_locality_state_iso3", mapping_agg.unique_locality_state_iso3, "rows_locality_state_iso3")
 
     # ---------------------------------------------------------------------
     # 4) Load mapping_metadata.csv and cross-check

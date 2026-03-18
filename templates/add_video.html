@@ -121,7 +121,7 @@
             color: red;
         }
         .input-wrapper {
-            position: relative;     /* needed for city autocomplete */
+            position: relative;     /* needed for locality autocomplete */
             flex: 2;                /* same flex as before */
             display: flex;
         }
@@ -137,8 +137,8 @@
             background-color: #fff;
         }
 
-        /* Only for city suggestions dropdown */
-        #city-suggestions {
+        /* Only for locality suggestions dropdown */
+        #locality-suggestions {
             position: absolute;
             top: 100%;
             left: 0;
@@ -154,17 +154,17 @@
             display: none;
         }
 
-        #city-suggestions.has-items {
+        #locality-suggestions.has-items {
             display: block;
         }
 
-        #city-suggestions div {
+        #locality-suggestions div {
             padding: 10px 12px;
             cursor: pointer;
             font-size: 16px;
         }
 
-        #city-suggestions div:hover {
+        #locality-suggestions div:hover {
             background-color: #f0f8ff;
         }
 
@@ -326,10 +326,10 @@
         <div class="left">
             <form method="POST">
                 <div class="form-group">
-                    <label for="city">City:</label>
+                    <label for="locality">Locality:</label>
                     <div class="input-wrapper">
-                        <input type="text" id="city" name="city" value="{{ city }}" autocomplete="off">
-                        <div id="city-suggestions"></div>
+                        <input type="text" id="locality" name="locality" value="{{ locality }}" autocomplete="off">
+                        <div id="locality-suggestions"></div>
                     </div>
                 </div>
 
@@ -614,7 +614,7 @@
             {% if existing_data %}
             <!-- Form for submitting additional data -->
             <form method="POST">
-                <input type="hidden" name="city" value="{{ city }}">
+                <input type="hidden" name="locality" value="{{ locality }}">
                 <input type="hidden" name="state" value="{{ state }}">
                 <input type="hidden" name="country" value="{{ country }}">
                 <input type="hidden" name="video_url" value="{{ video_url }}">
@@ -685,12 +685,12 @@
                     <input type="number" id="lon" name="lon" value="{{ existing_data['lon'] }}" step="any">
                 </div>
                 <div class="form-group">
-                    <label for="gmp">GDP city (billion USD):</label>
+                    <label for="gmp">GDP locality (billion USD):</label>
                     <input type="number" id="gmp" name="gmp" value="{{ existing_data['gmp'] }}" step="any">
                 </div>
                 <div class="form-group">
-                    <label for="population_city">Population city:</label>
-                    <input type="number" id="population_city" name="population_city" value="{{ existing_data['population_city'] }}" step="any">
+                    <label for="population_locality">Population locality:</label>
+                    <input type="number" id="population_locality" name="population_locality" value="{{ existing_data['population_locality'] }}" step="any">
                 </div>
                 <div class="form-group">
                     <label for="population_country">Population country:</label>
@@ -713,8 +713,8 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="city_aka">Alt. names of city:</label>
-                    <input id="city_aka" name="city_aka" value="{{ existing_data['city_aka'] }}">
+                    <label for="locality_aka">Alt. names of locality:</label>
+                    <input id="locality_aka" name="locality_aka" value="{{ existing_data['locality_aka'] }}">
                 </div>
                 <div class="form-group">
                     <label for="literacy_rate">Literacy rate:</label>
@@ -770,8 +770,8 @@
 </html>
 
 <script>
-const input = document.getElementById("city");
-const box = document.getElementById("city-suggestions");
+const input = document.getElementById("locality");
+const box = document.getElementById("locality-suggestions");
 
 input.addEventListener("input", async () => {
     const q = input.value.trim();
@@ -781,16 +781,16 @@ input.addEventListener("input", async () => {
     if (q.length < 2) return;
 
     try {
-        const res = await fetch(`/autocomplete/cities?q=${encodeURIComponent(q)}`);
-        const cities = await res.json();
+        const res = await fetch(`/autocomplete/localities?q=${encodeURIComponent(q)}`);
+        const localities = await res.json();
 
-        if (cities.length === 0) return;
+        if (localities.length === 0) return;
 
         const seen = new Set();
 
-        cities.forEach(item => {
+        localities.forEach(item => {
             const key = [
-                item.city?.toLowerCase(),
+                item.locality?.toLowerCase(),
                 item.state?.toLowerCase() || "",
                 item.country?.toLowerCase()
             ].join("|");
@@ -802,8 +802,8 @@ input.addEventListener("input", async () => {
             div.textContent = item.label;
 
             div.onclick = () => {
-                // Always put only the city name in the city field
-                input.value = item.city;
+                // Always put only the locality name in the locality field
+                input.value = item.locality;
 
                 // Put state (if any) into the separate state field
                 const stateInput = document.getElementById("state");

@@ -79,17 +79,17 @@ class Metrics:
     def calculate_speed_of_crossing(self, df_mapping: pl.DataFrame, df: pl.DataFrame, data: dict):
         """
         Calculate and organise the walking speeds of individuals crossing in various videos,
-        grouping the results by city, state, and crossing condition.
+        grouping the results by locality, state, and crossing condition.
 
         Args:
             df_mapping (pd.DataFrame): DataFrame mapping video IDs to metadata including
-                city, state, country, and other contextual details.
+                locality, state, country, and other contextual details.
             df (dict): Dictionary containing DataFrames extracted from YOLO for each video (keyed by video ID).
             data (dict): Dictionary where keys are video IDs and values are dictionaries
                 mapping person IDs to crossing durations (in frames or seconds).
 
         Returns:
-            dict: A dictionary where each key is a combination of 'city_state_condition'
+            dict: A dictionary where each key is a combination of 'locality_state_condition'
                 mapping to a list of walking speeds (in m/s) for valid crossings.
         """
 
@@ -166,37 +166,37 @@ class Metrics:
         if not speed_complete:
             return None
 
-        output = grouping_class.city_country_wrapper(input_dict=speed_complete, mapping=df_mapping)
+        output = grouping_class.locality_country_wrapper(input_dict=speed_complete, mapping=df_mapping)
         return output
 
-    def avg_speed_of_crossing_city(self, df_mapping: pl.DataFrame, all_speed: dict):
+    def avg_speed_of_crossing_locality(self, df_mapping: pl.DataFrame, all_speed: dict):
         """
-        Calculate the average crossing speed for each city-condition combination.
+        Calculate the average crossing speed for each locality-condition combination.
 
         This function uses `calculate_speed_of_crossing` to obtain a nested dictionary of speed values,
-        flattens the structure, and computes the average speed for each `city_condition`.
+        flattens the structure, and computes the average speed for each `locality_condition`.
 
         Args:
-            df_mapping (pd.DataFrame): Mapping DataFrame with city metadata.
+            df_mapping (pd.DataFrame): Mapping DataFrame with locality metadata.
             dfs (dict): Dictionary of DataFrames for each video segment.
             data (dict): Input data used to compute crossing speeds.
 
         Returns:
-            dict: A dictionary where keys are city-condition strings and values are average speeds.
+            dict: A dictionary where keys are locality-condition strings and values are average speeds.
         """
-        avg_speed_city, all_speed_city = {}, {}
+        avg_speed_locality, all_speed_locality = {}, {}
 
-        for city_lat_lang_condition, value_1 in all_speed.items():
+        for locality_lat_lang_condition, value_1 in all_speed.items():
             box = []
             for _video_id, value_2 in value_1.items():
                 for _unique_id, speed in value_2.items():
                     if common.get_configs("min_speed_limit") <= speed <= common.get_configs("max_speed_limit"):
                         box.append(speed)
             if box:
-                all_speed_city[city_lat_lang_condition] = box
-                avg_speed_city[city_lat_lang_condition] = sum(box) / len(box)
+                all_speed_locality[locality_lat_lang_condition] = box
+                avg_speed_locality[locality_lat_lang_condition] = sum(box) / len(box)
 
-        return avg_speed_city, all_speed_city
+        return avg_speed_locality, all_speed_locality
 
     def avg_speed_of_crossing_country(self, df_mapping: pl.DataFrame, all_speed: dict):
         """
@@ -204,7 +204,7 @@ class Metrics:
 
         Args:
             all_speed (dict): Nested dictionary structured as
-                {city_lat_lang_condition: {video_id: {unique_id: speed}}}
+                {locality_lat_lang_condition: {video_id: {unique_id: speed}}}
             df_mapping (pd.DataFrame): DataFrame containing video_id and country information.
 
         Returns:
@@ -212,7 +212,7 @@ class Metrics:
         """
         avg_speed: dict[str, list[float]] = {}
 
-        for _city_lat_lang_condition, value_1 in all_speed.items():
+        for _locality_lat_lang_condition, value_1 in all_speed.items():
             for video_id, value_2 in value_1.items():
                 result = metadata_class.find_values_with_video_id(df=df_mapping, key=video_id)
                 if result is None:
@@ -231,18 +231,18 @@ class Metrics:
     def time_to_start_cross(self, df_mapping: pl.DataFrame, df: pl.DataFrame, data: dict, person_id: int = 0):
         """
         Calculate the time to start crossing the road of individuals crossing in various videos
-        and organise them by city, state, and condition.
+        and organise them by locality, state, and condition.
 
         Args:
             df_mapping (dataframe): A DataFrame mapping video IDs to metadata such as
-                city, state, country, and other contextual information.
+                locality, state, country, and other contextual information.
             df (dict): A dictionary where contains all the csv files extracted from YOLO.
             data (dict): A dictionary where keys are video IDs and values are dictionaries
                 mapping person IDs to crossing durations.
             person_id (int, optional): YOLO unique representation for person
 
         Returns:
-            speed_dict (dict): A dictionary with keys formatted as 'city_state_condition' mapping to lists
+            speed_dict (dict): A dictionary with keys formatted as 'locality_state_condition' mapping to lists
                 of walking speeds (m/s) for each valid crossing.
             all_speed (list): A flat list of all calculated walking speeds (m/s) across videos, including outliers.
         """
@@ -334,12 +334,12 @@ class Metrics:
             return None
 
         time_complete = {key0: time_id_complete}
-        output = grouping_class.city_country_wrapper(input_dict=time_complete, mapping=df_mapping)
+        output = grouping_class.locality_country_wrapper(input_dict=time_complete, mapping=df_mapping)
         return output
 
-    def avg_time_to_start_cross_city(self, df_mapping: pl.DataFrame, all_time: dict):
+    def avg_time_to_start_cross_locality(self, df_mapping: pl.DataFrame, all_time: dict):
         """
-        Calculate the average adjusted time to start crossing for each city condition.
+        Calculate the average adjusted time to start crossing for each locality condition.
 
         The time for each entry is adjusted by dividing by (fps / 10), where fps is
         extracted from the mapping DataFrame for the corresponding video_id.
@@ -347,14 +347,14 @@ class Metrics:
         Args:
             df_mapping (pd.DataFrame): DataFrame containing video_id and fps information.
             all_time (dict): Nested dictionary structured as
-                {city_condition: {video_id: {unique_id: time}}}
+                {locality_condition: {video_id: {unique_id: time}}}
 
         Returns:
-            dict: Dictionary mapping each city_condition to its average adjusted crossing time (float).
+            dict: Dictionary mapping each locality_condition to its average adjusted crossing time (float).
         """
-        avg_time_city, all_time_city = {}, {}
+        avg_time_locality, all_time_locality = {}, {}
 
-        for city_condition, value_1 in all_time.items():
+        for locality_condition, value_1 in all_time.items():
             box = []
             for video_id, value_2 in value_1.items():
                 if value_2 is None:
@@ -367,10 +367,10 @@ class Metrics:
                             box.append(time_in_seconds)
 
             if box:
-                all_time_city[city_condition] = box
-                avg_time_city[city_condition] = sum(box) / len(box)
+                all_time_locality[locality_condition] = box
+                avg_time_locality[locality_condition] = sum(box) / len(box)
 
-        return avg_time_city, all_time_city
+        return avg_time_locality, all_time_locality
 
     def avg_time_to_start_cross_country(self, df_mapping: pl.DataFrame, all_time: dict):
         """
@@ -382,14 +382,14 @@ class Metrics:
         Args:
             df_mapping (pd.DataFrame): DataFrame containing video_id, fps, and country information.
             all_time (dict): Nested dictionary structured as
-                {city_condition: {video_id: {unique_id: time}}}
+                {locality_condition: {video_id: {unique_id: time}}}
 
         Returns:
             dict: Dictionary mapping each country to its average adjusted crossing time (float).
         """
         avg_over_time: dict[str, list[float]] = {}
 
-        for _city_condition, videos in all_time.items():
+        for _locality_condition, videos in all_time.items():
             for video_id, times in videos.items():
                 if times is None:
                     continue

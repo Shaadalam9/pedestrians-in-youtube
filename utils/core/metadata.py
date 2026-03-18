@@ -83,7 +83,7 @@ class MetaData:
                 - Start time
                 - End time
                 - Time of day
-                - City
+                - locality
                 - State
                 - Latitude
                 - Longitude
@@ -118,13 +118,13 @@ class MetaData:
             ):
                 continue
 
-            city = row.get("city")
+            locality = row.get("locality")
             state = self._state_or_unknown(row.get("state"))
             latitude = row.get("lat")
             longitude = row.get("lon")
             country = row.get("country")
             gdp = row.get("gmp")
-            population = row.get("population_city")
+            population = row.get("population_locality")
             population_country = row.get("population_country")
             traffic_mortality = row.get("traffic_mortality")
             continent = row.get("continent")
@@ -177,7 +177,7 @@ class MetaData:
                         s,                    # 1
                         end_val,              # 2
                         tod_val,              # 3
-                        city,                 # 4
+                        locality,                 # 4
                         state,                # 5
                         latitude,             # 6
                         longitude,            # 7
