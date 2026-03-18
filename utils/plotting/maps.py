@@ -1609,45 +1609,45 @@ class Maps:
                     "locality": "Tokyo",
                     "country": "Japan",
                     "file": "tokyo.png",
-                    "x": 0.933, "y": 0.58,
-                    "approx_lon": 165.2, "approx_lat": 7.2,
+                    "x": 0.92, "y": 0.62,
+                    "approx_lon": 165.2, "approx_lat": 17.2,
                     "label": "Tokyo, Japan",
-                    "x_label": 0.982, "y_label": 0.641,
+                    "x_label": 0.965, "y_label": 0.691,
                     "video": "-YNLQlmPnqA",
-                    "x_video": 0.9305, "y_video": 0.521,
+                    "x_video": 0.912, "y_video": 0.561,
                 },
                 {
                     "locality": "Cape Town",
                     "country": "South Africa",
                     "file": "cape_town.jpg",
-                    "x": 0.69, "y": 0.29,
-                    "approx_lon": 54.0, "approx_lat": -38.0,
+                    "x": 0.64, "y": 0.19,
+                    "approx_lon": 44.0, "approx_lat": -48.0,
                     "label": "Cape Town, South Africa",
-                    "x_label": 0.745, "y_label": 0.35,
+                    "x_label": 0.634, "y_label": 0.241,
                     "video": "0xP7JgDiBb8",
-                    "x_video": 0.69, "y_video": 0.22,
+                    "x_video": 0.686, "y_video": 0.122,
                 },
                 {
                     "locality": "San Francisco",
                     "country": "United States",
                     "file": "san_francisco.png",
-                    "x": 0.11, "y": 0.56,
+                    "x": 0.13, "y": 0.56,
                     "approx_lon": -123.5, "approx_lat": 8.0,
                     "label": "San Francisco, CA, USA",
-                    "x_label": 0.07, "y_label": 0.62,
+                    "x_label": 0.084, "y_label": 0.622,
                     "video": "6F6YWRjHD0Y",
-                    "x_video": 0.12, "y_video": 0.49,
+                    "x_video": 0.135, "y_video": 0.501,
                 },
                 {
                     "locality": "London",
                     "country": "United Kingdom",
                     "file": "london.png",
-                    "x": 0.375, "y": 0.72,
+                    "x": 0.395, "y": 0.7,
                     "approx_lon": -36.0, "approx_lat": 37.0,
                     "label": "London, UK",
-                    "x_label": 0.35, "y_label": 0.79,
+                    "x_label": 0.368, "y_label": 0.77,
                     "video": "Bs3MZ4wWMQs",
-                    "x_video": 0.40, "y_video": 0.66,
+                    "x_video": 0.418, "y_video": 0.64,
                 },
                 {
                     "locality": "Sao Paulo",
@@ -1656,20 +1656,20 @@ class Maps:
                     "x": 0.43, "y": 0.27,
                     "approx_lon": -41.0, "approx_lat": -36.0,
                     "label": "Sao Paulo, Brazil",
-                    "x_label": 0.413, "y_label": 0.32,
+                    "x_label": 0.413, "y_label": 0.322,
                     "video": "Ic2ERD7kt4o",
-                    "x_video": 0.46, "y_video": 0.20,
+                    "x_video": 0.458, "y_video": 0.202,
                 },
                 {
                     "locality": "Perth",
                     "country": "Australia",
                     "file": "perth.png",
-                    "x": 0.69, "y": 0.20,
-                    "approx_lon": 76.0, "approx_lat": -53.0,
+                    "x": 0.72, "y": 0.33,
+                    "approx_lon": 72.0, "approx_lat": -25.0,
                     "label": "Perth, Australia",
-                    "x_label": 0.74, "y_label": 0.25,
+                    "x_label": 0.725, "y_label": 0.39,
                     "video": "xTDUhnnj3q4",
-                    "x_video": 0.68, "y_video": 0.13,
+                    "x_video": 0.766, "y_video": 0.262,
                 },
 
             ]
@@ -1754,7 +1754,7 @@ class Maps:
                     )
                 )
 
-            yolo_img = _img(os.path.join(path_screenshots, "new_york_yolo.png"))
+            yolo_img = _img(os.path.join(path_screenshots, "toronto_yolo.jpg"))
             if yolo_img is not None:
                 fig.add_layout_image(
                     dict(
@@ -1772,8 +1772,8 @@ class Maps:
                 )
 
                 fig.add_annotation(
-                    text="Example of YOLO output (New York, NY, USA)",
-                    x=0.101,
+                    text="Example of YOLO output (Toronto, ON, Canada)",
+                    x=0.108,
                     y=0.361,
                     xref="paper",
                     yref="paper",
@@ -1786,8 +1786,8 @@ class Maps:
                 )
 
                 fig.add_annotation(
-                    text="Wyg213IZDI",
-                    x=0.258,
+                    text="3ai7SUaPoHM",
+                    x=0.253,
                     y=0.131,
                     xref="paper",
                     yref="paper",
