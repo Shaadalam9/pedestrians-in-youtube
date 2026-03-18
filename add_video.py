@@ -31,8 +31,8 @@ def format_locality_label(locality, state, country, iso3):
     return f"{locality}, {country} ({iso3})"
 
 
-@app.route("/autocomplete/cities")
-def autocomplete_cities():
+@app.route("/autocomplete/localities")
+def autocomplete_localities():
     q = request.args.get("q", "").strip().lower()
     if len(q) < 2:
         return []
