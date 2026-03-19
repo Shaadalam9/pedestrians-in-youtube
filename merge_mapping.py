@@ -31,6 +31,12 @@ def parse_flat_list(cell):
     return [item.strip(" '\"") for item in str(cell).strip("[]").split(',') if item.strip()]
 
 
+def normalise(value):
+    if pd.isna(value):
+        return ''
+    return str(value).strip().lower()
+
+
 # filenames
 base_file = 'mapping.csv'
 backup_file = 'mapping_bkp.csv'
@@ -65,20 +71,33 @@ for file in glob.glob('mapping-*.csv'):
             new_df[col] = new_df[col].apply(parse_flat_list)
 
     for _, new_row in new_df.iterrows():
-        locality = new_row['locality']
-        match = main_df[main_df['locality'] == locality]
+        locality = normalise(new_row['locality'])
+        country = normalise(new_row['country'])
+        iso3 = normalise(new_row['iso3'])
+        state = normalise(new_row['state'])
+
+        match = main_df[
+            (main_df['locality'].apply(normalise) == locality) &
+            (main_df['country'].apply(normalise) == country) &
+            (main_df['iso3'].apply(normalise) == iso3)
+        ]
+
+        if state:
+            match = match[match['state'].apply(normalise) == state]
 
         if not match.empty:
             idx = match.index[0]
-            existing_videos = set(main_df.at[idx, 'videos'])  # type: ignore
-            new_videos = [vid for vid in new_row['videos'] if vid not in existing_videos]
+            existing_videos = main_df.at[idx, 'videos']  # type: ignore
 
-            if new_videos:
-                for col in list_columns:
-                    for vid_idx, vid in enumerate(new_row['videos']):
-                        if vid in new_videos:
-                            value = new_row[col][vid_idx]
-                            main_df.at[idx, col].append(value)  # type: ignore
+            for vid_idx, vid in enumerate(new_row['videos']):
+                if vid in existing_videos:
+                    existing_idx = existing_videos.index(vid)  # type: ignore
+                    for col in list_columns:
+                        main_df.at[idx, col][existing_idx] = new_row[col][vid_idx]  # type: ignore
+                else:
+                    for col in list_columns:
+                        value = new_row[col][vid_idx]
+                        main_df.at[idx, col].append(value)  # type: ignore
         else:
             main_df = pd.concat([main_df, pd.DataFrame([new_row])], ignore_index=True)
 
