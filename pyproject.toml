@@ -29,7 +29,7 @@ dependencies = [
     "ultralytics>=8.3.182",
     "wbdata>=0.3.0",
     "world-bank-data==0.1.4",
-    "yt-dlp>=2025.8.20",
+    "yt-dlp>=2025.0.0",
 ]
 
 [tool.uv.sources]

@@ -26,6 +26,7 @@ import json
 import yaml
 import pathlib
 import requests
+import yt_dlp
 from urllib.parse import urljoin, urlparse
 from bs4 import BeautifulSoup
 
@@ -602,8 +603,18 @@ class Youtube_Helper:
     def download_video_with_resolution(self, vid, resolutions=["720p", "480p", "360p", "144p"], output_path="."):
         """
         Downloads a YouTube video in one of the specified resolutions and returns video details.
-        Uses pytubefix/YouTube only (no yt_dlp).
+        Uses pytubefix first, then yt-dlp as fallback.
+        Downloads into output_path/.ftp_tmp first, then moves the completed file to output_path.
         """
+        selected_resolution = None
+
+        temp_dir = os.path.join(output_path, ".ftp_tmp")
+        final_video_file_path = os.path.join(output_path, f"{vid}.mp4")
+        temp_video_file_path = os.path.join(temp_dir, f"{vid}.mp4")
+
+        os.makedirs(output_path, exist_ok=True)
+        os.makedirs(temp_dir, exist_ok=True)
+
         try:
             if self.update_package and datetime.datetime.today().weekday() == 0:
                 self.upgrade_package_if_needed("pytubefix")
@@ -637,7 +648,6 @@ class Youtube_Helper:
             if not selected_stream:
 
                 def _height(s) -> int:
-                    # Use numeric height if present; else parse '720p', '1080p60', etc.
                     h = getattr(s, "height", None)
                     if isinstance(h, int) and h > 0:
                         return h
@@ -655,17 +665,17 @@ class Youtube_Helper:
 
                 streams = list(youtube_object.streams)
 
-                # 2a) Highest available <= 720p (MP4 only; progressive preferred implicitly by height selection set)
+                # 2a) Highest available <= 720p
                 le_720 = [s for s in streams if _is_mp4(s) and 0 < _height(s) <= 720]
                 if le_720:
                     max_h = max(_height(s) for s in le_720)
                     at_max_h = [s for s in le_720 if _height(s) == max_h]
                     chosen = _pick_prefer_progressive(at_max_h)
                     selected_stream = chosen
-                    selected_resolution = getattr(chosen, "resolution", None) or getattr(chosen, "res", None) or f"{max_h}p"  # noqa: E501
+                    selected_resolution = getattr(chosen, "resolution", None) or getattr(chosen, "res", None) or f"{max_h}p"  # noqa:E501
                     logger.debug(f"{vid}: no preferred match; picked highest available {selected_resolution} (≤720p).")
                 else:
-                    # 2b) If none <= 720p, pick the LOWEST available > 720p (MP4 only)
+                    # 2b) Lowest available > 720p
                     gt_720 = [s for s in streams if _is_mp4(s) and _height(s) > 720]
                     if not gt_720:
                         logger.error(f"{vid}: no MP4 stream available at any resolution.")
@@ -676,23 +686,156 @@ class Youtube_Helper:
                     chosen = _pick_prefer_progressive(at_min_h)
 
                     selected_stream = chosen
-                    selected_resolution = getattr(chosen, "resolution", None) or getattr(chosen, "res", None) or f"{min_h}p"  # noqa: E501
+                    selected_resolution = getattr(chosen, "resolution", None) or getattr(chosen, "res", None) or f"{min_h}p"  # noqa:E501
                     logger.debug(f"{vid}: no ≤720p stream; picked lowest available >720p ({selected_resolution}).")
 
-            video_file_path = os.path.join(output_path, f"{vid}.mp4")
             logger.info(f"{vid}: download in {selected_resolution} started with pytubefix.")
 
-            selected_stream.download(output_path, filename=f"{vid}.mp4")
+            if os.path.exists(temp_video_file_path):
+                os.remove(temp_video_file_path)
+
+            selected_stream.download(temp_dir, filename=f"{vid}.mp4")
             self.video_title = youtube_object.title
 
-            fps = self.get_video_fps(video_file_path)
+            os.replace(temp_video_file_path, final_video_file_path)
+
+            fps = self.get_video_fps(final_video_file_path)
             logger.info(f"{vid}: FPS={fps}.")
 
-            return video_file_path, vid, selected_resolution, fps
+            return final_video_file_path, vid, selected_resolution, fps
 
         except Exception as e:
             logger.error(f"{vid}: pytubefix download method failed: {e}")
-            return None
+
+            try:
+                if self.update_package and datetime.datetime.today().weekday() == 0:
+                    self.upgrade_package_if_needed("yt-dlp")
+
+                youtube_url = f"https://www.youtube.com/watch?v={vid}"
+
+                with yt_dlp.YoutubeDL({
+                    "quiet": True,
+                    "no_warnings": True,
+                    "noplaylist": True,
+                }) as ydl:
+                    info = ydl.extract_info(youtube_url, download=False)
+
+                formats = info.get("formats", [])
+
+                def _fmt_height(fmt) -> int:
+                    h = fmt.get("height")
+                    if isinstance(h, int) and h > 0:
+                        return h
+                    format_note = fmt.get("format_note", "") or ""
+                    m = re.search(r"(\d{3,4})p", str(format_note))
+                    return int(m.group(1)) if m else -1
+
+                def _is_non_hls(fmt) -> bool:
+                    protocol = (fmt.get("protocol") or "").lower()
+                    return protocol not in ("m3u8", "m3u8_native")
+
+                def _is_mp4_video(fmt) -> bool:
+                    vcodec = fmt.get("vcodec")
+                    ext = (fmt.get("ext") or "").lower()
+                    return vcodec not in (None, "none") and ext == "mp4" and _is_non_hls(fmt)
+
+                def _is_progressive(fmt) -> bool:
+                    return (
+                        fmt.get("vcodec") not in (None, "none")
+                        and fmt.get("acodec") not in (None, "none")
+                        and _is_non_hls(fmt)
+                    )
+
+                def _pick_prefer_progressive_format(formats_at_height):
+                    progressive = [f for f in formats_at_height if _is_progressive(f)]
+                    return progressive[0] if progressive else formats_at_height[0]
+
+                available_video_formats = [f for f in formats if _is_mp4_video(f)]  # type: ignore
+
+                if not available_video_formats:
+                    logger.error(f"{vid}: yt-dlp found no non-HLS MP4 video stream available at any resolution.")
+                    return None
+
+                selected_format = None
+                selected_resolution = None
+
+                preferred_heights = []
+                for resolution in resolutions:
+                    m = re.search(r"(\d{3,4})p", str(resolution))
+                    if m:
+                        preferred_heights.append(int(m.group(1)))
+
+                # 1) Preferred resolutions (exact match)
+                for preferred_h in preferred_heights:
+                    matching = [f for f in available_video_formats if _fmt_height(f) == preferred_h]
+                    if matching:
+                        selected_format = _pick_prefer_progressive_format(matching)
+                        selected_resolution = f"{preferred_h}p"
+                        logger.debug(f"{vid}: yt-dlp found exact preferred resolution {selected_resolution}.")
+                        break
+
+                # 2) Fallback logic if no preferred match
+                if not selected_format:
+                    le_720 = [f for f in available_video_formats if 0 < _fmt_height(f) <= 720]
+                    if le_720:
+                        max_h = max(_fmt_height(f) for f in le_720)
+                        at_max_h = [f for f in le_720 if _fmt_height(f) == max_h]
+                        selected_format = _pick_prefer_progressive_format(at_max_h)
+                        selected_resolution = f"{max_h}p"
+                        logger.debug(f"{vid}: yt-dlp no preferred match; picked highest available {selected_resolution} (≤720p).")  # noqa:E501
+                    else:
+                        gt_720 = [f for f in available_video_formats if _fmt_height(f) > 720]
+                        if not gt_720:
+                            logger.error(f"{vid}: yt-dlp found no non-HLS MP4 video stream available at any resolution.")  # noqa:E501
+                            return None
+
+                        min_h = min(_fmt_height(f) for f in gt_720)
+                        at_min_h = [f for f in gt_720 if _fmt_height(f) == min_h]
+                        selected_format = _pick_prefer_progressive_format(at_min_h)
+                        selected_resolution = f"{min_h}p"
+                        logger.debug(f"{vid}: yt-dlp no ≤720p stream; picked lowest available >720p ({selected_resolution}).")  # noqa:E501
+
+                selected_format_id = selected_format.get("format_id")
+                if not selected_format_id:
+                    logger.error(f"{vid}: yt-dlp could not determine selected format id.")
+                    return None
+
+                if _is_progressive(selected_format):
+                    format_spec = selected_format_id
+                else:
+                    format_spec = (
+                        f"{selected_format_id}+bestaudio[ext=m4a][protocol!=m3u8][protocol!=m3u8_native]/"
+                        f"{selected_format_id}+bestaudio[protocol!=m3u8][protocol!=m3u8_native]"
+                    )
+
+                ydl_opts = {
+                    "outtmpl": os.path.join(temp_dir, f"{vid}.%(ext)s"),
+                    "format": format_spec,
+                    "merge_output_format": "mp4",
+                    "final_ext": "mp4",
+                    "noplaylist": True,
+                }
+
+                logger.info(f"{vid}: download in {selected_resolution} started with yt-dlp.")
+
+                if os.path.exists(temp_video_file_path):
+                    os.remove(temp_video_file_path)
+
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:  # pyright: ignore[reportArgumentType]
+                    ydl.download([youtube_url])
+
+                self.video_title = info.get("title")
+
+                os.replace(temp_video_file_path, final_video_file_path)
+
+                fps = self.get_video_fps(final_video_file_path)
+                logger.info(f"{vid}: FPS={fps}.")
+
+                return final_video_file_path, vid, selected_resolution, fps
+
+            except Exception as ytdlp_error:
+                logger.error(f"{vid}: yt-dlp download method failed: {ytdlp_error}")
+                return None
 
     def get_video_fps(self, video_file_path):
         """
