@@ -456,6 +456,76 @@ def row_label(row):
     )
 
 
+def get_existing_locality_row(df, locality, state, country):
+    """Return (index, row_dict) for the exact locality/state/country match, else (None, None)."""
+    if not locality or not country:
+        return None, None
+
+    if state:
+        matches = df[
+            (df['locality'] == locality) &
+            (df['state'] == state) &
+            (df['country'] == country)
+        ]
+    else:
+        matches = df[
+            (df['locality'] == locality) &
+            (df['country'] == country)
+        ]
+
+    if matches.empty:
+        return None, None
+
+    idx = matches.index[0]
+    return idx, matches.iloc[0].to_dict()
+
+
+def get_video_state_from_row(row, video_id):
+    """Extract the existing segment and metadata state for a video within one locality row."""
+    state = {
+        'upload_date_video': '',
+        'channel_video': None,
+        'start_time_video': [],
+        'end_time_video': [],
+        'vehicle_type_video': None,
+        'time_of_day_video': []
+    }
+
+    if not row or not video_id:
+        return state
+
+    videos_list = _parse_videos_cell(row.get('videos', ''))
+    if video_id not in videos_list:
+        return state
+
+    pos = videos_list.index(video_id)
+
+    upload_date_list = _parse_flat_list_cell(row.get('upload_date', ''))
+    channel_list = [_normalize_optional_text(channel) for channel in _parse_flat_list_cell(row.get('channel', ''))]
+    vehicle_type_list = _parse_flat_list_cell(row.get('vehicle_type', ''))
+    start_time_list = _safe_literal_eval(row.get('start_time', ''), [])
+    end_time_list = _safe_literal_eval(row.get('end_time', ''), [])
+    time_of_day_list = _safe_literal_eval(row.get('time_of_day', ''), [])
+
+    if pos < len(upload_date_list) and not _is_missing(upload_date_list[pos]):
+        state['upload_date_video'] = str(upload_date_list[pos]).strip()
+    if pos < len(channel_list):
+        state['channel_video'] = _normalize_optional_text(channel_list[pos])
+    if pos < len(start_time_list):
+        state['start_time_video'] = start_time_list[pos]
+    if pos < len(end_time_list):
+        state['end_time_video'] = end_time_list[pos]
+    if pos < len(vehicle_type_list) and not _is_missing(vehicle_type_list[pos]):
+        try:
+            state['vehicle_type_video'] = int(vehicle_type_list[pos])
+        except Exception:
+            state['vehicle_type_video'] = vehicle_type_list[pos]
+    if pos < len(time_of_day_list):
+        state['time_of_day_video'] = time_of_day_list[pos]
+
+    return state
+
+
 @app.route('/', methods=['GET', 'POST'])
 def form():
     df = load_csv(FILE_PATH)
@@ -470,7 +540,8 @@ def form():
     time_of_day = []
     start_time = []
     end_time = []
-    end_time_input = 0
+    start_time_input = ''
+    end_time_input = ''
     gmp = ''
     population_locality = ''
     population_country = ''
@@ -494,6 +565,56 @@ def form():
     end_time_video = []
     vehicle_type_video = 0
     time_of_day_video = 0
+
+    def render_current_template():
+        nonlocal upload_date_video, channel_video, vehicle_type_video
+
+        if not upload_date_video and yt_upload_date:
+            upload_date_video = yt_upload_date.strftime('%d%m%Y')
+
+        if channel_video is None and yt_channel:
+            channel_video = yt_channel
+
+        try:
+            vehicle_type_video_for_render = int(vehicle_type_video) if vehicle_type_video not in [None, ''] else None
+        except (TypeError, ValueError):
+            vehicle_type_video_for_render = vehicle_type_video
+
+        time_of_day_last = extract_last_int(time_of_day_video)
+        time_of_day_last = int(time_of_day_last) if time_of_day_last is not None else None
+
+        timestamp_value = 0
+        try:
+            if end_time_input not in [None, '']:
+                timestamp_value = int(end_time_input)
+        except (TypeError, ValueError):
+            timestamp_value = 0
+
+        return render_template(
+            "add_video.html",
+            message=message,
+            df=df,
+            locality=locality,
+            country=country,
+            state=state,
+            video_url=video_url,
+            video_id=video_id,
+            existing_data=existing_data_row,
+            upload_date_video=upload_date_video,
+            channel_video=channel_video,
+            timestamp=timestamp_value,
+            yt_title=yt_title,
+            yt_description=yt_description,
+            yt_upload_date=yt_upload_date,
+            yt_channel=yt_channel,
+            start_time_video=start_time_video,
+            end_time_video=end_time_video,
+            vehicle_type_video=vehicle_type_video_for_render,
+            time_of_day_video=time_of_day_video,
+            time_of_day_last=time_of_day_last,
+            start_time_input=start_time_input,
+            end_time_input=end_time_input
+        )
 
     if request.method == 'POST':
         if 'fetch_data' in request.form:
@@ -656,7 +777,8 @@ def form():
             time_of_day = request.form.getlist('time_of_day')
             start_time = request.form.getlist('start_time')
             end_time = request.form.getlist('end_time')
-            end_time_input = int(end_time[0])
+            start_time_input = start_time[-1] if start_time else ''
+            end_time_input = end_time[-1] if end_time else ''
             gmp = request.form.get('gmp')
             population_locality = request.form.get('population_locality')
             lat = request.form.get('lat')
@@ -711,39 +833,36 @@ def form():
                     yt_channel=yt_channel
                 )
 
+            current_idx, existing_data_row = get_existing_locality_row(
+                df, locality, state, country
+            )
+            check_existing = current_idx is not None
+
+            existing_video_state = get_video_state_from_row(existing_data_row, video_id)
+            if existing_video_state['upload_date_video']:
+                upload_date_video = existing_video_state['upload_date_video']
+            if existing_video_state['channel_video'] is not None:
+                channel_video = existing_video_state['channel_video']
+            if existing_video_state['start_time_video']:
+                start_time_video = existing_video_state['start_time_video']
+            if existing_video_state['end_time_video']:
+                end_time_video = existing_video_state['end_time_video']
+            if existing_video_state['vehicle_type_video'] is not None:
+                vehicle_type_video = existing_video_state['vehicle_type_video']
+            if existing_video_state['time_of_day_video']:
+                time_of_day_video = existing_video_state['time_of_day_video']
+
             if any(t not in ['0', '1'] for t in time_of_day):
                 message = "Time of day must be either 0 or 1."
             elif vehicle_type_video_int not in range(13):
                 message = "Type of vehicle must be one of: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12."
             elif any(int(et) <= int(st) for st, et in zip(start_time, end_time)):
                 message = "End time must be larger than start time."
+
+            if message:
+                return render_current_template()
+
             else:
-                if state:
-                    check_existing = not df[
-                        (df['locality'] == locality) &
-                        (df['state'] == state) &
-                        (df['country'] == country)
-                    ].empty
-                else:
-                    check_existing = not df[
-                        (df['locality'] == locality) &
-                        (df['country'] == country)
-                    ].empty
-
-                current_idx = None
-                if check_existing:
-                    if state:
-                        current_idx = df[
-                            (df['locality'] == locality) &
-                            (df['state'] == state) &
-                            (df['country'] == country)
-                        ].index[0]
-                    else:
-                        current_idx = df[
-                            (df['locality'] == locality) &
-                            (df['country'] == country)
-                        ].index[0]
-
                 global_note_for_display = ""
                 duplicate_elsewhere = [h for h in video_matches_anywhere if h.get('idx') != current_idx]
 
@@ -779,6 +898,7 @@ def form():
                     )
                     if current_idx is not None:
                         existing_data_row = df.loc[current_idx].to_dict()
+                    return render_current_template()
 
                 if not message:
                     if check_existing:
@@ -852,29 +972,7 @@ def form():
                                 time_of_day_last = extract_last_int(time_of_day_video)
                                 time_of_day_last = int(time_of_day_last) if time_of_day_last is not None else None
 
-                                return render_template(
-                                    "add_video.html",
-                                    message=message,
-                                    df=df,
-                                    locality=locality,
-                                    country=country,
-                                    state=state,
-                                    video_url=video_url,
-                                    video_id=video_id,
-                                    existing_data=existing_data_row,
-                                    upload_date_video=upload_date_video,
-                                    channel_video=channel_video,
-                                    timestamp=end_time_input,
-                                    yt_title=yt_title,
-                                    yt_description=yt_description,
-                                    yt_upload_date=yt_upload_date,
-                                    yt_channel=yt_channel,
-                                    start_time_video=start_time_video,
-                                    end_time_video=end_time_video,
-                                    vehicle_type_video=vehicle_type_video_int,
-                                    time_of_day_video=time_of_day_video,
-                                    time_of_day_last=time_of_day_last
-                                )
+                                return render_current_template()
 
                             time_of_day_list[video_index].append(int(time_of_day[-1]))
                             start_time_list[video_index].append(new_start)
@@ -980,39 +1078,7 @@ def form():
             if not existing_data.empty:
                 existing_data_row = existing_data.iloc[0].to_dict()
 
-    if not upload_date_video and yt_upload_date:
-        upload_date_video = yt_upload_date.strftime('%d%m%Y')
-
-    if channel_video is None and yt_channel:
-        channel_video = yt_channel
-
-    vehicle_type_video = int(vehicle_type_video) if vehicle_type_video is not None else None
-    time_of_day_last = extract_last_int(time_of_day_video)
-    time_of_day_last = int(time_of_day_last) if time_of_day_last is not None else None
-
-    return render_template(
-        "add_video.html",
-        message=message,
-        df=df,
-        locality=locality,
-        country=country,
-        state=state,
-        video_url=video_url,
-        video_id=video_id,
-        existing_data=existing_data_row,
-        upload_date_video=upload_date_video,
-        channel_video=channel_video,
-        timestamp=end_time_input,
-        yt_title=yt_title,
-        yt_description=yt_description,
-        yt_upload_date=yt_upload_date,
-        yt_channel=yt_channel,
-        start_time_video=start_time_video,
-        end_time_video=end_time_video,
-        vehicle_type_video=vehicle_type_video,
-        time_of_day_video=time_of_day_video,
-        time_of_day_last=time_of_day_last
-    )
+    return render_current_template()
 
 
 @app.route('/fetch_video', methods=['POST'])
