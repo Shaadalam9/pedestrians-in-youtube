@@ -155,8 +155,9 @@ class Distributions:
         Each bar represents a calendar 3 month period:
         Jan to Mar, Apr to Jun, Jul to Sep, Oct to Dec
 
-        The y axis is logarithmic, but the plotted values are the absolute video counts.
-        Note: zero counts cannot be displayed on a true log axis.
+        The y axis is linear and shows the absolute video counts.
+        Bar labels are shown outside the bars at a 45 degree incline using a monospace font
+        so the counts appear visually consistent.
         """
         if len(df) == 0:
             logger.error('DataFrame is empty.')
@@ -316,45 +317,21 @@ class Distributions:
             axis=1
         )
 
-        # True log axis cannot display zero
-        zero_bins = int((quarter_counts['video_count'] == 0).sum())
-        if zero_bins > 0:
-            logger.warning(
-                f'{zero_bins} three month bins have zero count and cannot be displayed on a logarithmic axis.'
-            )
-
-        quarter_counts['plot_count'] = quarter_counts['video_count'].where(
-            quarter_counts['video_count'] > 0,
-            np.nan
-        )
-
-        # Build custom y axis log ticks with full labels: 1, 2, 5, 10, 20, 50, 100, 200, 500, ...
-        positive_counts = quarter_counts.loc[quarter_counts['video_count'] > 0, 'video_count']
-        if len(positive_counts) == 0:
-            logger.error('No positive counts available for logarithmic plotting.')
-            return -1
-
-        max_count = int(positive_counts.max())
-        max_power = int(np.floor(np.log10(max_count))) if max_count > 0 else 0
-
-        y_tickvals = []
-        for power in range(max_power + 2):
-            for multiplier in [1, 2, 5]:
-                tick_value = multiplier * (10 ** power)
-                if tick_value <= max_count:
-                    y_tickvals.append(tick_value)
-
-        if not y_tickvals:
-            y_tickvals = [1]
-
-        y_ticktext = [str(int(v)) for v in y_tickvals]
-
         # Create bar chart
         try:
             fig = go.Figure(
                 go.Bar(
                     x=quarter_counts['quarter_start'],
-                    y=quarter_counts['plot_count'],
+                    y=quarter_counts['video_count'],
+                    text=quarter_counts['video_count'].astype(str),
+                    texttemplate='%{text}',
+                    textposition='outside',
+                    textangle=-90,
+                    outsidetextfont=dict(
+                        family=common.get_configs("font_family"),
+                        size=common.get_configs("font_size")-3
+                    ),
+                    cliponaxis=False,
                     customdata=quarter_counts[['video_count', 'hover_label']],
                     hovertemplate=(
                         'Period: %{customdata[1]}<br>'
@@ -369,18 +346,21 @@ class Distributions:
         if title is None:
             title = ''
 
-        # Update layout using the original sizing logic
         fig.update_layout(
             template='simple_white',
             title=title,
             xaxis_title=xaxis_title,
             yaxis_title=yaxis_title,
             font=dict(family=font_family or 'Arial', size=font_size or 12),
-            margin=dict(l=10, r=10, t=50, b=10),
+            margin=dict(l=10, r=10, t=110, b=10),
             showlegend=False,
             bargap=0.1,
             plot_bgcolor='white',
             paper_bgcolor='white',
+            uniformtext=dict(
+                minsize=common.get_configs("font_size")-3,
+                mode='show'
+            ),
             xaxis=dict(
                 type='date',
                 tickmode='array',
@@ -398,10 +378,9 @@ class Distributions:
                 showgrid=False
             ),
             yaxis=dict(
-                type='log',
-                tickmode='array',
-                tickvals=y_tickvals,
-                ticktext=y_ticktext,
+                range=[0, 2250],
+                rangemode='tozero',
+                dtick=250,
                 ticks='outside',
                 ticklen=5,
                 tickwidth=1,
@@ -410,7 +389,8 @@ class Distributions:
                 linewidth=1,
                 showgrid=True,
                 title=dict(font=dict(size=(font_size or 12) + 15)),
-                tickfont=dict(size=(font_size or 12) + 9)
+                tickfont=dict(size=(font_size or 12) + 9),
+                automargin=True
             )
         )
 
