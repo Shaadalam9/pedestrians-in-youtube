@@ -1419,7 +1419,7 @@ class Maps:
         filter_zero=True,
     ):
         """
-        World map with locality dots shown in a single red colour.
+        World map with locality dots shown in a single muted red colour.
 
         Cities with lower footage hours are more transparent.
         Cities with higher footage hours are less transparent.
@@ -1437,11 +1437,28 @@ class Maps:
 
         Notes:
             - No choropleth is drawn.
-            - All markers use the same red colour.
+            - All markers use the same muted red colour.
             - Marker transparency depends on raw footage_hours.
             - Hover text shows raw footage hours.
             - No colourbar is shown because colour is fixed.
         """
+
+        def _hex_to_rgb(hex_colour):
+            hex_colour = hex_colour.lstrip("#")
+            return tuple(int(hex_colour[i:i + 2], 16) for i in (0, 2, 4))
+
+        palette = {
+            "ocean": "#D6ECFA",
+            "land": "#F3E2CC",
+            "country": "#D8D2C7",
+            "coast": "#DDD8CF",
+            "dot": "#C85A5A",
+            "connector": "#3B3B3B",
+            "label_bg": "rgba(255,255,255,0.88)",
+            "label_border": "#6B7280",
+            "label_text": "#1F2937",
+            "paper_bg": "white",
+        }
 
         df_plot = df.copy()
 
@@ -1521,15 +1538,22 @@ class Maps:
         if df_plot.empty:
             raise ValueError("No valid non negative 'footage_hours' values remain.")
 
-        # opacity based on raw footage hours
+        # Transparency based on raw footage hours, but keep the upper bound lower
+        # so dense regions do not become visually overwhelming.
         hours_min = float(df_plot["footage_hours"].min())
         hours_max = float(df_plot["footage_hours"].max())
 
         if hours_max == hours_min:
-            df_plot["marker_opacity"] = 0.9
+            df_plot["marker_opacity"] = 0.55
         else:
             norm = (df_plot["footage_hours"] - hours_min) / (hours_max - hours_min)
-            df_plot["marker_opacity"] = 0.20 + 0.80 * np.sqrt(norm)
+            df_plot["marker_opacity"] = 0.18 + 0.42 * np.sqrt(norm)
+
+        # Build per point rgba colours instead of using a global marker opacity.
+        dot_r, dot_g, dot_b = _hex_to_rgb(palette["dot"])
+        df_plot["marker_color"] = df_plot["marker_opacity"].apply(
+            lambda a: f"rgba({dot_r},{dot_g},{dot_b},{float(a):.4f})"
+        )
 
         fig = go.Figure()
 
@@ -1563,8 +1587,7 @@ class Maps:
                 hovertemplate=hovertemplate,
                 marker=dict(
                     size=marker_size,
-                    color="#d62728",
-                    opacity=df_plot["marker_opacity"],
+                    color=df_plot["marker_color"],
                     line=dict(width=0),
                     showscale=False,
                 ),
@@ -1586,21 +1609,30 @@ class Maps:
             font=dict(
                 family=common.get_configs("font_family"),
                 size=common.get_configs("font_size"),
+                color=palette["label_text"],
             ),
             margin=dict(l=0, r=0, t=30 if title else 0, b=0),
             showlegend=False,
+            paper_bgcolor=palette["paper_bg"],
+            plot_bgcolor=palette["paper_bg"],
         )
 
         fig.update_geos(
             projection_type=projection,
             showland=True,
-            landcolor="rgb(240,240,240)",
+            landcolor=palette["land"],
             showcountries=True,
-            countrycolor="white",
+            countrycolor=palette["country"],
+            countrywidth=0.7,
             showocean=True,
-            oceancolor="rgb(230,245,255)",
-            showcoastlines=False,
+            oceancolor=palette["ocean"],
+            showlakes=True,
+            lakecolor=palette["ocean"],
+            showcoastlines=True,
+            coastlinecolor=palette["coast"],
+            coastlinewidth=0.6,
             showframe=False,
+            bgcolor=palette["paper_bg"],
         )
 
         if show_images:
@@ -1612,9 +1644,9 @@ class Maps:
                     "x": 0.92, "y": 0.62,
                     "approx_lon": 165.2, "approx_lat": 17.2,
                     "label": "Tokyo, Japan",
-                    "x_label": 0.965, "y_label": 0.691,
+                    "x_label": 0.97, "y_label": 0.691,
                     "video": "-YNLQlmPnqA",
-                    "x_video": 0.912, "y_video": 0.561,
+                    "x_video": 0.917, "y_video": 0.561,
                 },
                 {
                     "locality": "Cape Town",
@@ -1623,9 +1655,9 @@ class Maps:
                     "x": 0.64, "y": 0.19,
                     "approx_lon": 44.0, "approx_lat": -48.0,
                     "label": "Cape Town, South Africa",
-                    "x_label": 0.634, "y_label": 0.241,
+                    "x_label": 0.638, "y_label": 0.241,
                     "video": "0xP7JgDiBb8",
-                    "x_video": 0.686, "y_video": 0.122,
+                    "x_video": 0.69, "y_video": 0.122,
                 },
                 {
                     "locality": "San Francisco",
@@ -1634,9 +1666,9 @@ class Maps:
                     "x": 0.13, "y": 0.56,
                     "approx_lon": -123.5, "approx_lat": 8.0,
                     "label": "San Francisco, CA, USA",
-                    "x_label": 0.084, "y_label": 0.622,
+                    "x_label": 0.08, "y_label": 0.622,
                     "video": "6F6YWRjHD0Y",
-                    "x_video": 0.135, "y_video": 0.501,
+                    "x_video": 0.132, "y_video": 0.501,
                 },
                 {
                     "locality": "London",
@@ -1667,11 +1699,10 @@ class Maps:
                     "x": 0.72, "y": 0.33,
                     "approx_lon": 72.0, "approx_lat": -25.0,
                     "label": "Perth, Australia",
-                    "x_label": 0.725, "y_label": 0.39,
+                    "x_label": 0.73, "y_label": 0.39,
                     "video": "xTDUhnnj3q4",
-                    "x_video": 0.766, "y_video": 0.262,
+                    "x_video": 0.77, "y_video": 0.262,
                 },
-
             ]
 
             path_screenshots = os.path.join(common.root_dir, "screenshots")
@@ -1681,6 +1712,22 @@ class Maps:
                     return Image.open(path)
                 except FileNotFoundError:
                     return None
+
+            def _add_box_annotation(text, x, y, font_size=12):
+                fig.add_annotation(
+                    text=text,
+                    x=x,
+                    y=y,
+                    xref="paper",
+                    yref="paper",
+                    showarrow=False,
+                    font=dict(size=font_size, color=palette["label_text"]),
+                    align="center",
+                    bgcolor=palette["label_bg"],
+                    bordercolor=palette["label_border"],
+                    borderwidth=1,
+                    borderpad=2,
+                )
 
             for item in locality_images:
                 img_path = os.path.join(path_screenshots, item["file"])
@@ -1703,31 +1750,18 @@ class Maps:
                     )
                 )
 
-                fig.add_annotation(
+                _add_box_annotation(
                     text=item["label"],
                     x=item["x_label"],
                     y=item["y_label"],
-                    xref="paper",
-                    yref="paper",
-                    showarrow=False,
-                    font=dict(size=12, color="black"),
-                    bgcolor="rgba(255,255,255,0.7)",
-                    bordercolor="black",
-                    borderwidth=1,
+                    font_size=12,
                 )
 
-                fig.add_annotation(
+                _add_box_annotation(
                     text=item["video"],
                     x=item["x_video"],
                     y=item["y_video"],
-                    xref="paper",
-                    yref="paper",
-                    showarrow=False,
-                    font=dict(size=10, color="black"),
-                    align="center",
-                    bgcolor="rgba(255,255,255,0.7)",
-                    bordercolor="black",
-                    borderwidth=1,
+                    font_size=10,
                 )
 
             # Connector lines from screenshot area to actual locality
@@ -1748,7 +1782,7 @@ class Maps:
                         lon=[item["approx_lon"], row["lon"].iloc[0]],
                         lat=[item["approx_lat"], row["lat"].iloc[0]],
                         mode="lines",
-                        line=dict(width=2, color="black"),
+                        line=dict(width=1.8, color=palette["connector"]),
                         hoverinfo="skip",
                         showlegend=False,
                     )
@@ -1771,32 +1805,18 @@ class Maps:
                     )
                 )
 
-                fig.add_annotation(
+                _add_box_annotation(
                     text="Example of YOLO output (Toronto, ON, Canada)",
-                    x=0.108,
+                    x=0.10,
                     y=0.361,
-                    xref="paper",
-                    yref="paper",
-                    showarrow=False,
-                    font=dict(size=12, color="black"),
-                    align="center",
-                    bgcolor="rgba(255,255,255,0.7)",
-                    bordercolor="black",
-                    borderwidth=1,
+                    font_size=12,
                 )
 
-                fig.add_annotation(
+                _add_box_annotation(
                     text="3ai7SUaPoHM",
-                    x=0.253,
+                    x=0.255,
                     y=0.131,
-                    xref="paper",
-                    yref="paper",
-                    showarrow=False,
-                    font=dict(size=10, color="black"),
-                    align="center",
-                    bgcolor="rgba(255,255,255,0.7)",
-                    bordercolor="black",
-                    borderwidth=1,
+                    font_size=10,
                 )
 
         if name_file is None:
