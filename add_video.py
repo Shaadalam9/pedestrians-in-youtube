@@ -1066,6 +1066,8 @@ def form():
                     message = "Video added or updated successfully."
                     if global_note_for_display:
                         message = message + " " + global_note_for_display
+                    start_time_input = ''
+                    end_time_input = ''
 
     if state:
         if locality and state and country:

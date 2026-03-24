@@ -2211,7 +2211,7 @@ if __name__ == "__main__":
             pretty_text=False,
             orientation="v",
             xaxis_title="Continent",
-            yaxis_title="Number of videos",
+            yaxis_title="Number of segments",
             show_text_labels=False,
             save_file=True,
             save_final=True,
