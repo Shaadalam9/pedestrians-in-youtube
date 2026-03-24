@@ -1452,7 +1452,7 @@ class Maps:
             "land": "#F3E2CC",
             "country": "#D8D2C7",
             "coast": "#DDD8CF",
-            "dot": "#C85A5A",
+            "dot": "#000000",
             "connector": "#3B3B3B",
             "label_bg": "rgba(255,255,255,0.88)",
             "label_border": "#6B7280",
@@ -1644,9 +1644,9 @@ class Maps:
                     "x": 0.92, "y": 0.62,
                     "approx_lon": 165.2, "approx_lat": 17.2,
                     "label": "Tokyo, Japan",
-                    "x_label": 0.97, "y_label": 0.691,
+                    "x_label": 0.97, "y_label": 0.693,
                     "video": "-YNLQlmPnqA",
-                    "x_video": 0.917, "y_video": 0.561,
+                    "x_video": 0.9175, "y_video": 0.561,
                 },
                 {
                     "locality": "Cape Town",
@@ -1655,9 +1655,9 @@ class Maps:
                     "x": 0.64, "y": 0.19,
                     "approx_lon": 44.0, "approx_lat": -48.0,
                     "label": "Cape Town, South Africa",
-                    "x_label": 0.638, "y_label": 0.241,
+                    "x_label": 0.6385, "y_label": 0.24,
                     "video": "0xP7JgDiBb8",
-                    "x_video": 0.69, "y_video": 0.122,
+                    "x_video": 0.69, "y_video": 0.12,
                 },
                 {
                     "locality": "San Francisco",
@@ -1666,9 +1666,9 @@ class Maps:
                     "x": 0.13, "y": 0.56,
                     "approx_lon": -123.5, "approx_lat": 8.0,
                     "label": "San Francisco, CA, USA",
-                    "x_label": 0.08, "y_label": 0.622,
-                    "video": "6F6YWRjHD0Y",
-                    "x_video": 0.132, "y_video": 0.501,
+                    "x_label": 0.08, "y_label": 0.618,
+                    "video": "HZrm3s4UsgU",
+                    "x_video": 0.131, "y_video": 0.503,
                 },
                 {
                     "locality": "London",
@@ -1677,7 +1677,7 @@ class Maps:
                     "x": 0.395, "y": 0.7,
                     "approx_lon": -36.0, "approx_lat": 37.0,
                     "label": "London, UK",
-                    "x_label": 0.368, "y_label": 0.77,
+                    "x_label": 0.3685, "y_label": 0.772,
                     "video": "Bs3MZ4wWMQs",
                     "x_video": 0.418, "y_video": 0.64,
                 },
@@ -1688,9 +1688,9 @@ class Maps:
                     "x": 0.43, "y": 0.27,
                     "approx_lon": -41.0, "approx_lat": -36.0,
                     "label": "Sao Paulo, Brazil",
-                    "x_label": 0.413, "y_label": 0.322,
+                    "x_label": 0.414, "y_label": 0.32,
                     "video": "Ic2ERD7kt4o",
-                    "x_video": 0.458, "y_video": 0.202,
+                    "x_video": 0.458, "y_video": 0.20,
                 },
                 {
                     "locality": "Perth",
@@ -1699,9 +1699,9 @@ class Maps:
                     "x": 0.72, "y": 0.33,
                     "approx_lon": 72.0, "approx_lat": -25.0,
                     "label": "Perth, Australia",
-                    "x_label": 0.73, "y_label": 0.39,
+                    "x_label": 0.732, "y_label": 0.392,
                     "video": "xTDUhnnj3q4",
-                    "x_video": 0.77, "y_video": 0.262,
+                    "x_video": 0.77, "y_video": 0.26,
                 },
             ]
 
@@ -1795,8 +1795,8 @@ class Maps:
                         source=yolo_img,
                         xref="paper",
                         yref="paper",
-                        x=0.2,
-                        y=0.25,
+                        x=0.12,
+                        y=0.14,
                         sizex=0.2,
                         sizey=0.2,
                         xanchor="center",
@@ -1807,15 +1807,15 @@ class Maps:
 
                 _add_box_annotation(
                     text="Example of YOLO output (Toronto, ON, Canada)",
-                    x=0.10,
-                    y=0.361,
+                    x=0.02,
+                    y=0.24,
                     font_size=12,
                 )
 
                 _add_box_annotation(
                     text="3ai7SUaPoHM",
-                    x=0.255,
-                    y=0.131,
+                    x=0.1725,
+                    y=0.0215,
                     font_size=10,
                 )
 
