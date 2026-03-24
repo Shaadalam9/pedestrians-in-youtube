@@ -587,6 +587,8 @@ def form():
         try:
             if end_time_input not in [None, '']:
                 timestamp_value = int(end_time_input)
+            elif end_time_video:
+                timestamp_value = int(end_time_video[-1])
         except (TypeError, ValueError):
             timestamp_value = 0
 
@@ -716,7 +718,7 @@ def form():
                 iso2_code = common.get_iso2_country_code(common.correct_country(country))
                 iso3_code = common.get_iso3_country_code(common.correct_country(country))
                 country_data = get_country_data(iso3_code)
-                locality_data = get_locality_data(locality, iso2_code)
+                locality_data = get_locality_data(locality, iso2_code, state)
 
                 if iso2_code == 'XK':
                     country_population = 1578000
@@ -1166,13 +1168,21 @@ def get_country_traffic_mortality(iso3_code):
         return 0.0
 
 
-def get_locality_data(locality, country_code):
+def get_locality_data(locality, country_code, state=None):
     """
     Get economic or locality related data from the Geonames API
     """
-    url = f"http://api.geonames.org/searchJSON?q={locality}&country={country_code}&username={common.get_secrets('geonames_username')}"  # noqa: E501
+    params = {
+        "q": locality,
+        "country": country_code,
+        "username": common.get_secrets('geonames_username')
+    }
+    if state and str(state).strip().lower() not in ('', 'none', 'nan'):
+        params["adminName1"] = state.strip()
+
+    url = "http://api.geonames.org/searchJSON"
     try:
-        response = requests.get(url)
+        response = requests.get(url, params=params)
     except requests.exceptions.ConnectionError as e:
         print(f"Connection error while getting locality data for {locality}, {country_code}: {e}.")
         return None
