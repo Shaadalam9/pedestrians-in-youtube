@@ -1400,24 +1400,9 @@ class Maps:
 
         io_class.save_plotly_figure(fig, file_name, save_final=save_final)
 
-    def world_map_ss(
-        self,
-        df,
-        *,
-        title=None,
-        projection="natural earth",
-        df_mapping=None,
-        show_images=False,
-        hover_data=None,
-        save_file=False,
-        save_final=False,
-        name_file=None,
-        show_colorbar=True,
-        colorbar_title="Footage (hours)",
-        color_scale="Turbo",
-        marker_size=3,
-        filter_zero=True,
-    ):
+    def world_map_ss(self, df, *, title=None, projection="natural earth", df_mapping=None, show_images=False,
+                     hover_data=None, save_file=False, save_final=False, name_file=None, show_colorbar=True,
+                     colorbar_title="Footage (hours)", color_scale="Turbo", marker_size=3, filter_zero=True):
         """
         World map with locality dots shown in a single muted red colour.
 
@@ -1611,7 +1596,7 @@ class Maps:
                 size=common.get_configs("font_size"),
                 color=palette["label_text"],
             ),
-            margin=dict(l=0, r=0, t=30 if title else 0, b=0),
+            margin=dict(l=0, r=0, t=0, b=0),
             showlegend=False,
             paper_bgcolor=palette["paper_bg"],
             plot_bgcolor=palette["paper_bg"],
@@ -1674,12 +1659,12 @@ class Maps:
                     "locality": "London",
                     "country": "United Kingdom",
                     "file": "london.png",
-                    "x": 0.395, "y": 0.7,
+                    "x": 0.395, "y": 0.67,
                     "approx_lon": -36.0, "approx_lat": 37.0,
                     "label": "London, UK",
-                    "x_label": 0.3685, "y_label": 0.772,
+                    "x_label": 0.3685, "y_label": 0.742,
                     "video": "Bs3MZ4wWMQs",
-                    "x_video": 0.418, "y_video": 0.64,
+                    "x_video": 0.418, "y_video": 0.61,
                 },
                 {
                     "locality": "Sao Paulo",
@@ -1796,9 +1781,9 @@ class Maps:
                         xref="paper",
                         yref="paper",
                         x=0.12,
-                        y=0.14,
-                        sizex=0.2,
-                        sizey=0.2,
+                        y=0.158,
+                        sizex=0.24,
+                        sizey=0.24,
                         xanchor="center",
                         yanchor="middle",
                         layer="above",
@@ -1807,15 +1792,15 @@ class Maps:
 
                 _add_box_annotation(
                     text="Example of YOLO output (Toronto, ON, Canada)",
-                    x=0.02,
-                    y=0.24,
+                    x=0.00,
+                    y=0.278,
                     font_size=12,
                 )
 
                 _add_box_annotation(
                     text="3ai7SUaPoHM",
-                    x=0.1725,
-                    y=0.0215,
+                    x=0.1925,
+                    y=0.019,
                     font_size=10,
                 )
 
