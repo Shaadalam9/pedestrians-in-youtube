@@ -1788,15 +1788,15 @@ if __name__ == "__main__":
                         marker_size=4,
                         file_name='mapbox_map_all')
 
-        # map with all cities coloured by footage amount (continuous hue scale) + optional screenshot overlays
-        maps.mapbox_map_footage(df=df.to_pandas(),
-                                footage_col="total_time",
-                                hover_data=hover_data,
-                                hover_name="flag_locality",
-                                marker_size=3,
-                                log_colour=True,
-                                show_images=True,
-                                file_name='mapbox_map_all_footage')
+        # # map with all cities coloured by footage amount (continuous hue scale) + optional screenshot overlays
+        # maps.mapbox_map_footage(df=df.to_pandas(),
+        #                         footage_col="total_time",
+        #                         hover_data=hover_data,
+        #                         hover_name="flag_locality",
+        #                         marker_size=3,
+        #                         log_colour=True,
+        #                         show_images=True,
+        #                         file_name='mapbox_map_all_footage')
 
         maps.world_map_ss(
             df=df.to_pandas(),
