@@ -7116,4 +7116,6 @@ id,locality,locality_aka,state,country,iso3,continent,lat,lon,gmp,population_loc
 7115,Sidon,[Saida],,Lebanon,LBN,Asia,33.564733,35.374978,0.0,163554,5490000.0,16.4,92.01,171.0,35.8,31.8,0.0,"[rAOC-rsE_cU,VKrQPBIRj6s]","[[0],[0]]","[[0],[0]]","[[506],[1815]]","[0,0]","[29062021,21102020]","[UC1BIkotySjcIF5osHlyMVkg,UC1BIkotySjcIF5osHlyMVkg]"
 7116,Tyre,[],,Lebanon,LBN,Asia,33.2721211,35.1964023,0.0,135204,5490000.0,16.4,92.01,171.0,35.8,31.8,0.0,[2liPY4Tc7XU],[[0]],[[1534]],[[2561]],[0],[25062021],[UC1BIkotySjcIF5osHlyMVkg]
 7117,Rachaya,[],,Lebanon,LBN,Asia,33.5014243,35.8448806,0.0,0,5490000.0,16.4,92.01,171.0,35.8,31.8,0.0,[bXGzk6ZOHPw],[[0]],[[6680]],[[7425]],[0],[16102020],[UC1BIkotySjcIF5osHlyMVkg]
-7118,Choueifat,[],,Lebanon,LBN,Asia,33.8169808,35.5161455,0.0,0,5490000,16.4,92.01,171,35.8,31.8,0.0,[0eXK11sPpgk],[[0]],[[348]],[[668]],[0],[17082021],[UCP0HG_0Gm8sGxS2v6tmpJGw]
+7118,Choueifat,[],,Lebanon,LBN,Asia,33.8169808,35.5161455,0.0,0,5490000.0,16.4,92.01,171.0,35.8,31.8,0.0,[0eXK11sPpgk],[[0]],[[348]],[[668]],[0],[17082021],[UCP0HG_0Gm8sGxS2v6tmpJGw]
+7119,Dhour El Choueir,[],,Lebanon,LBN,Asia,33.9140868,35.7139576,0.0,6500,5490000.0,16.4,92.01,171.0,35.8,31.8,0.0,[IQ6MyVGK4aY],[[0]],[[0]],[[333]],[0],[1092024],[UC2dGXze4v8NNajuruhYdA9g]
+7120,Mrouj,[],,Lebanon,LBN,Asia,33.9097004,35.7558262,0.0,2500,5490000,16.4,92.01,171,35.8,31.8,0.0,[IQ6MyVGK4aY],[[0]],[[369]],[[527]],[0],[1092024],[UC2dGXze4v8NNajuruhYdA9g]
