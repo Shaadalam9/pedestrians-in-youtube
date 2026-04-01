@@ -7109,3 +7109,5 @@ id,locality,locality_aka,state,country,iso3,continent,lat,lon,gmp,population_loc
 7108,Aurora,[],CA,United States,USA,North America,37.792517,-122.3915188,0.0,15838,340110988.0,12.7,0.0,170.0,38.5,41.4,33.33,[rEUA1lE7ZHE],[[0]],[[38]],[[436]],[0],[13092024],[UC3pUtmx7a45Gt6CZy2Db3eg]
 7109,Spark,[],NV,United States,USA,North America,36.0274438,-115.0492355,0.0,0,340110988.0,12.7,0.0,170.0,38.5,41.4,0.0,[gzw6ORLUXI0],[[0]],[[26]],[[907]],[0],[16082024],[UC3pUtmx7a45Gt6CZy2Db3eg]
 7110,Sun Valley,[],NV,United States,USA,North America,39.591535,-119.780334,0.0,19299,340110988.0,12.7,0.0,170.0,38.5,41.4,0.0,[MPML6lnUebQ],[[0]],[[30]],[[716]],[0],[9082024],[UC3pUtmx7a45Gt6CZy2Db3eg]
+7111,Douar,[],,Lebanon,LBN,Asia,33.9017932,35.6997263,0.0,1004,5490000.0,16.4,92.01,171.0,35.8,31.8,0.0,[d9KJf8fixWI],[[0]],[[524]],[[610]],[0],[31082024],[UC2dGXze4v8NNajuruhYdA9g]
+7112,Baabdat,[],,Lebanon,LBN,Asia,33.8872681,35.6675434,0.0,3000,5490000,16.4,92.01,171,35.8,31.8,0.0,[d9KJf8fixWI],[[0]],[[14]],[[263]],[0],[31082024],[UC2dGXze4v8NNajuruhYdA9g]
