@@ -7122,4 +7122,5 @@ id,locality,locality_aka,state,country,iso3,continent,lat,lon,gmp,population_loc
 7121,Moukhtara,[],,Lebanon,LBN,Asia,33.6573762,35.6133585,0.0,0,5490000.0,16.4,92.01,171.0,35.8,31.8,0.0,[Yj7xQMVZJIo],[[0]],[[4500]],[[6919]],[0],[11112020],[UC1BIkotySjcIF5osHlyMVkg]
 7122,Kefraya,[],,Lebanon,LBN,Asia,33.556906,35.4386321,0.0,4000,5490000.0,16.4,92.01,171.0,35.8,31.8,0.0,[WBIdBszM62c],[[0]],[[1120]],[[1520]],[0],[2062021],[UC1BIkotySjcIF5osHlyMVkg]
 7123,Qabb Ilyas,[],,Lebanon,LBN,Asia,33.798492,35.8256221,0.0,50000,5490000.0,16.4,92.01,171.0,35.8,31.8,0.0,[QULvvbTCX3I],[[0]],[[863]],[[1430]],[0],[5062021],[UC1BIkotySjcIF5osHlyMVkg]
-7124,Baalbek,[],,Lebanon,LBN,Asia,34.009653,36.2117096,0.0,30916,5490000,16.4,92.01,171,35.8,31.8,0.0,[OO62SV8wAGA],[[0]],[[0]],[[2113]],[0],[10062021],[UC1BIkotySjcIF5osHlyMVkg]
+7124,Baalbek,[],,Lebanon,LBN,Asia,34.009653,36.2117096,0.0,30916,5490000.0,16.4,92.01,171.0,35.8,31.8,0.0,[OO62SV8wAGA],[[0]],[[0]],[[2113]],[0],[10062021],[UC1BIkotySjcIF5osHlyMVkg]
+7125,Maroun al-Ras,[],,Lebanon,LBN,Asia,33.0807492,35.4222866,0.0,2298,5490000,16.4,92.01,171,35.8,31.8,0.0,[H1hg-DgOxXI],[[0]],[[0]],[[611]],[0],[14072021],[UC1BIkotySjcIF5osHlyMVkg]
