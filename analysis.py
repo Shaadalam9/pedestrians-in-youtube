@@ -987,13 +987,23 @@ def log_rollups(df_mapping: "pl.DataFrame") -> None:
     logger.info(f"\n{_df_full_str(cont_unique_table)}")
 
     # =========================================================================
-    # C) Vehicle x time-of-day (pair counts + %)
+    # C) Vehicle distributions (unique videos and segment-level label entries)
     # =========================================================================
-    if {"vehicle_type", "time_of_day"} <= set(df_mapping.columns):
+    if {"videos", "vehicle_type", "time_of_day"} <= set(df_mapping.columns):
 
         pair_dtype = pl.List(
             pl.Struct(
                 [
+                    pl.Field("vehicle_type", pl.Utf8),
+                    pl.Field("time_of_day", pl.Utf8),
+                ]
+            )
+        )
+
+        video_pair_dtype = pl.List(
+            pl.Struct(
+                [
+                    pl.Field("video_id", pl.Utf8),
                     pl.Field("vehicle_type", pl.Utf8),
                     pl.Field("time_of_day", pl.Utf8),
                 ]
@@ -1017,6 +1027,112 @@ def log_rollups(df_mapping: "pl.DataFrame") -> None:
                         out.append({"vehicle_type": str(v), "time_of_day": str(t)})
             return out
 
+        def _expand_video_vehicle_tod(row: dict) -> list[dict]:
+            try:
+                vids = _safe_eval_list(row.get("videos"))
+                vts = _safe_eval_list(row.get("vehicle_type"))
+                tods = _safe_eval_list(row.get("time_of_day"))
+                if not (isinstance(vids, list) and isinstance(vts, list) and isinstance(tods, list)):
+                    return []
+            except Exception:
+                return []
+
+            out = []
+            for vid, vt, tod in zip(vids, vts, tods):
+                vid_str = "" if vid is None else str(vid).strip()
+                if vid_str == "":
+                    continue
+                vt_list = vt if isinstance(vt, list) else [vt]
+                tod_list = tod if isinstance(tod, list) else [tod]
+                for v in vt_list:
+                    for t in tod_list:
+                        out.append(
+                            {
+                                "video_id": vid_str,
+                                "vehicle_type": str(v),
+                                "time_of_day": str(t),
+                            }
+                        )
+            return out
+
+        # maps (keep your existing objects)
+        vehicle_map = getattr(analysis_class, "vehicle_map", {})
+        time_map = getattr(analysis_class, "time_map", {})
+
+        # -----------------------------
+        # C1) Unique-video-based vehicle distributions
+        # -----------------------------
+        df_video_pairs = (
+            df_mapping
+            .select(["videos", "vehicle_type", "time_of_day"])
+            .with_columns(
+                pl.struct(["videos", "vehicle_type", "time_of_day"])
+                .map_elements(lambda r: _expand_video_vehicle_tod(r), return_dtype=video_pair_dtype)
+                .alias("pairs")
+            )
+            .explode("pairs")
+            .with_columns(
+                [
+                    pl.col("pairs").struct.field("video_id").alias("video_id"),
+                    pl.col("pairs").struct.field("vehicle_type").alias("vehicle_type_raw"),
+                    pl.col("pairs").struct.field("time_of_day").alias("time_of_day_raw"),
+                ]
+            )
+            .drop("pairs")
+            .with_columns(
+                [
+                    pl.col("vehicle_type_raw")
+                    .map_elements(lambda x: _map_with_fallback(vehicle_map, x), return_dtype=pl.Utf8)
+                    .alias("vehicle_type_name"),
+                    pl.col("time_of_day_raw")
+                    .map_elements(lambda x: _map_with_fallback(time_map, x), return_dtype=pl.Utf8)
+                    .alias("time_of_day_name"),
+                ]
+            )
+            .filter(
+                pl.col("video_id").is_not_null()
+                & (pl.col("video_id") != "")
+                & pl.col("vehicle_type_name").is_not_null()
+                & pl.col("time_of_day_name").is_not_null()
+            )
+            .unique(["video_id", "vehicle_type_name", "time_of_day_name"])
+        )
+
+        denom_unique_videos = max(int(total_unique_global), 1)
+
+        veh_videos = (
+            df_video_pairs
+            .group_by("vehicle_type_name")
+            .agg(pl.col("video_id").n_unique().alias("unique_videos"))
+            .with_columns(
+                (pl.col("unique_videos") / pl.lit(denom_unique_videos) * 100)
+                .round(2)
+                .alias("pct_of_global_unique_videos")
+            )
+            .sort(["vehicle_type_name"])
+        )
+
+        logger.info("\n=== [rollups] C1) Vehicle distribution (unique videos) ===")
+        logger.info(f"\n{_df_full_str(veh_videos)}")
+
+        veh_video_tod = (
+            df_video_pairs
+            .group_by(["vehicle_type_name", "time_of_day_name"])
+            .agg(pl.col("video_id").n_unique().alias("unique_videos"))
+            .with_columns(
+                (pl.col("unique_videos") / pl.lit(denom_unique_videos) * 100)
+                .round(2)
+                .alias("pct_of_global_unique_videos")
+            )
+            .sort(["vehicle_type_name", "time_of_day_name"])
+        )
+
+        logger.info("\n=== [rollups] C2) Vehicle x time-of-day (unique videos; deduped within video) ===")
+        logger.info(f"\n{_df_full_str(veh_video_tod)}")
+
+        # -----------------------------
+        # C3) Segment-level label-entry distribution (existing paper-aligned table)
+        # -----------------------------
         df_pairs = (
             df_mapping
             .select(["vehicle_type", "time_of_day"])
@@ -1034,10 +1150,6 @@ def log_rollups(df_mapping: "pl.DataFrame") -> None:
             )
             .drop("pairs")
         )
-
-        # maps (keep your existing objects)
-        vehicle_map = getattr(analysis_class, "vehicle_map", {})
-        time_map = getattr(analysis_class, "time_map", {})
 
         df_pairs = (
             df_pairs
@@ -1070,9 +1182,8 @@ def log_rollups(df_mapping: "pl.DataFrame") -> None:
             .sort(["vehicle_type_name", "time_of_day_name"])
         )
 
-        logger.info("\n=== [rollups] C) Vehicle x time-of-day (pair counts + %) ===")
+        logger.info("\n=== [rollups] C3) Vehicle x time-of-day (pair counts + %) ===")
         logger.info(f"\n{_df_full_str(veh_tod)}")
-
     # =========================================================================
     # D) Continent x time-of-day LABEL-ENTRY distribution (Day/Night entries + % within continent) + Total
     # =========================================================================
