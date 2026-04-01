@@ -137,25 +137,30 @@ CONFIG: Dict[str, Any] = {
         "time_of_day_codes": {0: "Day", 1: "Night"},
         "vehicle_type_codes": {
             0: "Car",
-            1: "Bicycle",
-            2: "Bus",
-            3: "Truck",
-            4: "Two-wheeler",
-            5: "Monowheel/unicycle",
+            1: "Bus",
+            2: "Truck",
+            3: "Two-wheeler",
+            4: "Bicycle",
+            5: "Automated car",
             6: "Electric scooter",
-            7: "Automated car",
+            7: "Monowheel/unicycle",
+            8: "Automated bus",
+            9: "Automated truck",
+            10: "Automated two-wheeler",
+            11: "Non-electric scooter",
+            12: "Pedestrian",
         },
     },
 
     # OPTIONAL: known expected totals from the paper/logs (set to None to skip)
     "expected": {
-        "unique_videos": 32492,
-        "duration_s": 57486804,
-        "duration_h": 15968.56,
-        "segment_records": 41595,
-        "upload_records": 35132,
+        "unique_videos": 42032,
+        "duration_s": 72992029,
+        "duration_h": 20275.56,
+        "segment_records": 51754,
+        "upload_records": 44757,
         "countries": 238,
-        "rows_locality_state_iso3": 5945,
+        "rows_locality_state_iso3": 7103,
     },
 
     # OPTIONAL: LaTeX number checks (works only if you set paths.main_tex)
@@ -892,6 +897,7 @@ class MappingAgg:
 def parse_mapping_csv(path: Path, logger: logging.Logger, report: Report) -> Tuple[MappingAgg, Dict[str, VideoAgg]]:
     allowed_cont = set(CONFIG["allowed"]["continents"])
     allowed_tod_vals = set(CONFIG["allowed"]["time_of_day_codes"].keys())  # {0, 1}
+    allowed_vehicle_vals = set(CONFIG["allowed"]["vehicle_type_codes"].keys())
     cols: List[str] = []
 
     rows = 0
@@ -921,6 +927,10 @@ def parse_mapping_csv(path: Path, logger: logging.Logger, report: Report) -> Tup
     # time_of_day contains only 0 or 1
     n_invalid_tod_values = 0
     invalid_tod_examples: List[Dict[str, Any]] = []
+
+    # vehicle_type contains only known mapped codes
+    n_invalid_vehicle_values = 0
+    invalid_vehicle_examples: List[Dict[str, Any]] = []
 
     # Duplicate locality keys (locality + state + country)
     locality_state_country_counts: Counter[str] = Counter()
@@ -1166,6 +1176,26 @@ def parse_mapping_csv(path: Path, logger: logging.Logger, report: Report) -> Tup
                                 }
                             )
 
+            # vehicle_type values are only known mapped codes (scan entire cell content)
+            for outer_i, vehs in enumerate(veh_lol):
+                for inner_i, v in enumerate(vehs):
+                    if v not in allowed_vehicle_vals:
+                        n_invalid_vehicle_values += 1
+                        if len(invalid_vehicle_examples) < 25:
+                            invalid_vehicle_examples.append(
+                                {
+                                    "row": rows,
+                                    "continent": continent,
+                                    "country": country,
+                                    "state": state,
+                                    "locality": locality,
+                                    "iso3": iso3,
+                                    "outer_index": outer_i,
+                                    "inner_index": inner_i,
+                                    "value": v,
+                                }
+                            )
+
             upload_records += len(vids)
 
             # Outer list alignment diagnostics should match len(vids)
@@ -1365,6 +1395,18 @@ def parse_mapping_csv(path: Path, logger: logging.Logger, report: Report) -> Tup
         details={"invalid_value_count": n_invalid_tod_values, "examples": invalid_tod_examples,
                  "allowed_values": sorted(list(allowed_tod_vals))},
         warn=(n_invalid_tod_values > 0),
+    )
+
+    report.add(
+        "mapping_csv.vehicle_type_values_valid",
+        ok=(n_invalid_vehicle_values == 0),
+        details={
+            "invalid_value_count": n_invalid_vehicle_values,
+            "examples": invalid_vehicle_examples,
+            "allowed_values": sorted(list(allowed_vehicle_vals)),
+            "allowed_labels": {str(k): v for k, v in sorted(CONFIG["allowed"]["vehicle_type_codes"].items())},
+        },
+        warn=(n_invalid_vehicle_values > 0),
     )
 
     dups = [(k, v) for k, v in locality_state_country_counts.items() if v > 1]
@@ -2100,8 +2142,8 @@ def _print_daynight_entries(agg: MappingAgg, logger: logging.Logger) -> None:
 
     tot = tot_day + tot_night
     logger.info(
-        f"{'Total':<14} {fmt_int(tot_day):>12} ({100.0*tot_day/max(tot,1):>6.2f}%) "
-        f"{fmt_int(tot_night):>12} ({100.0*tot_night/max(tot,1):>6.2f}%) {fmt_int(tot):>12}"
+        f"{'Total':<14} {fmt_int(tot_day):>12} ({100.0*tot_day/max(tot, 1):>6.2f}%) "
+        f"{fmt_int(tot_night):>12} ({100.0*tot_night/max(tot, 1):>6.2f}%) {fmt_int(tot):>12}"
     )
 
 
@@ -2111,7 +2153,7 @@ def _print_upload_daynight(agg: MappingAgg, logger: logging.Logger) -> None:
     logger.info("\n=== E) Upload day/night composition (global; paper) ===")
     for k in cats:
         v = int(agg.global_upload_daynight.get(k, 0))
-        logger.info(f"{k:<16} {fmt_int(v):>10} ({100.0*v/max(tot,1):.2f}%)")
+        logger.info(f"{k:<16} {fmt_int(v):>10} ({100.0*v/max(tot, 1):.2f}%)")
     logger.info(f"{'Total':<16} {fmt_int(tot):>10} (100.00%)")
 
 
