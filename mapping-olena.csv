@@ -7112,4 +7112,5 @@ id,locality,locality_aka,state,country,iso3,continent,lat,lon,gmp,population_loc
 7111,Douar,[],,Lebanon,LBN,Asia,33.9017932,35.6997263,0.0,1004,5490000.0,16.4,92.01,171.0,35.8,31.8,0.0,[d9KJf8fixWI],[[0]],[[524]],[[610]],[0],[31082024],[UC2dGXze4v8NNajuruhYdA9g]
 7112,Baabdat,[],,Lebanon,LBN,Asia,33.8872681,35.6675434,0.0,3000,5490000.0,16.4,92.01,171.0,35.8,31.8,0.0,[d9KJf8fixWI],[[0]],[[14]],[[263]],[0],[31082024],[UC2dGXze4v8NNajuruhYdA9g]
 7113,Chadra,[],,Lebanon,LBN,Asia,34.6188689,36.3202152,0.0,4200,5490000.0,16.4,92.01,171.0,35.8,31.8,0.0,[I31l05Ohpcc],[[0]],[[132]],[[582]],[0],[2102020],[UC1BIkotySjcIF5osHlyMVkg]
-7114,Tripoli,[],,Lebanon,LBN,Asia,34.4373616,35.8348551,0.0,229398,5490000,16.4,92.01,171,35.8,31.8,0.0,[I31l05Ohpcc],[[0]],[[5715]],[[6783]],[0],[2102020],[UC1BIkotySjcIF5osHlyMVkg]
+7114,Tripoli,[],,Lebanon,LBN,Asia,34.4373616,35.8348551,0.0,229398,5490000.0,16.4,92.01,171.0,35.8,31.8,0.0,[I31l05Ohpcc],[[0]],[[5715]],[[6783]],[0],[2102020],[UC1BIkotySjcIF5osHlyMVkg]
+7115,Sidon,[Saida],,Lebanon,LBN,Asia,33.564733,35.374978,0.0,163554,5490000,16.4,92.01,171,35.8,31.8,0.0,[rAOC-rsE_cU],[[0]],[[0]],[[506]],[0],[29062021],[UC1BIkotySjcIF5osHlyMVkg]
