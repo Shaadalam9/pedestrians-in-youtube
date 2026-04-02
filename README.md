@@ -210,9 +210,6 @@ Video: [https://www.youtube.com/watch?v=rdx7UFXYSz0](https://www.youtube.com/wat
 
 ## Description and analysis of dataset
 ### Description of dataset (all cities)
-[![Locations of cities with footage in dataset](figures/mapbox_map_all_footage.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/mapbox_map_all_footage.html)
-Locations of cities with footage in dataset.
-
 [![Locations of cities with footage in dataset](figures/mapbox_map_all.png)](https://htmlpreview.github.io/?https://github.com/Shaadalam9/youtube-pedestrian/blob/main/figures/mapbox_map_all.html)
 Locations of cities with footage in dataset. *Note:* continents are based on geography, i.e., the cities in Russia east from Ural mountains are shown as Asia.
 
