@@ -7165,7 +7165,7 @@ id,locality,locality_aka,state,country,iso3,continent,lat,lon,gmp,population_loc
 7164,Bakaata,[],,Lebanon,LBN,Asia,33.670367,35.5994472,0.0,22500,5490000.0,16.4,92.01,171.0,35.8,31.8,0.0,[WTQwN_F2MLA],[[0]],[[0]],[[597]],[0],[3052020],[UCACicNDQx-HA5MFnl75a-OQ]
 7165,Zakrit,[],,Lebanon,LBN,Asia,33.9379839,35.6309976,0.0,4500,5490000.0,16.4,92.01,171.0,35.8,31.8,0.0,[0lt7MWWdn_Y],[[0]],[[0]],[[323]],[0],[15042020],[UCACicNDQx-HA5MFnl75a-OQ]
 7166,Dbayeh,[],,Lebanon,LBN,Asia,33.9388314,35.591187,0.0,18000,5490000.0,,0.0,171.0,35.8,31.8,0.0,[mrJmkJtxr-k],[[0]],[[0]],[[150]],[0],[21042020],[UCACicNDQx-HA5MFnl75a-OQ]
-7167,Bickfaya,[],,Lebanon,LBN,Asia,33.9221677,35.684352,0.0,20000,5490000.0,,0.0,171.0,35.8,31.8,0.0,[Wq_x9a9-fEI],[[0]],[[0]],[[375]],[0],[20042020],[UCACicNDQx-HA5MFnl75a-OQ]
+7167,Bickfaya,[],,Lebanon,LBN,Asia,33.9221677,35.684352,0.0,20000,5490000.0,0.0,0.0,171.0,35.8,31.8,0.0,"[Wq_x9a9-fEI,bv5SHO4thpk]","[[0],[0]]","[[0],[0]]","[[375],[544]]","[0,0]","[20042020,28042020]","[UCACicNDQx-HA5MFnl75a-OQ,UCACicNDQx-HA5MFnl75a-OQ]"
 7168,Mansourieh,[],,Lebanon,LBN,Asia,33.8532656,35.568935,0.0,17000,5490000.0,,0.0,171.0,35.8,31.8,0.0,[RdJN-PLli9s],[[0]],[[0]],[[639]],[0],[30042020],[UCACicNDQx-HA5MFnl75a-OQ]
 7169,Deir al-Qamar,[],,Lebanon,LBN,Asia,33.6977372,35.5575535,0.0,7800,5490000.0,16.4,92.01,171.0,35.8,31.8,0.0,[Mb6UfUHSNnU],[[0]],[[0]],[[160]],[0],[4052020],[UCACicNDQx-HA5MFnl75a-OQ]
 7170,Beit ed-Dine,[Btaddine],,Lebanon,LBN,Asia,33.694026,35.5806651,0.0,2500,5490000.0,16.4,92.01,171.0,35.8,31.8,0.0,[Mb6UfUHSNnU],[[0]],[[327]],[[524]],[0],[4052020],[UCACicNDQx-HA5MFnl75a-OQ]
@@ -7173,4 +7173,7 @@ id,locality,locality_aka,state,country,iso3,continent,lat,lon,gmp,population_loc
 7172,Batroun,[],,Lebanon,LBN,Asia,34.2548879,35.6588567,0.0,45000,5490000.0,16.4,92.01,171.0,35.8,31.8,0.0,[RQw0ZXqJiA8],[[0]],[[417]],[[1285]],[0],[25092025],[UCt5TVz_OEpL-W2D93QTaHVQ]
 7173,Amsheet,[Amchit],,Lebanon,LBN,Asia,34.1421297,35.6465525,0.0,25000,5490000.0,16.4,92.01,171.0,35.8,31.8,0.0,[RQw0ZXqJiA8],[[0]],[[1726]],[[2114]],[0],[25092025],[UCt5TVz_OEpL-W2D93QTaHVQ]
 7174,Mazraat Yachouh,[],,Lebanon,LBN,Asia,33.9300335,35.6327031,0.0,1453,5490000.0,16.4,92.01,171.0,35.8,31.8,0.0,[k4LWgFSfWBg],[[0]],[[0]],[[248]],[0],[28042020],[UCACicNDQx-HA5MFnl75a-OQ]
-7175,Qornet el Hamra,[],,Lebanon,LBN,Asia,33.93472,35.64917,0.0,2003,5490000,16.4,92.01,171,35.8,31.8,0.0,[k4LWgFSfWBg],[[0]],[[249]],[[478]],[0],[28042020],[UCACicNDQx-HA5MFnl75a-OQ]
+7175,Qornet el Hamra,[],,Lebanon,LBN,Asia,33.93472,35.64917,0.0,2003,5490000.0,16.4,92.01,171.0,35.8,31.8,0.0,[k4LWgFSfWBg],[[0]],[[249]],[[478]],[0],[28042020],[UCACicNDQx-HA5MFnl75a-OQ]
+7176,Sawfar,[],,Lebanon,LBN,Asia,33.8020548,35.7012197,0.0,3697,5490000.0,16.4,0.0,171.0,35.8,31.8,0.0,[l3g0jLboL7g],[[0]],[[381]],[[655]],[0],[2052020],[UCACicNDQx-HA5MFnl75a-OQ]
+7177,Okaibe,[],,Lebanon,LBN,Asia,34.0567157,35.6450875,0.0,10996,5490000.0,,0.0,171.0,35.8,31.8,0.0,[iDRZwOBop9E],[[0]],[[0]],[[180]],[0],[7052020],[UCACicNDQx-HA5MFnl75a-OQ]
+7178,Beit Chabab,[],,Lebanon,LBN,Asia,33.9275343,35.6723258,0.0,5704,5490000,,0.0,171,35.8,31.8,0.0,[CXwOfv8uZas],[[0]],[[0]],[[523]],[0],[27042020],[UCACicNDQx-HA5MFnl75a-OQ]
