@@ -896,7 +896,7 @@ def form():
                     message = (
                         f"Cannot add segment {new_start_global} to {new_end_global} because it overlaps existing segment "  # noqa: E501
                         f"{overlap_global['start']} to {overlap_global['end']} for this video in {overlap_global['label']}. "  # noqa: E501
-                        f"Please use a start time of {next_start} or later."
+                        f"<span style='color: red;'>Please use start time of {next_start} or later.</span>"
                     )
                     if current_idx is not None:
                         existing_data_row = df.loc[current_idx].to_dict()
