@@ -1535,10 +1535,17 @@ class Maps:
             df_plot["marker_opacity"] = 0.18 + 0.42 * np.sqrt(norm)
 
         # Build per point rgba colours instead of using a global marker opacity.
+        # Cities with > 100 footage hours are drawn in red; all others use the default dot colour.
         dot_r, dot_g, dot_b = _hex_to_rgb(palette["dot"])
-        df_plot["marker_color"] = df_plot["marker_opacity"].apply(
-            lambda a: f"rgba({dot_r},{dot_g},{dot_b},{float(a):.4f})"
-        )
+        red_r, red_g, red_b = _hex_to_rgb("#FF0000")
+
+        def _make_color(row):
+            a = float(row["marker_opacity"])
+            if row["footage_hours"] > 27.8:  # more than 100k s of footage
+                return f"rgba({red_r},{red_g},{red_b},1.0)"
+            return f"rgba({dot_r},{dot_g},{dot_b},{a:.4f})"
+
+        df_plot["marker_color"] = df_plot.apply(_make_color, axis=1)
 
         fig = go.Figure()
 
@@ -1571,8 +1578,9 @@ class Maps:
                 mode="markers",
                 hovertemplate=hovertemplate,
                 marker=dict(
-                    size=marker_size,
+                    size=df_plot["footage_hours"].apply(lambda h: marker_size + 2 if h > 27.8 else marker_size),
                     color=df_plot["marker_color"],
+                    symbol=df_plot["footage_hours"].apply(lambda h: "square" if h > 27.8 else "circle"),
                     line=dict(width=0),
                     showscale=False,
                 ),
