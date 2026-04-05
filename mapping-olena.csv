@@ -7242,3 +7242,4 @@ id,locality,locality_aka,state,country,iso3,continent,lat,lon,gmp,population_loc
 7241,Soerendonk,[],,Netherlands,NLD,Europe,51.3029105,5.5726245,0.0,1660,18100436.0,4.0,0.0,177.0,42.2,28.1,0.0,[HTBYyCXjoqc],[[0]],[[4543]],[[4797]],[4],[23082024],[UCUUPDaFc0ENkfBIJhCfGmdg]
 7242,Maarheeze,[],,Netherlands,NLD,Europe,51.3121159,5.6158604,0.0,4715,18100436.0,4.0,0.0,177.0,42.2,28.1,0.0,[HTBYyCXjoqc],[[0]],[[5099]],[[5649]],[4],[23082024],[UCUUPDaFc0ENkfBIJhCfGmdg]
 7243,Venray,[],,Netherlands,NLD,Europe,51.5082754,5.9589011,0.0,39047,18100436.0,4.0,0.0,177.0,42.2,28.1,0.0,[ur4gHPEx0nY],[[0]],[[2646]],[[3782]],[0],[2062024],[UCUUPDaFc0ENkfBIJhCfGmdg]
+7244,Idlib,[],,Syria,SYR,Asia,35.930344,36.634771,0.0,128840,25620000.0,14.9,94.42,166.0,25.0,37.5,0.0,"[ts3mlieg3qc,x_lLNmU7r54]","[[0,0],[0]]","[[9,132],[0]]","[[128,319],[733]]","[0,0]","[5032026,27032026]","[UCPAmFTT-3SRbSdlAP9HUKfA,UCPAmFTT-3SRbSdlAP9HUKfA]"
