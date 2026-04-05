@@ -1500,6 +1500,7 @@ class Maps:
             "lat": "first",
             "lon": "first",
             "footage_hours": "sum",
+            "total_time": "sum"
         }
 
         extra_hover_cols = []
@@ -1541,7 +1542,7 @@ class Maps:
 
         def _make_color(row):
             a = float(row["marker_opacity"])
-            if row["footage_hours"] > 27.8:  # more than 100k s of footage
+            if row["total_time"] > 100000:  # more than 100k s of footage
                 return f"rgba({red_r},{red_g},{red_b},1.0)"
             return f"rgba({dot_r},{dot_g},{dot_b},{a:.4f})"
 
@@ -1552,7 +1553,7 @@ class Maps:
         # Build hover text
         customdata_parts = [
             df_plot["country"].to_numpy(),
-            df_plot["footage_hours"].to_numpy(),
+            df_plot["total_time"].to_numpy(),
         ]
 
         for col in extra_hover_cols:
@@ -1578,9 +1579,9 @@ class Maps:
                 mode="markers",
                 hovertemplate=hovertemplate,
                 marker=dict(
-                    size=df_plot["footage_hours"].apply(lambda h: marker_size + 2 if h > 27.8 else marker_size),
+                    size=df_plot["total_time"].apply(lambda h: marker_size + 2 if h > 100000 else marker_size),
                     color=df_plot["marker_color"],
-                    symbol=df_plot["footage_hours"].apply(lambda h: "square" if h > 27.8 else "circle"),
+                    symbol=df_plot["total_time"].apply(lambda h: "square" if h > 100000 else "circle"),
                     line=dict(width=0),
                     showscale=False,
                 ),
