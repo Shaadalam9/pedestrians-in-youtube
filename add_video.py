@@ -526,6 +526,19 @@ def get_video_state_from_row(row, video_id):
     return state
 
 
+def get_global_max_end_time(df, video_id):
+    """Return the highest end time for video_id across all rows in the mapping."""
+    best = 0
+    for _, row in df.iterrows():
+        state = get_video_state_from_row(row.to_dict(), video_id)
+        for val in (state.get('end_time_video') or []):
+            try:
+                best = max(best, int(val))
+            except (TypeError, ValueError):
+                continue
+    return best
+
+
 def get_latest_segment_index(end_times):
     """Return index of the segment with the largest valid end time."""
     if not isinstance(end_times, list) or not end_times:
@@ -654,6 +667,13 @@ def form():
         except (TypeError, ValueError):
             timestamp_value = 0
 
+        # Use the globally highest end time for this video across all cities
+        # so the embed player always starts at the latest known position.
+        if video_id:
+            global_max = get_global_max_end_time(df, video_id)
+            if global_max > timestamp_value:
+                timestamp_value = global_max
+
         try:
             if latest_segment_idx is not None and isinstance(time_of_day_video, list):
                 time_of_day_last = int(time_of_day_video[latest_segment_idx])
@@ -765,19 +785,7 @@ def form():
                 if existing_video_state['time_of_day_video']:
                     time_of_day_video = existing_video_state['time_of_day_video']
 
-                if end_time_video:
-                    latest_segment = get_latest_segment_values(
-                        start_time_video,
-                        end_time_video,
-                        time_of_day_video
-                    )
-                    start_time_input = latest_segment["start"]
-                    end_time_input = latest_segment["end"]
 
-                    latest_segment_idx = get_latest_segment_index(end_time_video)
-                    if latest_segment_idx is not None:
-                        start_time_input = str(start_time_video[latest_segment_idx])
-                        end_time_input = str(end_time_video[latest_segment_idx])
 
             else:
                 message = "No entry for locality found. You can add new data."
