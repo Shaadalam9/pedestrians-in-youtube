@@ -7,6 +7,13 @@ import plotly.express as px
 from PIL import Image, ImageFont, ImageDraw, ImageColor
 import common
 from utils.plotting.io import IO
+import warnings
+from custom_logger import CustomLogger
+
+# Suppress a specific FutureWarning emitted by plotly.
+warnings.filterwarnings("ignore", category=FutureWarning, module="plotly")
+
+logger = CustomLogger(__name__)  # use custom logger
 
 io_class = IO()
 
@@ -1524,29 +1531,29 @@ class Maps:
         if df_plot.empty:
             raise ValueError("No valid non negative 'footage_hours' values remain.")
 
-        # Transparency based on raw footage hours, but keep the upper bound lower
-        # so dense regions do not become visually overwhelming.
-        hours_min = float(df_plot["footage_hours"].min())
-        hours_max = float(df_plot["footage_hours"].max())
+        # # Transparency based on raw footage hours, but keep the upper bound lower
+        # # so dense regions do not become visually overwhelming.
+        # hours_min = float(df_plot["footage_hours"].min())
+        # hours_max = float(df_plot["footage_hours"].max())
 
-        if hours_max == hours_min:
-            df_plot["marker_opacity"] = 0.55
-        else:
-            norm = (df_plot["footage_hours"] - hours_min) / (hours_max - hours_min)
-            df_plot["marker_opacity"] = 0.18 + 0.42 * np.sqrt(norm)
+        # if hours_max == hours_min:
+        #     df_plot["marker_opacity"] = 0.55
+        # else:
+        #     norm = (df_plot["footage_hours"] - hours_min) / (hours_max - hours_min)
+        #     df_plot["marker_opacity"] = 0.18 + 0.42 * np.sqrt(norm)
 
-        # Build per point rgba colours instead of using a global marker opacity.
-        # Cities with > 100 footage hours are drawn in red; all others use the default dot colour.
-        dot_r, dot_g, dot_b = _hex_to_rgb(palette["dot"])
-        red_r, red_g, red_b = _hex_to_rgb("#FF0000")
+        # # Build per point rgba colours instead of using a global marker opacity.
+        # # Cities with > 100 footage hours are drawn in red; all others use the default dot colour.
+        # dot_r, dot_g, dot_b = _hex_to_rgb(palette["dot"])
+        # red_r, red_g, red_b = _hex_to_rgb("#FF0000")
 
-        def _make_color(row):
-            a = float(row["marker_opacity"])
-            if row["total_time"] > 100000:  # more than 100k s of footage
-                return f"rgba({red_r},{red_g},{red_b},1.0)"
-            return f"rgba({dot_r},{dot_g},{dot_b},{a:.4f})"
+        # def _make_color(row):
+        #     a = float(row["marker_opacity"])
+        #     if row["total_time"] > 100000:  # more than 100k s of footage
+        #         return f"rgba({red_r},{red_g},{red_b},1.0)"
+        #     return f"rgba({dot_r},{dot_g},{dot_b},{a:.4f})"
 
-        df_plot["marker_color"] = df_plot.apply(_make_color, axis=1)
+        # df_plot["marker_color"] = df_plot.apply(_make_color, axis=1)
 
         fig = go.Figure()
 
@@ -1559,7 +1566,7 @@ class Maps:
         for col in extra_hover_cols:
             customdata_parts.append(df_plot[col].to_numpy())
 
-        customdata = np.column_stack(customdata_parts)
+        customdata = np.column_stack(customdata_parts)  # noqa: F841
 
         hover_lines = [
             "<b>%{text}</b>",
@@ -1570,25 +1577,67 @@ class Maps:
             hover_lines.append(f"{col}: " + "%{customdata[" + str(i) + "]}")
         hovertemplate = "<br>".join(hover_lines) + "<extra></extra>"
 
-        fig.add_trace(
-            go.Scattergeo(
-                lon=df_plot["lon"],
-                lat=df_plot["lat"],
-                text=df_plot["locality"],
-                customdata=customdata,
-                mode="markers",
-                hovertemplate=hovertemplate,
-                marker=dict(
-                    size=df_plot["total_time"].apply(lambda h: marker_size + 2 if h > 100000 else marker_size),
-                    color=df_plot["marker_color"],
-                    symbol=df_plot["total_time"].apply(lambda h: "square" if h > 100000 else "circle"),
-                    line=dict(width=0),
-                    showscale=False,
-                ),
-                showlegend=False,
-                name="cities",
+        # Split into two dataframes so red markers always render on top
+        df_normal = df_plot[df_plot["total_time"] <= 100000]
+        df_red = df_plot[df_plot["total_time"] > 100000]
+        logger.info(f"Cities with more than 100,000 s of footage: {len(df_red)}.")
+
+        dot_r, dot_g, dot_b = _hex_to_rgb(palette["dot"])
+
+        # Normal cities — bottom layer
+        if not df_normal.empty:
+            customdata_normal = np.column_stack(
+                [df_normal["country"].to_numpy(), df_normal["total_time"].to_numpy()]
+                + [df_normal[col].to_numpy() for col in extra_hover_cols]
             )
-        )
+            fig.add_trace(
+                go.Scattergeo(
+                    lon=df_normal["lon"],
+                    lat=df_normal["lat"],
+                    text=df_normal["locality"],
+                    customdata=customdata_normal,
+                    mode="markers",
+                    hovertemplate=hovertemplate,
+                    marker=dict(
+                        size=marker_size,
+                        color=f"rgba({dot_r},{dot_g},{dot_b},0.35)",
+                        symbol="circle",
+                        line=dict(width=0),
+                        showscale=False,
+                    ),
+                    showlegend=False,
+                    name="cities",
+                )
+            )
+
+        # High-footage cities — top layer, always rendered above normal markers
+        if not df_red.empty:
+            customdata_red = np.column_stack(
+                [df_red["country"].to_numpy(), df_red["total_time"].to_numpy()]
+                + [df_red[col].to_numpy() for col in extra_hover_cols]
+            )
+            fig.add_trace(
+                go.Scattergeo(
+                    lon=df_red["lon"],
+                    lat=df_red["lat"],
+                    text=df_red["locality"],
+                    customdata=customdata_red,
+                    mode="markers",
+                    hovertemplate=hovertemplate,
+                    marker=dict(
+                        size=marker_size + 3,
+                        color="rgba(255,0,0,1.0)",
+                        symbol="square",
+                        # line=dict(
+                        #     width=1.5,
+                        #     color="rgba(80,0,0,1.0)",
+                        # ),
+                        showscale=False,
+                    ),
+                    showlegend=False,
+                    name="cities_highlight",
+                )
+            )
 
         if title:
             fig.update_layout(
