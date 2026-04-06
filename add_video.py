@@ -526,6 +526,63 @@ def get_video_state_from_row(row, video_id):
     return state
 
 
+def get_latest_segment_index(end_times):
+    """Return index of the segment with the largest valid end time."""
+    if not isinstance(end_times, list) or not end_times:
+        return None
+
+    best_idx = None
+    best_end = None
+
+    for i, value in enumerate(end_times):
+        try:
+            end_val = int(value)
+        except (TypeError, ValueError):
+            continue
+
+        if best_end is None or end_val > best_end:
+            best_end = end_val
+            best_idx = i
+
+    return best_idx
+
+
+def get_latest_segment_values(start_times, end_times, time_of_day_values):
+    """Return latest segment-derived values."""
+    idx = get_latest_segment_index(end_times)
+    if idx is None:
+        return {
+            "idx": None,
+            "start": "",
+            "end": "",
+            "time_of_day_last": 0,
+        }
+
+    out = {
+        "idx": idx,
+        "start": "",
+        "end": "",
+        "time_of_day_last": 0,
+    }
+
+    try:
+        out["start"] = str(start_times[idx])
+    except Exception:
+        out["start"] = ""
+
+    try:
+        out["end"] = str(end_times[idx])
+    except Exception:
+        out["end"] = ""
+
+    try:
+        out["time_of_day_last"] = int(time_of_day_values[idx])
+    except Exception:
+        out["time_of_day_last"] = 0
+
+    return out
+
+
 @app.route('/', methods=['GET', 'POST'])
 def form():
     df = load_csv(FILE_PATH)
@@ -580,17 +637,28 @@ def form():
         except (TypeError, ValueError):
             vehicle_type_video_for_render = vehicle_type_video
 
-        time_of_day_last = extract_last_int(time_of_day_video)
-        time_of_day_last = int(time_of_day_last) if time_of_day_last is not None else None
+        latest_segment_idx = get_latest_segment_index(end_time_video)
+
+        latest_segment = get_latest_segment_values(
+            start_time_video,
+            end_time_video,
+            time_of_day_video if isinstance(time_of_day_video, list) else []
+        )
+
+        time_of_day_last = latest_segment["time_of_day_last"]
 
         timestamp_value = 0
         try:
-            if end_time_input not in [None, '']:
-                timestamp_value = int(end_time_input)
-            elif end_time_video:
-                timestamp_value = int(end_time_video[-1])
+            if latest_segment["end"] not in [None, '']:
+                timestamp_value = int(latest_segment["end"])
         except (TypeError, ValueError):
             timestamp_value = 0
+
+        try:
+            if latest_segment_idx is not None and isinstance(time_of_day_video, list):
+                time_of_day_last = int(time_of_day_video[latest_segment_idx])
+        except (TypeError, ValueError, IndexError):
+            time_of_day_last = None
 
         return render_template(
             "add_video.html",
@@ -683,36 +751,34 @@ def form():
                 existing_data_row = existing_data.iloc[0].to_dict()
                 locality = existing_data_row.get('locality')
 
-                videos_list = existing_data_row.get('videos', '').split(',')
-                videos_list = [video.strip('[]') for video in videos_list]
+                existing_video_state = get_video_state_from_row(existing_data_row, video_id)
+                if existing_video_state['upload_date_video']:
+                    upload_date_video = existing_video_state['upload_date_video']
+                if existing_video_state['channel_video'] is not None:
+                    channel_video = existing_video_state['channel_video']
+                if existing_video_state['start_time_video']:
+                    start_time_video = existing_video_state['start_time_video']
+                if existing_video_state['end_time_video']:
+                    end_time_video = existing_video_state['end_time_video']
+                if existing_video_state['vehicle_type_video'] is not None:
+                    vehicle_type_video = existing_video_state['vehicle_type_video']
+                if existing_video_state['time_of_day_video']:
+                    time_of_day_video = existing_video_state['time_of_day_video']
 
-                upload_date_list = existing_data_row.get('upload_date', '').split(',')
-                upload_date_list = [upload_date.strip('[]') for upload_date in upload_date_list]
+                if end_time_video:
+                    latest_segment = get_latest_segment_values(
+                        start_time_video,
+                        end_time_video,
+                        time_of_day_video
+                    )
+                    start_time_input = latest_segment["start"]
+                    end_time_input = latest_segment["end"]
 
-                channel_list = _parse_flat_list_cell(existing_data_row.get('channel', ''))
-                channel_list = [_normalize_optional_text(channel) for channel in channel_list]
+                    latest_segment_idx = get_latest_segment_index(end_time_video)
+                    if latest_segment_idx is not None:
+                        start_time_input = str(start_time_video[latest_segment_idx])
+                        end_time_input = str(end_time_video[latest_segment_idx])
 
-                vehicle_type_list = existing_data_row.get('vehicle_type', '').split(',')
-                vehicle_type_list = [vehicle_type.strip('[]') for vehicle_type in vehicle_type_list]
-
-                locality_aka_list = existing_data_row.get('locality_aka', '').split(',')
-                locality_aka_list = [locality_aka.strip('[]') for locality_aka in locality_aka_list]
-
-                if video_id in videos_list:
-                    position = videos_list.index(video_id)
-                    upload_date_video = upload_date_list[position].strip()
-                    channel_video = _normalize_optional_text(channel_list[position]) if position < len(channel_list) else None  # noqa: E501
-
-                    start_time_list = ast.literal_eval(existing_data_row.get('start_time', ''))
-                    start_time_video = start_time_list[position]
-
-                    end_time_list = ast.literal_eval(existing_data_row.get('end_time', ''))
-                    end_time_video = end_time_list[position]
-
-                    vehicle_type_video = vehicle_type_list[position]
-
-                    time_of_day_list = ast.literal_eval(existing_data_row.get('time_of_day', ''))
-                    time_of_day_video = time_of_day_list[position]
             else:
                 message = "No entry for locality found. You can add new data."
                 iso2_code = common.get_iso2_country_code(common.correct_country(country))
@@ -752,6 +818,24 @@ def form():
                     'gini': get_country_gini(country_data),
                     'traffic_index': get_traffic_index_lat_lon(lat, lon)
                 }
+
+            # For a new city, if the video already exists elsewhere, carry over its
+            # metadata so the embed player starts at the right timestamp and vehicle
+            # type is pre-selected correctly.
+            if not end_time_video:
+                video_hits = find_video_occurrences(df, video_id)
+                if video_hits:
+                    for hit in video_hits:
+                        hit_row = df.loc[hit['idx']].to_dict()
+                        hit_state = get_video_state_from_row(hit_row, video_id)
+                        if hit_state['end_time_video']:
+                            end_time_video = hit_state['end_time_video']
+                            start_time_video = hit_state['start_time_video']
+                            if hit_state['vehicle_type_video'] is not None:
+                                vehicle_type_video = hit_state['vehicle_type_video']
+                            if hit_state['time_of_day_video']:
+                                time_of_day_video = hit_state['time_of_day_video']
+                            break
 
             if 'video_global_note' in locals() and video_global_note:
                 message = (message + " " + video_global_note).strip()
@@ -971,8 +1055,22 @@ def form():
                                 if channel_video is None and yt_channel:
                                     channel_video = yt_channel
 
-                                time_of_day_last = extract_last_int(time_of_day_video)
-                                time_of_day_last = int(time_of_day_last) if time_of_day_last is not None else None
+                                latest_segment_idx = get_latest_segment_index(end_time_video)
+
+                                try:
+                                    if latest_segment_idx is not None and isinstance(time_of_day_video, list):
+                                        time_of_day_last = int(time_of_day_video[latest_segment_idx])
+                                    else:
+                                        time_of_day_last = 0
+                                except (TypeError, ValueError, IndexError):
+                                    time_of_day_last = 0
+
+                                timestamp_value = 0
+                                try:
+                                    if latest_segment_idx is not None and isinstance(end_time_video, list):
+                                        timestamp_value = int(end_time_video[latest_segment_idx])
+                                except (TypeError, ValueError, IndexError):
+                                    timestamp_value = 0
 
                                 return render_current_template()
 
