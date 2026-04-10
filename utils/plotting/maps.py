@@ -1625,7 +1625,7 @@ class Maps:
                     mode="markers",
                     hovertemplate=hovertemplate,
                     marker=dict(
-                        size=marker_size + 3,
+                        size=marker_size + 2,
                         color="rgba(255,0,0,1.0)",
                         symbol="square",
                         # line=dict(
